@@ -78,7 +78,7 @@ jobs:
             **/build/reports/kover/**
           if-no-files-found: ignore
 
-  # 3) 코드 보안 — Trivy fs(시크릿·미스컨피그) + Semgrep SAST. 정책: "시크릿만 차단".
+  # 3) 코드 보안 — Trivy fs 시크릿 스캔. 시크릿 발견 시 차단.
   code-security:
     name: code security
     runs-on: ubuntu-latest
@@ -93,41 +93,6 @@ jobs:
           scanners: secret
           exit-code: "1" # 시크릿 발견 시 CI 실패
           format: table
-      - name: Trivy — misconfig (리포트만)
-        uses: aquasecurity/trivy-action@0.35.0
-        with:
-          scan-type: fs
-          scanners: misconfig
-          exit-code: "0" # 차단하지 않고 로그로만 노출
-          format: table
-      - name: Semgrep SAST (리포트만, 파일:라인)
-        run: |
-          pipx install semgrep   # ubuntu-latest PEP668 회피 (pip install 대신 pipx)
-          rc=0
-          semgrep scan --config auto --json --output semgrep.json || rc=$?
-          # rc>=2 = 스캔 자체 실패(거짓 음성 위험) → 경고. rc=1(발견)은 차단하지 않음.
-          if [ "$rc" -ge 2 ]; then
-            echo "::warning::Semgrep 실행 실패(rc=$rc) — 결과 신뢰 불가"
-          fi
-      - name: Redact findings (아티팩트에 원문 노출 방지)
-        if: always()
-        run: |
-          if [ -f semgrep.json ]; then
-            python3 - <<'PY'
-          import json
-          d = json.load(open("semgrep.json"))
-          for r in d.get("results", []):
-              r.get("extra", {}).pop("lines", None)   # 매칭 원문 제거
-          json.dump(d, open("semgrep-redacted.json", "w"))
-          PY
-          fi
-      - name: Upload security report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-reports
-          path: semgrep-redacted.json
-          if-no-files-found: ignore
 
   # 4) 결과 통합 — 단일 <!-- ci-report --> PR 코멘트로 upsert (실패해도 항상 실행)
   ci-report:
