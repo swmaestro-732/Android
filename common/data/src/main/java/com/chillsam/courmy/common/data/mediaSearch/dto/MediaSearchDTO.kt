@@ -43,25 +43,27 @@ data class VideoDocumentDTO(
 )
 
 // https://developers.kakao.com/docs/ko/daum-search/dev-guide#search-image
-fun ImageDocumentDTO.toVO(): MediaItemVO = MediaItemVO(
-    type = MediaType.IMAGE,
-    title = displaySitename ?: UNKNOWN,
-    urlKey = imageUrl.orEmpty(),
-    thumbnailImageUrl = thumbnailUrl.orEmpty(),
-    contentsImageUrl = imageUrl.orEmpty(),
-    pageLinkUrl = docUrl.orEmpty(),
-    collection = collection.orEmpty(),
-    dateTime = datetime.orEmpty(),
-)
+fun ImageDocumentDTO.toVO(): MediaItemVO =
+    MediaItemVO(
+        type = MediaType.IMAGE,
+        title = displaySitename ?: UNKNOWN,
+        urlKey = imageUrl.orEmpty(),
+        thumbnailImageUrl = thumbnailUrl.orEmpty(),
+        contentsImageUrl = imageUrl.orEmpty(),
+        pageLinkUrl = docUrl.orEmpty(),
+        collection = collection.orEmpty(),
+        dateTime = datetime.orEmpty(),
+    )
 
 // https://developers.kakao.com/docs/ko/daum-search/dev-guide#search-video
-fun VideoDocumentDTO.toVO(): MediaItemVO = MediaItemVO(
-    type = MediaType.VIDEO,
-    title = title ?: UNKNOWN,
-    urlKey = url.orEmpty(),
-    thumbnailImageUrl = thumbnail.orEmpty(),
-    contentsImageUrl = thumbnail.orEmpty(),
-    pageLinkUrl = url.orEmpty(),
-    collection = "",
-    dateTime = datetime.orEmpty(),
-)
+fun VideoDocumentDTO.toVO(): MediaItemVO =
+    MediaItemVO(
+        type = MediaType.VIDEO,
+        title = title ?: UNKNOWN,
+        urlKey = url.orEmpty(),
+        thumbnailImageUrl = thumbnail.orEmpty(),
+        contentsImageUrl = thumbnail.orEmpty(),
+        pageLinkUrl = url.orEmpty(),
+        collection = "",
+        dateTime = datetime.orEmpty(),
+    )

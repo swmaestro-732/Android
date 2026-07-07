@@ -19,18 +19,20 @@ fun FavoriteHeartButton(
     isFavorite: Boolean,
     onToggle: (Boolean) -> Unit,
 ) {
-    val resource = if (isFavorite) {
-        R.drawable.fill_favorite_24dp
-    } else {
-        R.drawable.outlined_favorite_24dp
-    }
+    val resource =
+        if (isFavorite) {
+            R.drawable.fill_favorite_24dp
+        } else {
+            R.drawable.outlined_favorite_24dp
+        }
 
     Icon(
-        modifier = modifier
-            .clip(CircleShape)
-            .clickable {
-                onToggle(!isFavorite)
-            },
+        modifier =
+            modifier
+                .clip(CircleShape)
+                .clickable {
+                    onToggle(!isFavorite)
+                },
         imageVector = ImageVector.vectorResource(resource),
         tint = DesignSystemThemeImpl.designSystemColor.contentFavorite,
         contentDescription = null,

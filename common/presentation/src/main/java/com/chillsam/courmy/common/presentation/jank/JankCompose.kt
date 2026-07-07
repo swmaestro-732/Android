@@ -10,9 +10,10 @@ import androidx.compose.ui.platform.LocalView
 import androidx.metrics.performance.PerformanceMetricsState
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-val LocalJankReporter = compositionLocalOf<JankReporter> {
-    error("LocalJankReporter is not provided. Wrap with CompositionLocalProvider in MainActivity.")
-}
+val LocalJankReporter =
+    compositionLocalOf<JankReporter> {
+        error("LocalJankReporter is not provided. Wrap with CompositionLocalProvider in MainActivity.")
+    }
 
 /**
  * 현재 활성 페이지의 식별자를 JankStats state 로 등록하고, 컴포지션 이탈 시

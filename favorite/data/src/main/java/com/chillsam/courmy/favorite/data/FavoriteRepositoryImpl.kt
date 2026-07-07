@@ -15,7 +15,8 @@ class FavoriteRepositoryImpl(
     private val sharingScope: CoroutineScope,
 ) : FavoriteRepository {
     private val sharedItems: Flow<List<FavoriteItemVO>> =
-        dataSource.getFavoriteMediaItemsFlow()
+        dataSource
+            .getFavoriteMediaItemsFlow()
             .map { items -> items.map { it.toVO() } }
             .shareIn(
                 scope = sharingScope,

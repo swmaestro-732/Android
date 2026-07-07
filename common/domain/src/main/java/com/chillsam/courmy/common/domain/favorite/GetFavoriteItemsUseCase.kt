@@ -9,13 +9,14 @@ import com.chillsam.courmy.tti.TTIHelper
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-class GetFavoriteItemsUseCase @Inject constructor(
-    private val favoriteRepository: FavoriteRepository,
-    resourceHelper: ResourceHelper,
-    messageHelper: MessageHelper,
-    navigationHelper: NavigationHelper,
-    ttiHelper: TTIHelper,
-) : BaseUseCase(resourceHelper, messageHelper, navigationHelper, ttiHelper) {
-    operator fun invoke(): Flow<List<FavoriteItemVO>> =
-        favoriteRepository.getFavoriteItemsFlow()
-}
+class GetFavoriteItemsUseCase
+    @Inject
+    constructor(
+        private val favoriteRepository: FavoriteRepository,
+        resourceHelper: ResourceHelper,
+        messageHelper: MessageHelper,
+        navigationHelper: NavigationHelper,
+        ttiHelper: TTIHelper,
+    ) : BaseUseCase(resourceHelper, messageHelper, navigationHelper, ttiHelper) {
+        operator fun invoke(): Flow<List<FavoriteItemVO>> = favoriteRepository.getFavoriteItemsFlow()
+    }

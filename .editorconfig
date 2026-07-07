@@ -1,0 +1,29 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+max_line_length = 120
+ktlint_code_style = ktlint_official
+ktlint_standard_no-wildcard-imports = enabled
+# Compose @Composable 함수는 PascalCase 라서 function-naming 예외 처리 (Preview 도 @Composable 이라 함께 커버)
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# 아래 3개는 상속받은 디자인시스템 템플릿의 의도적 컨벤션과 충돌하여 비활성 (나머지 규칙은 모두 유지):
+#  - filename            : 토큰/테마 파일을 역할 기준으로 명명 (DesignTokens.kt, ColorSemantic.kt)
+#  - property-naming     : 디자인 토큰이 _prefixed 비공개 파라미터를 withStringKey 로 노출
+#  - backing-property-naming
+ktlint_standard_filename = disabled
+ktlint_standard_property-naming = disabled
+ktlint_standard_backing-property-naming = disabled
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

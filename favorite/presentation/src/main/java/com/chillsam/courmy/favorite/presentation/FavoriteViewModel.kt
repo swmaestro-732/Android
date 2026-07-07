@@ -14,49 +14,53 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class FavoriteViewModel @Inject constructor(
-    private val getFavoriteItemsUseCase: GetFavoriteItemsUseCase,
-    private val removeFavoriteItemUseCase: RemoveFavoriteItemUseCase,
-    private val navigationHelper: NavigationHelper,
-) : MviViewModel<FavoriteIntent, FavoriteUIState, FavoriteReducerEvent>(FavoriteUIState.empty) {
-
-    init {
-        onIntent(FavoriteIntent.Load)
-    }
-
-    override fun onIntent(intent: FavoriteIntent) {
-        when (intent) {
-            FavoriteIntent.Load -> observeFavorites()
-            is FavoriteIntent.DeleteFavorite -> deleteFavorite(intent.url)
-            is FavoriteIntent.OpenFullScreen -> openFullScreen(intent.url)
-        }
-    }
-
-    override fun reduce(state: FavoriteUIState, event: FavoriteReducerEvent): FavoriteUIState =
-        when (event) {
-            FavoriteReducerEvent.LoadingStarted -> state.copy(isLoading = true)
-            is FavoriteReducerEvent.ItemsLoaded -> FavoriteUIState.fromItems(event.items)
+class FavoriteViewModel
+    @Inject
+    constructor(
+        private val getFavoriteItemsUseCase: GetFavoriteItemsUseCase,
+        private val removeFavoriteItemUseCase: RemoveFavoriteItemUseCase,
+        private val navigationHelper: NavigationHelper,
+    ) : MviViewModel<FavoriteIntent, FavoriteUIState, FavoriteReducerEvent>(FavoriteUIState.empty) {
+        init {
+            onIntent(FavoriteIntent.Load)
         }
 
-    private fun observeFavorites() {
-        dispatch(FavoriteReducerEvent.LoadingStarted)
-        getFavoriteItemsUseCase()
-            .onEach { items -> dispatch(FavoriteReducerEvent.ItemsLoaded(items)) }
-            .launchIn(viewModelScope)
-    }
-
-    private fun deleteFavorite(url: String) {
-        viewModelScope.launch {
-            removeFavoriteItemUseCase(url)
+        override fun onIntent(intent: FavoriteIntent) {
+            when (intent) {
+                FavoriteIntent.Load -> observeFavorites()
+                is FavoriteIntent.DeleteFavorite -> deleteFavorite(intent.url)
+                is FavoriteIntent.OpenFullScreen -> openFullScreen(intent.url)
+            }
         }
-    }
 
-    private fun openFullScreen(url: String) {
-        navigationHelper.navigateTo(
-            FullScreenMediaPage.Args(
-                origin = FullScreenMediaOrigin.FAVORITE,
-                url = url,
+        override fun reduce(
+            state: FavoriteUIState,
+            event: FavoriteReducerEvent,
+        ): FavoriteUIState =
+            when (event) {
+                FavoriteReducerEvent.LoadingStarted -> state.copy(isLoading = true)
+                is FavoriteReducerEvent.ItemsLoaded -> FavoriteUIState.fromItems(event.items)
+            }
+
+        private fun observeFavorites() {
+            dispatch(FavoriteReducerEvent.LoadingStarted)
+            getFavoriteItemsUseCase()
+                .onEach { items -> dispatch(FavoriteReducerEvent.ItemsLoaded(items)) }
+                .launchIn(viewModelScope)
+        }
+
+        private fun deleteFavorite(url: String) {
+            viewModelScope.launch {
+                removeFavoriteItemUseCase(url)
+            }
+        }
+
+        private fun openFullScreen(url: String) {
+            navigationHelper.navigateTo(
+                FullScreenMediaPage.Args(
+                    origin = FullScreenMediaOrigin.FAVORITE,
+                    url = url,
+                ),
             )
-        )
+        }
     }
-}

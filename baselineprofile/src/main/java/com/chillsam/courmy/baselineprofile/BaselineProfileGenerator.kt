@@ -30,51 +30,51 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class BaselineProfileGenerator {
-
     @get:Rule
     val rule = BaselineProfileRule()
 
     @Test
-    fun generate() = rule.collect(
-        packageName = PACKAGE_NAME,
-        includeInStartupProfile = true,
-    ) {
-        // 1. 콜드 스타트 → 인트로가 즉시 SearchPage 로 전환됨. 검색 입력창이 뜰 때까지 대기.
-        //    Compose 의 testTagsAsResourceId 는 testTag 문자열을 "그대로"(패키지 접두어 없이)
-        //    resource-id 로 노출하므로, 단일 인자 By.res(tag) 로 찾아야 한다.
-        //    (2-인자 By.res(pkg, tag) 는 `pkg:id/tag` 패턴이라 Compose testTag 와 매칭되지 않는다.)
-        startActivityAndWait()
-        device.wait(Until.hasObject(By.res(SEARCH_FIELD_TEST_TAG)), UI_TIMEOUT_MS)
+    fun generate() =
+        rule.collect(
+            packageName = PACKAGE_NAME,
+            includeInStartupProfile = true,
+        ) {
+            // 1. 콜드 스타트 → 인트로가 즉시 SearchPage 로 전환됨. 검색 입력창이 뜰 때까지 대기.
+            //    Compose 의 testTagsAsResourceId 는 testTag 문자열을 "그대로"(패키지 접두어 없이)
+            //    resource-id 로 노출하므로, 단일 인자 By.res(tag) 로 찾아야 한다.
+            //    (2-인자 By.res(pkg, tag) 는 `pkg:id/tag` 패턴이라 Compose testTag 와 매칭되지 않는다.)
+            startActivityAndWait()
+            device.wait(Until.hasObject(By.res(SEARCH_FIELD_TEST_TAG)), UI_TIMEOUT_MS)
 
-        // 2. 검색창을 포커스(클릭)한 뒤 "kakao" 입력 → ENTER 로 IME 검색 액션 실행.
-        //    setText 는 접근성 액션으로 onValueChange 를 트리거하고, singleLine 필드라
-        //    pressEnter(ENTER) 가 ImeAction.Search(onSearch) 로 연결된다. 키 이벤트가 입력창에
-        //    전달되도록 먼저 click 으로 포커스를 준다.
-        val searchField = device.findObject(By.res(SEARCH_FIELD_TEST_TAG))
-        searchField.click()
-        device.waitForIdle()
-        searchField.text = SEARCH_KEYWORD
-        device.pressEnter()
+            // 2. 검색창을 포커스(클릭)한 뒤 "kakao" 입력 → ENTER 로 IME 검색 액션 실행.
+            //    setText 는 접근성 액션으로 onValueChange 를 트리거하고, singleLine 필드라
+            //    pressEnter(ENTER) 가 ImeAction.Search(onSearch) 로 연결된다. 키 이벤트가 입력창에
+            //    전달되도록 먼저 click 으로 포커스를 준다.
+            val searchField = device.findObject(By.res(SEARCH_FIELD_TEST_TAG))
+            searchField.click()
+            device.waitForIdle()
+            searchField.text = SEARCH_KEYWORD
+            device.pressEnter()
 
-        // 3. 검색 결과 셀이 컴포지션될 때까지 대기.
-        device.wait(Until.hasObject(By.res(SEARCH_ITEM_TEST_TAG)), SEARCH_TIMEOUT_MS)
+            // 3. 검색 결과 셀이 컴포지션될 때까지 대기.
+            device.wait(Until.hasObject(By.res(SEARCH_ITEM_TEST_TAG)), SEARCH_TIMEOUT_MS)
 
-        // 4. 결과 리스트를 아래로 3회 fling → list/lazy column 코드 경로를 핫 메서드로 확보.
-        device.findObject(By.scrollable(true))?.let { scrollable ->
-            scrollable.setGestureMargin(device.displayWidth / SCROLL_MARGIN_DIVISOR)
-            repeat(SCROLL_COUNT) {
-                scrollable.fling(Direction.DOWN)
-                device.waitForIdle()
+            // 4. 결과 리스트를 아래로 3회 fling → list/lazy column 코드 경로를 핫 메서드로 확보.
+            device.findObject(By.scrollable(true))?.let { scrollable ->
+                scrollable.setGestureMargin(device.displayWidth / SCROLL_MARGIN_DIVISOR)
+                repeat(SCROLL_COUNT) {
+                    scrollable.fling(Direction.DOWN)
+                    device.waitForIdle()
+                }
             }
+
+            // 5. 현재 화면에 보이는 아이템 하나를 클릭 → FullScreenMediaFragment 진입.
+            device.findObjects(By.res(SEARCH_ITEM_TEST_TAG)).firstOrNull()?.click()
+
+            // 6. 상세화면의 이미지 페이저가 보일 때까지(로딩 완료) 대기.
+            //    mediaPager 는 XML 레이아웃의 실제 View id 라 패키지 접두어가 붙는다 → 2-인자 By.res 사용.
+            device.wait(Until.hasObject(By.res(PACKAGE_NAME, MEDIA_PAGER_ID)), DETAIL_TIMEOUT_MS)
         }
-
-        // 5. 현재 화면에 보이는 아이템 하나를 클릭 → FullScreenMediaFragment 진입.
-        device.findObjects(By.res(SEARCH_ITEM_TEST_TAG)).firstOrNull()?.click()
-
-        // 6. 상세화면의 이미지 페이저가 보일 때까지(로딩 완료) 대기.
-        //    mediaPager 는 XML 레이아웃의 실제 View id 라 패키지 접두어가 붙는다 → 2-인자 By.res 사용.
-        device.wait(Until.hasObject(By.res(PACKAGE_NAME, MEDIA_PAGER_ID)), DETAIL_TIMEOUT_MS)
-    }
 
     companion object {
         private const val PACKAGE_NAME = "com.chillsam.courmy"
@@ -83,6 +83,7 @@ class BaselineProfileGenerator {
         private const val SCROLL_MARGIN_DIVISOR = 5
 
         private const val UI_TIMEOUT_MS = 10_000L
+
         // 검색/썸네일 로딩은 네트워크 응답을 기다려야 하므로 여유 있게 잡는다.
         private const val SEARCH_TIMEOUT_MS = 15_000L
         private const val DETAIL_TIMEOUT_MS = 15_000L
@@ -91,6 +92,7 @@ class BaselineProfileGenerator {
         // common:presentation 의 [SEARCH_TEXT_FIELD_TEST_TAG] / [FEED_ITEM_TEST_TAG] 와 같은 값.
         private const val SEARCH_FIELD_TEST_TAG = "search_text_field"
         private const val SEARCH_ITEM_TEST_TAG = "search_item"
+
         // fullScreenMedia 레이아웃의 view id(R.id.mediaPager) 와 같은 값.
         private const val MEDIA_PAGER_ID = "mediaPager"
     }

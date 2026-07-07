@@ -1,0 +1,29 @@
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+      - id: detect-private-key      # 키/시크릿 커밋 방지
+
+  - repo: local
+    hooks:
+      - id: ktlint
+        name: ktlint (format)
+        entry: ktlint --format --relative
+        language: system            # 로컬 ktlint 바이너리 사용 (brew install ktlint)
+        types: [kotlin]
+        require_serial: true
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [--strict, feat, fix, docs, chore, hotfix, release]

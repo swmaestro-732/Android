@@ -8,12 +8,21 @@ plugins {
 
 android {
     namespace = "com.chillsam.courmy.baselineprofile"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk =
+        libs.versions.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
         // Macrobenchmark / Baseline Profile 수집은 API 28+ 단말에서만 동작한다.
-        minSdk = libs.versions.minSdkBaselineProfile.get().toInt()
-        targetSdk = libs.versions.targetSdk.get().toInt()
+        minSdk =
+            libs.versions.minSdkBaselineProfile
+                .get()
+                .toInt()
+        targetSdk =
+            libs.versions.targetSdk
+                .get()
+                .toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

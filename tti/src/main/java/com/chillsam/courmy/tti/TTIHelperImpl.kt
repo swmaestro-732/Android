@@ -14,11 +14,13 @@ class TTIHelperImpl(
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : TTIHelper {
     private var pageTTIMap = mutableMapOf<String, TTIInfo>()
-    private val scope = CoroutineScope(
-        SupervisorJob() + dispatcher + CoroutineExceptionHandler { _, e ->
-            logger.d(tag = "TTI", msg = "Uncaught exception: ${e.message}")
-        }
-    )
+    private val scope =
+        CoroutineScope(
+            SupervisorJob() + dispatcher +
+                CoroutineExceptionHandler { _, e ->
+                    logger.d(tag = "TTI", msg = "Uncaught exception: ${e.message}")
+                },
+        )
 
     companion object {
         const val TTI_TIMEOUT_MILLISECONDS = 20000L
@@ -48,7 +50,10 @@ class TTIHelperImpl(
         }
     }
 
-    override fun startTTITimeline(page: TTIPage, timelineCategory: TimelineCategory) {
+    override fun startTTITimeline(
+        page: TTIPage,
+        timelineCategory: TimelineCategory,
+    ) {
         scope.launch {
             pageTTIMap[page.pageName]?.let {
                 if (it.allTTIRecordedFlag) {
@@ -59,7 +64,10 @@ class TTIHelperImpl(
         }
     }
 
-    override fun endTTITimeline(page: TTIPage, timelineCategory: TimelineCategory) {
+    override fun endTTITimeline(
+        page: TTIPage,
+        timelineCategory: TimelineCategory,
+    ) {
         scope.launch {
             pageTTIMap[page.pageName]?.let {
                 if (it.allTTIRecordedFlag) {
@@ -99,7 +107,11 @@ class TTIHelperImpl(
         }
     }
 
-    override fun addTTIMetaData(page: TTIPage, metadata: TTIMetaData, value: Any?) {
+    override fun addTTIMetaData(
+        page: TTIPage,
+        metadata: TTIMetaData,
+        value: Any?,
+    ) {
         pageTTIMap[page.pageName]?.addTTIMetaData(metadata, value)
     }
 }

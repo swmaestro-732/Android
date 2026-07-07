@@ -7,7 +7,6 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface MediaSearchApiService {
-
     @GET("v2/search/image")
     suspend fun searchImages(
         @Query("query") query: String,

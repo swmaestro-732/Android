@@ -10,7 +10,6 @@ import org.junit.Test
  * 회귀 안전망 역할을 한다.
  */
 class RoutePatternTest {
-
     @Test
     fun `literal template - exact segments match - returns empty params`() {
         val pattern = RoutePattern("/articleList")

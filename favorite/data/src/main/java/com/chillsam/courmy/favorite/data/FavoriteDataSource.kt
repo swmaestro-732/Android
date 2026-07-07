@@ -11,7 +11,8 @@ class FavoriteDataSource(
     private val json: Json,
 ) {
     fun getFavoriteMediaItemsFlow(): Flow<List<FavoriteItemDto>> =
-        favoriteKvStorage.observeString(FavoriteKVStorage.KEY_SAVED_FAVORITE_ITEMS)
+        favoriteKvStorage
+            .observeString(FavoriteKVStorage.KEY_SAVED_FAVORITE_ITEMS)
             .map { raw -> raw.toFavoriteItems() }
 
     suspend fun insertFavoriteMediaItem(item: FavoriteItemDto) {

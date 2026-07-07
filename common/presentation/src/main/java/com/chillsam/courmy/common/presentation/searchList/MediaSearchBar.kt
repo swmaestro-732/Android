@@ -53,19 +53,21 @@ fun MediaSearchBar(
     val keyboardController = LocalSoftwareKeyboardController.current
     // 입력 텍스트도 placeholder(hint) 와 동일한 디자인 토큰(textRegularL = 16sp/Normal)을 사용한다.
     // raw sp 금지 규칙(CLAUDE.md #4)에 따라 TextStyle 을 직접 만들지 않고 typeScale 토큰을 복제한다.
-    val textStyle = DesignSystemThemeImpl.typeScale.textRegularL.copy(
-        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
-    )
+    val textStyle =
+        DesignSystemThemeImpl.typeScale.textRegularL.copy(
+            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
+        )
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(54.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0)
-            .padding(horizontal = 15.dp)
-            // testTag 가 UiAutomator By.res() 로 보이도록 SemanticsTree 단위로 opt-in.
-            .semantics { testTagsAsResourceId = true },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(54.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0)
+                .padding(horizontal = 15.dp)
+                // testTag 가 UiAutomator By.res() 로 보이도록 SemanticsTree 단위로 opt-in.
+                .semantics { testTagsAsResourceId = true },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -78,19 +80,24 @@ fun MediaSearchBar(
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,
-            modifier = Modifier
-                .weight(1f)
-                .testTag(SEARCH_TEXT_FIELD_TEST_TAG),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .testTag(SEARCH_TEXT_FIELD_TEST_TAG),
             singleLine = true,
             textStyle = LocalTextStyle.current.merge(textStyle),
-            cursorBrush = androidx.compose.ui.graphics.SolidColor(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1),
+            cursorBrush =
+                androidx.compose.ui.graphics.SolidColor(
+                    DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
+                ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    keyboardController?.hide()
-                    onSearch(query)
-                },
-            ),
+            keyboardActions =
+                KeyboardActions(
+                    onSearch = {
+                        keyboardController?.hide()
+                        onSearch(query)
+                    },
+                ),
             decorationBox = { innerTextField ->
                 Box(contentAlignment = Alignment.CenterStart) {
                     if (query.isEmpty()) {
@@ -108,11 +115,12 @@ fun MediaSearchBar(
         )
         if (query.isNotEmpty()) {
             Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel2)
-                    .clickable(onClick = onClear),
+                modifier =
+                    Modifier
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel2)
+                        .clickable(onClick = onClear),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(

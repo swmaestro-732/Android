@@ -19,7 +19,10 @@ class HttpResponseException(
     }
 }
 
-enum class HttpResponseStatus(val code: Int, val msg: String) {
+enum class HttpResponseStatus(
+    val code: Int,
+    val msg: String,
+) {
     Ok(200, "Ok"),
     Created(201, "Created"),
     Accepted(202, "Accepted"),
@@ -61,12 +64,8 @@ enum class HttpResponseStatus(val code: Int, val msg: String) {
     ;
 
     companion object {
-        fun create(code: Int): HttpResponseStatus {
-            return values().firstOrNull { it.code == code } ?: Unknown
-        }
+        fun create(code: Int): HttpResponseStatus = values().firstOrNull { it.code == code } ?: Unknown
     }
 
-    override fun toString(): String {
-        return "$code $msg"
-    }
+    override fun toString(): String = "$code $msg"
 }

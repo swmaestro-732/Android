@@ -22,7 +22,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class StartupBenchmarks {
-
     @get:Rule
     val rule = MacrobenchmarkRule()
 
@@ -33,19 +32,20 @@ class StartupBenchmarks {
     fun startupCompilationBaselineProfile() =
         startup(CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require))
 
-    private fun startup(compilationMode: CompilationMode) = rule.measureRepeated(
-        packageName = PACKAGE_NAME,
-        metrics = listOf(StartupTimingMetric()),
-        compilationMode = compilationMode,
-        startupMode = StartupMode.COLD,
-        iterations = ITERATIONS,
-        setupBlock = {
-            pressHome()
-        },
-    ) {
-        startActivityAndWait()
-        device.wait(Until.hasObject(By.pkg(PACKAGE_NAME).depth(0)), DEFAULT_TIMEOUT_MS)
-    }
+    private fun startup(compilationMode: CompilationMode) =
+        rule.measureRepeated(
+            packageName = PACKAGE_NAME,
+            metrics = listOf(StartupTimingMetric()),
+            compilationMode = compilationMode,
+            startupMode = StartupMode.COLD,
+            iterations = ITERATIONS,
+            setupBlock = {
+                pressHome()
+            },
+        ) {
+            startActivityAndWait()
+            device.wait(Until.hasObject(By.pkg(PACKAGE_NAME).depth(0)), DEFAULT_TIMEOUT_MS)
+        }
 
     companion object {
         private const val PACKAGE_NAME = "com.chillsam.courmy"

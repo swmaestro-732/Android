@@ -25,7 +25,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
-
     @Inject
     lateinit var navigationHelper: NavigationHelper
 
@@ -49,25 +48,28 @@ class MainActivity : FragmentActivity() {
         // JankStats 는 DecorView 가 생성된 이후에만 만들 수 있다. setContent 가 DecorView 를
         // 보장하므로 lifecycle observer 안에서 lazy 하게 생성하고, tracking on/off 와 백그라운드
         // flush 도 함께 처리한다. listener 는 main thread 에서 호출됨이 보장된다.
-        lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onResume(owner: LifecycleOwner) {
-                if (jankStats == null) {
-                    jankStats = JankStats.createAndTrack(window) { frameData ->
-                        jankReporter.onFrame(frameData)
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onResume(owner: LifecycleOwner) {
+                    if (jankStats == null) {
+                        jankStats =
+                            JankStats.createAndTrack(window) { frameData ->
+                                jankReporter.onFrame(frameData)
+                            }
                     }
+                    jankStats?.isTrackingEnabled = true
                 }
-                jankStats?.isTrackingEnabled = true
-            }
 
-            override fun onPause(owner: LifecycleOwner) {
-                jankStats?.isTrackingEnabled = false
-            }
+                override fun onPause(owner: LifecycleOwner) {
+                    jankStats?.isTrackingEnabled = false
+                }
 
-            override fun onStop(owner: LifecycleOwner) {
-                // 앱이 백그라운드로 진입할 때 누적된 통계를 손실 없이 flush.
-                jankReporter.onAppBackground()
-            }
-        })
+                override fun onStop(owner: LifecycleOwner) {
+                    // 앱이 백그라운드로 진입할 때 누적된 통계를 손실 없이 flush.
+                    jankReporter.onAppBackground()
+                }
+            },
+        )
 
         enableEdgeToEdge()
         setContent {
@@ -76,7 +78,7 @@ class MainActivity : FragmentActivity() {
                 LocalMessageHelper provides messageHelper,
                 LocalJankReporter provides jankReporter,
                 LocalTTIHelper provides ttiHelper,
-                ) {
+            ) {
                 RootComposable(startStack = startStack)
             }
         }

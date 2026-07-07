@@ -14,7 +14,11 @@ abstract class BaseRemoteDataSource {
         throw HttpResponseException(
             status = HttpResponseStatus.create(response.code()),
             rawCode = response.code(),
-            errorRequestUrl = response.raw().request.url.toString(),
+            errorRequestUrl =
+                response
+                    .raw()
+                    .request.url
+                    .toString(),
             msg = "Http Request Failed (${response.code()}) ${response.message()}, $errorBody",
             cause = errorBody?.let(::Throwable),
         )
@@ -25,15 +29,20 @@ abstract class BaseRemoteDataSource {
         crossinline returnValue: (T) -> R,
     ): R {
         if (response.isSuccessful) {
-            val body = response.body()
-                ?: throw IllegalStateException("Successful response with null body: ${response.raw().request.url}")
+            val body =
+                response.body()
+                    ?: throw IllegalStateException("Successful response with null body: ${response.raw().request.url}")
             return returnValue(body)
         }
         val errorBody = response.errorBody()?.string()
         throw HttpResponseException(
             status = HttpResponseStatus.create(response.code()),
             rawCode = response.code(),
-            errorRequestUrl = response.raw().request.url.toString(),
+            errorRequestUrl =
+                response
+                    .raw()
+                    .request.url
+                    .toString(),
             msg = "Http Request Failed (${response.code()}) ${response.message()}, $errorBody",
             cause = errorBody?.let(::Throwable),
         )

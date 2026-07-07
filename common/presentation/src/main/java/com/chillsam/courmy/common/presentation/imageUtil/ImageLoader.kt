@@ -16,20 +16,20 @@ import coil3.request.crossfade
 fun rememberImageLoader(): ImageLoader {
     val context = LocalPlatformContext.current
     return remember(context) {
-        ImageLoader.Builder(context)
+        ImageLoader
+            .Builder(context)
             .memoryCache {
-                MemoryCache.Builder()
+                MemoryCache
+                    .Builder()
                     .maxSizePercent(context, 0.25)
                     .build()
-            }
-            .components {
+            }.components {
                 if (Build.VERSION.SDK_INT >= 28) {
                     add(AnimatedImageDecoder.Factory())
                 } else {
                     add(GifDecoder.Factory())
                 }
-            }
-            .bitmapConfig(Bitmap.Config.RGB_565)
+            }.bitmapConfig(Bitmap.Config.RGB_565)
             .crossfade(true)
             .build()
     }

@@ -16,7 +16,6 @@ import org.junit.Before
 import org.junit.Test
 
 class RegisterFavoriteItemUseCaseTest {
-
     private lateinit var favoriteRepository: FavoriteRepository
     private lateinit var messageHelper: MessageHelper
     private lateinit var resourceHelper: ResourceHelper
@@ -27,37 +26,40 @@ class RegisterFavoriteItemUseCaseTest {
         favoriteRepository = mockk(relaxed = true)
         messageHelper = mockk(relaxed = true)
         resourceHelper = mockk(relaxed = true)
-        useCase = RegisterFavoriteItemUseCase(
-            favoriteRepository,
-            resourceHelper,
-            messageHelper,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
-        )
+        useCase =
+            RegisterFavoriteItemUseCase(
+                favoriteRepository,
+                resourceHelper,
+                messageHelper,
+                mockk(relaxed = true),
+                mockk(relaxed = true),
+            )
     }
 
     @Test
-    fun `invoke - on success - returns success and does not show message`() = runTest {
-        val item = FavoriteItemVO(type = MediaType.IMAGE, title = "title", urlKey = "url")
-        coEvery { favoriteRepository.createFavoriteItem(item) } returns Unit
+    fun `invoke - on success - returns success and does not show message`() =
+        runTest {
+            val item = FavoriteItemVO(type = MediaType.IMAGE, title = "title", urlKey = "url")
+            coEvery { favoriteRepository.createFavoriteItem(item) } returns Unit
 
-        val result = useCase(item)
+            val result = useCase(item)
 
-        assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { favoriteRepository.createFavoriteItem(item) }
-        verify(exactly = 0) { resourceHelper.getString(any()) }
-    }
+            assertTrue(result.isSuccess)
+            coVerify(exactly = 1) { favoriteRepository.createFavoriteItem(item) }
+            verify(exactly = 0) { resourceHelper.getString(any()) }
+        }
 
     @Test
-    fun `invoke - on repository error - returns failure and shows message`() = runTest {
-        val item = FavoriteItemVO(type = MediaType.IMAGE, title = "title", urlKey = "url")
-        val expected = RuntimeException("create failed")
-        coEvery { favoriteRepository.createFavoriteItem(item) } throws expected
+    fun `invoke - on repository error - returns failure and shows message`() =
+        runTest {
+            val item = FavoriteItemVO(type = MediaType.IMAGE, title = "title", urlKey = "url")
+            val expected = RuntimeException("create failed")
+            coEvery { favoriteRepository.createFavoriteItem(item) } throws expected
 
-        val result = useCase(item)
+            val result = useCase(item)
 
-        assertTrue(result.isFailure)
-        assertEquals(expected, result.exceptionOrNull())
-        verify(exactly = 1) { resourceHelper.getString(StringResource.FAVORITE_REGISTER_FAILED) }
-    }
+            assertTrue(result.isFailure)
+            assertEquals(expected, result.exceptionOrNull())
+            verify(exactly = 1) { resourceHelper.getString(StringResource.FAVORITE_REGISTER_FAILED) }
+        }
 }

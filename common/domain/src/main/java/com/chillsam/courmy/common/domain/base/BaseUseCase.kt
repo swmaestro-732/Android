@@ -12,7 +12,6 @@ open class BaseUseCase(
     protected open val navigationHelper: NavigationHelper,
     protected open val ttiHelper: TTIHelper,
 ) {
-
     fun executeCommonErrorHanding(e: HttpResponseException) {
         when (e.rawCode) {
             401 -> {
@@ -22,7 +21,7 @@ open class BaseUseCase(
                     buttonText = "Move to login",
                     onClickButton = {
 //                        navigationHelper.navigateTo(AppPage.Intro)
-                    }
+                    },
                 )
             }
 
@@ -33,7 +32,7 @@ open class BaseUseCase(
                     buttonText = "Move to back",
                     onClickButton = {
                         navigationHelper.navigateToBack()
-                    }
+                    },
                 )
             }
 

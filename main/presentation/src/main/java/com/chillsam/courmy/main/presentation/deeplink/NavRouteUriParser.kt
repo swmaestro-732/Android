@@ -23,11 +23,13 @@ private const val TAG = "[DeepLink]"
  * 구조적인 path 파라미터를 우선한다. 어떤 라우트와도 매칭되지 않으면 null.
  */
 fun Uri.resolveRoute(): NavRoute? {
-    val segments = pathSegments?.filter { it.isNotEmpty() }?.takeIf { it.isNotEmpty() }
-        ?: return null
-    val query = queryParameterNames
-        .filter { it.isNotEmpty() }
-        .associateWith { (getQueryParameter(it) ?: "") }
+    val segments =
+        pathSegments?.filter { it.isNotEmpty() }?.takeIf { it.isNotEmpty() }
+            ?: return null
+    val query =
+        queryParameterNames
+            .filter { it.isNotEmpty() }
+            .associateWith { (getQueryParameter(it) ?: "") }
     // 순수 매칭 로직은 main/domain 에 있다. 여기서 실제 레지스트리를 주입한다.
     return matchRoute(
         segments = segments,
@@ -52,8 +54,9 @@ fun resolveStartStack(uri: Uri?): List<NavKey> {
         if (uri != null) Log.w(TAG, "No matching route for uri=$uri")
         return listOf(GenericNavKey(IntroPage.PATH))
     }
-    val appRoute = appRouteByPath[route.path]
-        ?: return listOf(GenericNavKey(IntroPage.PATH))
+    val appRoute =
+        appRouteByPath[route.path]
+            ?: return listOf(GenericNavKey(IntroPage.PATH))
     return appRoute.syntheticStack(route.args)
 }
 

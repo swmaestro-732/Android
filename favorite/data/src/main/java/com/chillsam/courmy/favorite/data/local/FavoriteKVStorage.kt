@@ -1,6 +1,7 @@
 package com.chillsam.courmy.favorite.data.local
 
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -9,7 +10,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import androidx.core.content.edit
 
 /**
  * SharedPreferences 기반 Key-Value 저장소.
@@ -27,35 +27,40 @@ class FavoriteKVStorage(
 
     fun getString(key: String): String? = sharedPreferences.getString(key, null)
 
-    fun observeString(key: String): Flow<String?> = callbackFlow {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, changedKey ->
-            if (changedKey == key) {
-                trySend(prefs.getString(key, null))
+    fun observeString(key: String): Flow<String?> =
+        callbackFlow {
+            val listener =
+                SharedPreferences.OnSharedPreferenceChangeListener { prefs, changedKey ->
+                    if (changedKey == key) {
+                        trySend(prefs.getString(key, null))
+                    }
+                }
+            sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
+            trySend(sharedPreferences.getString(key, null))
+            awaitClose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
+        }
+
+    suspend fun insert(item: FavoriteItemDto) =
+        writeMutex.withLock {
+            withContext(Dispatchers.IO) {
+                val current = decodeFavorites()
+                val updated =
+                    buildList(current.size + 1) {
+                        add(item)
+                        current.forEach { if (it.url != item.url) add(it) }
+                    }
+                writeFavorites(updated)
             }
         }
-        sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
-        trySend(sharedPreferences.getString(key, null))
-        awaitClose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
-    }
 
-    suspend fun insert(item: FavoriteItemDto) = writeMutex.withLock {
-        withContext(Dispatchers.IO) {
-            val current = decodeFavorites()
-            val updated = buildList(current.size + 1) {
-                add(item)
-                current.forEach { if (it.url != item.url) add(it) }
+    suspend fun deleteByUrl(url: String) =
+        writeMutex.withLock {
+            withContext(Dispatchers.IO) {
+                val current = decodeFavorites()
+                val updated = current.filterNot { it.url == url }
+                if (updated.size != current.size) writeFavorites(updated)
             }
-            writeFavorites(updated)
         }
-    }
-
-    suspend fun deleteByUrl(url: String) = writeMutex.withLock {
-        withContext(Dispatchers.IO) {
-            val current = decodeFavorites()
-            val updated = current.filterNot { it.url == url }
-            if (updated.size != current.size) writeFavorites(updated)
-        }
-    }
 
     private fun decodeFavorites(): List<FavoriteItemDto> {
         val raw = sharedPreferences.getString(KEY_SAVED_FAVORITE_ITEMS, null) ?: return emptyList()

@@ -36,7 +36,6 @@ interface ReducerEvent
 abstract class MviViewModel<I : MviIntent, S : UiState, E : ReducerEvent>(
     initialState: S,
 ) : ViewModel() {
-
     val uiState: StateFlow<S>
         field = MutableStateFlow<S>(initialState)
 
@@ -45,7 +44,10 @@ abstract class MviViewModel<I : MviIntent, S : UiState, E : ReducerEvent>(
 
     abstract fun onIntent(intent: I)
 
-    protected abstract fun reduce(state: S, event: E): S
+    protected abstract fun reduce(
+        state: S,
+        event: E,
+    ): S
 
     protected fun dispatch(event: E) {
         uiState.update { current -> reduce(current, event) }

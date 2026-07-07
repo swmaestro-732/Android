@@ -8,5 +8,8 @@ interface MediaSearchRepository {
      * 페이지 내부에서만 datetime 최신순으로 정렬되며, 페이지 간 정렬은 하지 않는다.
      * 응답의 meta.is_end 를 합쳐 [MediaSearchResultVO.isEnd] 로 전달한다.
      */
-    suspend fun search(query: String, page: Int): MediaSearchResultVO
+    suspend fun search(
+        query: String,
+        page: Int,
+    ): MediaSearchResultVO
 }

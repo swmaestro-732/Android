@@ -10,7 +10,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 
-class MessageHelperImpl(val context: Context) : MessageHelper {
+class MessageHelperImpl(
+    val context: Context,
+) : MessageHelper {
     private val _effect = Channel<MessageEffect>(Channel.BUFFERED)
     override val effect: Flow<MessageEffect> = _effect.receiveAsFlow()
 
@@ -50,7 +52,7 @@ class MessageHelperImpl(val context: Context) : MessageHelper {
                 cantIgnore = cantIgnore,
                 buttonText = buttonText,
                 onClickButton = onClickButton,
-            )
+            ),
         )
     }
 

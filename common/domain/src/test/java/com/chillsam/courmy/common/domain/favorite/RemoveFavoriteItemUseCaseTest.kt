@@ -14,7 +14,6 @@ import org.junit.Before
 import org.junit.Test
 
 class RemoveFavoriteItemUseCaseTest {
-
     private lateinit var favoriteRepository: FavoriteRepository
     private lateinit var messageHelper: MessageHelper
     private lateinit var resourceHelper: ResourceHelper
@@ -25,37 +24,40 @@ class RemoveFavoriteItemUseCaseTest {
         favoriteRepository = mockk(relaxed = true)
         messageHelper = mockk(relaxed = true)
         resourceHelper = mockk(relaxed = true)
-        useCase = RemoveFavoriteItemUseCase(
-            favoriteRepository,
-            resourceHelper,
-            messageHelper,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
-        )
+        useCase =
+            RemoveFavoriteItemUseCase(
+                favoriteRepository,
+                resourceHelper,
+                messageHelper,
+                mockk(relaxed = true),
+                mockk(relaxed = true),
+            )
     }
 
     @Test
-    fun `invoke - on success - returns success and does not show message`() = runTest {
-        val url = "url"
-        coEvery { favoriteRepository.deleteFavoriteItem(url) } returns Unit
+    fun `invoke - on success - returns success and does not show message`() =
+        runTest {
+            val url = "url"
+            coEvery { favoriteRepository.deleteFavoriteItem(url) } returns Unit
 
-        val result = useCase(url)
+            val result = useCase(url)
 
-        assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { favoriteRepository.deleteFavoriteItem(url) }
-        verify(exactly = 0) { resourceHelper.getString(any()) }
-    }
+            assertTrue(result.isSuccess)
+            coVerify(exactly = 1) { favoriteRepository.deleteFavoriteItem(url) }
+            verify(exactly = 0) { resourceHelper.getString(any()) }
+        }
 
     @Test
-    fun `invoke - on repository error - returns failure and shows message`() = runTest {
-        val url = "url"
-        val expected = RuntimeException("delete failed")
-        coEvery { favoriteRepository.deleteFavoriteItem(url) } throws expected
+    fun `invoke - on repository error - returns failure and shows message`() =
+        runTest {
+            val url = "url"
+            val expected = RuntimeException("delete failed")
+            coEvery { favoriteRepository.deleteFavoriteItem(url) } throws expected
 
-        val result = useCase(url)
+            val result = useCase(url)
 
-        assertTrue(result.isFailure)
-        assertEquals(expected, result.exceptionOrNull())
-        verify(exactly = 1) { resourceHelper.getString(StringResource.FAVORITE_REMOVE_FAILED) }
-    }
+            assertTrue(result.isFailure)
+            assertEquals(expected, result.exceptionOrNull())
+            verify(exactly = 1) { resourceHelper.getString(StringResource.FAVORITE_REMOVE_FAILED) }
+        }
 }

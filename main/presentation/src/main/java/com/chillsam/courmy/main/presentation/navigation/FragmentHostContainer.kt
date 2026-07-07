@@ -69,8 +69,9 @@ fun FragmentHostContainer(
     }
 }
 
-private tailrec fun Context.findFragmentActivity(): FragmentActivity = when (this) {
-    is FragmentActivity -> this
-    is ContextWrapper -> baseContext.findFragmentActivity()
-    else -> error("Hosting a Fragment requires a FragmentActivity context, but was $this")
-}
+private tailrec fun Context.findFragmentActivity(): FragmentActivity =
+    when (this) {
+        is FragmentActivity -> this
+        is ContextWrapper -> baseContext.findFragmentActivity()
+        else -> error("Hosting a Fragment requires a FragmentActivity context, but was $this")
+    }

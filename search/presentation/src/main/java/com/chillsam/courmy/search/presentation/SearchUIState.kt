@@ -2,9 +2,9 @@ package com.chillsam.courmy.search.presentation
 
 import com.chillsam.courmy.common.entity.media.MediaItemVO
 import com.chillsam.courmy.common.entity.media.MediaSearchResultVO
+import com.chillsam.courmy.common.presentation.mvi.UiState
 import com.chillsam.courmy.common.presentation.searchList.MediaItemUiState
 import com.chillsam.courmy.common.presentation.searchList.formatKakaoDateTime
-import com.chillsam.courmy.common.presentation.mvi.UiState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
@@ -23,7 +23,6 @@ data class SearchUIState(
     val favoriteUrls: ImmutableSet<String>,
     val rawMediaItems: ImmutableList<MediaItemVO>,
 ) : UiState {
-
     fun rawItemByUrl(url: String): MediaItemVO? = rawMediaItems.firstOrNull { it.urlKey == url }
 
     /**
@@ -31,7 +30,10 @@ data class SearchUIState(
      * 이미 노출 중인 url 은 LazyColumn key 충돌을 막기 위해 제외한다.
      * 응답의 [MediaSearchResultVO.isEnd] 가 true 거나 빈 페이지면 마지막 페이지로 표시해 추가 로드를 멈춘다.
      */
-    fun appendPage(result: MediaSearchResultVO, page: Int): SearchUIState {
+    fun appendPage(
+        result: MediaSearchResultVO,
+        page: Int,
+    ): SearchUIState {
         val existingUrls = rawMediaItems.mapTo(HashSet(rawMediaItems.size)) { it.urlKey }
         val newItems = result.items.filterNot { it.urlKey in existingUrls }
         return copy(
@@ -44,56 +46,61 @@ data class SearchUIState(
     }
 
     /** 즐겨찾기 url 집합 변경을 노출 중인 아이템들에 접어 반영한다(상태가 분기를 끝내고 Compose 는 반영만). */
-    fun withFavorites(urls: ImmutableSet<String>): SearchUIState = copy(
-        favoriteUrls = urls,
-        searchItemList = searchItemList
-            .map { it.copy(isFavorite = it.contentsUrl in urls) }
-            .toImmutableList(),
-    )
+    fun withFavorites(urls: ImmutableSet<String>): SearchUIState =
+        copy(
+            favoriteUrls = urls,
+            searchItemList =
+                searchItemList
+                    .map { it.copy(isFavorite = it.contentsUrl in urls) }
+                    .toImmutableList(),
+        )
 
     companion object {
         const val FIRST_PAGE = 1
 
-        val empty = SearchUIState(
-            query = "",
-            isLoading = false,
-            isLoadingMore = false,
-            isLastPage = false,
-            hasSearched = false,
-            currentPage = FIRST_PAGE,
-            searchItemList = persistentListOf(),
-            favoriteUrls = persistentSetOf(),
-            rawMediaItems = persistentListOf(),
-        )
+        val empty =
+            SearchUIState(
+                query = "",
+                isLoading = false,
+                isLoadingMore = false,
+                isLastPage = false,
+                hasSearched = false,
+                currentPage = FIRST_PAGE,
+                searchItemList = persistentListOf(),
+                favoriteUrls = persistentSetOf(),
+                rawMediaItems = persistentListOf(),
+            )
 
         fun fromSearchResult(
             query: String,
             result: MediaSearchResultVO,
             favoriteUrls: ImmutableSet<String>,
-        ): SearchUIState = SearchUIState(
-            query = query,
-            isLoading = false,
-            isLoadingMore = false,
-            isLastPage = result.isEnd || result.items.isEmpty(),
-            hasSearched = true,
-            currentPage = FIRST_PAGE,
-            searchItemList = result.items.map { it.toUiState(favoriteUrls) }.toImmutableList(),
-            favoriteUrls = favoriteUrls,
-            rawMediaItems = result.items.toImmutableList(),
-        )
+        ): SearchUIState =
+            SearchUIState(
+                query = query,
+                isLoading = false,
+                isLoadingMore = false,
+                isLastPage = result.isEnd || result.items.isEmpty(),
+                hasSearched = true,
+                currentPage = FIRST_PAGE,
+                searchItemList = result.items.map { it.toUiState(favoriteUrls) }.toImmutableList(),
+                favoriteUrls = favoriteUrls,
+                rawMediaItems = result.items.toImmutableList(),
+            )
     }
 }
 
-private fun MediaItemVO.toUiState(favoriteUrls: Set<String>): MediaItemUiState = MediaItemUiState(
-    mediaType = type,
-    title = title,
-    thumbnailUrl = thumbnailImageUrl,
-    contentsUrl = urlKey,
-    descriptionText = pageLinkUrl,
-    collection = collection,
-    dateTimeText = formatKakaoDateTime(dateTime),
-    page = page,
-    isFavorite = urlKey in favoriteUrls,
-)
+private fun MediaItemVO.toUiState(favoriteUrls: Set<String>): MediaItemUiState =
+    MediaItemUiState(
+        mediaType = type,
+        title = title,
+        thumbnailUrl = thumbnailImageUrl,
+        contentsUrl = urlKey,
+        descriptionText = pageLinkUrl,
+        collection = collection,
+        dateTimeText = formatKakaoDateTime(dateTime),
+        page = page,
+        isFavorite = urlKey in favoriteUrls,
+    )
 
 internal fun Set<String>.asImmutable(): ImmutableSet<String> = toImmutableSet()

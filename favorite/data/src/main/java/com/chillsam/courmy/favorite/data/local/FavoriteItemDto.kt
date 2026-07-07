@@ -16,20 +16,22 @@ data class FavoriteItemDto(
     val dateTime: String?,
 )
 
-fun FavoriteItemDto.toVO(): FavoriteItemVO = FavoriteItemVO(
-    type = MediaType.fromRawValue(type),
-    title = title ?: UNKNOWN,
-    urlKey = url.orEmpty(),
-    thumbnailUrl = thumbnailUrl.orEmpty(),
-    contentsImageUrl = contentsImageUrl.orEmpty(),
-    dateTime = dateTime.orEmpty(),
-)
+fun FavoriteItemDto.toVO(): FavoriteItemVO =
+    FavoriteItemVO(
+        type = MediaType.fromRawValue(type),
+        title = title ?: UNKNOWN,
+        urlKey = url.orEmpty(),
+        thumbnailUrl = thumbnailUrl.orEmpty(),
+        contentsImageUrl = contentsImageUrl.orEmpty(),
+        dateTime = dateTime.orEmpty(),
+    )
 
-fun FavoriteItemVO.toDto(): FavoriteItemDto = FavoriteItemDto(
-    url = urlKey,
-    type = type.rawValue,
-    title = title,
-    thumbnailUrl = thumbnailUrl,
-    contentsImageUrl = contentsImageUrl,
-    dateTime = dateTime,
-)
+fun FavoriteItemVO.toDto(): FavoriteItemDto =
+    FavoriteItemDto(
+        url = urlKey,
+        type = type.rawValue,
+        title = title,
+        thumbnailUrl = thumbnailUrl,
+        contentsImageUrl = contentsImageUrl,
+        dateTime = dateTime,
+    )
