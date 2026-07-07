@@ -1,0 +1,169 @@
+name: CI
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 안드로이드(프론트) CI — PR 마다 포맷 / 빌드·테스트 / 보안검사를 돌리고
+# 결과를 단일 코멘트로 통합한다. 백엔드(SCRUM-87) CI를 모바일용으로 이식:
+#   제거: Docker 빌드·이미지 CVE 스캔, Postgres 서비스, CD
+#   추가: Android Lint, Kover 커버리지
+#
+# ⏭️  의존성 CVE 스캔(Dependabot)은 이번 범위에서 제외(후순위). 나중에 추가하려면:
+#     1) 저장소 Settings → Code security → "Dependabot alerts" 활성화
+#     2) .github/workflows/dependency-submission.yml 생성 후 아래 액션 추가:
+#          - uses: gradle/actions/dependency-submission@v4   # Gradle 의존성 그래프 제출(lockfile 불필요)
+#        → Security 탭에 CVE 알림 + 취약 의존성 자동 업데이트 PR 생성.
+#     ※ PR 을 "차단"하는 하드 게이트가 필요해지면 OSV-Scanner + gradle.lockfile 로 승격.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
+
+# 최소 권한 (report 코멘트 작성을 위해 pull-requests: write 만 부여)
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  KTLINT_VERSION: "1.8.0"
+
+# ※ 액션 SHA 핀은 Infra 정책과 일관성 위해 별도 결정(백엔드 b705ec8 와 동일하게 보류).
+
+jobs:
+  # 1) 포맷 검사 — pre-commit 과 동일한 .editorconfig 룰을 그대로 사용
+  ktlint:
+    name: ktlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Download ktlint ${{ env.KTLINT_VERSION }}
+        run: |
+          curl -fsSL "https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint" -o ktlint
+          chmod +x ktlint
+      - name: Run ktlint
+        # .editorconfig(리포 루트)를 자동으로 읽어 로컬 pre-commit 과 100% 동일 룰 적용
+        run: ./ktlint --relative
+
+  # 2) 빌드 + 유닛테스트 + Android Lint + Kover 커버리지 (DB/서비스 컨테이너 불필요)
+  build-and-test:
+    name: build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      # compileSdk 37 platform 이 러너에 없으면 AGP 가 자동 다운로드한다.
+      # 만약 SDK 관련 실패 시: android-actions/setup-android@v3 스텝 추가.
+      - name: Build + Unit test + Android Lint + Kover
+        run: ./gradlew assembleDebug testDebugUnitTest lintDebug koverXmlReport --stacktrace
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-test-reports
+          path: |
+            **/build/reports/tests/**
+            **/build/reports/lint-results-*.*
+            **/build/reports/kover/**
+          if-no-files-found: ignore
+
+  # 3) 코드 보안 — Trivy fs(시크릿·미스컨피그) + Semgrep SAST. 정책: "시크릿만 차단".
+  code-security:
+    name: code security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Trivy — secret (차단)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: secret
+          exit-code: "1" # 시크릿 발견 시 CI 실패
+          format: table
+      - name: Trivy — misconfig (리포트만)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: misconfig
+          exit-code: "0" # 차단하지 않고 로그로만 노출
+          format: table
+      - name: Semgrep SAST (리포트만, 파일:라인)
+        run: |
+          pip install --quiet semgrep
+          rc=0
+          semgrep scan --config auto --json --output semgrep.json || rc=$?
+          # rc>=2 = 스캔 자체 실패(거짓 음성 위험) → 경고. rc=1(발견)은 차단하지 않음.
+          if [ "$rc" -ge 2 ]; then
+            echo "::warning::Semgrep 실행 실패(rc=$rc) — 결과 신뢰 불가"
+          fi
+          semgrep scan --config auto --error=false || true
+      - name: Redact findings (아티팩트에 원문 노출 방지)
+        if: always()
+        run: |
+          if [ -f semgrep.json ]; then
+            python3 - <<'PY'
+          import json
+          d = json.load(open("semgrep.json"))
+          for r in d.get("results", []):
+              r.get("extra", {}).pop("lines", None)   # 매칭 원문 제거
+          json.dump(d, open("semgrep-redacted.json", "w"))
+          PY
+          fi
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: semgrep-redacted.json
+          if-no-files-found: ignore
+
+  # 4) 결과 통합 — 단일 <!-- ci-report --> PR 코멘트로 upsert (실패해도 항상 실행)
+  ci-report:
+    name: CI report
+    runs-on: ubuntu-latest
+    needs: [ktlint, build-and-test, code-security]
+    if: always()
+    steps:
+      - name: Compose report
+        id: report
+        run: |
+          status() {
+            case "$1" in
+              success) echo "✅ Pass" ;;
+              failure) echo "❌ Fail" ;;
+              skipped) echo "⏭️ Skip" ;;
+              *) echo "⚠️ $1" ;;
+            esac
+          }
+          {
+            echo "body<<REPORT_EOF"
+            echo "<!-- ci-report -->"
+            echo "## 🤖 CI 결과"
+            echo ""
+            echo "| 잡 | 결과 |"
+            echo "|---|---|"
+            echo "| ktlint | $(status '${{ needs.ktlint.result }}') |"
+            echo "| build & test (+Kover) | $(status '${{ needs.build-and-test.result }}') |"
+            echo "| code security | $(status '${{ needs.code-security.result }}') |"
+            echo ""
+            echo "상세 로그·리포트 아티팩트: [워크플로 실행](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo "REPORT_EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: Upsert PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: ci-report
+          message: ${{ steps.report.outputs.body }}
