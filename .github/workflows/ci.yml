@@ -87,14 +87,14 @@ jobs:
         with:
           persist-credentials: false
       - name: Trivy — secret (차단)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scanners: secret
           exit-code: "1" # 시크릿 발견 시 CI 실패
           format: table
       - name: Trivy — misconfig (리포트만)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scanners: misconfig
@@ -102,14 +102,13 @@ jobs:
           format: table
       - name: Semgrep SAST (리포트만, 파일:라인)
         run: |
-          pip install --quiet semgrep
+          pipx install semgrep   # ubuntu-latest PEP668 회피 (pip install 대신 pipx)
           rc=0
           semgrep scan --config auto --json --output semgrep.json || rc=$?
           # rc>=2 = 스캔 자체 실패(거짓 음성 위험) → 경고. rc=1(발견)은 차단하지 않음.
           if [ "$rc" -ge 2 ]; then
             echo "::warning::Semgrep 실행 실패(rc=$rc) — 결과 신뢰 불가"
           fi
-          semgrep scan --config auto --error=false || true
       - name: Redact findings (아티팩트에 원문 노출 방지)
         if: always()
         run: |
