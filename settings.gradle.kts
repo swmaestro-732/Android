@@ -22,5 +22,39 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "courmy"
+rootProject.name = "Courmy"
 include(":app")
+
+include(":common:presentation")
+include(":common:domain")
+include(":common:data")
+include(":common:entity")
+
+include(":main:presentation")
+include(":main:domain")
+include(":main:data")
+include(":main:entity")
+
+include(":intro:presentation")
+include(":intro:domain")
+include(":intro:data")
+include(":intro:entity")
+
+include(":search:presentation")
+include(":search:domain")
+include(":search:data")
+include(":search:entity")
+
+include(":favorite:presentation")
+include(":favorite:domain")
+include(":favorite:data")
+include(":favorite:entity")
+
+include(":fullScreenMedia:presentation")
+include(":fullScreenMedia:domain")
+include(":fullScreenMedia:data")
+include(":fullScreenMedia:entity")
+
+include(":tti")
+
+include(":baselineprofile")

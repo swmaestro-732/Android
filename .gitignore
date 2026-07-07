@@ -1,16 +1,48 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local configuration (SDK path, API keys, etc.)
 local.properties
-.kotlin
+
+# Log files
+*.log
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+
+# Kotlin
+.kotlin/
+
+# Native builds
+.externalNativeBuild/
+.cxx/
+
+# Captures & profiling
+captures/
+
+# Keystores & signing
+*.jks
+*.keystore
+keystore.properties
+
+# Google services (uncomment if used)
+# google-services.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude Code (solo project — kept local, not uploaded)
+.claude/
+.mcp.json
+CLAUDE.md
+docs/DESIGN_TO_CODE_GUIDE.md
