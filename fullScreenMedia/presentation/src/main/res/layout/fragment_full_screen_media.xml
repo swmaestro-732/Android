@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 호스트가 FragmentActivity(비-AppCompat)라 <ImageView> 가 AppCompatImageView 로 치환되지 않는다.
+     따라서 app:tint 는 적용되지 않고 android:tint(minSdk 24 네이티브)가 올바른 선택 → UseAppTint 억제. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white">
+    android:background="@android:color/white"
+    tools:ignore="UseAppTint">
 
     <!-- 스와이프되는 영역은 이미지 페이저뿐이다. 아래 오버레이들은 페이저 위에 고정된다. -->
     <androidx.viewpager2.widget.ViewPager2
