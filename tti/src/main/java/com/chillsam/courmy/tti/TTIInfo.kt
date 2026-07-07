@@ -16,28 +16,32 @@ class TTIInfo(
     fun recordStartTime(ttiTime: TimelineCategory) {
         ttiTimelineMap[ttiTime.categoryName]?.let { timeline ->
             if (timeline.startTime == 0L) {
-                ttiTimelineMap[ttiTime.categoryName] = timeline.copy(
-                    startTime = currentEpochTimeInNano(),
-                )
+                ttiTimelineMap[ttiTime.categoryName] =
+                    timeline.copy(
+                        startTime = currentEpochTimeInNano(),
+                    )
             }
         } ?: run {
-            ttiTimelineMap[ttiTime.categoryName] = Timeline(
-                startTime = currentEpochTimeInNano(),
-            )
+            ttiTimelineMap[ttiTime.categoryName] =
+                Timeline(
+                    startTime = currentEpochTimeInNano(),
+                )
         }
     }
 
     fun recordEndTime(ttiTime: TimelineCategory) {
         ttiTimelineMap[ttiTime.categoryName]?.let { timeline ->
             if (timeline.endTime == 0L) {
-                ttiTimelineMap[ttiTime.categoryName] = timeline.copy(
-                    endTime = currentEpochTimeInNano(),
-                )
+                ttiTimelineMap[ttiTime.categoryName] =
+                    timeline.copy(
+                        endTime = currentEpochTimeInNano(),
+                    )
             }
         } ?: run {
-            ttiTimelineMap[ttiTime.categoryName] = Timeline(
-                endTime = currentEpochTimeInNano(),
-            )
+            ttiTimelineMap[ttiTime.categoryName] =
+                Timeline(
+                    endTime = currentEpochTimeInNano(),
+                )
         }
     }
 
@@ -80,13 +84,9 @@ class TTIInfo(
         }
     }
 
-    fun isCanRecordTimeout(): Boolean {
-        return timeoutFlag && allTTIRecordedFlag.not()
-    }
+    fun isCanRecordTimeout(): Boolean = timeoutFlag && allTTIRecordedFlag.not()
 
-    fun cantEndTTITracking(): Boolean {
-        return allTTIRecordedFlag || isRecordedLastTimeline().not()
-    }
+    fun cantEndTTITracking(): Boolean = allTTIRecordedFlag || isRecordedLastTimeline().not()
 
     private fun isRecordedLastTimeline(): Boolean {
         val lastTimelineForPage = page.timelines.last().categoryName
@@ -96,7 +96,10 @@ class TTIInfo(
         return false
     }
 
-    fun addTTIMetaData(metadata: TTIMetaData, value: Any?) {
+    fun addTTIMetaData(
+        metadata: TTIMetaData,
+        value: Any?,
+    ) {
         additionalMetaData[TTI_PREFIX + metadata.metadataName] = value
     }
 }

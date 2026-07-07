@@ -27,8 +27,8 @@ data class DesignSystemTypeScale internal constructor(
     val textRegularXS: TextStyle @Composable get() = _textRegularXS.textStyle
 
     @Composable
-    fun withStringKey(typeScale: String): TextStyle {
-        return when (typeScale) {
+    fun withStringKey(typeScale: String): TextStyle =
+        when (typeScale) {
             "titleStrongL" -> DesignSystemThemeImpl.typeScale.titleStrongL
             "textStrongL" -> DesignSystemThemeImpl.typeScale.textStrongL
             "textRegularL" -> DesignSystemThemeImpl.typeScale.textRegularL
@@ -38,16 +38,16 @@ data class DesignSystemTypeScale internal constructor(
             "textRegularXS" -> DesignSystemThemeImpl.typeScale.textRegularXS
             else -> DesignSystemThemeImpl.typeScale.textRegularM
         }
-    }
 }
 
 private val ArchiStaticTypeScale.textStyle: TextStyle
-    @Composable get() = TextStyle(
-        fontFamily = fontFamily,
-        fontWeight = fontWeight,
-        textDecoration = textDecoration,
-        fontSize = fontSize.textDp,
-        lineHeight = lineHeight.textDp,
-        letterSpacing = letterSpacing.em,
-        fontFeatureSettings = fontFeatureSettings,
-    )
+    @Composable get() =
+        TextStyle(
+            fontFamily = fontFamily,
+            fontWeight = fontWeight,
+            textDecoration = textDecoration,
+            fontSize = fontSize.textDp,
+            lineHeight = lineHeight.textDp,
+            letterSpacing = letterSpacing.em,
+            fontFeatureSettings = fontFeatureSettings,
+        )

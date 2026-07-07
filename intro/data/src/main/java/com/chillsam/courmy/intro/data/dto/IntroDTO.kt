@@ -8,13 +8,12 @@ import kotlinx.serialization.Serializable
 data class IntroDTO(
     val devTestMsg: String? = null,
     val minAppVersion: String? = null,
-    val recommendAppVersion: String? = null
+    val recommendAppVersion: String? = null,
 ) {
-    fun toVO(): IntroVO {
-        return IntroVO(
-            devTestMsg = devTestMsg  ?: UNKNOWN,
-            minAppVersion = minAppVersion  ?: UNKNOWN,
-            recommendAppVersion = recommendAppVersion  ?: UNKNOWN
+    fun toVO(): IntroVO =
+        IntroVO(
+            devTestMsg = devTestMsg ?: UNKNOWN,
+            minAppVersion = minAppVersion ?: UNKNOWN,
+            recommendAppVersion = recommendAppVersion ?: UNKNOWN,
         )
-    }
 }

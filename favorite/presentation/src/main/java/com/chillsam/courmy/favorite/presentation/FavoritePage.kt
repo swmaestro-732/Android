@@ -27,9 +27,12 @@ private fun FavoritePageContent(
     uiState: FavoriteUIState,
     onIntent: (FavoriteIntent) -> Unit,
 ) {
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1),
+    ) {
         when {
             uiState.isLoading && uiState.favoriteItemList.isEmpty() -> {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))

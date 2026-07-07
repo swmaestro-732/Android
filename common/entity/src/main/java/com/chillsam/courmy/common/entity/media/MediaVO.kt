@@ -47,13 +47,15 @@ data class MediaSearchResultVO(
 )
 
 @Serializable
-enum class MediaType(val rawValue: Int) {
+enum class MediaType(
+    val rawValue: Int,
+) {
     UNKNOWN(0),
     IMAGE(1),
-    VIDEO(3);
+    VIDEO(3),
+    ;
 
     companion object {
-        fun fromRawValue(value: Int?): MediaType =
-            entries.firstOrNull { it.rawValue == value } ?: UNKNOWN
+        fun fromRawValue(value: Int?): MediaType = entries.firstOrNull { it.rawValue == value } ?: UNKNOWN
     }
 }

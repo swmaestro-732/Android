@@ -18,25 +18,27 @@ data class FullScreenMediaUIState(
     val favoriteUrls: ImmutableSet<String>,
 ) : UiState {
     companion object {
-        val empty: FullScreenMediaUIState = FullScreenMediaUIState(
-            isLoading = true,
-            currentIndex = 0,
-            swipeEnabled = false,
-            mediaItems = persistentListOf(),
-            favoriteUrls = persistentSetOf(),
-        )
+        val empty: FullScreenMediaUIState =
+            FullScreenMediaUIState(
+                isLoading = true,
+                currentIndex = 0,
+                swipeEnabled = false,
+                mediaItems = persistentListOf(),
+                favoriteUrls = persistentSetOf(),
+            )
 
         fun ready(
             mediaItems: List<MediaItemVO>,
             initialIndex: Int,
             swipeEnabled: Boolean,
-        ): FullScreenMediaUIState = FullScreenMediaUIState(
-            isLoading = false,
-            currentIndex = initialIndex.coerceIn(0, (mediaItems.size - 1).coerceAtLeast(0)),
-            swipeEnabled = swipeEnabled,
-            mediaItems = mediaItems.toImmutableList(),
-            favoriteUrls = persistentSetOf(),
-        )
+        ): FullScreenMediaUIState =
+            FullScreenMediaUIState(
+                isLoading = false,
+                currentIndex = initialIndex.coerceIn(0, (mediaItems.size - 1).coerceAtLeast(0)),
+                swipeEnabled = swipeEnabled,
+                mediaItems = mediaItems.toImmutableList(),
+                favoriteUrls = persistentSetOf(),
+            )
     }
 }
 

@@ -16,8 +16,12 @@ import kotlinx.coroutines.flow.Flow
  */
 interface NavigationHelper {
     val navigationFlow: Flow<NavSignal>
+
     fun navigateByRoute(route: NavRoute)
+
     fun navigateTo(page: Page)
+
     fun navigateDeepLink(route: NavRoute)
+
     fun navigateToBack()
 }

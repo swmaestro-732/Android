@@ -25,11 +25,12 @@ fun BackArrowButton(
     onClick: () -> Unit = {},
 ) {
     Box(
-        modifier = modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .clickable(onClick = onClick)
-            .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0.copy(alpha = 0.4f)),
+        modifier =
+            modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onClick)
+                .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0.copy(alpha = 0.4f)),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

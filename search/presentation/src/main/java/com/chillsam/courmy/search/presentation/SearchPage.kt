@@ -37,9 +37,10 @@ private fun SearchPageContent(
     onIntent: (SearchIntent) -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1),
     ) {
         MediaSearchBar(
             query = uiState.query,
@@ -63,9 +64,10 @@ private fun SearchPageContent(
                         Image(
                             painter = painterResource(R.drawable.ic_search_24),
                             contentDescription = null,
-                            modifier = Modifier
-                                .width(120.dp)
-                                .align(Alignment.CenterHorizontally),
+                            modifier =
+                                Modifier
+                                    .width(120.dp)
+                                    .align(Alignment.CenterHorizontally),
                         )
                         Spacer(modifier = Modifier.size(8.dp))
                         ArchiText(
@@ -96,8 +98,11 @@ private fun SearchPageContent(
                         onItemClick = { onIntent(SearchIntent.OpenFullScreen(it.contentsUrl)) },
                         onFavoriteClick = { item, isFavorite ->
                             onIntent(
-                                if (isFavorite) SearchIntent.DeleteFavorite(item.contentsUrl)
-                                else SearchIntent.AddFavorite(item.contentsUrl)
+                                if (isFavorite) {
+                                    SearchIntent.DeleteFavorite(item.contentsUrl)
+                                } else {
+                                    SearchIntent.AddFavorite(item.contentsUrl)
+                                },
                             )
                         },
                     )

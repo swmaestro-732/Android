@@ -29,8 +29,9 @@ import javax.inject.Singleton
 object CommonPresentationModule {
     @Provides
     @Singleton
-    fun provideMessageHelper(@ApplicationContext context: Context): MessageHelper =
-        MessageHelperImpl(context)
+    fun provideMessageHelper(
+        @ApplicationContext context: Context,
+    ): MessageHelper = MessageHelperImpl(context)
 
     @Provides
     @Singleton
@@ -38,14 +39,13 @@ object CommonPresentationModule {
 
     @Provides
     @Singleton
-    fun provideResourceHelper(@ApplicationContext context: Context): ResourceHelper =
-        ResourceHelperImpl(context)
+    fun provideResourceHelper(
+        @ApplicationContext context: Context,
+    ): ResourceHelper = ResourceHelperImpl(context)
 
     @Provides
     @Singleton
-    fun provideTTILogger(): TTILogger {
-        return if (BuildConfig.DEBUG) DebugTTILogger() else RemoteTTILogger()
-    }
+    fun provideTTILogger(): TTILogger = if (BuildConfig.DEBUG) DebugTTILogger() else RemoteTTILogger()
 
     @Provides
     @Singleton
@@ -57,13 +57,15 @@ object CommonPresentationModule {
         reporter: TTIReporter,
         logger: TTILogger,
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
-    ): TTIHelper = TTIHelperImpl(
-        reporter = reporter,
-        logger = logger,
-        dispatcher = ioDispatcher,
-    )
+    ): TTIHelper =
+        TTIHelperImpl(
+            reporter = reporter,
+            logger = logger,
+            dispatcher = ioDispatcher,
+        )
 }
 
-val LocalTTIHelper = compositionLocalOf<TTIHelper> {
-    error("LocalTTIHelper is not provided. Wrap with CompositionLocalProvider in MainActivity.")
-}
+val LocalTTIHelper =
+    compositionLocalOf<TTIHelper> {
+        error("LocalTTIHelper is not provided. Wrap with CompositionLocalProvider in MainActivity.")
+    }

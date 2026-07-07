@@ -39,7 +39,6 @@ import com.chillsam.courmy.common.presentation.R as CommonR
  */
 @AndroidEntryPoint
 class FullScreenMediaFragment : Fragment() {
-
     @Inject
     lateinit var ttiHelper: TTIHelper
 
@@ -60,16 +59,17 @@ class FullScreenMediaFragment : Fragment() {
             defaultViewModelCreationExtras.withCreationCallback<FullScreenMediaViewModel.Factory> { factory ->
                 factory.create(args)
             }
-        }
+        },
     )
 
     private lateinit var pagerAdapter: FullScreenMediaPagerAdapter
 
-    private val pageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
-        override fun onPageSelected(position: Int) {
-            viewModel.onIntent(FullScreenMediaIntent.SelectPage(position))
+    private val pageChangeCallback =
+        object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                viewModel.onIntent(FullScreenMediaIntent.SelectPage(position))
+            }
         }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -82,7 +82,10 @@ class FullScreenMediaFragment : Fragment() {
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         setupPager()
         setupOverlay()
@@ -92,12 +95,13 @@ class FullScreenMediaFragment : Fragment() {
     }
 
     private fun setupPager() {
-        pagerAdapter = FullScreenMediaPagerAdapter(onImageLoadStarted = {
-            ttiHelper.startTTITimeline(FullScreenMediaTTIPage, TimelineCategory.IMAGE_LOADED_TIME)
-        }, onImageLoadCompleted = {
-            ttiHelper.endTTITimeline(FullScreenMediaTTIPage, TimelineCategory.IMAGE_LOADED_TIME)
-            ttiHelper.endTTITracking(FullScreenMediaTTIPage)
-        })
+        pagerAdapter =
+            FullScreenMediaPagerAdapter(onImageLoadStarted = {
+                ttiHelper.startTTITimeline(FullScreenMediaTTIPage, TimelineCategory.IMAGE_LOADED_TIME)
+            }, onImageLoadCompleted = {
+                ttiHelper.endTTITimeline(FullScreenMediaTTIPage, TimelineCategory.IMAGE_LOADED_TIME)
+                ttiHelper.endTTITracking(FullScreenMediaTTIPage)
+            })
         binding.mediaPager.apply {
             adapter = pagerAdapter
             offscreenPageLimit = 1
@@ -149,7 +153,10 @@ class FullScreenMediaFragment : Fragment() {
     }
 
     /** 현재 페이지의 타이틀/하트 상태를 오버레이에 반영한다. */
-    private fun bindOverlay(state: FullScreenMediaUIState, position: Int) {
+    private fun bindOverlay(
+        state: FullScreenMediaUIState,
+        position: Int,
+    ) {
         val item = state.mediaItems.getOrNull(position) ?: return
         binding.titleText.text =
             item.title.ifEmpty { getString(CommonR.string.media_default_title) }
@@ -158,11 +165,14 @@ class FullScreenMediaFragment : Fragment() {
                 CommonR.drawable.fill_favorite_24dp
             } else {
                 CommonR.drawable.outlined_favorite_24dp
-            }
+            },
         )
     }
 
-    private fun onFavoriteToggle(item: MediaItemVO, isFavorite: Boolean) {
+    private fun onFavoriteToggle(
+        item: MediaItemVO,
+        isFavorite: Boolean,
+    ) {
         if (isFavorite) {
             playHeartAnimation(CommonR.raw.clear_heart_animated)
             viewModel.onIntent(FullScreenMediaIntent.DeleteFavorite(item.urlKey))
@@ -172,19 +182,23 @@ class FullScreenMediaFragment : Fragment() {
         }
     }
 
-    private fun playHeartAnimation(@RawRes rawRes: Int) {
+    private fun playHeartAnimation(
+        @RawRes rawRes: Int,
+    ) {
         binding.heartAnimation.apply {
             cancelAnimation()
             removeAllAnimatorListeners()
             setAnimation(rawRes)
             progress = 0f
             visibility = View.VISIBLE
-            addAnimatorListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    visibility = View.GONE
-                    removeAnimatorListener(this)
-                }
-            })
+            addAnimatorListener(
+                object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        visibility = View.GONE
+                        removeAnimatorListener(this)
+                    }
+                },
+            )
             playAnimation()
         }
     }

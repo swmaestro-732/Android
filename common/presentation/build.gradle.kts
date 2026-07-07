@@ -9,10 +9,16 @@ plugins {
 
 android {
     namespace = "com.chillsam.courmy.common.presentation"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk =
+        libs.versions.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
+        minSdk =
+            libs.versions.minSdk
+                .get()
+                .toInt()
     }
 
     buildTypes {
@@ -20,7 +26,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -44,9 +50,10 @@ kotlin {
 composeCompiler {
     stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("compose_stability.conf"))
     if (providers.gradleProperty("composecompiler.reports").orNull == "true") {
-        val outDir = rootProject.layout.buildDirectory.dir(
-            "compose_reports/${project.path.replace(":", "_").trim('_')}"
-        )
+        val outDir =
+            rootProject.layout.buildDirectory.dir(
+                "compose_reports/${project.path.replace(":", "_").trim('_')}",
+            )
         reportsDestination.set(outDir)
         metricsDestination.set(outDir)
     }

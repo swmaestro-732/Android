@@ -45,8 +45,7 @@ object CoroutineModule {
     @Provides
     @Singleton
     @IoDispatcher
-    fun provideIoDispatcher(): CoroutineDispatcher =
-        Dispatchers.IO.limitedParallelism(MAX_IO_PARALLELISM)
+    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO.limitedParallelism(MAX_IO_PARALLELISM)
 
     @Provides
     @Singleton
@@ -63,18 +62,20 @@ object CoroutineModule {
     @IoScope
     fun provideIoScope(
         @IoDispatcher dispatcher: CoroutineDispatcher,
-    ): CoroutineScope = CoroutineScope(
-        SupervisorJob() + dispatcher + uncaughtExceptionHandler(TAG_IO_SCOPE)
-    )
+    ): CoroutineScope =
+        CoroutineScope(
+            SupervisorJob() + dispatcher + uncaughtExceptionHandler(TAG_IO_SCOPE),
+        )
 
     @Provides
     @Singleton
     @MainScope
     fun provideMainScope(
         @MainDispatcher dispatcher: CoroutineDispatcher,
-    ): CoroutineScope = CoroutineScope(
-        SupervisorJob() + dispatcher + uncaughtExceptionHandler(TAG_MAIN_SCOPE)
-    )
+    ): CoroutineScope =
+        CoroutineScope(
+            SupervisorJob() + dispatcher + uncaughtExceptionHandler(TAG_MAIN_SCOPE),
+        )
 
     private fun uncaughtExceptionHandler(tag: String): CoroutineExceptionHandler =
         CoroutineExceptionHandler { _, throwable ->

@@ -2,8 +2,8 @@ package com.chillsam.courmy.intro.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chillsam.courmy.common.domain.error.handlingErrorOnUseCase
 import com.chillsam.courmy.common.domain.error.HttpResponseException
+import com.chillsam.courmy.common.domain.error.handlingErrorOnUseCase
 import com.chillsam.courmy.intro.domain.GetIntroUseCase
 import com.chillsam.courmy.intro.domain.IntroErrorType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,23 +11,25 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class IntroViewModel @Inject constructor(
-    private val useCase: GetIntroUseCase,
-) : ViewModel() {
-    init {
-        viewModelScope.launch {
-            useCase().onFailure(::handlingIntroPageError)
+class IntroViewModel
+    @Inject
+    constructor(
+        private val useCase: GetIntroUseCase,
+    ) : ViewModel() {
+        init {
+            viewModelScope.launch {
+                useCase().onFailure(::handlingIntroPageError)
+            }
         }
-    }
 
-    private fun handlingIntroPageError(throwable: Throwable) {
-        val exception = throwable as? HttpResponseException ?: return
-        exception.handlingErrorOnUseCase<IntroErrorType>()?.let { errorType ->
+        private fun handlingIntroPageError(throwable: Throwable) {
+            val exception = throwable as? HttpResponseException ?: return
+            exception.handlingErrorOnUseCase<IntroErrorType>()?.let { errorType ->
 //            when (errorType) {
 //                IntroErrorType.REQUIRED_FORCE_UPDATE -> {
 //
 //                }
 //            }
+            }
         }
     }
-}

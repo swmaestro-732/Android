@@ -1,6 +1,8 @@
 package com.chillsam.courmy.tti
 
-enum class TimelineCategory(val categoryName: String) {
+enum class TimelineCategory(
+    val categoryName: String,
+) {
     TTI_TIME("tti_time"),
     VIEW_CREATION_TIME("view_creation_time"),
     API_REQUEST_READY_TIME("api_request_ready_time"),
@@ -11,7 +13,9 @@ enum class TimelineCategory(val categoryName: String) {
     IMAGE_LOADED_TIME("image_loaded_time"),
 }
 
-enum class TTIMetaData(val metadataName: String) {
+enum class TTIMetaData(
+    val metadataName: String,
+) {
     PAGE_NAME("page_name"),
     IS_BOUNCED("is_bounced"),
     IS_TIMEOUT("is_timeout"),

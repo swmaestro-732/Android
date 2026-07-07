@@ -5,11 +5,27 @@ package com.chillsam.courmy.tti
  * :tti 모듈을 플랫폼/SDK 비의존으로 유지하기 위한 Seam.
  */
 interface TTIReporter {
-    fun startView(key: String, name: String, attributes: Map<String, Any?> = emptyMap())
-    fun stopView(key: String, attributes: Map<String, Any?> = emptyMap())
+    fun startView(
+        key: String,
+        name: String,
+        attributes: Map<String, Any?> = emptyMap(),
+    )
+
+    fun stopView(
+        key: String,
+        attributes: Map<String, Any?> = emptyMap(),
+    )
 }
 
 object NoOpTTIReporter : TTIReporter {
-    override fun startView(key: String, name: String, attributes: Map<String, Any?>) = Unit
-    override fun stopView(key: String, attributes: Map<String, Any?>) = Unit
+    override fun startView(
+        key: String,
+        name: String,
+        attributes: Map<String, Any?>,
+    ) = Unit
+
+    override fun stopView(
+        key: String,
+        attributes: Map<String, Any?>,
+    ) = Unit
 }

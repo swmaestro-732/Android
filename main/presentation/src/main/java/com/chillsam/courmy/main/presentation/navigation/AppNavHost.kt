@@ -43,24 +43,26 @@ fun AppNavHost(
         transitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
         popTransitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
         predictivePopTransitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
-        entryDecorators = listOf(
-            rememberSaveableStateHolderNavEntryDecorator(),
-            rememberViewModelStoreNavEntryDecorator()
-        ),
+        entryDecorators =
+            listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
         // 단일 GenericNavKey 디스패처. 실제 화면 결정은 [appRouteByPath] 가 담당한다.
-        entryProvider = entryProvider {
-            entry<GenericNavKey> { navKey ->
-                val route = appRouteByPath[navKey.path]
-                if (route == null) {
-                    Log.w(TAG, "Unknown path on render: ${navKey.path}")
-                    LocalNavigationHelper.current.navigateTo(SearchPage)
-                    return@entry
+        entryProvider =
+            entryProvider {
+                entry<GenericNavKey> { navKey ->
+                    val route = appRouteByPath[navKey.path]
+                    if (route == null) {
+                        Log.w(TAG, "Unknown path on render: ${navKey.path}")
+                        LocalNavigationHelper.current.navigateTo(SearchPage)
+                        return@entry
+                    }
+                    // 페이지 식별자를 JankStats state 로 등록하고, 백스택 이탈 시 PAGE_EXIT flush.
+                    JankPageEffect(navKey.path)
+                    route.render(navKey.args)
                 }
-                // 페이지 식별자를 JankStats state 로 등록하고, 백스택 이탈 시 PAGE_EXIT flush.
-                JankPageEffect(navKey.path)
-                route.render(navKey.args)
-            }
-        }
+            },
     )
 }
 
@@ -74,7 +76,10 @@ private const val INDEX_NOT_FOUND = -1
  * contentKey 는 키별 1회만 유효하므로, 같은 (path,args) 키가 스택에 둘 이상 존재해선 안 된다.
  * 미등록 path 는 무시 + 경고 로그.
  */
-fun handleNavRoute(route: NavRoute, backStack: NavBackStack<NavKey>) {
+fun handleNavRoute(
+    route: NavRoute,
+    backStack: NavBackStack<NavKey>,
+) {
     if (appRouteByPath[route.path] == null) {
         Log.w(TAG, "Unhandled NavRoute: ${route.path}")
         return
@@ -101,7 +106,10 @@ fun handleNavRoute(route: NavRoute, backStack: NavBackStack<NavKey>) {
  * 예) 스택이 `[Search, Favorite]` 인 상태에서 "/articleList/articlePage/123" deep-link 가 도착하면
  *     `[Search, Favorite, ArticlePage(123)]` 이 되어, 기존 맥락을 유지한 채 대상만 전면에 노출된다.
  */
-fun handleDeepLink(route: NavRoute, backStack: NavBackStack<NavKey>) {
+fun handleDeepLink(
+    route: NavRoute,
+    backStack: NavBackStack<NavKey>,
+) {
     val appRoute = appRouteByPath[route.path]
     if (appRoute == null) {
         Log.w(TAG, "Unhandled deep-link route: ${route.path}")
@@ -113,7 +121,7 @@ fun handleDeepLink(route: NavRoute, backStack: NavBackStack<NavKey>) {
         return
     }
     val target = GenericNavKey.of(route)
-    if (backStack.lastOrNull() == target) return   // 이미 최전면 — no-op.
+    if (backStack.lastOrNull() == target) return // 이미 최전면 — no-op.
     backStack.bringToFront(target)
     Log.d(TAG, "deepLink bringToFront: $target")
 }

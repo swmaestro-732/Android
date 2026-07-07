@@ -11,7 +11,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object MediaSearchDataModule {
-
     @Provides
     @Singleton
     fun provideMediaRepository(searchDataSource: MediaSearchDataSource): MediaSearchRepository =

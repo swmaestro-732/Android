@@ -89,9 +89,14 @@ fun ContentsList(
     onLoadMore: () -> Unit = {},
 ) {
     // 이미 페이지 순서대로 정렬되어 들어오므로, 페이지별로 그룹핑해 경계 구분자를 그린다.
-    val pageGroups = remember(items) {
-        items.groupBy { it.page }.entries.sortedBy { it.key }.map { it.key to it.value }
-    }
+    val pageGroups =
+        remember(items) {
+            items
+                .groupBy { it.page }
+                .entries
+                .sortedBy { it.key }
+                .map { it.key to it.value }
+        }
     val listState = rememberLazyListState()
 
     // 스크롤 구간 동안의 jank 를 별도 버킷으로 누적해 SCROLL_END 시점에 보고한다.
@@ -116,9 +121,10 @@ fun ContentsList(
     LazyColumn(
         state = listState,
         // testTag 가 UiAutomator By.res() 로 보이도록 SemanticsTree 단위로 opt-in.
-        modifier = modifier
-            .fillMaxWidth()
-            .semantics { testTagsAsResourceId = true },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics { testTagsAsResourceId = true },
         contentPadding = PaddingValues(vertical = 8.dp),
     ) {
         pageGroups.forEachIndexed { groupIndex, (page, groupItems) ->
@@ -151,47 +157,55 @@ private fun ContentsListItem(
     val imageLoader = rememberImageLoader()
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onItemClick(item) }
-            .testTag(SEARCH_ITEM_TEST_TAG)
-            .padding(horizontal = 20.dp, vertical = 15.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onItemClick(item) }
+                .testTag(SEARCH_ITEM_TEST_TAG)
+                .padding(horizontal = 20.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .size(THUMBNAIL_SIZE)
-                .border(
-                    width = 1.dp,
-                    color = DesignSystemThemeImpl.designSystemColor.borderDefaultLevel2,
-                    shape = ThumbnailShape,
-                )
-                .clip(ThumbnailShape)
+            modifier =
+                Modifier
+                    .size(THUMBNAIL_SIZE)
+                    .border(
+                        width = 1.dp,
+                        color = DesignSystemThemeImpl.designSystemColor.borderDefaultLevel2,
+                        shape = ThumbnailShape,
+                    ).clip(ThumbnailShape),
         ) {
             AsyncImage(
                 model = item.thumbnailUrl,
                 imageLoader = imageLoader,
                 contentDescription = item.title,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(THUMBNAIL_SIZE)
-                    .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
+                modifier =
+                    Modifier
+                        .size(THUMBNAIL_SIZE)
+                        .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
             )
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
-                    .size(22.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { onFavoriteClick(item, item.isFavorite) },
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(22.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) { onFavoriteClick(item, item.isFavorite) },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painter = painterResource(item.favoriteIconRes),
                     contentDescription = item.title,
-                    tint = if (item.isFavorite) DesignSystemThemeImpl.designSystemColor.contentFavorite else Color.Unspecified,
+                    tint =
+                        if (item.isFavorite) {
+                            DesignSystemThemeImpl.designSystemColor.contentFavorite
+                        } else {
+                            Color.Unspecified
+                        },
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -200,13 +214,14 @@ private fun ContentsListItem(
         Spacer(modifier = Modifier.width(10.dp))
 
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     painter = painterResource(item.mediaTypeIconRes),
@@ -254,9 +269,10 @@ private fun ContentsListItem(
 @Composable
 private fun PageNumberSeparator(page: Int) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         ArchiText(
@@ -271,9 +287,10 @@ private fun PageNumberSeparator(page: Int) {
 @Composable
 private fun ListEndMarker() {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         ArchiText(
@@ -287,9 +304,10 @@ private fun ListEndMarker() {
 @Composable
 private fun LoadMoreIndicator() {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator(
@@ -322,9 +340,10 @@ fun ContentsGrid(
         columns = GridCells.Fixed(2),
         state = gridState,
         // testTag 가 UiAutomator By.res() 로 보이도록 SemanticsTree 단위로 opt-in.
-        modifier = modifier
-            .fillMaxSize()
-            .semantics { testTagsAsResourceId = true },
+        modifier =
+            modifier
+                .fillMaxSize()
+                .semantics { testTagsAsResourceId = true },
         contentPadding = PaddingValues(horizontal = 30.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(15.dp),
         verticalArrangement = Arrangement.spacedBy(40.dp),
@@ -348,22 +367,23 @@ private fun ContentsGridItem(
     val imageLoader = rememberImageLoader()
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onItemClick(item) }
-            .testTag(SEARCH_ITEM_TEST_TAG),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onItemClick(item) }
+                .testTag(SEARCH_ITEM_TEST_TAG),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .border(
-                    width = 1.dp,
-                    color = DesignSystemThemeImpl.designSystemColor.borderDefaultLevel2,
-                    shape = ThumbnailShape,
-                )
-                .clip(ThumbnailShape)
-                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .border(
+                        width = 1.dp,
+                        color = DesignSystemThemeImpl.designSystemColor.borderDefaultLevel2,
+                        shape = ThumbnailShape,
+                    ).clip(ThumbnailShape)
+                    .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
         ) {
             AsyncImage(
                 model = item.thumbnailUrl,
@@ -373,20 +393,26 @@ private fun ContentsGridItem(
                 modifier = Modifier.fillMaxSize(),
             )
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .size(22.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { onFavoriteClick(item, item.isFavorite) },
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(22.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) { onFavoriteClick(item, item.isFavorite) },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painter = painterResource(item.favoriteIconRes),
                     contentDescription = null,
-                    tint = if (item.isFavorite) DesignSystemThemeImpl.designSystemColor.contentFavorite else Color.Unspecified,
+                    tint =
+                        if (item.isFavorite) {
+                            DesignSystemThemeImpl.designSystemColor.contentFavorite
+                        } else {
+                            Color.Unspecified
+                        },
                     modifier = Modifier.size(20.dp),
                 )
             }

@@ -16,13 +16,13 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object FavoriteDataModule {
-
     private const val PREFS_NAME = "courmy_prefs"
 
-    private val sharedPreferenceOption: Json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
+    private val sharedPreferenceOption: Json =
+        Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
 
     @Provides
     @Singleton
@@ -38,7 +38,9 @@ object FavoriteDataModule {
 
     @Provides
     @Singleton
-    fun provideKVLocalStorage(@ApplicationContext context: Context): FavoriteKVStorage =
+    fun provideKVLocalStorage(
+        @ApplicationContext context: Context,
+    ): FavoriteKVStorage =
         FavoriteKVStorage(
             sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
             json = sharedPreferenceOption,

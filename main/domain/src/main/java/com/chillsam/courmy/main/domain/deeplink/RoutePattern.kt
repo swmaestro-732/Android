@@ -13,24 +13,31 @@ package com.chillsam.courmy.main.domain.deeplink
  *
  * Android 비의존 순수 로직 — 호스트(main/presentation)의 deep-link 해석이 본 primitive 를 사용한다.
  */
-class RoutePattern(val template: String) {
-
+class RoutePattern(
+    val template: String,
+) {
     private sealed interface Segment {
-        data class Literal(val value: String) : Segment
-        data class Param(val name: String) : Segment
+        data class Literal(
+            val value: String,
+        ) : Segment
+
+        data class Param(
+            val name: String,
+        ) : Segment
     }
 
-    private val segments: List<Segment> = template
-        .trim('/')
-        .split('/')
-        .filter { it.isNotEmpty() }
-        .map { raw ->
-            if (raw.length >= 2 && raw.first() == '{' && raw.last() == '}') {
-                Segment.Param(raw.substring(1, raw.length - 1))
-            } else {
-                Segment.Literal(raw)
+    private val segments: List<Segment> =
+        template
+            .trim('/')
+            .split('/')
+            .filter { it.isNotEmpty() }
+            .map { raw ->
+                if (raw.length >= 2 && raw.first() == '{' && raw.last() == '}') {
+                    Segment.Param(raw.substring(1, raw.length - 1))
+                } else {
+                    Segment.Literal(raw)
+                }
             }
-        }
 
     /**
      * 동적 구간을 1개 이상 가진 템플릿인지. 전부 리터럴이면 정적 path 이므로

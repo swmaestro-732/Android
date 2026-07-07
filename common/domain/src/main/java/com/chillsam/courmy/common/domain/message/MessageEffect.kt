@@ -1,8 +1,14 @@
 package com.chillsam.courmy.common.domain.message
 
 sealed interface MessageEffect {
-    data class ShowToastMsg(val message: String) : MessageEffect
-    data class ShowSnackBarError(val message: String) : MessageEffect
+    data class ShowToastMsg(
+        val message: String,
+    ) : MessageEffect
+
+    data class ShowSnackBarError(
+        val message: String,
+    ) : MessageEffect
+
     data class ShowOneButtonDialog(
         val titleText: String?,
         val descText: String,

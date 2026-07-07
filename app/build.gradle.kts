@@ -11,13 +11,24 @@ plugins {
 android {
     namespace = "com.chillsam.courmy"
     compileSdk {
-        version = release(libs.versions.compileSdk.get().toInt())
+        version =
+            release(
+                libs.versions.compileSdk
+                    .get()
+                    .toInt(),
+            )
     }
 
     defaultConfig {
         applicationId = "com.chillsam.courmy"
-        minSdk = libs.versions.minSdk.get().toInt()
-        targetSdk = libs.versions.targetSdk.get().toInt()
+        minSdk =
+            libs.versions.minSdk
+                .get()
+                .toInt()
+        targetSdk =
+            libs.versions.targetSdk
+                .get()
+                .toInt()
         versionCode = 1
         versionName = "1.0"
 
@@ -31,7 +42,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
         // Macrobenchmark / Baseline Profile 수집 시 사용되는 빌드 타입.
@@ -66,9 +77,10 @@ kotlin {
 composeCompiler {
     stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("compose_stability.conf"))
     if (providers.gradleProperty("composecompiler.reports").orNull == "true") {
-        val outDir = rootProject.layout.buildDirectory.dir(
-            "compose_reports/${project.path.replace(":", "_").trim('_')}"
-        )
+        val outDir =
+            rootProject.layout.buildDirectory.dir(
+                "compose_reports/${project.path.replace(":", "_").trim('_')}",
+            )
         reportsDestination.set(outDir)
         metricsDestination.set(outDir)
     }

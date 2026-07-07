@@ -60,16 +60,18 @@ fun RootComposable(
         val navigationHelper = LocalNavigationHelper.current
         val messageHelper = LocalMessageHelper.current
 
-        val tabs = listOf(
-            TopNavTab(stringResource(R.string.nav_tab_search), SearchPage),
-            TopNavTab(stringResource(R.string.nav_tab_favorite), FavoritePage),
-        )
+        val tabs =
+            listOf(
+                TopNavTab(stringResource(R.string.nav_tab_search), SearchPage),
+                TopNavTab(stringResource(R.string.nav_tab_favorite), FavoritePage),
+            )
         val currentKey = backStack.lastOrNull() as? GenericNavKey
         val currentRoute = currentKey?.let { appRouteByPath[it.path] }
 
-        val onShowOneButtonDialog = remember<(MessageEffect.ShowOneButtonDialog) -> Unit> {
-            { oneButtonDialogEffect = it }
-        }
+        val onShowOneButtonDialog =
+            remember<(MessageEffect.ShowOneButtonDialog) -> Unit> {
+                { oneButtonDialogEffect = it }
+            }
         MessageEffect(
             messageEffectFlow = messageHelper.effect,
             snackBarHostState = snackBarHostState,
@@ -81,16 +83,17 @@ fun RootComposable(
                 onDismissRequest = {
                     if (!dialog.cantIgnore) oneButtonDialogEffect = null
                 },
-                title = dialog.titleText?.let { titleText ->
-                    {
-                        ArchiText(
-                            text = titleText,
-                            style = DesignSystemThemeImpl.typeScale.titleStrongL,
-                            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
-                            maxLines = Int.MAX_VALUE,
-                        )
-                    }
-                },
+                title =
+                    dialog.titleText?.let { titleText ->
+                        {
+                            ArchiText(
+                                text = titleText,
+                                style = DesignSystemThemeImpl.typeScale.titleStrongL,
+                                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
+                                maxLines = Int.MAX_VALUE,
+                            )
+                        }
+                    },
                 text = {
                     ArchiText(
                         text = dialog.descText,
@@ -104,7 +107,7 @@ fun RootComposable(
                         onClick = {
                             dialog.onClickButton?.invoke()
                             oneButtonDialogEffect = null
-                        }
+                        },
                     ) {
                         ArchiText(
                             text = dialog.buttonText,
@@ -113,17 +116,19 @@ fun RootComposable(
                         )
                     }
                 },
-                properties = DialogProperties(
-                    dismissOnBackPress = !dialog.cantIgnore,
-                    dismissOnClickOutside = !dialog.cantIgnore,
-                ),
+                properties =
+                    DialogProperties(
+                        dismissOnBackPress = !dialog.cantIgnore,
+                        dismissOnClickOutside = !dialog.cantIgnore,
+                    ),
             )
         }
 
         Scaffold(
-            modifier = modifier
-                .fillMaxSize()
-                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1),
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1),
             topBar = {
                 if (currentRoute?.isBottomTab == true) {
                     TopTabBar(
@@ -137,7 +142,7 @@ fun RootComposable(
         ) { innerPadding ->
             AppNavHost(
                 backStack = backStack,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(innerPadding),
             )
         }
     }
@@ -149,46 +154,63 @@ private fun TopTabBar(
     currentPath: String?,
     onTabSelected: (Page) -> Unit,
 ) {
-    val selectedIndex = tabs.indexOfFirst { it.page.toRoute().path == currentPath }
-        .coerceAtLeast(0)
+    val selectedIndex =
+        tabs
+            .indexOfFirst { it.page.toRoute().path == currentPath }
+            .coerceAtLeast(0)
 
     Box(
-        modifier = Modifier
-            .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
-            .statusBarsPadding()
+        modifier =
+            Modifier
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
+                .statusBarsPadding(),
     ) {
         Column(
-            modifier = Modifier
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .padding(horizontal = 16.dp),
             // 커스텀 topBar 라 상태바 inset 을 직접 소비해야 함(기본 TopAppBar 와 달리 자동 적용 X).
             // background 뒤에 적용해 흰 배경은 상태바까지 덮고, 탭 내용만 상태바 아래로 내린다.
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
             ) {
                 tabs.forEachIndexed { index, tab ->
                     val selected = index == selectedIndex
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clickable { onTabSelected(tab.page) },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable { onTabSelected(tab.page) },
                         contentAlignment = Alignment.Center,
                     ) {
                         ArchiText(
                             text = tab.label,
-                            style = if (selected) DesignSystemThemeImpl.typeScale.textStrongL else DesignSystemThemeImpl.typeScale.textRegularL,
-                            color = if (selected) DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1 else DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+                            style =
+                                if (selected) {
+                                    DesignSystemThemeImpl.typeScale.textStrongL
+                                } else {
+                                    DesignSystemThemeImpl.typeScale.textRegularL
+                                },
+                            color =
+                                if (selected) {
+                                    DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1
+                                } else {
+                                    DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
+                                },
                         )
                         if (selected) {
                             Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .fillMaxWidth()
-                                    .height(2.dp)
-                                    .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1),
+                                modifier =
+                                    Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .fillMaxWidth()
+                                        .height(2.dp)
+                                        .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1),
                             )
                         }
                     }
@@ -210,14 +232,22 @@ private fun MessageEffect(
     LaunchedEffect(Unit) {
         messageEffectFlow.collect { effect ->
             when (effect) {
-                is MessageEffect.ShowToastMsg -> Toast.makeText(
-                    appContext,
-                    effect.message,
-                    Toast.LENGTH_LONG
-                ).show()
+                is MessageEffect.ShowToastMsg -> {
+                    Toast
+                        .makeText(
+                            appContext,
+                            effect.message,
+                            Toast.LENGTH_LONG,
+                        ).show()
+                }
 
-                is MessageEffect.ShowSnackBarError -> snackBarHostState.showSnackbar(effect.message)
-                is MessageEffect.ShowOneButtonDialog -> onShowOneButtonDialog(effect)
+                is MessageEffect.ShowSnackBarError -> {
+                    snackBarHostState.showSnackbar(effect.message)
+                }
+
+                is MessageEffect.ShowOneButtonDialog -> {
+                    onShowOneButtonDialog(effect)
+                }
             }
         }
     }

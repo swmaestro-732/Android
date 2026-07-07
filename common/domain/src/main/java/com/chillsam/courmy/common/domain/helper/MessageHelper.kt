@@ -6,13 +6,16 @@ import kotlinx.coroutines.flow.Flow
 
 interface MessageHelper {
     val effect: Flow<MessageEffect>
+
     fun showToast(toastMsg: String)
+
     fun showSnackBar(
         iconType: IconType = IconType.SUCCESS,
         messageText: String,
         callToActionText: String? = null,
         onClickCTA: (() -> Unit)? = null,
     )
+
     fun showSnackBar(
         iconType: IconType = IconType.SUCCESS,
         messageRes: Int,

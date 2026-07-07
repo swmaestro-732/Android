@@ -9,19 +9,21 @@ import com.chillsam.courmy.common.domain.message.IconType
 import com.chillsam.courmy.tti.TTIHelper
 import javax.inject.Inject
 
-class RemoveFavoriteItemUseCase @Inject constructor(
-    private val favoriteRepository: FavoriteRepository,
-    resourceHelper: ResourceHelper,
-    messageHelper: MessageHelper,
-    navigationHelper: NavigationHelper,
-    ttiHelper: TTIHelper,
-) : BaseUseCase(resourceHelper, messageHelper, navigationHelper, ttiHelper) {
-    suspend operator fun invoke(url: String): Result<Unit> =
-        runCatching { favoriteRepository.deleteFavoriteItem(url) }
-            .onFailure {
-                messageHelper.showSnackBar(
-                    iconType = IconType.ERROR,
-                    messageText = resourceHelper.getString(StringResource.FAVORITE_REMOVE_FAILED),
-                )
-            }
-}
+class RemoveFavoriteItemUseCase
+    @Inject
+    constructor(
+        private val favoriteRepository: FavoriteRepository,
+        resourceHelper: ResourceHelper,
+        messageHelper: MessageHelper,
+        navigationHelper: NavigationHelper,
+        ttiHelper: TTIHelper,
+    ) : BaseUseCase(resourceHelper, messageHelper, navigationHelper, ttiHelper) {
+        suspend operator fun invoke(url: String): Result<Unit> =
+            runCatching { favoriteRepository.deleteFavoriteItem(url) }
+                .onFailure {
+                    messageHelper.showSnackBar(
+                        iconType = IconType.ERROR,
+                        messageText = resourceHelper.getString(StringResource.FAVORITE_REMOVE_FAILED),
+                    )
+                }
+    }

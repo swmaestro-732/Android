@@ -15,10 +15,8 @@ import com.chillsam.courmy.fullScreenMedia.presentation.databinding.ItemFullScre
  */
 internal class FullScreenMediaPagerAdapter(
     val onImageLoadStarted: () -> Unit,
-    val onImageLoadCompleted: () -> Unit
-) :
-    RecyclerView.Adapter<FullScreenMediaPagerAdapter.MediaViewHolder>() {
-
+    val onImageLoadCompleted: () -> Unit,
+) : RecyclerView.Adapter<FullScreenMediaPagerAdapter.MediaViewHolder>() {
     private var items: List<MediaItemVO> = emptyList()
 
     fun submit(newItems: List<MediaItemVO>) {
@@ -29,23 +27,31 @@ internal class FullScreenMediaPagerAdapter(
 
     override fun getItemCount(): Int = items.size
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MediaViewHolder {
-        val binding = ItemFullScreenMediaBinding.inflate(
-            LayoutInflater.from(parent.context), parent, false,
-        )
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): MediaViewHolder {
+        val binding =
+            ItemFullScreenMediaBinding.inflate(
+                LayoutInflater.from(parent.context),
+                parent,
+                false,
+            )
         return MediaViewHolder(binding, onImageLoadStarted, onImageLoadCompleted)
     }
 
-    override fun onBindViewHolder(holder: MediaViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: MediaViewHolder,
+        position: Int,
+    ) {
         holder.bind(items[position])
     }
 
     class MediaViewHolder(
         private val binding: ItemFullScreenMediaBinding,
         private val onImageLoadStarted: () -> Unit,
-        private val onImageLoadCompleted: () -> Unit
+        private val onImageLoadCompleted: () -> Unit,
     ) : RecyclerView.ViewHolder(binding.root) {
-
         fun bind(item: MediaItemVO) {
             onImageLoadStarted()
             binding.mediaImage.load(item.contentsImageUrl) {

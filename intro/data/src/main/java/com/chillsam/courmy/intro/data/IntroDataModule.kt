@@ -11,19 +11,15 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object IntroDataModule {
+    @Provides
+    @Singleton
+    fun provideIntroRepository(dataSource: IntroDataSource): IntroRepository = IntroRepositoryImpl(dataSource)
 
     @Provides
     @Singleton
-    fun provideIntroRepository(dataSource: IntroDataSource): IntroRepository =
-        IntroRepositoryImpl(dataSource)
+    fun provideIntroDataSource(apiService: IntroApiService): IntroDataSource = IntroDataSource(apiService)
 
     @Provides
     @Singleton
-    fun provideIntroDataSource(apiService: IntroApiService): IntroDataSource =
-        IntroDataSource(apiService)
-
-    @Provides
-    @Singleton
-    fun provideIntroApiService(retrofit: Retrofit): IntroApiService =
-        retrofit.create(IntroApiService::class.java)
+    fun provideIntroApiService(retrofit: Retrofit): IntroApiService = retrofit.create(IntroApiService::class.java)
 }

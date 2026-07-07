@@ -7,13 +7,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
-private fun Int.textDp(density: Density): TextUnit = with(density) {
-    this@textDp.dp.toSp()
-}
+private fun Int.textDp(density: Density): TextUnit =
+    with(density) {
+        this@textDp.dp.toSp()
+    }
 
-private fun Float.textDp(density: Density): TextUnit = with(density) {
-    this@textDp.dp.toSp()
-}
+private fun Float.textDp(density: Density): TextUnit =
+    with(density) {
+        this@textDp.dp.toSp()
+    }
 
 internal val Int.textDp: TextUnit
     @Composable get() = this.textDp(density = LocalDensity.current)

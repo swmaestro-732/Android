@@ -12,33 +12,35 @@ import org.junit.Before
 import org.junit.Test
 
 class GetFavoriteItemsUseCaseTest {
-
     private lateinit var favoriteRepository: FavoriteRepository
     private lateinit var useCase: GetFavoriteItemsUseCase
 
     @Before
     fun setUp() {
         favoriteRepository = mockk(relaxed = true)
-        useCase = GetFavoriteItemsUseCase(
-            favoriteRepository,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
-            mockk(relaxed = true),
-            mockk(relaxed = true),
-        )
+        useCase =
+            GetFavoriteItemsUseCase(
+                favoriteRepository,
+                mockk(relaxed = true),
+                mockk(relaxed = true),
+                mockk(relaxed = true),
+                mockk(relaxed = true),
+            )
     }
 
     @Test
-    fun `invoke - emits the list from repository`() = runTest {
-        val items = listOf(
-            FavoriteItemVO(type = MediaType.IMAGE, title = "title1", urlKey = "url1"),
-            FavoriteItemVO(type = MediaType.VIDEO, title = "title2", urlKey = "url2"),
-        )
-        coEvery { favoriteRepository.getFavoriteItemsFlow() } returns flowOf(items)
+    fun `invoke - emits the list from repository`() =
+        runTest {
+            val items =
+                listOf(
+                    FavoriteItemVO(type = MediaType.IMAGE, title = "title1", urlKey = "url1"),
+                    FavoriteItemVO(type = MediaType.VIDEO, title = "title2", urlKey = "url2"),
+                )
+            coEvery { favoriteRepository.getFavoriteItemsFlow() } returns flowOf(items)
 
-        val result = useCase().toList()
+            val result = useCase().toList()
 
-        assertEquals(1, result.size)
-        assertEquals(items, result.first())
-    }
+            assertEquals(1, result.size)
+            assertEquals(items, result.first())
+        }
 }

@@ -21,8 +21,8 @@ data class DesignSystemSemanticColors(
     val contentFavorite: Color,
 ) {
     @Composable
-    fun withStringKey(key: String): Color {
-        return when (key) {
+    fun withStringKey(key: String): Color =
+        when (key) {
             "bgDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0
             "bgDefaultLevel1" -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
             "bgDefaultLevel2" -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel2
@@ -37,5 +37,4 @@ data class DesignSystemSemanticColors(
             "contentFavorite" -> DesignSystemThemeImpl.designSystemColor.contentFavorite
             else -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
         }
-    }
 }

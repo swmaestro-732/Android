@@ -35,31 +35,35 @@ object FullScreenMediaPage {
         val type: MediaType = MediaType.UNKNOWN,
     ) : Page {
         override fun toRoute(): NavRoute {
-            val argsMap = buildMap {
-                put(KEY_ORIGIN, origin.name)
-                if (url.isNotEmpty()) put(KEY_URL, url)
-                if (title.isNotEmpty()) put(KEY_TITLE, title)
-                if (thumbnailImageUrl.isNotEmpty()) put(KEY_THUMBNAIL_IMAGE_URL, thumbnailImageUrl)
-                if (contentsImageUrl.isNotEmpty()) put(KEY_CONTENTS_IMAGE_URL, contentsImageUrl)
-                if (type != MediaType.UNKNOWN) put(KEY_TYPE, type.name)
-            }
+            val argsMap =
+                buildMap {
+                    put(KEY_ORIGIN, origin.name)
+                    if (url.isNotEmpty()) put(KEY_URL, url)
+                    if (title.isNotEmpty()) put(KEY_TITLE, title)
+                    if (thumbnailImageUrl.isNotEmpty()) put(KEY_THUMBNAIL_IMAGE_URL, thumbnailImageUrl)
+                    if (contentsImageUrl.isNotEmpty()) put(KEY_CONTENTS_IMAGE_URL, contentsImageUrl)
+                    if (type != MediaType.UNKNOWN) put(KEY_TYPE, type.name)
+                }
             return NavRoute(PATH, argsMap)
         }
 
         companion object {
             /** NavRoute.args 로부터 typed Args 복원. 알 수 없는 값은 안전한 기본값으로 대체한다. */
-            fun from(args: Map<String, String>): Args = Args(
-                origin = args[KEY_ORIGIN]
-                    ?.let { name -> runCatching { FullScreenMediaOrigin.valueOf(name) }.getOrNull() }
-                    ?: FullScreenMediaOrigin.DEEP_LINK,
-                url = args[KEY_URL].orEmpty(),
-                title = args[KEY_TITLE].orEmpty(),
-                thumbnailImageUrl = args[KEY_THUMBNAIL_IMAGE_URL].orEmpty(),
-                contentsImageUrl = args[KEY_CONTENTS_IMAGE_URL].orEmpty(),
-                type = args[KEY_TYPE]
-                    ?.let { name -> runCatching { MediaType.valueOf(name) }.getOrNull() }
-                    ?: MediaType.UNKNOWN,
-            )
+            fun from(args: Map<String, String>): Args =
+                Args(
+                    origin =
+                        args[KEY_ORIGIN]
+                            ?.let { name -> runCatching { FullScreenMediaOrigin.valueOf(name) }.getOrNull() }
+                            ?: FullScreenMediaOrigin.DEEP_LINK,
+                    url = args[KEY_URL].orEmpty(),
+                    title = args[KEY_TITLE].orEmpty(),
+                    thumbnailImageUrl = args[KEY_THUMBNAIL_IMAGE_URL].orEmpty(),
+                    contentsImageUrl = args[KEY_CONTENTS_IMAGE_URL].orEmpty(),
+                    type =
+                        args[KEY_TYPE]
+                            ?.let { name -> runCatching { MediaType.valueOf(name) }.getOrNull() }
+                            ?: MediaType.UNKNOWN,
+                )
         }
     }
 }

@@ -12,7 +12,11 @@ sealed interface FullScreenMediaReducerEvent : ReducerEvent {
 
     data object EmptyMediaResolved : FullScreenMediaReducerEvent
 
-    data class FavoritesChanged(val urls: Set<String>) : FullScreenMediaReducerEvent
+    data class FavoritesChanged(
+        val urls: Set<String>,
+    ) : FullScreenMediaReducerEvent
 
-    data class PageSelected(val index: Int) : FullScreenMediaReducerEvent
+    data class PageSelected(
+        val index: Int,
+    ) : FullScreenMediaReducerEvent
 }
