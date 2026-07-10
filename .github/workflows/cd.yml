@@ -1,0 +1,62 @@
+name: CD
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Android CD — 1단계: 수동 트리거로 서명된 release 아티팩트(AAB/APK)를 빌드해 업로드.
+# 실제 배포(Firebase App Distribution / Play)는 후속 단계에서 Fastlane lane 추가.
+#
+# 🔑 실서명하려면 저장소 Settings → Secrets 에 등록:
+#     KEYSTORE_BASE64   : `base64 -i release.jks` 결과
+#     KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD
+#   secret 이 없으면 app/build.gradle.kts 가 debug 서명으로 폴백(빌드는 성공).
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-artifact:
+    name: build release artifact
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      # keystore secret 이 있을 때만 복원 → release 서명. 없으면 debug 폴백.
+      - name: Restore keystore
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+      - name: Build release artifact (Fastlane)
+        env:
+          KEYSTORE_FILE: ${{ env.HAS_KEYSTORE == 'true' && format('{0}/release.jks', runner.temp) || '' }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: bundle exec fastlane android build
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

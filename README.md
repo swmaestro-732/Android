@@ -131,6 +131,17 @@ ktlint --relative        # 포맷 검사 (.editorconfig 기준)
 | build & test | 빌드 · 유닛테스트 · Android Lint · Kover |
 | code security | Gitleaks 시크릿 스캔(히스토리 포함, 발견 시 차단) |
 
+**CD** (GitHub Actions + Fastlane) — 서명 release 아티팩트 빌드부터 단계적으로 배포를 자동화합니다.
+
+| 단계 | 내용 | 트리거 | 상태 |
+|---|---|---|---|
+| 1. 아티팩트 빌드 | 서명 release AAB/APK 빌드·업로드 | 수동(`workflow_dispatch`) | ✅ 도입 |
+| 2. QA 배포 | Firebase App Distribution | develop 자동 | MVP 이후 |
+| 3. 스토어 배포 | Google Play | release/tag | 출시 이후 |
+| 4. 릴리스 운영 | 버전 자동화 · Sentry | tag/main | 이후 |
+
+> 서명은 `KEYSTORE_*` secret 등록 시 실서명, 없으면 debug 서명 폴백.
+
 - **pre-commit** — 커밋 전 로컬 검사: 포맷(ktlint, CI와 버전 일치) · 시크릿(gitleaks, staged diff) · 기본 파일/커밋 규칙
 - **Dependabot** — 의존성 버전 업데이트 자동 PR (gradle · github-actions)
 - **브랜치 전략** — gitflow (`develop` 기준)
