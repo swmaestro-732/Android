@@ -78,6 +78,13 @@ jobs:
   build-and-test:
     name: build & test
     runs-on: ubuntu-latest
+    # ci-report 코멘트에서 커버리지 %를 노출하려고 job output 으로 내보낸다.
+    outputs:
+      cov_instruction: ${{ steps.coverage.outputs.instruction }}
+      cov_branch: ${{ steps.coverage.outputs.branch }}
+      cov_line: ${{ steps.coverage.outputs.line }}
+      cov_method: ${{ steps.coverage.outputs.method }}
+      cov_class: ${{ steps.coverage.outputs.class }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,9 +96,34 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       # compileSdk 37 platform 이 러너에 없으면 AGP 가 자동 다운로드한다.
       # 만약 SDK 관련 실패 시: android-actions/setup-android@v3 스텝 추가.
-      - name: Build + Unit test + Android Lint + Kover(리포트 + 게이트)
-        # koverVerify: 도메인 집계 LINE 커버리지 하한(30%) 미달 시 실패(차단)
-        run: ./gradlew assembleDebug testDebugUnitTest lintDebug koverXmlReport koverVerify --stacktrace
+      - name: Build + Unit test + Android Lint + Kover 리포트
+        # 리포트(xml=파싱용, html=아티팩트 열람용) 먼저 생성. 게이트는 아래 별도 스텝.
+        run: ./gradlew assembleDebug testDebugUnitTest lintDebug koverXmlReport koverHtmlReport --stacktrace
+      - name: Extract Kover coverage
+        id: coverage
+        if: always() # 게이트가 나중에 실패해도 커버리지 %는 리포트에 항상 싣는다
+        run: |
+          python3 - <<'PY'
+          import os, xml.etree.ElementTree as ET
+          path = "build/reports/kover/report.xml"
+          types = ["INSTRUCTION", "BRANCH", "LINE", "METHOD", "CLASS"]
+          vals = {t: "N/A" for t in types}
+          if os.path.exists(path):
+              root = ET.parse(path).getroot()
+              for t in types:
+                  c = next((x for x in root.findall("counter") if x.get("type") == t), None)
+                  if c is not None:
+                      cov, mis = int(c.get("covered")), int(c.get("missed"))
+                      tot = cov + mis
+                      vals[t] = f"{cov / tot * 100:.1f}" if tot else "0.0"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              for t in types:
+                  f.write(f"{t.lower()}={vals[t]}\n")
+          print(" ".join(f"{t}={vals[t]}%" for t in types))
+          PY
+      - name: Kover coverage gate (koverVerify)
+        # 도메인 집계 LINE 커버리지 하한(30%) 미달 시 실패(차단)
+        run: ./gradlew koverVerify --stacktrace
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -143,6 +175,20 @@ jobs:
               *) echo "⚠️ $1" ;;
             esac
           }
+          # build-and-test 잡이 내보낸 커버리지 %(없으면 빈 값 → N/A)
+          COV_MIN="30" # 게이트 하한(build.gradle.kts 의 minBound 와 일치)
+          L_INSTRUCTION="${{ needs.build-and-test.outputs.cov_instruction }}"
+          L_BRANCH="${{ needs.build-and-test.outputs.cov_branch }}"
+          L_LINE="${{ needs.build-and-test.outputs.cov_line }}"
+          L_METHOD="${{ needs.build-and-test.outputs.cov_method }}"
+          L_CLASS="${{ needs.build-and-test.outputs.cov_class }}"
+          # 숫자면 % 붙이고, 아니면(빈값/N/A) N/A 로 표기
+          fmt() { if printf '%s' "$1" | grep -qE '^[0-9]'; then echo "$1%"; else echo "N/A"; fi; }
+          # LINE(게이트 지표) 하한 충족 배지
+          GATE="—"
+          if printf '%s' "$L_LINE" | grep -qE '^[0-9]+(\.[0-9]+)?$'; then
+            awk "BEGIN{exit !($L_LINE >= $COV_MIN)}" && GATE="✅ 하한 ${COV_MIN}%" || GATE="❌ 하한 ${COV_MIN}%"
+          fi
           {
             echo "body<<REPORT_EOF"
             echo "<!-- ci-report -->"
@@ -154,6 +200,18 @@ jobs:
             echo "| detekt | $(status '${{ needs.detekt.result }}') |"
             echo "| build & test (+Kover) | $(status '${{ needs.build-and-test.result }}') |"
             echo "| code security | $(status '${{ needs.code-security.result }}') |"
+            echo ""
+            echo "### 🧪 커버리지 (도메인 집계)"
+            echo ""
+            echo "| 지표 | 커버리지 | 게이트 |"
+            echo "|---|---|---|"
+            echo "| INSTRUCTION | $(fmt "$L_INSTRUCTION") | — |"
+            echo "| BRANCH | $(fmt "$L_BRANCH") | — |"
+            echo "| LINE | $(fmt "$L_LINE") | ${GATE} |"
+            echo "| METHOD | $(fmt "$L_METHOD") | — |"
+            echo "| CLASS | $(fmt "$L_CLASS") | — |"
+            echo ""
+            echo "> HTML 리포트는 아티팩트 \`build-test-reports\` 의 \`build/reports/kover/html\` 에서 열람"
             echo ""
             echo "상세 로그·리포트 아티팩트: [워크플로 실행](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             echo "REPORT_EOF"
