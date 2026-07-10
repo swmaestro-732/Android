@@ -13,10 +13,12 @@ updates:
       prefix: "chore"          # conventional-commit 규칙(chore) 준수
     groups:
       # 관련 라이브러리를 묶어 PR 수를 줄인다.
-      androidx:
-        patterns: ["androidx.*"]
+      # Dependabot 은 목록 순서상 "첫 매칭" 그룹에 배정하므로, 더 좁은 compose 를
+      # 넓은 androidx 보다 먼저 둔다(안 그러면 compose 의존성이 androidx 에 흡수됨).
       compose:
         patterns: ["androidx.compose*"]
+      androidx:
+        patterns: ["androidx.*"]
       kotlin:
         patterns:
           - "org.jetbrains.kotlin*"
