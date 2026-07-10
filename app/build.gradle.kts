@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,6 +8,23 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.baselineprofile)
 }
+
+// 릴리스 서명 정보 — 로컬 keystore.properties 또는 CI 환경변수(GitHub Secrets)에서 읽는다.
+// 값이 없으면 debug 서명으로 폴백한다(초기 단계: keystore 없이도 아티팩트 빌드는 되게,
+// secret 을 등록하면 자동으로 실서명으로 승격). keystore.properties 는 .gitignore 처리.
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps =
+    Properties().apply {
+        if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
+    }
+
+fun signingSecret(
+    propKey: String,
+    envKey: String,
+): String? = (keystoreProps.getProperty(propKey) ?: System.getenv(envKey))?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = signingSecret("storeFile", "KEYSTORE_FILE")
+val hasReleaseSigning = releaseStoreFile != null
 
 android {
     namespace = "com.chillsam.courmy"
@@ -35,11 +53,29 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        // secret/keystore.properties 가 있을 때만 release 서명 구성을 만든다.
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = signingSecret("storePassword", "KEYSTORE_PASSWORD")
+                keyAlias = signingSecret("keyAlias", "KEY_ALIAS")
+                keyPassword = signingSecret("keyPassword", "KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("debug")
+            // keystore 준비되면 release 서명, 없으면 debug 폴백(초기 아티팩트 빌드용)
+            signingConfig =
+                if (hasReleaseSigning) {
+                    signingConfigs.getByName("release")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
