@@ -1,137 +1,137 @@
-# 칠삼이 Android (Courmy)
+# Courmy
 
-멀티모듈 클린아키텍처 + MVI 기반의 Android 클라이언트.
+Kotlin · Jetpack Compose 기반 Android 애플리케이션.
+**멀티모듈 클린아키텍처 + DDD + MVI** 구조를 가짐.
 
-피처를 `entity / domain / data / presentation` 4-레이어 모듈로 분해하고, 그 위에 앱 셸(`main`)과 공유 베이스(`common`), 성능 계측 모듈(`tti`, `baselineprofile`)을 둔 구조입니다.
+> 현재는 아키텍처·CI·공용 인프라(미디어 검색, 즐겨찾기, 디자인 시스템, 성능 계측)를 갖춘 **초기 단계**입니다.
+> 홈 화면은 최소 골격이며, 여기에 feature 를 붙여 나갑니다.
 
-## 1. 스택
+---
 
-- Kotlin 2.3.21 / JVM target 17 (AGP 9.2.1, KSP 2.3.6)
-- Jetpack Compose (BOM 2026.04.01) / Material3 / Navigation3 1.1.1
-- Hilt 2.59.2 (DI) · Coroutines 1.10.2 + Flow (비동기)
-- Retrofit 3.0.0 / OkHttp 5.3.2 / kotlinx.serialization 1.11.0 (네트워크)
-- Coil 3.4.0 (compose·gif·video) · Lottie 6.7.1 (이미지 / 애니메이션)
-- JankStats 1.0.0-beta02 · Macrobenchmark 1.5.0-alpha05 · Baseline Profile (성능 / 관측)
-- kotlinx-collections-immutable 0.4.0 (UIState 컬렉션)
-- JUnit4 · MockK 1.14.5 (도메인 UseCase 단위 테스트) · UiAutomator (`:baselineprofile` 전용)
+## 기술 스택
 
-`compileSdk` / `targetSdk` = 37, `minSdk` = 24 (Baseline Profile 수집은 API 28+).
-
-## 2. 로컬 개발
-
-```bash
-# 빌드 / 실행
-./gradlew :app:assembleDebug          # 디버그 빌드
-./gradlew :app:installDebug           # 연결된 디바이스/에뮬레이터에 설치
-./gradlew test                        # 도메인 UseCase 단위 테스트
-
-# Baseline Profile 재생성 (실 디바이스 또는 API 28+ 에뮬 필요)
-./gradlew :app:generateReleaseBaselineProfile
-
-# 매크로벤치마크 (콜드 스타트 측정)
-./gradlew :baselineprofile:connectedBenchmarkAndroidTest
-```
-
-- `local.properties` 의 `sdk.dir` 만 실행 환경에 맞게 설정하면 그대로 빌드됩니다.
-- 시스템 JDK 가 없으면 Android Studio 내장 JBR 사용:
-  `export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`
-- API 키 / BASE_URL 은 `local.properties` 의 `API_KEY` · `API_BASE_URL` 로 주입 → `BuildConfig`.
-  값이 없으면 데모 기본값으로 동작합니다.
-
-## 3. 아키텍처
-
-### 3-1. 모듈 구조
-
-```
-app                                              실행 가능한 Android Application
-├─ common/{entity,domain,data,presentation}      공유 베이스 (MviViewModel, 테마/토큰, NetworkModule)
-├─ main/{entity,domain,data,presentation}        탭 / 내비게이션 셸 (AppNavHost, AppRouteRegistry, 딥링크)
-├─ intro/{entity,domain,data,presentation}       스플래시 / 인트로
-├─ search/{entity,domain,data,presentation}      검색
-├─ favorite/{entity,domain,data,presentation}    즐겨찾기
-├─ fullScreenMedia/{entity,domain,data,presentation}  풀스크린 미디어 뷰어
-├─ tti                                           TTI(Time To Initial Display) 계측 라이브러리
-└─ baselineprofile                               Macrobenchmark / Baseline Profile 수집 모듈
-```
-
-### 3-2. 레이어 규칙
-
-의존 방향은 단방향입니다: `presentation → domain → entity`, `data → domain → entity`.
-`data` 와 `presentation` 은 서로를 모르고, 둘 다 `domain` 인터페이스만 봅니다.
-
-- **`entity`** — 순수 Kotlin/JVM. VO / enum.
-- **`domain`** — 순수 Kotlin/JVM. `Repository` 인터페이스, `UseCase`, `Page`, `ErrorType`.
-- **`data`** — `com.android.library`. Retrofit `ApiService`, `DTO → toVO()`, `RepositoryImpl`, Hilt `DataModule`.
-- **`presentation`** — `com.android.library`. Compose UI, `@HiltViewModel` ViewModel (MVI: `UiState` + `Intent`).
-
-> MVI / DI / 네비게이션 / DTO↔VO 등 상세 규칙은 [`docs/architecture/`](docs/architecture) 참고.
-
-### 3-3. feature 골든 예제 (패턴 카탈로그)
-
-새 기능은 아래에서 가장 비슷한 패턴을 베이스로 복제합니다.
-
-| Feature | 패턴 |
+| 영역 | 사용 기술 |
 |---|---|
-| `intro` | 가장 단순한 remote API 4-레이어 (ApiService → DataSource → RepositoryImpl → UseCase) |
-| `search` | 페이징, 병렬 API 호출 머지, 리스트 UI, MVI 풀 사이클 |
-| `favorite` | 로컬 저장소(SharedPreferences KV + Flow observe), synthetic backstack, bottom tab |
-| `fullScreenMedia` | ViewBinding Fragment 혼합 호스팅, 딥링크 typed Args |
+| 언어 | Kotlin 2.3 (JDK 17) |
+| UI | Jetpack Compose (BOM 2026.04) · Navigation 3 · Material 3 |
+| DI | Hilt · KSP |
+| 네트워크 | Retrofit · OkHttp · kotlinx.serialization |
+| 이미지/애니메이션 | Coil 3 · Lottie |
+| 비동기 | Coroutines |
+| 테스트 | JUnit · MockK · Kover(커버리지) |
+| 정적분석/포맷 | Detekt · ktlint |
+| 성능 | Baseline Profile · Macrobenchmark · JankStats · TTI 계측 |
 
-## 4. 성능 측정
+- `compileSdk` / `targetSdk` 37, `minSdk` 24
 
-- **Baseline Profile** — `:baselineprofile` 에서 프로파일 수집 → 빌드 시 자동 머지. 콜드 스타트 첫 프레임 단축.
-- **TTI (`:tti`)** — 페이지 오픈 → API Request Ready → API Response Completed 구간의 페이지 단위 TTI 로깅.
-- **JankStats** — 페이지 이탈/스크롤 종료 등에서 프레임 통계(jank·frozen 수, 비율, 평균/최대) 로깅. Logcat 필터: `tag:"JankStats"`.
+---
 
-## 5. App Link 로 화면 테스트
+## 아키텍처
 
-App Link 가 설정되어 있어 `adb shell am start` 로 임의 화면 직접 진입 / 백스택 합성 / `onNewIntent` 처리를 검증할 수 있습니다.
+계층은 아래 한 방향으로만 의존합니다. `data` 는 `domain` 이 정의한 인터페이스(Repository/UseCase)를 구현합니다.
 
-스킴 / 호스트: **`https://www.courmy.com`** (autoVerify, `MainActivity` `singleTop`)
+```
+presentation ─▶ domain ─▶ entity
+     │            ▲
+     └─ data ─────┘   (domain 의 인터페이스를 구현)
+```
 
-> 에뮬레이터에서는 autoVerify 미검증으로 브라우저로 빠질 수 있습니다. 이 경우 컴포넌트를 명시: `-n com.chillsam.courmy/.main.presentation.MainActivity`.
+- **entity** — 순수 데이터 모델(VO). 어떤 프레임워크에도 의존하지 않음
+- **domain** — 비즈니스 규칙. UseCase / Repository 인터페이스 정의
+- **data** — Repository 구현. Retrofit ApiService · DTO · DataSource
+- **presentation** — Compose UI + MVI ViewModel(`MviViewModel`)
+
+각 기능 도메인은 `common`(여러 feature 공용)과 `main`(앱 진입·네비게이션) 두 축으로 나뉘며, 축마다 위 4계층을 갖습니다.
+
+---
+
+## 모듈 구조
+
+| 모듈 | 역할 |
+|---|---|
+| `common:entity` | 공용 VO — 미디어(`MediaItemVO`), 즐겨찾기(`FavoriteItemVO`) |
+| `common:domain` | 미디어 검색·즐겨찾기 UseCase/Repository, 에러·네비게이션·메시지 헬퍼 규약 |
+| `common:data` | 미디어 검색 API(카카오 다음 검색) 구현, 네트워크 모듈 |
+| `common:presentation` | 디자인 시스템(토큰·타이포·컬러), 공용 컴포넌트, MVI 베이스, JankStats |
+| `main:entity` | 앱 전용 엔티티 |
+| `main:domain` | 홈, 딥링크 라우팅(`RouteMatcher`·`RoutePattern`) |
+| `main:data` | 앱 전용 데이터 |
+| `main:presentation` | `MainActivity`, 네비게이션 호스트, 홈 화면 |
+| `tti` | Time-To-Interaction(초기 상호작용 시점) 계측 |
+| `baselineprofile` | Baseline Profile 생성 + 시작 성능 벤치마크 |
+| `app` | 모듈 조립 진입점 |
+
+---
+
+## 프로젝트 구조
+
+```
+courmy/
+├── app/                        # 앱 진입점 · 모듈 조립
+├── common/
+│   ├── entity/                 # 공용 VO
+│   ├── domain/                 # 공용 UseCase · Repository 규약
+│   ├── data/                   # 미디어 검색 API 구현
+│   └── presentation/           # 디자인 시스템 · 공용 컴포넌트 · MVI 베이스
+├── main/
+│   ├── entity/
+│   ├── domain/                 # 홈 · 딥링크 라우팅
+│   ├── data/
+│   └── presentation/           # MainActivity · 네비게이션 · 홈 화면
+├── tti/                        # TTI 성능 계측
+├── baselineprofile/            # Baseline Profile · Macrobenchmark
+├── config/detekt/              # Detekt 룰셋
+├── gradle/libs.versions.toml   # 버전 카탈로그
+└── .github/workflows/ci.yml    # CI 파이프라인
+```
+
+---
+
+## 빌드 & 실행
+
+요구사항: **JDK 17**, Android SDK(compileSdk 37)
 
 ```bash
-# 검색
-adb shell 'am start -W -a android.intent.action.VIEW -d "https://www.courmy.com/search" com.chillsam.courmy'
-# 즐겨찾기 (Search → Favorite 합성 백스택)
-adb shell 'am start -W -a android.intent.action.VIEW -d "https://www.courmy.com/favorite" com.chillsam.courmy'
-# 미등록 path → 인트로 폴백
-adb shell 'am start -W -a android.intent.action.VIEW -d "https://www.courmy.com/home" com.chillsam.courmy'
+# 디버그 APK 빌드
+./gradlew assembleDebug
+
+# 유닛 테스트
+./gradlew testDebugUnitTest
+
+# 정적분석 · 포맷
+./gradlew detekt
+ktlint --relative        # 포맷 검사 (.editorconfig 기준)
+
+# 커버리지 리포트
+./gradlew koverXmlReport
 ```
 
-## 6. 컨벤션
+---
 
-### 6-1. 브랜치 전략 (gitflow)
+## 품질 · 성능 전략
 
-```
-feat/* ─▶ develop ─▶ main
-```
+- **테스트/커버리지** — MockK 기반 UseCase 유닛테스트, Kover 로 커버리지 리포트
+- **정적분석** — Detekt(코드 스멜·복잡도, 기존 위반은 모듈별 baseline 으로 동결) + ktlint(포맷)
+- **런타임 성능**
+  - `baselineprofile` 모듈이 Baseline Profile 을 생성해 앱 시작·핵심 경로를 사전 컴파일
+  - `JankStats` 로 프레임 드랍(jank) 모니터링
+  - `tti` 모듈로 초기 상호작용 도달 시점(Time-To-Interaction) 계측
+- **Compose 안정성** — `compose_stability.conf` 로 안정성 힌트 제공, `-Pcomposecompiler.reports=true` 로 리포트 생성
 
-- `main`: 항상 배포 가능한 릴리스 브랜치. 보호됨, 직접 푸시 금지.
-- `develop`: 통합 브랜치. 기능은 여기로 먼저 병합.
-- 작업 브랜치: `<type>/<SCRUM-키>-<요약>` — 예) `feat/SCRUM-90-안드로이드-레포-세팅`
-- `main` 직접 머지 금지 — 반드시 `develop` 을 거친다.
+---
 
-### 6-2. 커밋 컨벤션 (Conventional Commits)
+## CI/CD · 컨벤션
 
-`<type>: 내용` — `type ∈ feat · docs · fix · chore · hotfix · release`
+**GitHub Actions** — PR(→ `develop`/`main`) 마다 실행하고 결과를 단일 PR 코멘트로 통합합니다.
 
-### 6-3. PR 규칙
+| 잡 | 내용 |
+|---|---|
+| ktlint | 포맷 검사(로컬 pre-commit 과 동일 룰) |
+| detekt | 정적분석(신규 위반 차단) |
+| build & test | 빌드 · 유닛테스트 · Android Lint · Kover |
+| code security | Gitleaks 시크릿 스캔(히스토리 포함, 발견 시 차단) |
 
-- 제목: `SCRUM-<번호> <type>: 내용` — 앞에 Jira 키를 붙여 자동 연결.
-- 템플릿(변경 요약 / 변경 유형 / 체크리스트)을 채운다.
-- **CodeRabbit 리뷰를 확인·반영한 뒤 머지한다.**
-
-### 6-4. 릴리스 (SemVer)
-
-- `develop → main` PR, 제목 `release: vX.Y.Z`.
-- 머지 후 `main` 에 `vX.Y.Z` 태그를 부여한다 (Semantic Versioning).
-
-> ktlint · pre-commit 훅 · CI/CD 는 추후 별도 세팅 예정 — 도입되면 본 문서에 추가한다.
-
-## 참고자료
-
-- JankStats: https://developer.android.com/topic/performance/jankstats?hl=ko
-- Baseline Profile: https://developer.android.com/topic/performance/baselineprofiles/overview?hl=ko
-- Navigation3 Recipes: https://github.com/android/nav3-recipes
+- **pre-commit** — 커밋 전 로컬 검사: 포맷(ktlint, CI와 버전 일치) · 시크릿(gitleaks, staged diff) · 기본 파일/커밋 규칙
+- **Dependabot** — 의존성 버전 업데이트 자동 PR (gradle · github-actions)
+- **브랜치 전략** — gitflow (`develop` 기준)
+- **커밋** — Conventional Commits, PR 제목에 SCRUM 이슈 키 표기

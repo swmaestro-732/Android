@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:ResourceHelperImpl.kt$ResourceHelperImpl$private fun StringResource.toResId(): Int</ID>
+    <ID>ForbiddenComment:RemoteJankReport.kt$RemoteJankReport$// TODO: Firebase Performance / Sentry 등 외부 모니터링 연동</ID>
+    <ID>LongMethod:ContentsList.kt$@Composable private fun ContentsGridItem( item: MediaItemUiState, onItemClick: (MediaItemUiState) -&gt; Unit, onFavoriteClick: (MediaItemUiState, Boolean) -&gt; Unit, )</ID>
+    <ID>LongMethod:ContentsList.kt$@Composable private fun ContentsListItem( item: MediaItemUiState, onItemClick: (MediaItemUiState) -&gt; Unit, onFavoriteClick: (MediaItemUiState, Boolean) -&gt; Unit, )</ID>
+    <ID>LongMethod:MediaSearchBar.kt$@OptIn(ExperimentalComposeUiApi::class) @Composable fun MediaSearchBar( query: String, onQueryChange: (String) -&gt; Unit, onSearch: (String) -&gt; Unit, onClear: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>MatchingDeclarationName:ColorSemantic.kt$DesignSystemSemanticColors</ID>
+    <ID>MatchingDeclarationName:DesignTokens.kt$ArchiPaletteColors</ID>
+    <ID>TopLevelPropertyNaming:DesignTokens.kt$private const val DisplayAndTitleHeightPercent = 1.12f</ID>
+    <ID>UnusedParameter:DesignSystemTheme.kt$darkTheme: Boolean = true</ID>
+    <ID>UnusedPrivateProperty:JankReporter.kt$JankReporter.Bucket$private var lastStates: Map&lt;String, String&gt; = emptyMap()</ID>
+  </CurrentIssues>
+</SmellBaseline>

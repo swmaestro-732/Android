@@ -97,26 +97,6 @@ dependencies {
     implementation(project(":main:data"))
     implementation(project(":main:entity"))
 
-    implementation(project(":intro:presentation"))
-    implementation(project(":intro:domain"))
-    implementation(project(":intro:data"))
-    implementation(project(":intro:entity"))
-
-    implementation(project(":search:presentation"))
-    implementation(project(":search:domain"))
-    implementation(project(":search:data"))
-    implementation(project(":search:entity"))
-
-    implementation(project(":favorite:presentation"))
-    implementation(project(":favorite:domain"))
-    implementation(project(":favorite:data"))
-    implementation(project(":favorite:entity"))
-
-    implementation(project(":fullScreenMedia:presentation"))
-    implementation(project(":fullScreenMedia:domain"))
-    implementation(project(":fullScreenMedia:data"))
-    implementation(project(":fullScreenMedia:entity"))
-
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

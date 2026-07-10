@@ -65,18 +65,6 @@ dependencies {
     implementation(project(":main:entity"))
     implementation(project(":common:presentation"))
 
-    // Feature dependencies (Assuming Main navigates to these)
-    implementation(project(":intro:presentation"))
-    implementation(project(":search:presentation"))
-    implementation(project(":favorite:presentation"))
-    implementation(project(":fullScreenMedia:presentation"))
-
-    // 각 feature 의 *Page (path/Args 정의) 를 호스트 측 라우터에서 직접 참조한다.
-    implementation(project(":intro:domain"))
-    implementation(project(":search:domain"))
-    implementation(project(":favorite:domain"))
-    implementation(project(":fullScreenMedia:domain"))
-
     implementation(libs.androidx.activity.compose)
     // 상세화면 Fragment 호스팅(FragmentActivity, FragmentContainerView).
     implementation(libs.androidx.fragment.ktx)
