@@ -15,11 +15,23 @@ plugins {
     alias(libs.plugins.detekt) apply false
 }
 
-// Kover — 도메인 모듈 유닛테스트 커버리지 집계 (게이트 없음, 측정·리포트만).
-// 집계 리포트: ./gradlew koverXmlReport / koverHtmlReport
+// Kover — 도메인 모듈 유닛테스트 커버리지 집계.
+// 집계 리포트: ./gradlew koverXmlReport / koverHtmlReport, 게이트: ./gradlew koverVerify
 dependencies {
     kover(project(":common:domain"))
     kover(project(":main:domain"))
+}
+
+// 커버리지 게이트 — 집계 LINE 커버리지 하한. 회귀 방지용 ratchet 바닥값이며,
+// 테스트가 쌓이면 이 숫자를 올린다(현재 도메인 LINE ≈ 41%, 초기 버퍼로 30% 설정).
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(30) // 기본 지표 = LINE, COVERED_PERCENTAGE
+            }
+        }
+    }
 }
 
 // Detekt — 코드 스멜/복잡도/잠재버그 정적분석. 포맷(ktlint)과 역할 분리.
