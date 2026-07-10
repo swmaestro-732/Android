@@ -217,7 +217,7 @@ jobs:
             echo "REPORT_EOF"
           } >> "$GITHUB_OUTPUT"
       - name: Upsert PR comment
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: ci-report
           message: ${{ steps.report.outputs.body }}
