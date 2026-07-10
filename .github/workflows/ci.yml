@@ -39,7 +39,7 @@ jobs:
     name: ktlint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Download ktlint ${{ env.KTLINT_VERSION }}
@@ -56,7 +56,7 @@ jobs:
     name: detekt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-java@v4
@@ -86,7 +86,7 @@ jobs:
       cov_method: ${{ steps.coverage.outputs.method }}
       cov_class: ${{ steps.coverage.outputs.class }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: actions/setup-java@v4
@@ -143,7 +143,7 @@ jobs:
     name: code security
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0 # git 히스토리 전체를 스캔하려면 얕은 클론이 아니어야 한다
