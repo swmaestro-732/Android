@@ -63,7 +63,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Run detekt
         run: ./gradlew detekt --stacktrace
       - name: Upload detekt reports
@@ -93,7 +93,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       # compileSdk 37 platform 이 러너에 없으면 AGP 가 자동 다운로드한다.
       # 만약 SDK 관련 실패 시: android-actions/setup-android@v3 스텝 추가.
       - name: Build + Unit test + Android Lint + Kover 리포트
