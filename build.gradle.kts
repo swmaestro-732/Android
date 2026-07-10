@@ -16,8 +16,4 @@ plugins {
 dependencies {
     kover(project(":common:domain"))
     kover(project(":main:domain"))
-    kover(project(":intro:domain"))
-    kover(project(":search:domain"))
-    kover(project(":favorite:domain"))
-    kover(project(":fullScreenMedia:domain"))
 }

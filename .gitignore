@@ -40,9 +40,3 @@ keystore.properties
 # OS files
 .DS_Store
 Thumbs.db
-
-# Claude Code (solo project — kept local, not uploaded)
-.claude/
-.mcp.json
-CLAUDE.md
-docs/DESIGN_TO_CODE_GUIDE.md

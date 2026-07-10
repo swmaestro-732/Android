@@ -4,8 +4,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.navigation3.runtime.NavKey
 import com.chillsam.courmy.common.domain.navigation.NavRoute
-import com.chillsam.courmy.intro.domain.IntroPage
 import com.chillsam.courmy.main.domain.deeplink.matchRoute
+import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.presentation.navigation.GenericNavKey
 import com.chillsam.courmy.main.presentation.navigation.appRouteByPath
 import com.chillsam.courmy.main.presentation.navigation.appRoutePatterns
@@ -52,11 +52,11 @@ fun resolveStartStack(uri: Uri?): List<NavKey> {
     val route = uri?.resolveRoute()
     if (route == null) {
         if (uri != null) Log.w(TAG, "No matching route for uri=$uri")
-        return listOf(GenericNavKey(IntroPage.PATH))
+        return listOf(GenericNavKey(HomePage.PATH))
     }
     val appRoute =
         appRouteByPath[route.path]
-            ?: return listOf(GenericNavKey(IntroPage.PATH))
+            ?: return listOf(GenericNavKey(HomePage.PATH))
     return appRoute.syntheticStack(route.args)
 }
 

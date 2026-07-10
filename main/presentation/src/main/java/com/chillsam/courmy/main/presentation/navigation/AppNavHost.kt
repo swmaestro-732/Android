@@ -17,7 +17,7 @@ import com.chillsam.courmy.common.domain.navigation.NavRoute
 import com.chillsam.courmy.common.domain.navigation.NavSignal
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.jank.JankPageEffect
-import com.chillsam.courmy.search.domain.SearchPage
+import com.chillsam.courmy.main.domain.home.HomePage
 
 @Composable
 fun AppNavHost(
@@ -55,7 +55,7 @@ fun AppNavHost(
                     val route = appRouteByPath[navKey.path]
                     if (route == null) {
                         Log.w(TAG, "Unknown path on render: ${navKey.path}")
-                        LocalNavigationHelper.current.navigateTo(SearchPage)
+                        LocalNavigationHelper.current.navigateTo(HomePage)
                         return@entry
                     }
                     // 페이지 식별자를 JankStats state 로 등록하고, 백스택 이탈 시 PAGE_EXIT flush.
@@ -67,11 +67,9 @@ fun AppNavHost(
 }
 
 private const val TAG = "[Navigation]"
-private const val INDEX_NOT_FOUND = -1
 
 /**
  * NavRoute 한 건을 받아 백스택에 push(앱 내 전진 이동).
- * Search 으로의 이동은 기존 시맨틱(스택 정리 후 단일 Search 유지)을 그대로 유지한다.
  * 동일 키가 이미 스택에 있으면 중복을 만들지 않고 최전면으로 끌어올린다 — Navigation3 의
  * contentKey 는 키별 1회만 유효하므로, 같은 (path,args) 키가 스택에 둘 이상 존재해선 안 된다.
  * 미등록 path 는 무시 + 경고 로그.
@@ -85,9 +83,7 @@ fun handleNavRoute(
         return
     }
     val navKey = GenericNavKey.of(route)
-    if (route.path == SearchPage.PATH) {
-        navigateToSearchStack(backStack)
-    } else if (backStack.lastOrNull() != navKey) {
+    if (backStack.lastOrNull() != navKey) {
         backStack.bringToFront(navKey)
         Log.d(TAG, "navigateTo: $navKey")
     }
@@ -102,9 +98,6 @@ fun handleNavRoute(
  * - 그 외(leaf 화면)는 **bring-to-front**: 콜드 스타트의 synthetic 부모 체인
  *   ([com.chillsam.courmy.main.presentation.deeplink.resolveStartStack])과 달리, 이미 떠 있는
  *   사용자의 스택은 보존하고 대상 키만 최전면으로 올린다(동일 키는 중복 없이 최상단으로).
- *
- * 예) 스택이 `[Search, Favorite]` 인 상태에서 "/articleList/articlePage/123" deep-link 가 도착하면
- *     `[Search, Favorite, ArticlePage(123)]` 이 되어, 기존 맥락을 유지한 채 대상만 전면에 노출된다.
  */
 fun handleDeepLink(
     route: NavRoute,
@@ -134,18 +127,4 @@ fun handleDeepLink(
 private fun NavBackStack<NavKey>.bringToFront(key: NavKey) {
     removeAll { it == key }
     add(key)
-}
-
-private fun navigateToSearchStack(backStack: NavBackStack<NavKey>) {
-    val searchIndex = backStack.indexOfFirst { it is GenericNavKey && it.path == SearchPage.PATH }
-    if (searchIndex == INDEX_NOT_FOUND) {
-        backStack.clear()
-        backStack.add(GenericNavKey(SearchPage.PATH))
-        Log.d(TAG, "navigateTo: Search (fresh stack)")
-    } else {
-        while (backStack.size > searchIndex + 1) {
-            backStack.removeAt(backStack.lastIndex)
-        }
-        Log.d(TAG, "BackNavigate To: Search")
-    }
 }
