@@ -6,7 +6,7 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "weekly"       # 초기엔 주 1회 유지
       day: "monday"
     open-pull-requests-limit: 5
     commit-message:
@@ -23,13 +23,19 @@ updates:
         patterns:
           - "org.jetbrains.kotlin*"
           - "com.google.devtools.ksp*"
+      # 위 그룹에 안 잡히는 나머지(coil, retrofit, okhttp 등)를 전부 한 PR 로.
+      misc:
+        patterns: ["*"]
 
-  # GitHub Actions 워크플로 액션 버전
+  # GitHub Actions 워크플로 액션 버전 — 전부 한 PR 로 묶는다.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "weekly"       # 초기엔 주 1회 유지
       day: "monday"
     open-pull-requests-limit: 5
     commit-message:
       prefix: "ci"
+    groups:
+      github-actions:
+        patterns: ["*"]
