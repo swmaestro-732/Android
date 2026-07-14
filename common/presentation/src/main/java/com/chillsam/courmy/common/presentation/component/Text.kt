@@ -13,7 +13,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 @Composable
-fun ArchiText(
+fun DsText(
     text: String,
     modifier: Modifier = Modifier,
     color: Color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,

@@ -10,13 +10,13 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 @Suppress("ConstructorParameterNaming", "Unused")
 @Immutable
 data class DesignSystemTypeScale internal constructor(
-    private val _displayExtraXL: ArchiStaticTypeScale,
-    private val _titleExtraL: ArchiStaticTypeScale,
-    private val _textStrongM: ArchiStaticTypeScale,
-    private val _textRegularM: ArchiStaticTypeScale,
-    private val _textRegularS: ArchiStaticTypeScale,
-    private val _textRegularXS: ArchiStaticTypeScale,
-    private val _textExtraXS: ArchiStaticTypeScale,
+    private val _displayExtraXL: DsStaticTypeScale,
+    private val _titleExtraL: DsStaticTypeScale,
+    private val _textStrongM: DsStaticTypeScale,
+    private val _textRegularM: DsStaticTypeScale,
+    private val _textRegularS: DsStaticTypeScale,
+    private val _textRegularXS: DsStaticTypeScale,
+    private val _textExtraXS: DsStaticTypeScale,
 ) {
     val displayExtraXL: TextStyle @Composable get() = _displayExtraXL.textStyle
     val titleExtraL: TextStyle @Composable get() = _titleExtraL.textStyle
@@ -40,7 +40,7 @@ data class DesignSystemTypeScale internal constructor(
         }
 }
 
-private val ArchiStaticTypeScale.textStyle: TextStyle
+private val DsStaticTypeScale.textStyle: TextStyle
     @Composable get() =
         TextStyle(
             fontFamily = fontFamily,

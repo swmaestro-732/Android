@@ -9,7 +9,12 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 data class DesignSystemSemanticColors(
     val bgDefaultLevel0: Color,
     val bgDefaultLevel1: Color,
+    val bgAccent: Color,
+    val bgAccentPressed: Color,
+    val bgAccentSubtle: Color,
     val borderDefaultLevel0: Color,
+    val borderAccent: Color,
+    val borderDanger: Color,
     val contentDefaultLevel0: Color,
     val contentDefaultLevel1: Color,
     val contentDefaultLevel2: Color,
@@ -29,7 +34,12 @@ data class DesignSystemSemanticColors(
         when (key) {
             "bgDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0
             "bgDefaultLevel1" -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
+            "bgAccent" -> DesignSystemThemeImpl.designSystemColor.bgAccent
+            "bgAccentPressed" -> DesignSystemThemeImpl.designSystemColor.bgAccentPressed
+            "bgAccentSubtle" -> DesignSystemThemeImpl.designSystemColor.bgAccentSubtle
             "borderDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0
+            "borderAccent" -> DesignSystemThemeImpl.designSystemColor.borderAccent
+            "borderDanger" -> DesignSystemThemeImpl.designSystemColor.borderDanger
             "contentDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0
             "contentDefaultLevel1" -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1
             "contentDefaultLevel2" -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2
