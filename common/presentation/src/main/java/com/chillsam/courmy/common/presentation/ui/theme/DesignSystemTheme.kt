@@ -53,8 +53,8 @@ private val DesignSystemLightColorScheme =
         surfaceContainerHighest = DefaultDesignSystemColor.bgDefaultLevel1,
         surfaceBright = DefaultDesignSystemColor.bgDefaultLevel1,
         surfaceDim = DefaultDesignSystemColor.bgDefaultLevel0,
-        error = DefaultDesignSystemColor.contentFavorite,
-        outline = DefaultDesignSystemColor.borderDefaultLevel1,
+        error = DefaultDesignSystemColor.contentDanger,
+        outline = DefaultDesignSystemColor.borderDefaultLevel0,
         outlineVariant = DefaultDesignSystemColor.borderDefaultLevel0,
     )
 
