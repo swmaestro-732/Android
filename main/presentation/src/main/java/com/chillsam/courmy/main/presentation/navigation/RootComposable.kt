@@ -62,7 +62,7 @@ fun RootComposable(
                         {
                             ArchiText(
                                 text = titleText,
-                                style = DesignSystemThemeImpl.typeScale.titleStrongL,
+                                style = DesignSystemThemeImpl.typeScale.textStrongM,
                                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
                                 maxLines = Int.MAX_VALUE,
                             )
@@ -71,7 +71,7 @@ fun RootComposable(
                 text = {
                     ArchiText(
                         text = dialog.descText,
-                        style = DesignSystemThemeImpl.typeScale.textRegularL,
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
                         maxLines = Int.MAX_VALUE,
                     )
@@ -85,7 +85,7 @@ fun RootComposable(
                     ) {
                         ArchiText(
                             text = dialog.buttonText,
-                            style = DesignSystemThemeImpl.typeScale.textStrongL,
+                            style = DesignSystemThemeImpl.typeScale.textStrongM,
                             color = DesignSystemThemeImpl.designSystemColor.contentAccent,
                         )
                     }

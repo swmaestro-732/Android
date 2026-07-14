@@ -51,10 +51,10 @@ fun MediaSearchBar(
     modifier: Modifier = Modifier,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
-    // 입력 텍스트도 placeholder(hint) 와 동일한 디자인 토큰(textRegularL = 16sp/Normal)을 사용한다.
+    // 입력 텍스트도 placeholder(hint) 와 동일한 디자인 토큰(textRegularS = 16sp/Medium)을 사용한다.
     // raw sp 금지 규칙(CLAUDE.md #4)에 따라 TextStyle 을 직접 만들지 않고 typeScale 토큰을 복제한다.
     val textStyle =
-        DesignSystemThemeImpl.typeScale.textRegularL.copy(
+        DesignSystemThemeImpl.typeScale.textRegularS.copy(
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
         )
 
@@ -103,7 +103,7 @@ fun MediaSearchBar(
                     if (query.isEmpty()) {
                         ArchiText(
                             text = stringResource(R.string.search_hint),
-                            style = DesignSystemThemeImpl.typeScale.textRegularL,
+                            style = DesignSystemThemeImpl.typeScale.textRegularS,
                             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -119,7 +119,7 @@ fun MediaSearchBar(
                     Modifier
                         .size(20.dp)
                         .clip(CircleShape)
-                        .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel2)
+                        .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
                         .clickable(onClick = onClear),
                 contentAlignment = Alignment.Center,
             ) {
