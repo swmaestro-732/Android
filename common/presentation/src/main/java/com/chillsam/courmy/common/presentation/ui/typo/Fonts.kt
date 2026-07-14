@@ -8,6 +8,7 @@ import com.chillsam.courmy.common.presentation.R
 internal val pretendardTextFont =
     FontFamily(
         Font(R.font.pretendard_bold, weight = FontWeight.Bold),
-        Font(R.font.pretendard_regular),
+        Font(R.font.pretendard_extrabold, weight = FontWeight.ExtraBold),
+        Font(R.font.pretendard_medium, weight = FontWeight.Medium),
         Font(R.font.pretendard_semibold, weight = FontWeight.SemiBold),
     )

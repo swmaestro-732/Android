@@ -18,20 +18,31 @@ import com.chillsam.courmy.common.presentation.ui.typo.pretendardTextFont
 // Figma Variable `palette/{name}/{step}` → ArchiPaletteColors.{Name}{Step}
 // 예: palette/gray/900 → Gray900, palette/blue/400 → Blue400
 @Suppress("Unused")
-internal enum class ArchiPaletteColors(
+internal enum class CourmyPaletteColors(
     val colorValue: Color,
 ) {
-    Black(Color(0xFF000000)),
-    Gray300(Color(0xFF222222)),
-    Gray400(Color(0xFF444444)),
-    Gray500(Color(0xFF888888)),
-    Gray600(Color(0xFFC4C4C4)),
-    Gray700(Color(0xFFDDDDDD)),
-    Gray800(Color(0xFFE6E6E6)),
-    Gray900(Color(0xFFF7F7F7)),
+    Black(Color(0xFF1E1E1C)),
+    Gray300(Color(0xFFF5F5F3)),
+    Gray400(Color(0xFFEAEAE7)),
+    Gray500(Color(0xFFABABA3)),
+    Gray600(Color(0xFF9C9C95)),
+    Gray700(Color(0xFF67675F)),
+    Gray800(Color(0xFF545450)),
+    Gray900(Color(0xFF3A3A38)),
     White(Color(0xFFFFFFFF)),
-    Blue400(Color(0xFF465179)),
-    Red(Color(0xFFFF0000)),
+    Green(Color(0xFF3E8C70)),
+    Yellow(Color(0xFFF5A524)),
+    Blue(Color(0xFF3A82E6)),
+    Red(Color(0xFFC0584E)),
+    Forest50(Color(0xFFF0FAF1)),
+    Forest100(Color(0xFFDDF2E0)),
+    Forest200(Color(0xFFBCDFC2)),
+    Forest300(Color(0xFF92C29B)),
+    Forest400(Color(0xFF6CA177)),
+    Forest500(Color(0xFF498056)),
+    Forest600(Color(0xFF30623C)),
+    Forest700(Color(0xFF1C4E2A)),
+    ForestTint(Color(0xFFEBF3ED)),
 }
 
 // FIGMA-TOKEN-INJECTION-POINT: semantic-colors
@@ -40,88 +51,88 @@ internal enum class ArchiPaletteColors(
 // 시맨틱 슬롯은 반드시 위 팔레트를 참조한다 (raw hex 직접 사용 금지).
 val DefaultDesignSystemColor =
     DesignSystemSemanticColors(
-        bgDefaultLevel0 = ArchiPaletteColors.Gray900.colorValue,
-        bgDefaultLevel1 = ArchiPaletteColors.White.colorValue,
-        bgDefaultLevel2 = ArchiPaletteColors.Gray600.colorValue,
-        borderDefaultLevel0 = ArchiPaletteColors.Gray300.colorValue,
-        borderDefaultLevel1 = ArchiPaletteColors.Gray700.colorValue,
-        borderDefaultLevel2 = ArchiPaletteColors.Gray800.colorValue,
-        contentDefaultLevel0 = ArchiPaletteColors.Black.colorValue,
-        contentDefaultLevel1 = ArchiPaletteColors.Gray300.colorValue,
-        contentDefaultLevel2 = ArchiPaletteColors.Gray400.colorValue,
-        contentDefaultLevel3 = ArchiPaletteColors.Gray500.colorValue,
-        contentAccent = ArchiPaletteColors.Blue400.colorValue,
-        contentFavorite = ArchiPaletteColors.Red.colorValue,
+        bgDefaultLevel0 = CourmyPaletteColors.Gray300.colorValue,
+        bgDefaultLevel1 = CourmyPaletteColors.White.colorValue,
+        borderDefaultLevel0 = CourmyPaletteColors.Gray400.colorValue,
+        contentDefaultLevel0 = CourmyPaletteColors.Black.colorValue,
+        contentDefaultLevel1 = CourmyPaletteColors.Gray800.colorValue,
+        contentDefaultLevel2 = CourmyPaletteColors.Gray600.colorValue,
+        contentDefaultLevel3 = CourmyPaletteColors.Gray500.colorValue,
+        contentOnAccent = CourmyPaletteColors.White.colorValue,
+        contentAccent = CourmyPaletteColors.Forest600.colorValue,
+        contentRating = CourmyPaletteColors.Yellow.colorValue,
+        contentDanger = CourmyPaletteColors.Red.colorValue,
+        contentSuccess = CourmyPaletteColors.Green.colorValue,
+        contentLocation = CourmyPaletteColors.Blue.colorValue,
     )
-
-private const val DisplayAndTitleHeightPercent = 1.12f
 
 // FIGMA-TOKEN-INJECTION-POINT: type-scale
 // Figma Text Style `{group}/{weight}/{size}` → {group}{Weight}{Size}
-// 예: title/strong/L → titleStrongL, text/regular/XS → textRegularXS
+// weight 등급: Regular(Medium·SemiBold) < Strong(Bold) < Extra(ExtraBold)
+// lineHeight·letterSpacing 은 Figma Text Style 실측값. letterSpacing 은 em 단위(px÷size).
 internal val DefaultDesignSystemStaticTypeScale =
     DesignSystemTypeScale(
-        // Bold / 18sp — 상세 화면 상단 타이틀
-        _titleStrongL =
+        // Display · ExtraBold 34 — 큰 헤드라인
+        _displayExtraXL =
             ArchiStaticTypeScale(
                 fontFamily = pretendardTextFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18,
-                lineHeight = 18 * DisplayAndTitleHeightPercent,
-                letterSpacing = -0.02f,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 34,
+                lineHeight = 37.4f,
+                letterSpacing = -0.03f,
             ),
-        // Bold / 16sp — 탭 선택 상태
-        _textStrongL =
+        // Title · ExtraBold 24 — 화면 타이틀
+        _titleExtraL =
             ArchiStaticTypeScale(
                 fontFamily = pretendardTextFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16,
-                lineHeight = 16 * 1.35f,
-                letterSpacing = -0.015f,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 24,
+                lineHeight = 31.2f,
+                letterSpacing = 0f,
             ),
-        // Normal / 16sp — 탭 비선택 상태 / 검색바 입력 텍스트
-        _textRegularL =
-            ArchiStaticTypeScale(
-                fontFamily = pretendardTextFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = 16,
-                lineHeight = 16 * 1.35f,
-                letterSpacing = -0.015f,
-            ),
-        // Bold / 15sp — 리스트 아이템 타이틀
+        // Heading · Bold 19 — 섹션 제목
         _textStrongM =
             ArchiStaticTypeScale(
                 fontFamily = pretendardTextFont,
                 fontWeight = FontWeight.Bold,
-                fontSize = 15,
-                lineHeight = 15 * 1.35f,
-                letterSpacing = -0.015f,
+                fontSize = 19,
+                lineHeight = 25.65f,
+                letterSpacing = 0f,
             ),
-        // Normal / 14sp — 보조 라벨(카테고리 등)
+        // (사용자 추가) Medium 19 — Heading 비강조 버전. Figma 원본 없음(잠정값)
         _textRegularM =
             ArchiStaticTypeScale(
                 fontFamily = pretendardTextFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = 14,
-                lineHeight = 14 * 1.40f,
-                letterSpacing = -0.015f,
+                fontWeight = FontWeight.Medium,
+                fontSize = 19,
+                lineHeight = 25.65f,
+                letterSpacing = 0f,
             ),
-        // Normal / 13sp — 보조 텍스트(URL / 날짜)
+        // Body · Medium 16 — 본문
         _textRegularS =
             ArchiStaticTypeScale(
                 fontFamily = pretendardTextFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = 13,
-                lineHeight = 13 * 1.40f,
-                letterSpacing = -0.015f,
+                fontWeight = FontWeight.Medium,
+                fontSize = 16,
+                lineHeight = 25.6f,
+                letterSpacing = 0f,
             ),
-        // Normal / 12sp — 캡션(리스트 날짜)
+        // Caption · SemiBold 13 — 보조·라벨
         _textRegularXS =
             ArchiStaticTypeScale(
                 fontFamily = pretendardTextFont,
-                fontWeight = FontWeight.Normal,
-                fontSize = 12,
-                lineHeight = 12 * 1.40f,
-                letterSpacing = -0.015f,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13,
+                lineHeight = 18f,
+                letterSpacing = 0f,
+            ),
+        // Overline · ExtraBold 13 — 대문자 라벨(문자열 자체를 대문자로 넣어 사용)
+        _textExtraXS =
+            ArchiStaticTypeScale(
+                fontFamily = pretendardTextFont,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 13,
+                lineHeight = 16f,
+                letterSpacing = 0.22f,
             ),
     )

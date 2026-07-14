@@ -22,7 +22,7 @@ fun HomePage(modifier: Modifier = Modifier) {
     ) {
         ArchiText(
             text = "Home",
-            style = DesignSystemThemeImpl.typeScale.titleStrongL,
+            style = DesignSystemThemeImpl.typeScale.titleExtraL,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
         )
     }
