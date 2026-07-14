@@ -16,6 +16,8 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
         args: ["--maxkb=2048"]
+        # 폰트 TTF(Pretendard, ~2.6MB)만 크기 검사 제외 — 기존 폰트도 동일 크기로 존재. 다른 파일은 2048 유지.
+        exclude: '.*/res/font/.*\.ttf$'
       # 시크릿 탐지는 아래 gitleaks 가 전담(개인키 포함 상위호환) → detect-private-key 제거
 
   # 시크릿 스캔 — CI 와 동일 엔진/버전(v8.18.4). staged diff 만 검사(빠른 예방),
