@@ -21,6 +21,9 @@ data class DesignSystemSemanticColors(
     val contentSuccess: Color,
     val contentLocation: Color,
 ) {
+    // 문자열 키 → 시맨틱 색 조회. 서버 구동 UI·원격 컨피그 등 토큰 이름이 데이터(String)로
+    // 들어오는 경우를 위한 범용 진입점. 분기는 슬롯 수만큼의 평면 디스패치라 복잡도 규칙 예외.
+    @Suppress("CyclomaticComplexMethod")
     @Composable
     fun withStringKey(key: String): Color =
         when (key) {
