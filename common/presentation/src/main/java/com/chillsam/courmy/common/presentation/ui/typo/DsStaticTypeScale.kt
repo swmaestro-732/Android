@@ -6,7 +6,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 
 @Immutable
-class ArchiStaticTypeScale internal constructor(
+class DsStaticTypeScale internal constructor(
     val fontFamily: FontFamily,
     val fontWeight: FontWeight,
     val fontSize: Int,

@@ -21,7 +21,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.chillsam.courmy.common.domain.message.MessageEffect
-import com.chillsam.courmy.common.presentation.component.ArchiText
+import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -60,7 +60,7 @@ fun RootComposable(
                 title =
                     dialog.titleText?.let { titleText ->
                         {
-                            ArchiText(
+                            DsText(
                                 text = titleText,
                                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
@@ -69,7 +69,7 @@ fun RootComposable(
                         }
                     },
                 text = {
-                    ArchiText(
+                    DsText(
                         text = dialog.descText,
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
@@ -83,7 +83,7 @@ fun RootComposable(
                             oneButtonDialogEffect = null
                         },
                     ) {
-                        ArchiText(
+                        DsText(
                             text = dialog.buttonText,
                             style = DesignSystemThemeImpl.typeScale.textStrongM,
                             color = DesignSystemThemeImpl.designSystemColor.contentAccent,
