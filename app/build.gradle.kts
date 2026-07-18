@@ -133,6 +133,11 @@ dependencies {
     implementation(project(":main:data"))
     implementation(project(":main:entity"))
 
+    implementation(project(":course:presentation"))
+    implementation(project(":course:domain"))
+    implementation(project(":course:data"))
+    implementation(project(":course:entity"))
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

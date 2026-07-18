@@ -35,6 +35,11 @@ include(":main:domain")
 include(":main:data")
 include(":main:entity")
 
+include(":course:presentation")
+include(":course:domain")
+include(":course:data")
+include(":course:entity")
+
 include(":tti")
 
 include(":baselineprofile")

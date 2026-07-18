@@ -1,5 +1,9 @@
 package com.chillsam.courmy.main.presentation.navigation
 
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.chillsam.courmy.course.domain.CourseCreatePage
+import com.chillsam.courmy.course.presentation.CourseCreatePage
+import com.chillsam.courmy.course.presentation.CourseCreateViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.presentation.home.HomePage
@@ -15,6 +19,10 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = HomePage.PATH,
             render = { HomePage() },
+        ),
+        AppRoute(
+            path = CourseCreatePage.PATH,
+            render = { CourseCreatePage(viewModel = hiltViewModel<CourseCreateViewModel>()) },
         ),
     )
 

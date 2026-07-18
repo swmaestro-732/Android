@@ -5,11 +5,10 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.kotlinx.serialization)
 }
 
 android {
-    namespace = "com.chillsam.courmy.main.presentation"
+    namespace = "com.chillsam.courmy.course.presentation"
     compileSdk =
         libs.versions.compileSdk
             .get()
@@ -61,23 +60,14 @@ composeCompiler {
 }
 
 dependencies {
-    implementation(project(":main:domain"))
-    implementation(project(":main:entity"))
+    implementation(project(":course:domain"))
+    implementation(project(":course:entity"))
     implementation(project(":common:presentation"))
 
-    implementation(project(":course:presentation"))
-    implementation(project(":course:domain"))
-
-    implementation(libs.androidx.activity.compose)
-    // 상세화면 Fragment 호스팅(FragmentActivity, FragmentContainerView).
-    implementation(libs.androidx.fragment.ktx)
-    api(libs.androidx.navigation3.runtime)
-    implementation(libs.androidx.navigation3.ui)
-    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
 }
