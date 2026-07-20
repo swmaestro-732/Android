@@ -1,20 +1,55 @@
 package com.chillsam.courmy.main.presentation.navigation
 
+import com.chillsam.courmy.main.domain.course.CourseCompletePage
+import com.chillsam.courmy.main.domain.course.CourseCreatePage
+import com.chillsam.courmy.main.domain.course.CourseDetailPage
+import com.chillsam.courmy.main.domain.course.DraftListPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.my.MyPage
+import com.chillsam.courmy.main.presentation.course.CourseCompletePage
+import com.chillsam.courmy.main.presentation.course.CourseCreatePage
+import com.chillsam.courmy.main.presentation.course.CourseDetailPage
+import com.chillsam.courmy.main.presentation.course.DraftListPage
 import com.chillsam.courmy.main.presentation.home.HomePage
+import com.chillsam.courmy.main.presentation.my.MyPage
 
 /**
  * 앱의 모든 페이지 메타데이터 + 렌더러 모음.
  * 새 화면 추가 시 본 리스트에 한 줄을 더한다.
- *
- * 레퍼런스 feature 제거 후에는 기본 [HomePage] 하나만 등록돼 있다.
  */
 val appRoutes: List<AppRoute> =
     listOf(
         AppRoute(
             path = HomePage.PATH,
             render = { HomePage() },
+        ),
+        AppRoute(
+            path = CourseCreatePage.PATH,
+            render = { args ->
+                CourseCreatePage(initialTitle = args[CourseCreatePage.ARG_TITLE].orEmpty())
+            },
+        ),
+        AppRoute(
+            path = CourseCompletePage.PATH,
+            render = { CourseCompletePage() },
+        ),
+        AppRoute(
+            path = DraftListPage.PATH,
+            render = { DraftListPage() },
+        ),
+        AppRoute(
+            path = MyPage.PATH,
+            render = { MyPage() },
+        ),
+        AppRoute(
+            path = CourseDetailPage.PATH,
+            render = { args ->
+                CourseDetailPage(
+                    title = args[CourseDetailPage.ARG_TITLE].orEmpty(),
+                    createdAtMillis = args[CourseDetailPage.ARG_CREATED_AT]?.toLongOrNull() ?: 0L,
+                )
+            },
         ),
     )
 
