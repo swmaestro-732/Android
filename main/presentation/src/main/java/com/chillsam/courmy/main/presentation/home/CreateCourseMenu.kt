@@ -59,7 +59,8 @@ private const val SCRIM_ALPHA = 0.4f
  * - 열림: 배경 스크림 + `새 코스 만들기` / `임시저장 가져오기` 메뉴가 펼쳐지고, FAB 는 `x` 로 회전.
  *
  * 열림 여부([expanded])는 호출부(HomePage)가 소유하는 순수 UI 상태다.
- * 메뉴 선택 시의 실제 네비게이션은 코스 만들기 화면이 붙을 때 연결한다.
+ * 메뉴 선택([onNewCourse]·[onLoadDraft])의 실제 네비게이션은 호출부(HomePage)가 연결한다.
+ * `새 코스 만들기` → course 모듈 실제 화면(CourseCreatePage, `/courseCreate`).
  */
 @Composable
 fun BoxScope.CreateCourseMenu(

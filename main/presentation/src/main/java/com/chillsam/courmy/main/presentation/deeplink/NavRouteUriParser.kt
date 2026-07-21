@@ -4,7 +4,6 @@ import android.net.Uri
 import android.util.Log
 import androidx.navigation3.runtime.NavKey
 import com.chillsam.courmy.common.domain.navigation.NavRoute
-import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.main.domain.deeplink.matchRoute
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.presentation.navigation.GenericNavKey
@@ -56,9 +55,8 @@ fun resolveStartStack(uri: Uri?): List<NavKey> {
             Log.w(TAG, "No matching route for uri=$uri")
             return listOf(GenericNavKey(HomePage.PATH))
         }
-        // 개발 중: 일반 콜드 스타트(딥링크 없음)의 첫 화면을 코스 만들기로 지정.
-        // (실제 홈이 붙으면 HomePage.PATH 로 되돌린다)
-        return listOf(GenericNavKey(CourseCreatePage.PATH))
+        // 일반 콜드 스타트(딥링크 없음)의 첫 화면은 홈.
+        return listOf(GenericNavKey(HomePage.PATH))
     }
     val appRoute =
         appRouteByPath[route.path]
