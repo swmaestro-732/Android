@@ -31,14 +31,14 @@ fun AppNavHost(
             when (signal) {
                 is NavSignal.GoToDestPage -> handleNavRoute(signal.route, backStack)
                 is NavSignal.DeepLink -> handleDeepLink(signal.route, backStack)
-                NavSignal.Back -> backStack.removeLastOrNull()
+                NavSignal.Back -> backStack.handleBack()
             }
         }
     }
 
     NavDisplay(
         backStack = backStack,
-        onBack = { backStack.removeLastOrNull() },
+        onBack = { backStack.handleBack() },
         modifier = modifier,
         transitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
         popTransitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
@@ -127,4 +127,18 @@ fun handleDeepLink(
 private fun NavBackStack<NavKey>.bringToFront(key: NavKey) {
     removeAll { it == key }
     add(key)
+}
+
+/**
+ * 뒤로가기 정책: 홈이 아닌 화면에서는 곧장 홈(루트)으로 돌아간다.
+ * 프로토타입 단계의 단일 백스택이라 중간 화면(코스 생성/완성 등)을 거치지 않고 홈으로 리셋한다.
+ * 이미 홈(루트, size==1)이면 스택을 비워 시스템에 위임한다(앱 종료).
+ */
+private fun NavBackStack<NavKey>.handleBack() {
+    if (size > 1) resetToHome() else removeLastOrNull()
+}
+
+private fun NavBackStack<NavKey>.resetToHome() {
+    clear()
+    add(GenericNavKey(HomePage.PATH))
 }
