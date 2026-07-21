@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.navigation
 
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
@@ -27,9 +28,18 @@ val appRoutes: List<AppRoute> =
             render = { HomePage() },
         ),
         // 코스 만들기: course 모듈의 실제 MVI 화면(SCRUM-234).
+        // 상단바·저장바 네비게이션은 대상 화면(홈/코스 완성)이 main 모듈이라 여기서 주입한다.
         AppRoute(
             path = CourseCreatePage.PATH,
-            render = { CourseCreatePage(viewModel = hiltViewModel<CourseCreateViewModel>()) },
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
+                CourseCreatePage(
+                    viewModel = hiltViewModel<CourseCreateViewModel>(),
+                    onClose = { navigationHelper.navigateToBack() },
+                    onSaveDraft = { navigationHelper.navigateToBack() },
+                    onSaveCourse = { navigationHelper.navigateTo(CourseCompletePage) },
+                )
+            },
         ),
         AppRoute(
             path = CourseCompletePage.PATH,

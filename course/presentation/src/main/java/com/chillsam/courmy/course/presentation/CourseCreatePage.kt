@@ -32,16 +32,36 @@ import com.chillsam.courmy.course.presentation.component.CourseTopBar
 import com.chillsam.courmy.course.presentation.component.CourseVisibilitySegment
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 
+/**
+ * 코스 만들기 화면.
+ *
+ * 상단바·저장바의 네비게이션([onClose]·[onSaveDraft]·[onSaveCourse])은 대상 화면이 다른 모듈(main)에
+ * 있어 course 모듈이 직접 참조할 수 없으므로, 호출부([AppRouteRegistry])에서 콜백으로 주입한다.
+ */
 @Composable
-fun CourseCreatePage(viewModel: CourseCreateViewModel) {
+fun CourseCreatePage(
+    viewModel: CourseCreateViewModel,
+    onClose: () -> Unit,
+    onSaveDraft: () -> Unit,
+    onSaveCourse: () -> Unit,
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    CourseCreateContent(uiState = uiState, onIntent = viewModel::onIntent)
+    CourseCreateContent(
+        uiState = uiState,
+        onIntent = viewModel::onIntent,
+        onClose = onClose,
+        onSaveDraft = onSaveDraft,
+        onSaveCourse = onSaveCourse,
+    )
 }
 
 @Composable
 private fun CourseCreateContent(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
+    onClose: () -> Unit,
+    onSaveDraft: () -> Unit,
+    onSaveCourse: () -> Unit,
 ) {
     Box(
         modifier =
@@ -65,7 +85,7 @@ private fun CourseCreateContent(
                     .padding(horizontal = 20.dp)
                     .padding(top = 12.dp, bottom = 116.dp),
         ) {
-            CourseTopBar(onClose = {}, onSaveDraft = {})
+            CourseTopBar(onClose = onClose, onSaveDraft = onSaveDraft)
             Spacer(Modifier.height(20.dp))
             InfoSection(uiState = uiState, onIntent = onIntent)
             Spacer(Modifier.height(22.dp))
@@ -74,7 +94,7 @@ private fun CourseCreateContent(
             VisibilitySection(uiState = uiState, onIntent = onIntent)
         }
 
-        SaveBar(modifier = Modifier.align(Alignment.BottomCenter), onSave = {})
+        SaveBar(modifier = Modifier.align(Alignment.BottomCenter), onSave = onSaveCourse)
     }
 }
 
