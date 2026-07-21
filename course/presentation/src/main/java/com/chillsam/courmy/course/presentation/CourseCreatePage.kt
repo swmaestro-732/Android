@@ -16,6 +16,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -23,6 +26,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.course.entity.CourseCompleteVO
+import com.chillsam.courmy.course.entity.CourseStopVO
 import com.chillsam.courmy.course.presentation.component.CourseInfoCard
 import com.chillsam.courmy.course.presentation.component.CourseInfoCardActions
 import com.chillsam.courmy.course.presentation.component.CoursePlaceCard
@@ -30,6 +35,7 @@ import com.chillsam.courmy.course.presentation.component.CourseRouteConnector
 import com.chillsam.courmy.course.presentation.component.CourseSectionHeader
 import com.chillsam.courmy.course.presentation.component.CourseTopBar
 import com.chillsam.courmy.course.presentation.component.CourseVisibilitySegment
+import com.chillsam.courmy.course.presentation.component.PlaceSearchOverlay
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 
 /**
@@ -43,7 +49,7 @@ fun CourseCreatePage(
     viewModel: CourseCreateViewModel,
     onClose: () -> Unit,
     onSaveDraft: () -> Unit,
-    onSaveCourse: () -> Unit,
+    onSaveCourse: (CourseCompleteVO?) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     CourseCreateContent(
@@ -61,8 +67,10 @@ private fun CourseCreateContent(
     onIntent: (CourseCreateIntent) -> Unit,
     onClose: () -> Unit,
     onSaveDraft: () -> Unit,
-    onSaveCourse: () -> Unit,
+    onSaveCourse: (CourseCompleteVO?) -> Unit,
 ) {
+    var showPlaceSearch by remember { mutableStateOf(false) }
+
     Box(
         modifier =
             Modifier
@@ -89,13 +97,52 @@ private fun CourseCreateContent(
             Spacer(Modifier.height(20.dp))
             InfoSection(uiState = uiState, onIntent = onIntent)
             Spacer(Modifier.height(22.dp))
-            PlaceSection(uiState = uiState, onIntent = onIntent)
+            PlaceSection(
+                uiState = uiState,
+                onIntent = onIntent,
+                onAddPlace = { showPlaceSearch = true },
+            )
             Spacer(Modifier.height(22.dp))
             VisibilitySection(uiState = uiState, onIntent = onIntent)
         }
 
-        SaveBar(modifier = Modifier.align(Alignment.BottomCenter), onSave = onSaveCourse)
+        SaveBar(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            onSave = { onSaveCourse(uiState.toCompleteVO()) },
+        )
+
+        if (showPlaceSearch) {
+            PlaceSearchOverlay(
+                onDismiss = { showPlaceSearch = false },
+                onConfirm = { picked ->
+                    onIntent(CourseCreateIntent.AddPlaces(picked))
+                    showPlaceSearch = false
+                },
+            )
+        }
     }
+}
+
+/**
+ * 입력값 → 코스 완성(FS-34-Done) 데이터 매핑. 이름/장소가 비어 있으면 null 을 반환해
+ * 호출부가 예시 데이터로 폴백하게 한다. 장소 체류 시간은 작성 화면에 없어 비워 둔다.
+ */
+private fun CourseCreateUIState.toCompleteVO(): CourseCompleteVO? {
+    if (name.isBlank() && places.isEmpty()) return null
+    return CourseCompleteVO(
+        category = tags.take(2).joinToString(" · ").ifBlank { "코스" },
+        title = name.ifBlank { "새 코스" },
+        summaryText = "${places.size} 스팟",
+        stops =
+            places.mapIndexed { index, place ->
+                CourseStopVO(
+                    order = index + 1,
+                    name = place.name,
+                    category = place.category,
+                    durationText = "",
+                )
+            },
+    )
 }
 
 @Composable
@@ -124,6 +171,7 @@ private fun InfoSection(
 private fun PlaceSection(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
+    onAddPlace: () -> Unit,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         CourseSectionHeader(number = 2, title = "장소 담기", modifier = Modifier.weight(1f))
@@ -138,6 +186,7 @@ private fun PlaceSection(
         CoursePlaceCard(
             place = place,
             onRemove = { onIntent(CourseCreateIntent.RemovePlace(place.id)) },
+            onNoteChange = { onIntent(CourseCreateIntent.ChangePlaceNote(place.id, it)) },
         )
         if (place.walkText.isNotEmpty()) {
             CourseRouteConnector(text = place.walkText)
@@ -146,7 +195,7 @@ private fun PlaceSection(
         }
     }
     Spacer(Modifier.height(2.dp))
-    AddPlaceButton(onClick = {})
+    AddPlaceButton(onClick = onAddPlace)
 }
 
 @Composable

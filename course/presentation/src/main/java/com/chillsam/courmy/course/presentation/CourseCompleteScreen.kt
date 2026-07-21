@@ -217,8 +217,14 @@ private fun StopRow(
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                 )
+                val subtitle =
+                    if (stop.durationText.isBlank()) {
+                        stop.category
+                    } else {
+                        "${stop.category} · ${stop.durationText}"
+                    }
                 DsText(
-                    text = "${stop.category} · ${stop.durationText}",
+                    text = subtitle,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )

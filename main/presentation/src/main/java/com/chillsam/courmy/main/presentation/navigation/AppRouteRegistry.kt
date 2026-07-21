@@ -13,6 +13,7 @@ import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.presentation.course.CourseCompletePage
 import com.chillsam.courmy.main.presentation.course.CourseDetailPage
+import com.chillsam.courmy.main.presentation.course.CourseSessionStore
 import com.chillsam.courmy.main.presentation.course.DraftListPage
 import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.my.MyPage
@@ -37,7 +38,10 @@ val appRoutes: List<AppRoute> =
                     viewModel = hiltViewModel<CourseCreateViewModel>(),
                     onClose = { navigationHelper.navigateToBack() },
                     onSaveDraft = { navigationHelper.navigateToBack() },
-                    onSaveCourse = { navigationHelper.navigateTo(CourseCompletePage) },
+                    onSaveCourse = { completed ->
+                        CourseSessionStore.completeCourse(completed)
+                        navigationHelper.navigateTo(CourseCompletePage)
+                    },
                 )
             },
         ),

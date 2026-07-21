@@ -12,24 +12,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 
-/** ② 장소 담기 — 장소 카드 1건. */
+/** 한마디 메모 최대 글자 수(Figma FS-34 인터랙션 "카드에서 바로 입력" 기준). */
+private const val NOTE_MAX_LENGTH = 40
+
+/** ② 장소 담기 — 장소 카드 1건. 한마디 메모는 카드에서 바로 편집한다. */
 @Composable
 fun CoursePlaceCard(
     place: CoursePlaceVO,
     onRemove: () -> Unit,
+    onNoteChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(16.dp)
+    val hasNote = place.note.isNotEmpty()
     Column(
         modifier =
             modifier
@@ -39,25 +46,22 @@ fun CoursePlaceCard(
                 .border(1.dp, DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, shape),
     ) {
         PlaceHeader(place = place, onRemove = onRemove)
-        if (place.note.isNotEmpty()) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .background(DesignSystemThemeImpl.designSystemColor.bgAccentSubtle)
-                        .padding(horizontal = 12.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                NoteRow(text = place.note, isPlaceholder = false)
-                PhotoRow(place = place)
-            }
-        } else {
-            Box(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-                NoteRow(text = "이곳에 한마디 남기기…", isPlaceholder = true)
-            }
-            Box(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
-                PhotoRow(place = place)
-            }
+        // 메모 유무와 무관하게 동일한 컴포저블 트리를 유지하고 배경색만 토글해, 입력 중 포커스가 끊기지 않게 한다.
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        if (hasNote) {
+                            DesignSystemThemeImpl.designSystemColor.bgAccentSubtle
+                        } else {
+                            DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
+                        },
+                    ).padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            EditableNoteRow(note = place.note, onNoteChange = { onNoteChange(it.take(NOTE_MAX_LENGTH)) })
+            PhotoRow(place = place)
         }
     }
 }
@@ -114,29 +118,50 @@ private fun PlaceHeader(
     }
 }
 
+/** 한마디 메모 인라인 편집 행: ✎ + 입력 필드(+ 글자 수). */
 @Composable
-private fun NoteRow(
-    text: String,
-    isPlaceholder: Boolean,
+private fun EditableNoteRow(
+    note: String,
+    onNoteChange: (String) -> Unit,
 ) {
-    val contentColor =
-        if (isPlaceholder) {
-            DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
-        } else {
-            DesignSystemThemeImpl.designSystemColor.contentAccent
-        }
+    val hasNote = note.isNotEmpty()
+    val accent = DesignSystemThemeImpl.designSystemColor.contentAccent
+    val placeholderColor = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        DsText(text = "✎", style = DesignSystemThemeImpl.typeScale.textRegularXS, color = contentColor)
         DsText(
-            text = text,
-            modifier = Modifier.weight(1f),
+            text = "✎",
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = contentColor,
-            maxLines = Int.MAX_VALUE,
+            color = if (hasNote) accent else placeholderColor,
         )
+        BasicTextField(
+            value = note,
+            onValueChange = onNoteChange,
+            modifier = Modifier.weight(1f),
+            textStyle =
+                DesignSystemThemeImpl.typeScale.textRegularXS
+                    .copy(color = accent),
+            cursorBrush = SolidColor(accent),
+            decorationBox = { innerTextField ->
+                if (note.isEmpty()) {
+                    DsText(
+                        text = "이곳에 한마디 남기기…",
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = placeholderColor,
+                    )
+                }
+                innerTextField()
+            },
+        )
+        if (hasNote) {
+            DsText(
+                text = "${note.length}/$NOTE_MAX_LENGTH",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = placeholderColor,
+            )
+        }
     }
 }
 

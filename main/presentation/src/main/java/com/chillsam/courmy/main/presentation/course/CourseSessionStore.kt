@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.course
 
+import com.chillsam.courmy.course.entity.CourseCompleteVO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +26,11 @@ object CourseSessionStore {
     private val _drafts = MutableStateFlow<List<SavedCourse>>(emptyList())
     val drafts: StateFlow<List<SavedCourse>> = _drafts.asStateFlow()
 
+    private val _lastCompleted = MutableStateFlow<CourseCompleteVO?>(null)
+
+    /** 방금 저장 완료한 코스(FS-34-Done 완성 화면 표시용). null 이면 완성 화면이 예시로 폴백. */
+    val lastCompleted: StateFlow<CourseCompleteVO?> = _lastCompleted.asStateFlow()
+
     /** 완성한 코스를 저장(마이 화면에 노출). */
     fun addCourse(title: String) {
         _courses.update { it + SavedCourse(title, System.currentTimeMillis()) }
@@ -33,6 +39,12 @@ object CourseSessionStore {
     /** 임시저장 코스를 저장(임시저장 목록에 노출). */
     fun addDraft(title: String) {
         _drafts.update { it + SavedCourse(title, System.currentTimeMillis()) }
+    }
+
+    /** 코스 저장 완료 처리: 완성 화면 데이터를 보관하고 마이 목록에도 추가한다. */
+    fun completeCourse(course: CourseCompleteVO?) {
+        _lastCompleted.value = course
+        course?.let { addCourse(it.title) }
     }
 }
 

@@ -3,6 +3,7 @@ package com.chillsam.courmy.course.presentation
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.GetCourseDraftUseCase
+import com.chillsam.courmy.course.entity.CoursePlaceVO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
@@ -40,6 +41,20 @@ class CourseCreateViewModel
 
                 is CourseCreateIntent.RemoveTag -> {
                     dispatch(CourseCreateReducerEvent.TagsChanged(currentState.tags - intent.tag))
+                }
+
+                is CourseCreateIntent.AddPlaces -> {
+                    addPlaces(intent.places)
+                }
+
+                is CourseCreateIntent.ChangePlaceNote -> {
+                    dispatch(
+                        CourseCreateReducerEvent.PlacesChanged(
+                            currentState.places.map { place ->
+                                if (place.id == intent.placeId) place.copy(note = intent.note) else place
+                            },
+                        ),
+                    )
                 }
 
                 is CourseCreateIntent.RemovePlace -> {
@@ -102,6 +117,13 @@ class CourseCreateViewModel
             val trimmed = tag.trim()
             if (trimmed.isEmpty() || currentState.tags.contains(trimmed)) return
             dispatch(CourseCreateReducerEvent.TagsChanged(currentState.tags + trimmed))
+        }
+
+        private fun addPlaces(places: List<CoursePlaceVO>) {
+            val existingIds = currentState.places.map { it.id }.toSet()
+            val toAdd = places.filter { it.id !in existingIds }
+            if (toAdd.isEmpty()) return
+            dispatch(CourseCreateReducerEvent.PlacesChanged(currentState.places + toAdd))
         }
 
         private fun load() {
