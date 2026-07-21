@@ -37,7 +37,7 @@ val appRoutes: List<AppRoute> =
                 CourseCreatePage(
                     viewModel = hiltViewModel<CourseCreateViewModel>(),
                     onClose = { navigationHelper.navigateToBack() },
-                    onSaveDraft = { navigationHelper.navigateToBack() },
+                    onSaveDraft = { draftTitle -> CourseSessionStore.addDraft(draftTitle) },
                     onSaveCourse = { completed ->
                         CourseSessionStore.completeCourse(completed)
                         navigationHelper.navigateTo(CourseCompletePage)

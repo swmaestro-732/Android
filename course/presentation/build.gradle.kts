@@ -67,6 +67,10 @@ dependencies {
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
+    // 사진 담기: 시스템 Photo Picker(activity-compose) + 선택 이미지 렌더(Coil)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.coil.compose)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

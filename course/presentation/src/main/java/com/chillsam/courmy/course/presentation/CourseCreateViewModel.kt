@@ -57,6 +57,20 @@ class CourseCreateViewModel
                     )
                 }
 
+                is CourseCreateIntent.ChangePlacePhotos -> {
+                    dispatch(
+                        CourseCreateReducerEvent.PlacesChanged(
+                            currentState.places.map { place ->
+                                if (place.id == intent.placeId) {
+                                    place.copy(photoUrls = intent.photoUrls.take(place.maxPhotos))
+                                } else {
+                                    place
+                                }
+                            },
+                        ),
+                    )
+                }
+
                 is CourseCreateIntent.RemovePlace -> {
                     dispatch(
                         CourseCreateReducerEvent.PlacesChanged(

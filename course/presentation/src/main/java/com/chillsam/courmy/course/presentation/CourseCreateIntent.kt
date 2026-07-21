@@ -37,6 +37,12 @@ sealed interface CourseCreateIntent : MviIntent {
         val note: String,
     ) : CourseCreateIntent
 
+    /** 특정 장소의 사진 목록을 교체한다(추가·삭제 공통). 최대 개수 초과분은 잘라낸다. */
+    data class ChangePlacePhotos(
+        val placeId: String,
+        val photoUrls: List<String>,
+    ) : CourseCreateIntent
+
     data class RemovePlace(
         val placeId: String,
     ) : CourseCreateIntent

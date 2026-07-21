@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.presentation.component
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,8 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -33,6 +39,7 @@ fun CoursePlaceCard(
     place: CoursePlaceVO,
     onRemove: () -> Unit,
     onNoteChange: (String) -> Unit,
+    onPhotosChange: (List<String>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(16.dp)
@@ -61,7 +68,11 @@ fun CoursePlaceCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             EditableNoteRow(note = place.note, onNoteChange = { onNoteChange(it.take(NOTE_MAX_LENGTH)) })
-            PhotoRow(place = place)
+            PhotoRow(
+                photos = place.photoUrls,
+                maxPhotos = place.maxPhotos,
+                onPhotosChange = onPhotosChange,
+            )
         }
     }
 }
@@ -166,17 +177,30 @@ private fun EditableNoteRow(
 }
 
 @Composable
-private fun PhotoRow(place: CoursePlaceVO) {
+private fun PhotoRow(
+    photos: List<String>,
+    maxPhotos: Int,
+    onPhotosChange: (List<String>) -> Unit,
+) {
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        place.photoUrls.forEach { _ ->
-            FilledPhotoSlot()
+        photos.forEach { uri ->
+            FilledPhotoSlot(uri = uri, onRemove = { onPhotosChange(photos - uri) })
         }
-        AddPhotoSlot(count = place.photoUrls.size, max = place.maxPhotos)
+        if (photos.size < maxPhotos) {
+            AddPhotoSlot(
+                count = photos.size,
+                max = maxPhotos,
+                onPicked = { picked -> onPhotosChange((photos + picked).take(maxPhotos)) },
+            )
+        }
     }
 }
 
 @Composable
-private fun FilledPhotoSlot() {
+private fun FilledPhotoSlot(
+    uri: String,
+    onRemove: () -> Unit,
+) {
     Box(
         modifier =
             Modifier
@@ -185,13 +209,20 @@ private fun FilledPhotoSlot() {
                 .background(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0),
         contentAlignment = Alignment.TopEnd,
     ) {
+        AsyncImage(
+            model = uri,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
         Box(
             modifier =
                 Modifier
                     .padding(3.dp)
                     .size(16.dp)
                     .clip(CircleShape)
-                    .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0),
+                    .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0)
+                    .clickable(onClick = onRemove),
             contentAlignment = Alignment.Center,
         ) {
             DsText(
@@ -207,13 +238,25 @@ private fun FilledPhotoSlot() {
 private fun AddPhotoSlot(
     count: Int,
     max: Int,
+    onPicked: (List<String>) -> Unit,
 ) {
+    val launcher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.PickMultipleVisualMedia(max),
+        ) { uris ->
+            if (uris.isNotEmpty()) onPicked(uris.map { it.toString() })
+        }
     Column(
         modifier =
             Modifier
                 .size(56.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .dashedBorder(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, cornerRadius = 10.dp),
+                .dashedBorder(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, cornerRadius = 10.dp)
+                .clickable {
+                    launcher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
