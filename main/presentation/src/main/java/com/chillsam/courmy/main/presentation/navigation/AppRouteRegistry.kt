@@ -2,19 +2,15 @@ package com.chillsam.courmy.main.presentation.navigation
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.course.domain.CourseCompletePage
 import com.chillsam.courmy.course.domain.CourseCreatePage
+import com.chillsam.courmy.course.presentation.CourseCompletePage
+import com.chillsam.courmy.course.presentation.CourseCompleteViewModel
 import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
-import com.chillsam.courmy.main.domain.course.CourseCompletePage
-import com.chillsam.courmy.main.domain.course.CourseDetailPage
-import com.chillsam.courmy.main.domain.course.DraftListPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.MyPage
-import com.chillsam.courmy.main.presentation.course.CourseCompletePage
-import com.chillsam.courmy.main.presentation.course.CourseDetailPage
-import com.chillsam.courmy.main.presentation.course.CourseSessionStore
-import com.chillsam.courmy.main.presentation.course.DraftListPage
 import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.my.MyPage
 
@@ -34,12 +30,13 @@ val appRoutes: List<AppRoute> =
             path = CourseCreatePage.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current
+                val viewModel = hiltViewModel<CourseCreateViewModel>()
                 CourseCreatePage(
-                    viewModel = hiltViewModel<CourseCreateViewModel>(),
+                    viewModel = viewModel,
                     onClose = { navigationHelper.navigateToBack() },
-                    onSaveDraft = { draftTitle -> CourseSessionStore.addDraft(draftTitle) },
+                    onSaveDraft = { draftTitle -> viewModel.saveDraft(draftTitle) },
                     onSaveCourse = { completed ->
-                        CourseSessionStore.completeCourse(completed)
+                        viewModel.completeCourse(completed)
                         navigationHelper.navigateTo(CourseCompletePage)
                     },
                 )
@@ -47,24 +44,18 @@ val appRoutes: List<AppRoute> =
         ),
         AppRoute(
             path = CourseCompletePage.PATH,
-            render = { CourseCompletePage() },
-        ),
-        AppRoute(
-            path = DraftListPage.PATH,
-            render = { DraftListPage() },
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
+                CourseCompletePage(
+                    viewModel = hiltViewModel<CourseCompleteViewModel>(),
+                    onClose = { navigationHelper.navigateTo(HomePage) },
+                    onViewMyCourses = { navigationHelper.navigateTo(MyPage) },
+                )
+            },
         ),
         AppRoute(
             path = MyPage.PATH,
             render = { MyPage() },
-        ),
-        AppRoute(
-            path = CourseDetailPage.PATH,
-            render = { args ->
-                CourseDetailPage(
-                    title = args[CourseDetailPage.ARG_TITLE].orEmpty(),
-                    createdAtMillis = args[CourseDetailPage.ARG_CREATED_AT]?.toLongOrNull() ?: 0L,
-                )
-            },
         ),
     )
 
