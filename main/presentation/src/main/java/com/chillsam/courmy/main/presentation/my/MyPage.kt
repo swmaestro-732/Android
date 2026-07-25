@@ -22,6 +22,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.util.formatCreatedAt
+import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
@@ -71,7 +72,11 @@ fun MyPage(
                         SavedCourseRow(
                             title = course.title,
                             createdAtMillis = course.createdAtMillis,
-                            onClick = {},
+                            onClick = {
+                                navigationHelper.navigateByRoute(
+                                    CourseDetailPage.route(course.title, course.createdAtMillis),
+                                )
+                            },
                         )
                         HorizontalDivider(
                             thickness = 1.dp,

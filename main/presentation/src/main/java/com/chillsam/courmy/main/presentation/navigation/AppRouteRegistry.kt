@@ -7,6 +7,7 @@ import com.chillsam.courmy.course.presentation.CourseCompleteViewModel
 import com.chillsam.courmy.course.presentation.CourseCreateIntent
 import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
+import com.chillsam.courmy.course.presentation.CourseDetailPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.MyPage
@@ -14,6 +15,7 @@ import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.my.MyPage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
+import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
 
 /**
  * 앱의 모든 페이지 메타데이터 + 렌더러 모음.
@@ -57,6 +59,15 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = MyPage.PATH,
             render = { MyPage() },
+        ),
+        AppRoute(
+            path = CourseDetailRoute.PATH,
+            render = { args ->
+                CourseDetailPage(
+                    title = args[CourseDetailRoute.ARG_TITLE].orEmpty(),
+                    createdAtMillis = args[CourseDetailRoute.ARG_CREATED_AT]?.toLongOrNull() ?: 0L,
+                )
+            },
         ),
     )
 
