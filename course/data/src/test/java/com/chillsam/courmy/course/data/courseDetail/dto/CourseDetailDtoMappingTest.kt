@@ -127,7 +127,7 @@ class CourseDetailDtoMappingTest {
         assertEquals("", vo.category)
         assertEquals("0곳", vo.placeCountText)
         assertEquals("도보 0분", vo.walkText)
-        assertEquals(" 따라감", vo.followerText)
+        assertEquals("0 따라감", vo.followerText)
         assertEquals("0.0", vo.rating)
         assertEquals("0개", vo.reviewCountText)
         assertEquals(emptyList<Any>(), vo.places)

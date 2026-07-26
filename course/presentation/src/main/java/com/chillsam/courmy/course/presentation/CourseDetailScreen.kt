@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -690,8 +691,9 @@ private fun ReviewCard(review: CourseReviewVO) {
             maxLines = Int.MAX_VALUE,
         )
         if (review.photoUrls.isNotEmpty()) {
+            // 좁은 화면 오버플로 방지: 리뷰 사진은 최대 3장까지만 노출한다.
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                review.photoUrls.forEach { url ->
+                review.photoUrls.take(3).forEach { url ->
                     CourseImage(
                         url = url,
                         modifier = Modifier.size(56.dp),
@@ -712,6 +714,7 @@ private fun DetailBottomBar(onFollowCourse: () -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .background(color.bgDefaultLevel0)
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),

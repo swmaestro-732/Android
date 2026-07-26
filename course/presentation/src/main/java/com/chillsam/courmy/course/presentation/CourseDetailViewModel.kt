@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,6 +24,9 @@ class CourseDetailViewModel
     ) : MviViewModel<CourseDetailIntent, CourseDetailUIState, CourseDetailReducerEvent>(
             CourseDetailUIState.empty,
         ) {
+        /** 진행 중인 로드 코루틴. 재요청 시 이전 것을 취소해 중복 실행·stale 결과 반영을 막는다. */
+        private var loadJob: Job? = null
+
         init {
             onIntent(CourseDetailIntent.Load)
         }
@@ -54,22 +59,27 @@ class CourseDetailViewModel
 
         private fun load() {
             dispatch(CourseDetailReducerEvent.LoadStarted)
-            viewModelScope.launch {
-                Log.d(TAG, "코스 상세 로드 시작: courseId=$DEFAULT_COURSE_ID")
-                runCatching { getCourseDetailUseCase(DEFAULT_COURSE_ID) }
-                    .onSuccess { detail ->
-                        Log.d(
-                            TAG,
-                            "로드 성공: title='${detail.title}', 장소 ${detail.places.size}곳, 리뷰 ${detail.reviews.size}건, " +
-                                "커버=${detail.coverImageUrl.ifBlank { "(없음)" }}",
-                        )
-                        dispatch(CourseDetailReducerEvent.Loaded(detail))
-                    }.onFailure { e ->
-                        // 실패 원인(타임아웃/404/파싱 등)을 스택트레이스까지 남긴다.
-                        Log.w(TAG, "로드 실패: ${e.javaClass.simpleName} - ${e.message}", e)
-                        dispatch(CourseDetailReducerEvent.Failed(e.message ?: "코스를 불러오지 못했습니다."))
-                    }
-            }
+            loadJob?.cancel()
+            loadJob =
+                viewModelScope.launch {
+                    Log.d(TAG, "코스 상세 로드 시작: courseId=$DEFAULT_COURSE_ID")
+                    runCatching { getCourseDetailUseCase(DEFAULT_COURSE_ID) }
+                        .onSuccess { detail ->
+                            Log.d(
+                                TAG,
+                                "로드 성공: title='${detail.title}', " +
+                                    "장소 ${detail.places.size}곳, 리뷰 ${detail.reviews.size}건, " +
+                                    "커버=${detail.coverImageUrl.ifBlank { "(없음)" }}",
+                            )
+                            dispatch(CourseDetailReducerEvent.Loaded(detail))
+                        }.onFailure { e ->
+                            // 협력적 취소(ViewModel clear·재요청 등)는 실패가 아니므로 그대로 전파한다.
+                            if (e is CancellationException) throw e
+                            // 실패 원인(타임아웃/404/파싱 등)을 스택트레이스까지 남긴다.
+                            Log.w(TAG, "로드 실패: ${e.javaClass.simpleName} - ${e.message}", e)
+                            dispatch(CourseDetailReducerEvent.Failed(e.message ?: "코스를 불러오지 못했습니다."))
+                        }
+                }
         }
 
         private companion object {

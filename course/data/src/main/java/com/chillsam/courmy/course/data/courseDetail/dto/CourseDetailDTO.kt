@@ -106,7 +106,7 @@ fun CourseScreenData.toVO(): CourseDetailVO {
         authorImageUrl = course.author?.profileImageUrl.orEmpty(),
         placeCountText = "${stats?.placeCount ?: 0}곳",
         walkText = "도보 ${stats?.walkingMinutes ?: 0}분",
-        followerText = "${stats?.tracingCountLabel.orEmpty()} 따라감",
+        followerText = "${stats?.tracingCountLabel ?: "0"} 따라감",
         description = course.description.orEmpty(),
         places =
             course.places
