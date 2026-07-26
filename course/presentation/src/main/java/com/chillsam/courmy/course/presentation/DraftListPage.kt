@@ -57,7 +57,7 @@ fun DraftListPage(
 
         if (drafts.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
                 DsText(
@@ -68,7 +68,7 @@ fun DraftListPage(
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(drafts, key = { it.id }) { draft ->

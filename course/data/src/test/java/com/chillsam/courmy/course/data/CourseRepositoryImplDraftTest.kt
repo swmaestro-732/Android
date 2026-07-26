@@ -81,6 +81,20 @@ class CourseRepositoryImplDraftTest {
             assertEquals(listOf("코스 A", "코스 B"), repo.drafts.value.map { it.title })
         }
 
+    @Test
+    fun `저장 뒤 Load 없이 또 저장해도 이전 초안을 덮지 않는다`() =
+        runBlocking {
+            val repo = newRepository()
+
+            repo.getCourseDraft()
+            repo.saveDraft(CourseDraftVO(name = "코스 A"))
+            // 저장으로 세션이 닫혔으므로, getCourseDraft() 없이 저장해도 새 초안이어야 한다.
+            repo.saveDraft(CourseDraftVO(name = "코스 B"))
+
+            assertEquals(2, repo.drafts.value.size)
+            assertEquals(listOf("코스 A", "코스 B"), repo.drafts.value.map { it.title })
+        }
+
     private object UnusedApiService : CourseDetailApiService {
         override suspend fun getCourseDetail(courseId: Long): Response<CourseDetailEnvelope> =
             error("draft 테스트에서는 호출되지 않아야 한다")
