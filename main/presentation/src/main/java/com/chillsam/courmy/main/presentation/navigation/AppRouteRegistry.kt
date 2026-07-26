@@ -63,10 +63,13 @@ val appRoutes: List<AppRoute> =
         ),
         AppRoute(
             path = CourseDetailRoute.PATH,
-            render = { args ->
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
                 CourseDetailPage(
-                    courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty(),
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
+                    onBack = { navigationHelper.navigateToBack() },
+                    onFollowAuthor = { },
+                    onFollowCourse = { },
                 )
             },
         ),

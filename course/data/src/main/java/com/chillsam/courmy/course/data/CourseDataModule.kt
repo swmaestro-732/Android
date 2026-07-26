@@ -1,5 +1,7 @@
 package com.chillsam.courmy.course.data
 
+import com.chillsam.courmy.course.data.courseDetail.CourseDetailApiService
+import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
 import com.chillsam.courmy.course.domain.CourseRepository
 import dagger.Module
 import dagger.Provides
@@ -14,15 +16,15 @@ import javax.inject.Singleton
 object CourseDataModule {
     @Provides
     @Singleton
-    fun provideCourseApiService(retrofit: Retrofit): CourseApiService = retrofit.create()
+    fun provideCourseDetailApiService(retrofit: Retrofit): CourseDetailApiService = retrofit.create()
 
     @Provides
     @Singleton
-    fun provideCourseRemoteDataSource(apiService: CourseApiService): CourseRemoteDataSource =
-        CourseRemoteDataSource(apiService)
+    fun provideCourseDetailDataSource(apiService: CourseDetailApiService): CourseDetailDataSource =
+        CourseDetailDataSource(apiService)
 
     @Provides
     @Singleton
-    fun provideCourseRepository(remoteDataSource: CourseRemoteDataSource): CourseRepository =
-        CourseRepositoryImpl(remoteDataSource)
+    fun provideCourseRepository(courseDetailDataSource: CourseDetailDataSource): CourseRepository =
+        CourseRepositoryImpl(courseDetailDataSource)
 }

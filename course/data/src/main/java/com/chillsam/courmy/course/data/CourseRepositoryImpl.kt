@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.data
 
-import com.chillsam.courmy.course.data.dto.toVO
+import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
+import com.chillsam.courmy.course.data.courseDetail.dto.toVO
 import com.chillsam.courmy.course.domain.CourseRepository
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
@@ -22,7 +23,7 @@ import kotlinx.coroutines.flow.update
  * 실제 임시저장/코스 조회·저장 API 가 붙으면 DataSource·DTO 를 추가하고 인메모리 상태를 교체한다.
  */
 class CourseRepositoryImpl(
-    private val remoteDataSource: CourseRemoteDataSource,
+    private val courseDetailDataSource: CourseDetailDataSource,
 ) : CourseRepository {
     private val _savedCourses = MutableStateFlow<List<SavedCourseVO>>(emptyList())
     override val savedCourses: StateFlow<List<SavedCourseVO>> = _savedCourses.asStateFlow()
@@ -46,8 +47,11 @@ class CourseRepositoryImpl(
         }
     }
 
-    override suspend fun getCourseDetail(courseId: String): CourseDetailVO =
-        remoteDataSource.getCourseDetail(courseId).toVO()
+    override suspend fun getCourseDetail(courseId: Long): CourseDetailVO {
+        val envelope = courseDetailDataSource.getCourseDetail(courseId)
+        val data = requireNotNull(envelope.data) { "코스 상세 응답에 data 가 없습니다: courseId=$courseId" }
+        return data.toVO()
+    }
 
     private companion object {
         val EMPTY_DRAFT =
