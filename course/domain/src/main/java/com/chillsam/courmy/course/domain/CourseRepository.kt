@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.domain
 
 import com.chillsam.courmy.course.entity.CourseCompleteVO
+import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.SavedCourseVO
 import kotlinx.coroutines.flow.StateFlow
@@ -29,4 +30,7 @@ interface CourseRepository {
 
     /** 코스 저장 완료 처리: 완성 화면 데이터를 보관하고 [savedCourses] 에도 추가한다. */
     fun completeCourse(course: CourseCompleteVO?)
+
+    /** 코스 상세(FS-11)를 서버(`GET /service/v1/courses/{id}`)에서 조회한다. */
+    suspend fun getCourseDetail(courseId: Long): CourseDetailVO
 }

@@ -7,6 +7,8 @@ import com.chillsam.courmy.course.presentation.CourseCompleteViewModel
 import com.chillsam.courmy.course.presentation.CourseCreateIntent
 import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
+import com.chillsam.courmy.course.presentation.CourseDetailPage
+import com.chillsam.courmy.course.presentation.CourseDetailViewModel
 import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
@@ -16,6 +18,7 @@ import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.my.MyPage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
+import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 
 /**
@@ -64,6 +67,18 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = MyPage.PATH,
             render = { MyPage() },
+        ),
+        AppRoute(
+            path = CourseDetailRoute.PATH,
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
+                CourseDetailPage(
+                    viewModel = hiltViewModel<CourseDetailViewModel>(),
+                    onBack = { navigationHelper.navigateToBack() },
+                    onFollowAuthor = { },
+                    onFollowCourse = { },
+                )
+            },
         ),
     )
 

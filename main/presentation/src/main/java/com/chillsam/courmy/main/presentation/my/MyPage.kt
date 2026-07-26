@@ -22,9 +22,13 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.util.formatCreatedAt
+import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
+
+/** 임시: 인메모리 저장코스엔 서버 courseId 가 없어, 상세 확인용으로 공개 코스 하나에 연결한다. */
+private const val TEMP_PUBLIC_COURSE_ID = "1"
 
 /**
  * 마이 화면(하단 네비게이션 목적지). 이번 실행 세션에서 저장([MyViewModel.savedCourses])한
@@ -71,7 +75,13 @@ fun MyPage(
                         SavedCourseRow(
                             title = course.title,
                             createdAtMillis = course.createdAtMillis,
-                            onClick = {},
+                            onClick = {
+                                // TODO(Phase 3): 실제 저장 코스의 courseId 로 교체. 지금은 인메모리 저장코스에
+                                //  서버 id 가 없어, 공개 코스로 임시 연결해 상세(API)를 확인한다.
+                                navigationHelper.navigateByRoute(
+                                    CourseDetailPage.route(TEMP_PUBLIC_COURSE_ID),
+                                )
+                            },
                         )
                         HorizontalDivider(
                             thickness = 1.dp,
