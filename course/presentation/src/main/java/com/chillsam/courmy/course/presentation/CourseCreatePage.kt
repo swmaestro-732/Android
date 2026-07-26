@@ -1,6 +1,8 @@
 package com.chillsam.courmy.course.presentation
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -289,7 +291,11 @@ private fun PlaceSection(
     LaunchedEffect(autoScrollSpeed) {
         if (autoScrollSpeed != 0f) {
             while (isActive) {
-                if (scrollState.scrollBy(autoScrollSpeed) == 0f) break
+                val consumed = scrollState.scrollBy(autoScrollSpeed)
+                if (consumed == 0f) break
+                // 스크롤한 만큼 dragOffset 을 더해, 손가락이 멈춰 있어도 카드가 화면상 같은
+                // 위치(손가락 아래)에 머물게 한다. 없으면 카드만 콘텐츠와 함께 밀려 gap 이 생긴다.
+                dragOffset += consumed
                 dragTarget =
                     computeDragTarget(slotTops, slotHeights, draggedIndex, dragOffset, placesState.value.size)
                 withFrameNanos { }
@@ -309,15 +315,26 @@ private fun PlaceSection(
                 dragging > dragTarget && index in dragTarget until dragging -> draggedHeight
                 else -> 0f
             }
-        val animMakeRoom by animateFloatAsState(targetValue = makeRoom, label = "makeRoom")
+        // 드래그 중엔 스프링으로 부드럽게 자리를 비켜주고, 놓는 순간엔 snap 으로 즉시 0 이 되게 해
+        // 리스트 재정렬(MovePlace)과 애니메이션이 겹쳐 튀는 것을 막는다.
+        val animMakeRoom by animateFloatAsState(
+            targetValue = makeRoom,
+            animationSpec = if (dragging != null) spring() else snap(),
+            label = "makeRoom",
+        )
         val translationYValue = if (isDragged) dragOffset else animMakeRoom
+        // 집어 올린 느낌: 살짝 확대. 놓으면 스프링으로 원래 크기로 정착.
+        val liftScale by animateFloatAsState(targetValue = if (isDragged) 1.03f else 1f, label = "lift")
 
         Column(
             modifier =
                 Modifier
                     .zIndex(if (isDragged) 1f else 0f)
-                    .graphicsLayer { translationY = translationYValue }
-                    .onGloballyPositioned {
+                    .graphicsLayer {
+                        translationY = translationYValue
+                        scaleX = liftScale
+                        scaleY = liftScale
+                    }.onGloballyPositioned {
                         slotTops[index] = it.positionInWindow().y
                         slotHeights[index] = it.size.height
                     },
@@ -458,22 +475,14 @@ private fun SaveBar(
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (!enabled) {
-            DsText(
-                text = "코스 이름 · 장소 2곳 이상 · 장소마다 사진 1장 이상이면 저장할 수 있어요",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
-            )
-        }
         DsButton(text = "코스 저장하기", enabled = enabled, onClick = onSave)
     }
 }
