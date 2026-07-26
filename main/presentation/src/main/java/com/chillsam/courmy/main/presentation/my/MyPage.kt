@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
@@ -16,24 +17,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
-import com.chillsam.courmy.main.domain.course.CourseDetailPage
+import com.chillsam.courmy.common.presentation.util.formatCreatedAt
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
-import com.chillsam.courmy.main.presentation.course.CourseSessionStore
-import com.chillsam.courmy.main.presentation.course.formatCreatedAt
 
 /**
- * 마이 화면(하단 네비게이션 목적지). 이번 실행 세션에서 저장([CourseSessionStore.courses])한
+ * 마이 화면(하단 네비게이션 목적지). 이번 실행 세션에서 저장([MyViewModel.savedCourses])한
  * 코스를 리스트(제목 + 생성 시각)로 보여주고, 하단 탭바를 함께 노출한다.
  */
 @Composable
-fun MyPage(modifier: Modifier = Modifier) {
+fun MyPage(
+    modifier: Modifier = Modifier,
+    viewModel: MyViewModel = hiltViewModel(),
+) {
     val navigationHelper = LocalNavigationHelper.current
-    val courses by CourseSessionStore.courses.collectAsState()
+    val courses by viewModel.savedCourses.collectAsState()
 
     Column(modifier = modifier.fillMaxSize()) {
         Column(
@@ -41,6 +44,7 @@ fun MyPage(modifier: Modifier = Modifier) {
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(horizontal = 20.dp),
         ) {
             DsText(
@@ -67,11 +71,7 @@ fun MyPage(modifier: Modifier = Modifier) {
                         SavedCourseRow(
                             title = course.title,
                             createdAtMillis = course.createdAtMillis,
-                            onClick = {
-                                navigationHelper.navigateByRoute(
-                                    CourseDetailPage.route(course.title, course.createdAtMillis),
-                                )
-                            },
+                            onClick = {},
                         )
                         HorizontalDivider(
                             thickness = 1.dp,

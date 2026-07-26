@@ -13,8 +13,7 @@ import androidx.compose.ui.Modifier
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
-import com.chillsam.courmy.main.domain.course.CourseCreatePage
-import com.chillsam.courmy.main.domain.course.DraftListPage
+import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
@@ -62,7 +61,6 @@ fun HomePage(modifier: Modifier = Modifier) {
             },
             onLoadDraft = {
                 menuExpanded = false
-                navigationHelper.navigateTo(DraftListPage)
             },
         )
     }

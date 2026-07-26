@@ -51,7 +51,11 @@ fun Uri.resolveRoute(): NavRoute? {
 fun resolveStartStack(uri: Uri?): List<NavKey> {
     val route = uri?.resolveRoute()
     if (route == null) {
-        if (uri != null) Log.w(TAG, "No matching route for uri=$uri")
+        if (uri != null) {
+            Log.w(TAG, "No matching route for uri=$uri")
+            return listOf(GenericNavKey(HomePage.PATH))
+        }
+        // 일반 콜드 스타트(딥링크 없음)의 첫 화면은 홈.
         return listOf(GenericNavKey(HomePage.PATH))
     }
     val appRoute =

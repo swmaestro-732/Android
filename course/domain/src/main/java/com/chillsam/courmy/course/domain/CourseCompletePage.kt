@@ -1,4 +1,4 @@
-package com.chillsam.courmy.main.domain.course
+package com.chillsam.courmy.course.domain
 
 import com.chillsam.courmy.common.domain.navigation.NavRoute
 import com.chillsam.courmy.common.domain.navigation.Page

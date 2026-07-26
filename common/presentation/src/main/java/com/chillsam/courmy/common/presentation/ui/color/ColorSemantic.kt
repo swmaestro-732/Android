@@ -13,6 +13,7 @@ data class DesignSystemSemanticColors(
     val bgAccentPressed: Color,
     val bgAccentSubtle: Color,
     val borderDefaultLevel0: Color,
+    val borderDefaultLevel1: Color,
     val borderAccent: Color,
     val borderDanger: Color,
     val contentDefaultLevel0: Color,
@@ -38,6 +39,7 @@ data class DesignSystemSemanticColors(
             "bgAccentPressed" -> DesignSystemThemeImpl.designSystemColor.bgAccentPressed
             "bgAccentSubtle" -> DesignSystemThemeImpl.designSystemColor.bgAccentSubtle
             "borderDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0
+            "borderDefaultLevel1" -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel1
             "borderAccent" -> DesignSystemThemeImpl.designSystemColor.borderAccent
             "borderDanger" -> DesignSystemThemeImpl.designSystemColor.borderDanger
             "contentDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0

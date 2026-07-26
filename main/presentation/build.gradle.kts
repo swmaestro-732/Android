@@ -65,6 +65,9 @@ dependencies {
     implementation(project(":main:entity"))
     implementation(project(":common:presentation"))
 
+    implementation(project(":course:presentation"))
+    implementation(project(":course:domain"))
+
     implementation(libs.androidx.activity.compose)
     // 상세화면 Fragment 호스팅(FragmentActivity, FragmentContainerView).
     implementation(libs.androidx.fragment.ktx)
@@ -76,4 +79,5 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 }
