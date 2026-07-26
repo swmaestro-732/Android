@@ -220,11 +220,20 @@ private fun AddPhotoSlot(
     max: Int,
     onPicked: (List<String>) -> Unit,
 ) {
-    val launcher =
+    val remaining = max - count
+    // 남은 자리만큼만 고를 수 있게 한다. PickMultipleVisualMedia 는 maxItems >= 2 를 요구하므로
+    // 남은 자리가 1 이면 단일 선택 피커를 쓴다.
+    val multiLauncher =
         rememberLauncherForActivityResult(
-            ActivityResultContracts.PickMultipleVisualMedia(max),
+            ActivityResultContracts.PickMultipleVisualMedia(remaining.coerceAtLeast(2)),
         ) { uris ->
             if (uris.isNotEmpty()) onPicked(uris.map { it.toString() })
+        }
+    val singleLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.PickVisualMedia(),
+        ) { uri ->
+            if (uri != null) onPicked(listOf(uri.toString()))
         }
     Column(
         modifier =
@@ -233,9 +242,8 @@ private fun AddPhotoSlot(
                 .clip(RoundedCornerShape(10.dp))
                 .dashedBorder(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, cornerRadius = 10.dp)
                 .clickable {
-                    launcher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                    )
+                    val request = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    if (remaining <= 1) singleLauncher.launch(request) else multiLauncher.launch(request)
                 },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,

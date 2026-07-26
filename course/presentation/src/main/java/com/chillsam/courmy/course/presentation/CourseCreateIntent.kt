@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.presentation
 
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
+import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseVisibility
 
@@ -60,5 +61,15 @@ sealed interface CourseCreateIntent : MviIntent {
 
     data class ChangeVisibility(
         val visibility: CourseVisibility,
+    ) : CourseCreateIntent
+
+    /** 임시저장 버튼: 현재 초안을 세션에 임시저장한다. */
+    data class SaveDraft(
+        val title: String,
+    ) : CourseCreateIntent
+
+    /** 코스 저장 완료: 완성 데이터를 보관하고 저장 목록에 추가한다. */
+    data class CompleteCourse(
+        val course: CourseCompleteVO?,
     ) : CourseCreateIntent
 }

@@ -2,10 +2,9 @@ package com.chillsam.courmy.main.presentation.navigation
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
-import com.chillsam.courmy.course.domain.CourseCompletePage
-import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCompletePage
 import com.chillsam.courmy.course.presentation.CourseCompleteViewModel
+import com.chillsam.courmy.course.presentation.CourseCreateIntent
 import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
@@ -13,6 +12,8 @@ import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.my.MyPage
+import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
+import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 
 /**
  * 앱의 모든 페이지 메타데이터 + 렌더러 모음.
@@ -27,23 +28,23 @@ val appRoutes: List<AppRoute> =
         // 코스 만들기: course 모듈의 실제 MVI 화면(SCRUM-234).
         // 상단바·저장바 네비게이션은 대상 화면(홈/코스 완성)이 main 모듈이라 여기서 주입한다.
         AppRoute(
-            path = CourseCreatePage.PATH,
+            path = CourseCreateRoute.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current
                 val viewModel = hiltViewModel<CourseCreateViewModel>()
                 CourseCreatePage(
                     viewModel = viewModel,
                     onClose = { navigationHelper.navigateToBack() },
-                    onSaveDraft = { draftTitle -> viewModel.saveDraft(draftTitle) },
+                    onSaveDraft = { draftTitle -> viewModel.onIntent(CourseCreateIntent.SaveDraft(draftTitle)) },
                     onSaveCourse = { completed ->
-                        viewModel.completeCourse(completed)
-                        navigationHelper.navigateTo(CourseCompletePage)
+                        viewModel.onIntent(CourseCreateIntent.CompleteCourse(completed))
+                        navigationHelper.navigateTo(CourseCompleteRoute)
                     },
                 )
             },
         ),
         AppRoute(
-            path = CourseCompletePage.PATH,
+            path = CourseCompleteRoute.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current
                 CourseCompletePage(

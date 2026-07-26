@@ -26,6 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -63,7 +67,11 @@ fun CourseCompleteScreen(
                         .size(34.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(color.bgDefaultLevel1)
-                        .clickable(onClick = onClose),
+                        .clickable(onClick = onClose)
+                        .clearAndSetSemantics {
+                            contentDescription = "닫기"
+                            role = Role.Button
+                        },
                 contentAlignment = Alignment.Center,
             ) {
                 DsText(

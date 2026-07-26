@@ -5,7 +5,6 @@ import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CompleteCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDraftUseCase
 import com.chillsam.courmy.course.domain.SaveDraftUseCase
-import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
@@ -22,16 +21,12 @@ class CourseCreateViewModel
     ) : MviViewModel<CourseCreateIntent, CourseCreateUIState, CourseCreateReducerEvent>(
             CourseCreateUIState.empty,
         ) {
-        /** 임시저장 버튼: 현재 초안을 세션에 임시저장한다. */
-        fun saveDraft(title: String) = saveDraftUseCase(title)
-
-        /** 코스 저장 완료: 완성 데이터를 보관하고 저장 목록에 추가한다. */
-        fun completeCourse(course: CourseCompleteVO?) = completeCourseUseCase(course)
-
         init {
             onIntent(CourseCreateIntent.Load)
         }
 
+        // 플랫한 MVI 인텐트 디스패치라 분기 수만큼 길이·복잡도가 늘지만 로직 복잡도는 아니다.
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
         override fun onIntent(intent: CourseCreateIntent) {
             when (intent) {
                 CourseCreateIntent.Load -> {
@@ -104,6 +99,14 @@ class CourseCreateViewModel
 
                 is CourseCreateIntent.ChangeVisibility -> {
                     dispatch(CourseCreateReducerEvent.VisibilityChanged(intent.visibility))
+                }
+
+                is CourseCreateIntent.SaveDraft -> {
+                    saveDraftUseCase(intent.title)
+                }
+
+                is CourseCreateIntent.CompleteCourse -> {
+                    completeCourseUseCase(intent.course)
                 }
             }
         }

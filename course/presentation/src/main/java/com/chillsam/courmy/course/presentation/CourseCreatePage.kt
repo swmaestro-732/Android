@@ -256,6 +256,8 @@ private fun InfoSection(
     )
 }
 
+// 드래그 재정렬(제스처 콜백 + 자동 스크롤 + make-room) 핸들러라 분기가 많다. UI 이벤트 처리 복잡도.
+@Suppress("CyclomaticComplexMethod")
 @Composable
 private fun PlaceSection(
     uiState: CourseCreateUIState,

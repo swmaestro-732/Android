@@ -142,8 +142,10 @@ internal fun TagInputRow(onAddTag: (String) -> Unit) {
         )
         AddTagButton(
             onClick = {
-                onAddTag(text)
-                text = ""
+                if (text.isNotBlank()) {
+                    onAddTag(text)
+                    text = ""
+                }
             },
         )
     }
