@@ -63,10 +63,8 @@ sealed interface CourseCreateIntent : MviIntent {
         val visibility: CourseVisibility,
     ) : CourseCreateIntent
 
-    /** 임시저장 버튼: 현재 초안을 세션에 임시저장한다. */
-    data class SaveDraft(
-        val title: String,
-    ) : CourseCreateIntent
+    /** 임시저장 버튼: 현재 작성 중인 초안 전체를 세션에 임시저장한다. */
+    data object SaveDraft : CourseCreateIntent
 
     /** 코스 저장 완료: 완성 데이터를 보관하고 저장 목록에 추가한다. */
     data class CompleteCourse(

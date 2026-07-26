@@ -5,6 +5,7 @@ import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CompleteCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDraftUseCase
 import com.chillsam.courmy.course.domain.SaveDraftUseCase
+import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
@@ -101,8 +102,8 @@ class CourseCreateViewModel
                     dispatch(CourseCreateReducerEvent.VisibilityChanged(intent.visibility))
                 }
 
-                is CourseCreateIntent.SaveDraft -> {
-                    saveDraftUseCase(intent.title)
+                CourseCreateIntent.SaveDraft -> {
+                    saveDraftUseCase(currentState.toDraftVO())
                 }
 
                 is CourseCreateIntent.CompleteCourse -> {
@@ -189,4 +190,15 @@ class CourseCreateViewModel
                 dispatch(CourseCreateReducerEvent.DraftLoaded(getCourseDraftUseCase()))
             }
         }
+
+        /** 현재 화면 입력값을 임시저장용 초안으로 변환한다. */
+        private fun CourseCreateUIState.toDraftVO(): CourseDraftVO =
+            CourseDraftVO(
+                name = name,
+                description = description,
+                tags = tags,
+                suggestedTags = suggestedTags,
+                places = places,
+                visibility = visibility,
+            )
     }
