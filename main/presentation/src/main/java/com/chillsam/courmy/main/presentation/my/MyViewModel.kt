@@ -1,21 +1,21 @@
 package com.chillsam.courmy.main.presentation.my
 
 import androidx.lifecycle.ViewModel
-import com.chillsam.courmy.course.domain.ObserveSavedCoursesUseCase
-import com.chillsam.courmy.course.entity.SavedCourseVO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 /**
- * 마이 화면 ViewModel. 저장 완료한 코스 목록([savedCourses])을 course 모듈에서 관찰해 노출한다.
- * (마이 화면은 코스를 "표시만" 하므로 데이터 소유 모듈인 course:domain 의 UseCase 에 의존한다.)
+ * 마이·프로필(FS-15) ViewModel.
+ *
+ * TODO-API-SPEC: 현재는 UI 확인용 더미 프로필([MyProfileUiState.sample])을 노출한다.
+ * 프로필/내 코스 API 가 붙으면 여기서 관찰·변환한다.
  */
 @HiltViewModel
 class MyViewModel
     @Inject
-    constructor(
-        observeSavedCourses: ObserveSavedCoursesUseCase,
-    ) : ViewModel() {
-        val savedCourses: StateFlow<List<SavedCourseVO>> = observeSavedCourses()
+    constructor() : ViewModel() {
+        val profile: StateFlow<MyProfileUiState> = MutableStateFlow(MyProfileUiState.sample).asStateFlow()
     }

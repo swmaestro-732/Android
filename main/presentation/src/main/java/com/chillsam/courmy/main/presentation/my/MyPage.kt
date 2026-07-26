@@ -1,38 +1,46 @@
 package com.chillsam.courmy.main.presentation.my
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
-import com.chillsam.courmy.common.presentation.util.formatCreatedAt
-import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 
-/** 임시: 인메모리 저장코스엔 서버 courseId 가 없어, 상세 확인용으로 공개 코스 하나에 연결한다. */
-private const val TEMP_PUBLIC_COURSE_ID = "1"
-
 /**
- * 마이 화면(하단 네비게이션 목적지). 이번 실행 세션에서 저장([MyViewModel.savedCourses])한
- * 코스를 리스트(제목 + 생성 시각)로 보여주고, 하단 탭바를 함께 노출한다.
+ * 마이·프로필 화면(FS-15). 커버+아바타 헤더, 닉네임·소개, 통계(저장·내 코스·팔로워),
+ * "내 코스" 카드 그리드, 하단 탭바로 구성한다. 표시 전용이며 [MyViewModel] 의 더미 프로필을 렌더한다.
  */
 @Composable
 fun MyPage(
@@ -40,56 +48,47 @@ fun MyPage(
     viewModel: MyViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
-    val courses by viewModel.savedCourses.collectAsState()
+    val profile by viewModel.profile.collectAsStateWithLifecycle()
+    val color = DesignSystemThemeImpl.designSystemColor
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(
             modifier =
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp),
+                    .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            ProfileHeader(onSettings = { navigationHelper.navigateTo(SettingsPage) })
+            Spacer(Modifier.height(52.dp)) // 커버에 걸친 아바타 아래 절반만큼 여백
             DsText(
-                text = "저장한 코스",
+                text = profile.nickname,
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
-                modifier = Modifier.padding(vertical = 20.dp),
+                color = color.contentDefaultLevel0,
             )
-
-            if (courses.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    DsText(
-                        text = "저장한 코스가 없어요",
-                        style = DesignSystemThemeImpl.typeScale.textRegularS,
-                        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
-                    )
-                }
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(courses) { course ->
-                        SavedCourseRow(
-                            title = course.title,
-                            createdAtMillis = course.createdAtMillis,
-                            onClick = {
-                                // TODO(Phase 3): 실제 저장 코스의 courseId 로 교체. 지금은 인메모리 저장코스에
-                                //  서버 id 가 없어, 공개 코스로 임시 연결해 상세(API)를 확인한다.
-                                navigationHelper.navigateByRoute(
-                                    CourseDetailPage.route(TEMP_PUBLIC_COURSE_ID),
-                                )
-                            },
-                        )
-                        HorizontalDivider(
-                            thickness = 1.dp,
-                            color = DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0,
-                        )
-                    }
-                }
-            }
+            Spacer(Modifier.height(4.dp))
+            DsText(
+                text = "@${profile.handle}",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+            DsText(
+                text = profile.bio,
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = color.contentDefaultLevel1,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                modifier = Modifier.padding(horizontal = 40.dp, vertical = 12.dp),
+            )
+            StatsRow(profile = profile)
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = color.borderDefaultLevel0,
+                modifier = Modifier.padding(top = 20.dp),
+            )
+            MyCoursesSection(profile = profile)
+            Spacer(Modifier.height(16.dp))
         }
 
         CourmyBottomBar(
@@ -101,29 +100,182 @@ fun MyPage(
     }
 }
 
+/** 초록 커버 + 우상단 공유/설정 버튼 + 커버 하단에 걸친 원형 아바타. */
 @Composable
-private fun SavedCourseRow(
-    title: String,
-    createdAtMillis: Long,
+private fun ProfileHeader(onSettings: () -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .background(color.bgAccent),
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CoverIconButton(symbol = "↗", onClick = {})
+                CoverIconButton(symbol = "⚙", onClick = onSettings)
+            }
+        }
+        // 커버 하단에 걸친 아바타(하단 절반이 아래로 넘침).
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = 48.dp)
+                    .size(96.dp)
+                    .clip(CircleShape)
+                    .background(color.bgDefaultLevel0)
+                    .padding(3.dp)
+                    .clip(CircleShape)
+                    .background(color.borderDefaultLevel0),
+        )
+    }
+}
+
+@Composable
+private fun CoverIconButton(
+    symbol: String,
     onClick: () -> Unit,
 ) {
-    Column(
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
         modifier =
             Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(color.bgDefaultLevel0)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
         DsText(
-            text = title,
+            text = symbol,
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = color.contentDefaultLevel0,
+        )
+    }
+}
+
+/** 저장 · 내 코스 · 팔로워 3열 통계. */
+@Composable
+private fun StatsRow(profile: MyProfileUiState) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        StatItem(value = profile.savedCount, label = "저장")
+        StatItem(value = profile.myCourseCount.toString(), label = "내 코스")
+        StatItem(value = profile.followerCount, label = "팔로워")
+    }
+}
+
+@Composable
+private fun StatItem(
+    value: String,
+    label: String,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        DsText(
+            text = value,
             style = DesignSystemThemeImpl.typeScale.textStrongM,
-            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+            color = color.contentDefaultLevel0,
+        )
+        Spacer(Modifier.height(2.dp))
+        DsText(
+            text = label,
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel2,
+        )
+    }
+}
+
+/** "내 코스 N" 헤더 + 2열 카드 그리드. */
+@Composable
+private fun MyCoursesSection(profile: MyProfileUiState) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            DsText(
+                text = "내 코스",
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+            )
+            DsText(
+                text = profile.myCourseCount.toString(),
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = color.contentDefaultLevel2,
+            )
+        }
+        profile.myCourses.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                rowItems.forEach { course ->
+                    MyCourseCard(course = course, modifier = Modifier.weight(1f))
+                }
+                // 홀수 개일 때 마지막 칸 균형 맞춤.
+                if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun MyCourseCard(
+    course: MyCourseCardUi,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(modifier = modifier) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.35f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(color.borderDefaultLevel0),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(9999.dp))
+                        .background(color.contentDefaultLevel0)
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+            ) {
+                DsText(
+                    text = course.tracingLabel,
+                    style = DesignSystemThemeImpl.typeScale.textExtraXS,
+                    color = color.contentOnAccent,
+                )
+            }
+        }
+        DsText(
+            text = course.title,
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+            maxLines = 1,
+            modifier = Modifier.padding(top = 8.dp),
         )
         DsText(
-            text = formatCreatedAt(createdAtMillis),
+            text = course.spotLabel,
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+            color = color.contentDefaultLevel2,
+            modifier = Modifier.padding(top = 2.dp),
         )
     }
 }

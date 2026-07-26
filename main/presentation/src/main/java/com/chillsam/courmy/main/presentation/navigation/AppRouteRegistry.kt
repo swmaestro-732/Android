@@ -11,9 +11,19 @@ import com.chillsam.courmy.course.presentation.CourseDetailPage
 import com.chillsam.courmy.course.presentation.CourseDetailViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.my.GuestMyPage
+import com.chillsam.courmy.main.domain.my.InterestRegionPage
+import com.chillsam.courmy.main.domain.my.InterestThemePage
 import com.chillsam.courmy.main.domain.my.MyPage
+import com.chillsam.courmy.main.domain.my.ProfileEditPage
+import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.presentation.home.HomePage
+import com.chillsam.courmy.main.presentation.my.GuestMyPage
+import com.chillsam.courmy.main.presentation.my.InterestRegionPage
+import com.chillsam.courmy.main.presentation.my.InterestThemePage
 import com.chillsam.courmy.main.presentation.my.MyPage
+import com.chillsam.courmy.main.presentation.my.ProfileEditPage
+import com.chillsam.courmy.main.presentation.settings.SettingsPage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
@@ -60,6 +70,26 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = MyPage.PATH,
             render = { MyPage() },
+        ),
+        AppRoute(
+            path = GuestMyPage.PATH,
+            render = { GuestMyPage() },
+        ),
+        AppRoute(
+            path = ProfileEditPage.PATH,
+            render = { ProfileEditPage() },
+        ),
+        AppRoute(
+            path = InterestThemePage.PATH,
+            render = { InterestThemePage() },
+        ),
+        AppRoute(
+            path = InterestRegionPage.PATH,
+            render = { InterestRegionPage() },
+        ),
+        AppRoute(
+            path = SettingsPage.PATH,
+            render = { SettingsPage() },
         ),
         AppRoute(
             path = CourseDetailRoute.PATH,
