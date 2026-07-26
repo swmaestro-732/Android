@@ -5,6 +5,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import retrofit2.Retrofit
+import retrofit2.create
 import javax.inject.Singleton
 
 @Module
@@ -12,5 +14,15 @@ import javax.inject.Singleton
 object CourseDataModule {
     @Provides
     @Singleton
-    fun provideCourseRepository(): CourseRepository = CourseRepositoryImpl()
+    fun provideCourseApiService(retrofit: Retrofit): CourseApiService = retrofit.create()
+
+    @Provides
+    @Singleton
+    fun provideCourseRemoteDataSource(apiService: CourseApiService): CourseRemoteDataSource =
+        CourseRemoteDataSource(apiService)
+
+    @Provides
+    @Singleton
+    fun provideCourseRepository(remoteDataSource: CourseRemoteDataSource): CourseRepository =
+        CourseRepositoryImpl(remoteDataSource)
 }

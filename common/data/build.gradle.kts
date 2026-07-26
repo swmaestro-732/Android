@@ -30,7 +30,8 @@ android {
                 if (f.exists()) f.inputStream().use { load(it) }
             }
         val apiKey = localProps.getProperty("API_KEY") ?: ""
-        val apiBaseUrl = localProps.getProperty("API_BASE_URL") ?: "https://dapi.kakao.com/"
+        val apiBaseUrl =
+            localProps.getProperty("API_BASE_URL") ?: "https://d2ovt2o1pkjfc.cloudfront.net/"
         buildConfigField("String", "API_KEY", "\"$apiKey\"")
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }

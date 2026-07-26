@@ -8,6 +8,7 @@ import com.chillsam.courmy.course.presentation.CourseCreateIntent
 import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
 import com.chillsam.courmy.course.presentation.CourseDetailPage
+import com.chillsam.courmy.course.presentation.CourseDetailViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.MyPage
@@ -64,8 +65,8 @@ val appRoutes: List<AppRoute> =
             path = CourseDetailRoute.PATH,
             render = { args ->
                 CourseDetailPage(
-                    title = args[CourseDetailRoute.ARG_TITLE].orEmpty(),
-                    createdAtMillis = args[CourseDetailRoute.ARG_CREATED_AT]?.toLongOrNull() ?: 0L,
+                    courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty(),
+                    viewModel = hiltViewModel<CourseDetailViewModel>(),
                 )
             },
         ),
