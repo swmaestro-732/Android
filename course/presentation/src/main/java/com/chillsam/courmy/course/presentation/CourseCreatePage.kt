@@ -69,7 +69,7 @@ import kotlinx.coroutines.isActive
 fun CourseCreatePage(
     viewModel: CourseCreateViewModel,
     onClose: () -> Unit,
-    onSaveDraft: (String) -> Unit,
+    onSaveDraft: () -> Unit,
     onSaveCourse: (CourseCompleteVO?) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -87,13 +87,12 @@ private fun CourseCreateContent(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
     onClose: () -> Unit,
-    onSaveDraft: (String) -> Unit,
+    onSaveDraft: () -> Unit,
     onSaveCourse: (CourseCompleteVO?) -> Unit,
 ) {
     var showPlaceSearch by remember { mutableStateOf(false) }
     var placeToRemove by remember { mutableStateOf<CoursePlaceVO?>(null) }
     var showExitConfirm by remember { mutableStateOf(false) }
-    var showSavedToast by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     // 스크롤 뷰포트의 화면(window) 상단 y·높이(px). 장소 드래그 시 가장자리 자동 스크롤 판정에 쓴다.
     var viewportTopPx by remember { mutableStateOf(0f) }
@@ -129,10 +128,7 @@ private fun CourseCreateContent(
         ) {
             CourseTopBar(
                 onClose = { if (uiState.hasContent) showExitConfirm = true else onClose() },
-                onSaveDraft = {
-                    onSaveDraft(uiState.draftTitle())
-                    showSavedToast = true
-                },
+                onSaveDraft = onSaveDraft,
             )
 
             Spacer(Modifier.height(20.dp))
@@ -162,12 +158,6 @@ private fun CourseCreateContent(
             onSave = { onSaveCourse(uiState.toCompleteVO()) },
         )
 
-        SavedDraftToast(
-            visible = showSavedToast,
-            onHidden = { showSavedToast = false },
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
-
         if (showPlaceSearch) {
             PlaceSearchOverlay(
                 onDismiss = { showPlaceSearch = false },
@@ -192,9 +182,9 @@ private fun CourseCreateContent(
         if (showExitConfirm) {
             ExitConfirmDialog(
                 onSaveAndExit = {
-                    onSaveDraft(uiState.draftTitle())
+                    // onSaveDraft 가 저장 후 홈으로 이동하므로 별도 onClose 는 부르지 않는다.
                     showExitConfirm = false
-                    onClose()
+                    onSaveDraft()
                 },
                 onDiscard = {
                     showExitConfirm = false
@@ -209,9 +199,6 @@ private fun CourseCreateContent(
 /** 미저장 변경(입력한 값)이 있는지. ✕ 로 나갈 때 확인 다이얼로그를 띄울지 판단한다. */
 private val CourseCreateUIState.hasContent: Boolean
     get() = name.isNotBlank() || description.isNotBlank() || tags.isNotEmpty() || places.isNotEmpty()
-
-/** 임시저장 목록에 노출할 제목. 이름이 비면 기본값. */
-private fun CourseCreateUIState.draftTitle(): String = name.ifBlank { "제목 없는 코스" }
 
 /**
  * 입력값 → 코스 완성(FS-34-Done) 데이터 매핑. 이름/장소가 비어 있으면 null 을 반환해

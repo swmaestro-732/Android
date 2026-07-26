@@ -1,6 +1,6 @@
 package com.chillsam.courmy.course.domain
 
-import com.chillsam.courmy.course.entity.SavedCourseVO
+import com.chillsam.courmy.course.entity.DraftSummaryVO
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
@@ -10,5 +10,5 @@ class ObserveDraftsUseCase
     constructor(
         private val repository: CourseRepository,
     ) {
-        operator fun invoke(): StateFlow<List<SavedCourseVO>> = repository.drafts
+        operator fun invoke(): StateFlow<List<DraftSummaryVO>> = repository.drafts
     }

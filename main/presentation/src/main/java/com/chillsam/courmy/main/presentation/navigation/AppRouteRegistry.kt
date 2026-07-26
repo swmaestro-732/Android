@@ -41,7 +41,11 @@ val appRoutes: List<AppRoute> =
                 CourseCreatePage(
                     viewModel = viewModel,
                     onClose = { navigationHelper.navigateToBack() },
-                    onSaveDraft = { draftTitle -> viewModel.onIntent(CourseCreateIntent.SaveDraft(draftTitle)) },
+                    onSaveDraft = {
+                        // 임시저장하면 세션에 저장하고 홈으로 나간다.
+                        viewModel.onIntent(CourseCreateIntent.SaveDraft)
+                        navigationHelper.navigateTo(HomePage)
+                    },
                     onSaveCourse = { completed ->
                         viewModel.onIntent(CourseCreateIntent.CompleteCourse(completed))
                         navigationHelper.navigateTo(CourseCompleteRoute)
