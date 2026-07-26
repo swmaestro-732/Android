@@ -1,0 +1,81 @@
+package com.chillsam.courmy.course.entity
+
+import kotlinx.serialization.Serializable
+
+/**
+ * 완성된 코스의 상세. Figma FS-11 CourseDetailActivity 한 화면의 전체 표시 데이터.
+ *
+ * - [title]          코스 제목 (예: "비 오는 날 성수 감성 카페 코스")
+ * - [coverImageUrl]  히어로 커버 이미지 URL (없으면 빈 문자열)
+ * - [category]       상단 카테고리 (예: "성수 · 데이트")
+ * - [authorName]     작성자 이름 (예: "지호님")
+ * - [authorHandle]   작성자 핸들 (예: "@jiho_routes")
+ * - [authorImageUrl] 작성자 프로필 이미지 URL
+ * - [placeCountText] 장소 수 요약 (예: "4곳")
+ * - [walkText]       총 도보 요약 (예: "도보 20분")
+ * - [followerText]   따라간 사람 수 (예: "1.2k 따라감")
+ * - [description]    코스 소개 문단
+ * - [places]         코스 속 장소 목록 (순서대로)
+ * - [rating]         평균 별점 텍스트 (예: "4.8")
+ * - [reviewCountText] 리뷰 수 (예: "128개")
+ * - [reviews]        리뷰 목록
+ */
+@Serializable
+data class CourseDetailVO(
+    val title: String,
+    val coverImageUrl: String = "",
+    val category: String,
+    val authorName: String,
+    val authorHandle: String,
+    val authorImageUrl: String = "",
+    val placeCountText: String,
+    val walkText: String,
+    val followerText: String,
+    val description: String,
+    val places: List<CourseDetailPlaceVO>,
+    val rating: String,
+    val reviewCountText: String,
+    val reviews: List<CourseReviewVO>,
+)
+
+/**
+ * 코스 상세의 장소 1건("코스 속 장소").
+ *
+ * - [order]          순번 (1부터)
+ * - [name]           장소명
+ * - [category]       카테고리 (예: "카페 · 베이커리")
+ * - [photoCountText] 사진 인덱스 배지 (예: "1/3")
+ * - [imageUrls]      장소 사진 URL 목록 (순서대로)
+ * - [tip]            작성자 팁 ("지호님 팁" 본문)
+ * - [walkToNextText] 다음 장소로의 도보 안내 (예: "도보 6분"). 마지막 장소는 null
+ */
+@Serializable
+data class CourseDetailPlaceVO(
+    val order: Int,
+    val name: String,
+    val category: String,
+    val photoCountText: String,
+    val tip: String,
+    val imageUrls: List<String> = emptyList(),
+    val walkToNextText: String? = null,
+)
+
+/**
+ * 코스 리뷰 1건.
+ *
+ * - [author]      리뷰어 이름
+ * - [authorImageUrl] 리뷰어 프로필 이미지 URL
+ * - [rating]      별점(1~5)
+ * - [dateText]    상대 날짜 (예: "2일 전")
+ * - [body]        리뷰 본문
+ * - [photoUrls]   첨부 사진 URL 목록 (비면 미표시)
+ */
+@Serializable
+data class CourseReviewVO(
+    val author: String,
+    val authorImageUrl: String = "",
+    val rating: Int,
+    val dateText: String,
+    val body: String,
+    val photoUrls: List<String> = emptyList(),
+)

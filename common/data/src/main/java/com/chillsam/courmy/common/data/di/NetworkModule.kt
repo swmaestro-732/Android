@@ -37,16 +37,21 @@ object NetworkModule {
             HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
             }
-        // API-CONFIG-INJECTION-POINT: 인증 헤더 포맷은 대상 API 에 맞게 교체한다.
-        // (기본값은 카카오 OpenAPI 의 "KakaoAK {key}" 포맷)
+        // API-CONFIG-INJECTION-POINT: 인증 헤더는 API_KEY 가 있을 때만 붙인다.
+        // Courmy 공개 엔드포인트(코스 상세 등)는 키가 없어도 되고, /my·생성 등 인증 필요 API 는
+        // 로그인 accessToken(Bearer) 도입 시 이 포맷을 교체한다.
         val authInterceptor =
             Interceptor { chain ->
+                val original = chain.request()
                 val request =
-                    chain
-                        .request()
-                        .newBuilder()
-                        .addHeader("Authorization", "KakaoAK ${BuildConfig.API_KEY}")
-                        .build()
+                    if (BuildConfig.API_KEY.isNotBlank()) {
+                        original
+                            .newBuilder()
+                            .addHeader("Authorization", "Bearer ${BuildConfig.API_KEY}")
+                            .build()
+                    } else {
+                        original
+                    }
                 chain.proceed(request)
             }
         return OkHttpClient

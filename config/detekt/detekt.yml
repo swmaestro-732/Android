@@ -17,6 +17,10 @@ complexity:
     # @Composable 은 선언형 레이아웃 DSL 이라 줄 수가 길어도 로직 복잡도가 아니다.
     # (naming·UnusedPrivateMember·LongParameterList 와 동일한 Compose 예외 정책.)
     ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    # 한 화면을 작은 private @Composable 로 잘게 나누는 게 Compose 정석이라
+    # 파일당 함수 수가 많아지는데, 이는 스멜이 아니므로 @Composable 은 카운트에서 제외.
+    ignoreAnnotatedFunctions: ['Composable']
 
 style:
   active: true
