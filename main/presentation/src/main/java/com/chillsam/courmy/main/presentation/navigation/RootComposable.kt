@@ -2,8 +2,12 @@ package com.chillsam.courmy.main.presentation.navigation
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -103,6 +107,10 @@ fun RootComposable(
                 modifier
                     .fillMaxSize()
                     .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1),
+            // 상·하단 시스템바 inset 은 소비하지 않는다(가로만 소비). 각 화면이 배경을 시스템바
+            // 뒤까지 그린 뒤 콘텐츠·하단 액션에만 status/navigationBarsPadding 을 적용해,
+            // 상태바·내비게이션바 영역 색을 화면 배경과 일치시킨다.
+            contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
             snackbarHost = { SnackbarHost(snackBarHostState) },
         ) { innerPadding ->
             AppNavHost(

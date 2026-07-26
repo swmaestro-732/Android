@@ -1,8 +1,5 @@
 package com.chillsam.courmy.course.presentation.component
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,10 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -41,6 +34,7 @@ fun CoursePlaceCard(
     onNoteChange: (String) -> Unit,
     onPhotosChange: (List<String>) -> Unit,
     modifier: Modifier = Modifier,
+    dragHandleModifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(16.dp)
     val hasNote = place.note.isNotEmpty()
@@ -52,7 +46,7 @@ fun CoursePlaceCard(
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
                 .border(1.dp, DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, shape),
     ) {
-        PlaceHeader(place = place, onRemove = onRemove)
+        PlaceHeader(place = place, onRemove = onRemove, dragHandleModifier = dragHandleModifier)
         // 메모 유무와 무관하게 동일한 컴포저블 트리를 유지하고 배경색만 토글해, 입력 중 포커스가 끊기지 않게 한다.
         Column(
             modifier =
@@ -68,7 +62,7 @@ fun CoursePlaceCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             EditableNoteRow(note = place.note, onNoteChange = { onNoteChange(it.take(NOTE_MAX_LENGTH)) })
-            PhotoRow(
+            CoursePhotoRow(
                 photos = place.photoUrls,
                 maxPhotos = place.maxPhotos,
                 onPhotosChange = onPhotosChange,
@@ -81,6 +75,7 @@ fun CoursePlaceCard(
 private fun PlaceHeader(
     place: CoursePlaceVO,
     onRemove: () -> Unit,
+    dragHandleModifier: Modifier = Modifier,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(10.dp),
@@ -89,6 +84,7 @@ private fun PlaceHeader(
     ) {
         DsText(
             text = "⋮",
+            modifier = dragHandleModifier.padding(4.dp),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
         )
@@ -173,103 +169,5 @@ private fun EditableNoteRow(
                 color = placeholderColor,
             )
         }
-    }
-}
-
-@Composable
-private fun PhotoRow(
-    photos: List<String>,
-    maxPhotos: Int,
-    onPhotosChange: (List<String>) -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        photos.forEach { uri ->
-            FilledPhotoSlot(uri = uri, onRemove = { onPhotosChange(photos - uri) })
-        }
-        if (photos.size < maxPhotos) {
-            AddPhotoSlot(
-                count = photos.size,
-                max = maxPhotos,
-                onPicked = { picked -> onPhotosChange((photos + picked).take(maxPhotos)) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun FilledPhotoSlot(
-    uri: String,
-    onRemove: () -> Unit,
-) {
-    Box(
-        modifier =
-            Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0),
-        contentAlignment = Alignment.TopEnd,
-    ) {
-        AsyncImage(
-            model = uri,
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
-        Box(
-            modifier =
-                Modifier
-                    .padding(3.dp)
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0)
-                    .clickable(onClick = onRemove),
-            contentAlignment = Alignment.Center,
-        ) {
-            DsText(
-                text = "✕",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
-            )
-        }
-    }
-}
-
-@Composable
-private fun AddPhotoSlot(
-    count: Int,
-    max: Int,
-    onPicked: (List<String>) -> Unit,
-) {
-    val launcher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.PickMultipleVisualMedia(max),
-        ) { uris ->
-            if (uris.isNotEmpty()) onPicked(uris.map { it.toString() })
-        }
-    Column(
-        modifier =
-            Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .dashedBorder(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, cornerRadius = 10.dp)
-                .clickable {
-                    launcher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                    )
-                },
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        DsText(
-            text = "＋",
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = DesignSystemThemeImpl.designSystemColor.contentAccent,
-        )
-        DsText(
-            text = "$count/$max",
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = DesignSystemThemeImpl.designSystemColor.contentAccent,
-            textAlign = TextAlign.Center,
-        )
     }
 }

@@ -46,6 +46,14 @@ class CourseCreateViewModel
                     dispatch(CourseCreateReducerEvent.DescriptionChanged(intent.description))
                 }
 
+                is CourseCreateIntent.ChangeThumbnailPhotos -> {
+                    dispatch(
+                        CourseCreateReducerEvent.ThumbnailPhotosChanged(
+                            intent.photoUrls.take(CourseCreateUIState.MAX_THUMBNAIL_PHOTOS),
+                        ),
+                    )
+                }
+
                 is CourseCreateIntent.AddTag -> {
                     addTag(intent.tag)
                 }
@@ -90,6 +98,10 @@ class CourseCreateViewModel
                     )
                 }
 
+                is CourseCreateIntent.MovePlace -> {
+                    movePlace(intent.fromIndex, intent.toIndex)
+                }
+
                 is CourseCreateIntent.ChangeVisibility -> {
                     dispatch(CourseCreateReducerEvent.VisibilityChanged(intent.visibility))
                 }
@@ -125,6 +137,10 @@ class CourseCreateViewModel
                     state.copy(description = event.description)
                 }
 
+                is CourseCreateReducerEvent.ThumbnailPhotosChanged -> {
+                    state.copy(thumbnailPhotos = event.photoUrls.toImmutableList())
+                }
+
                 is CourseCreateReducerEvent.TagsChanged -> {
                     state.copy(tags = event.tags.toImmutableList())
                 }
@@ -142,6 +158,19 @@ class CourseCreateViewModel
             val trimmed = tag.trim()
             if (trimmed.isEmpty() || currentState.tags.contains(trimmed)) return
             dispatch(CourseCreateReducerEvent.TagsChanged(currentState.tags + trimmed))
+        }
+
+        private fun movePlace(
+            fromIndex: Int,
+            toIndex: Int,
+        ) {
+            val places = currentState.places
+            if (fromIndex !in places.indices || toIndex !in places.indices || fromIndex == toIndex) return
+            val reordered =
+                places.toMutableList().apply {
+                    add(toIndex, removeAt(fromIndex))
+                }
+            dispatch(CourseCreateReducerEvent.PlacesChanged(reordered))
         }
 
         private fun addPlaces(places: List<CoursePlaceVO>) {

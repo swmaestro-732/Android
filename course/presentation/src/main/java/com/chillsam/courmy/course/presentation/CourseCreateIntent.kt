@@ -18,6 +18,11 @@ sealed interface CourseCreateIntent : MviIntent {
         val description: String,
     ) : CourseCreateIntent
 
+    /** 코스 썸네일 사진 목록을 교체한다(추가·삭제 공통). 최대 개수 초과분은 잘라낸다. */
+    data class ChangeThumbnailPhotos(
+        val photoUrls: List<String>,
+    ) : CourseCreateIntent
+
     data class AddTag(
         val tag: String,
     ) : CourseCreateIntent
@@ -45,6 +50,12 @@ sealed interface CourseCreateIntent : MviIntent {
 
     data class RemovePlace(
         val placeId: String,
+    ) : CourseCreateIntent
+
+    /** 담은 장소의 순서를 [fromIndex] 에서 [toIndex] 로 바꾼다(드래그 재정렬). */
+    data class MovePlace(
+        val fromIndex: Int,
+        val toIndex: Int,
     ) : CourseCreateIntent
 
     data class ChangeVisibility(

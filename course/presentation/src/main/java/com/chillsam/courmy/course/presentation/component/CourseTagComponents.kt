@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -21,11 +22,42 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.collections.immutable.ImmutableList
+
+/** ③ 코스 설정 — 태그 카드. 선택 태그칩 · 입력행 · 추천 태그를 한 카드에 담는다. */
+@Composable
+fun CourseTagCard(
+    tags: ImmutableList<String>,
+    suggestedTags: ImmutableList<String>,
+    onAddTag: (String) -> Unit,
+    onRemoveTag: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
+                .border(
+                    1.dp,
+                    DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0,
+                    RoundedCornerShape(18.dp),
+                ).padding(17.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FieldLabel("태그")
+        SelectedTags(tags = tags, onRemoveTag = onRemoveTag)
+        TagInputRow(onAddTag = onAddTag)
+        FieldLabel("추천 태그")
+        SuggestedTags(suggestedTags = suggestedTags, onAddTag = onAddTag)
+    }
+}
 
 /** 선택된 태그 칩 목록(개별 삭제 가능). */
 @OptIn(ExperimentalLayoutApi::class)
@@ -77,6 +109,7 @@ private fun RemovableTagChip(
 @Composable
 internal fun TagInputRow(onAddTag: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
+    var focused by remember { mutableStateOf(false) }
     Row(
         modifier =
             Modifier
@@ -86,7 +119,11 @@ internal fun TagInputRow(onAddTag: (String) -> Unit) {
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0)
                 .border(
                     1.dp,
-                    DesignSystemThemeImpl.designSystemColor.borderAccent,
+                    if (focused) {
+                        DesignSystemThemeImpl.designSystemColor.borderAccent
+                    } else {
+                        DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0
+                    },
                     RoundedCornerShape(12.dp),
                 ).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -97,7 +134,12 @@ internal fun TagInputRow(onAddTag: (String) -> Unit) {
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
         )
-        TagInputField(text = text, onTextChange = { text = it }, modifier = Modifier.weight(1f))
+        TagInputField(
+            text = text,
+            onTextChange = { text = it },
+            onFocusChanged = { focused = it },
+            modifier = Modifier.weight(1f),
+        )
         AddTagButton(
             onClick = {
                 onAddTag(text)
@@ -111,12 +153,13 @@ internal fun TagInputRow(onAddTag: (String) -> Unit) {
 private fun TagInputField(
     text: String,
     onTextChange: (String) -> Unit,
+    onFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     BasicTextField(
         value = text,
         onValueChange = onTextChange,
-        modifier = modifier,
+        modifier = modifier.onFocusChanged { onFocusChanged(it.isFocused) },
         singleLine = true,
         textStyle =
             DesignSystemThemeImpl.typeScale.textRegularXS

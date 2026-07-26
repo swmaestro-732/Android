@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -154,7 +155,11 @@ internal fun SavedDraftToast(
         onHidden()
     }
     Box(
-        modifier = modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 96.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(start = 20.dp, end = 20.dp, bottom = 96.dp),
         contentAlignment = Alignment.Center,
     ) {
         Box(

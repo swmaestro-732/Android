@@ -22,7 +22,8 @@ internal enum class CourmyPaletteColors(
     val colorValue: Color,
 ) {
     Black(Color(0xFF1E1E1C)),
-    Gray300(Color(0xFFF5F5F3)),
+    Gray200(Color(0xFFF5F5F3)),
+    Gray300(Color(0xFFD7D7D3)),
     Gray400(Color(0xFFEAEAE7)),
     Gray500(Color(0xFFABABA3)),
     Gray600(Color(0xFF9C9C95)),
@@ -51,7 +52,7 @@ internal enum class CourmyPaletteColors(
 // 시맨틱 슬롯은 반드시 위 팔레트를 참조한다 (raw hex 직접 사용 금지).
 val DefaultDesignSystemColor =
     DesignSystemSemanticColors(
-        bgDefaultLevel0 = CourmyPaletteColors.Gray300.colorValue,
+        bgDefaultLevel0 = CourmyPaletteColors.Gray200.colorValue,
         bgDefaultLevel1 = CourmyPaletteColors.White.colorValue,
         // 강조 배경(Primary CTA). content 계열과 값(Forest600)은 겹치지만 역할이 달라 슬롯 분리.
         bgAccent = CourmyPaletteColors.Forest600.colorValue,
@@ -59,6 +60,8 @@ val DefaultDesignSystemColor =
         // Secondary 버튼 배경(옅은 강조). Figma #eaf0ea ≈ ForestTint 로 스냅.
         bgAccentSubtle = CourmyPaletteColors.ForestTint.colorValue,
         borderDefaultLevel0 = CourmyPaletteColors.Gray400.colorValue,
+        // 진한(틴트) 배경 위에서 쓰는 조금 더 진한 테두리. Level0(흰 배경용)보다 대비를 높인다.
+        borderDefaultLevel1 = CourmyPaletteColors.Gray300.colorValue,
         // 입력 필드 focus/error 테두리. content 계열과 값은 겹치나 역할(테두리)이 달라 분리.
         borderAccent = CourmyPaletteColors.Forest600.colorValue,
         borderDanger = CourmyPaletteColors.Red.colorValue,

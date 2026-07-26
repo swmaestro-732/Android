@@ -23,6 +23,10 @@ sealed interface CourseCreateReducerEvent : ReducerEvent {
         val description: String,
     ) : CourseCreateReducerEvent
 
+    data class ThumbnailPhotosChanged(
+        val photoUrls: List<String>,
+    ) : CourseCreateReducerEvent
+
     data class TagsChanged(
         val tags: List<String>,
     ) : CourseCreateReducerEvent

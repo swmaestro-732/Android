@@ -4,6 +4,5 @@ package com.chillsam.courmy.course.presentation.component
 data class CourseInfoCardActions(
     val onNameChange: (String) -> Unit,
     val onDescriptionChange: (String) -> Unit,
-    val onRemoveTag: (String) -> Unit,
-    val onAddTag: (String) -> Unit,
+    val onThumbnailPhotosChange: (List<String>) -> Unit,
 )

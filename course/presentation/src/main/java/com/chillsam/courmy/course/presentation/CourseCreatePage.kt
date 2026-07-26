@@ -1,7 +1,11 @@
 package com.chillsam.courmy.course.presentation
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,18 +14,30 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -34,11 +50,12 @@ import com.chillsam.courmy.course.presentation.component.CourseInfoCardActions
 import com.chillsam.courmy.course.presentation.component.CoursePlaceCard
 import com.chillsam.courmy.course.presentation.component.CourseRouteConnector
 import com.chillsam.courmy.course.presentation.component.CourseSectionHeader
+import com.chillsam.courmy.course.presentation.component.CourseTagCard
 import com.chillsam.courmy.course.presentation.component.CourseTopBar
 import com.chillsam.courmy.course.presentation.component.CourseVisibilitySegment
 import com.chillsam.courmy.course.presentation.component.PlaceSearchOverlay
 import com.chillsam.courmy.course.presentation.component.dashedBorder
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 /**
  * 코스 만들기 화면.
@@ -75,6 +92,10 @@ private fun CourseCreateContent(
     var placeToRemove by remember { mutableStateOf<CoursePlaceVO?>(null) }
     var showExitConfirm by remember { mutableStateOf(false) }
     var showSavedToast by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    // 스크롤 뷰포트의 화면(window) 상단 y·높이(px). 장소 드래그 시 가장자리 자동 스크롤 판정에 쓴다.
+    var viewportTopPx by remember { mutableStateOf(0f) }
+    var viewportHeightPx by remember { mutableStateOf(0) }
 
     Box(
         modifier =
@@ -82,6 +103,7 @@ private fun CourseCreateContent(
                 .fillMaxSize()
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
+        // 로딩 화면
         if (uiState.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
@@ -90,11 +112,16 @@ private fun CourseCreateContent(
             return@Box
         }
 
+        // 전반적인 화면
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .statusBarsPadding()
+                    .onGloballyPositioned {
+                        viewportTopPx = it.positionInWindow().y
+                        viewportHeightPx = it.size.height
+                    }.verticalScroll(scrollState)
                     .padding(horizontal = 20.dp)
                     .padding(top = 12.dp, bottom = 116.dp),
         ) {
@@ -105,20 +132,30 @@ private fun CourseCreateContent(
                     showSavedToast = true
                 },
             )
+
             Spacer(Modifier.height(20.dp))
+
             InfoSection(uiState = uiState, onIntent = onIntent)
+
             Spacer(Modifier.height(22.dp))
+
             PlaceSection(
                 uiState = uiState,
                 onIntent = onIntent,
                 onAddPlace = { showPlaceSearch = true },
                 onRequestRemove = { placeToRemove = it },
+                scrollState = scrollState,
+                viewportTopPx = viewportTopPx,
+                viewportHeightPx = viewportHeightPx,
             )
+
             Spacer(Modifier.height(22.dp))
+
             VisibilitySection(uiState = uiState, onIntent = onIntent)
         }
 
         SaveBar(
+            enabled = uiState.canSave,
             modifier = Modifier.align(Alignment.BottomCenter),
             onSave = { onSaveCourse(uiState.toCompleteVO()) },
         )
@@ -206,14 +243,13 @@ private fun InfoSection(
     CourseInfoCard(
         name = uiState.name,
         description = uiState.description,
-        tags = uiState.tags,
-        suggestedTags = uiState.suggestedTags,
+        thumbnailPhotos = uiState.thumbnailPhotos,
+        thumbnailMaxPhotos = CourseCreateUIState.MAX_THUMBNAIL_PHOTOS,
         actions =
             CourseInfoCardActions(
                 onNameChange = { onIntent(CourseCreateIntent.ChangeName(it)) },
                 onDescriptionChange = { onIntent(CourseCreateIntent.ChangeDescription(it)) },
-                onRemoveTag = { onIntent(CourseCreateIntent.RemoveTag(it)) },
-                onAddTag = { onIntent(CourseCreateIntent.AddTag(it)) },
+                onThumbnailPhotosChange = { onIntent(CourseCreateIntent.ChangeThumbnailPhotos(it)) },
             ),
     )
 }
@@ -224,6 +260,9 @@ private fun PlaceSection(
     onIntent: (CourseCreateIntent) -> Unit,
     onAddPlace: () -> Unit,
     onRequestRemove: (CoursePlaceVO) -> Unit,
+    scrollState: ScrollState,
+    viewportTopPx: Float,
+    viewportHeightPx: Int,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         CourseSectionHeader(number = 2, title = "장소 담기", modifier = Modifier.weight(1f))
@@ -234,22 +273,144 @@ private fun PlaceSection(
         )
     }
     Spacer(Modifier.height(12.dp))
-    uiState.places.forEach { place ->
-        CoursePlaceCard(
-            place = place,
-            onRemove = { onRequestRemove(place) },
-            onNoteChange = { onIntent(CourseCreateIntent.ChangePlaceNote(place.id, it)) },
-            onPhotosChange = { onIntent(CourseCreateIntent.ChangePlacePhotos(place.id, it)) },
-        )
-        if (place.walkText.isNotEmpty()) {
-            CourseRouteConnector(text = place.walkText)
-        } else {
-            Spacer(Modifier.height(8.dp))
+
+    val places = uiState.places
+    val placesState = rememberUpdatedState(places)
+    // 슬롯(카드+커넥터) 실측: 화면(window) 상단 y·높이(px). 스크롤에도 값이 갱신돼 좌표가 강건하다.
+    val slotTops = remember { mutableStateMapOf<Int, Float>() }
+    val slotHeights = remember { mutableStateMapOf<Int, Int>() }
+    // 드래그 중엔 리스트를 건드리지 않고(스냅 방지), 놓을 때 [dragTarget] 으로 한 번 커밋한다.
+    var draggedIndex by remember { mutableStateOf<Int?>(null) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    var dragTarget by remember { mutableStateOf(-1) }
+    var autoScrollSpeed by remember { mutableStateOf(0f) }
+
+    // 가장자리 자동 스크롤: edge zone 에 머무는 동안 프레임마다 스크롤한다.
+    LaunchedEffect(autoScrollSpeed) {
+        if (autoScrollSpeed != 0f) {
+            while (isActive) {
+                if (scrollState.scrollBy(autoScrollSpeed) == 0f) break
+                dragTarget =
+                    computeDragTarget(slotTops, slotHeights, draggedIndex, dragOffset, placesState.value.size)
+                withFrameNanos { }
+            }
+        }
+    }
+
+    places.forEachIndexed { index, place ->
+        val dragging = draggedIndex
+        val isDragged = dragging == index
+        val draggedHeight = (slotHeights[dragging] ?: 0).toFloat()
+        // 드래그 대상이 낄 자리를 비켜주는 이동량(카드 한 칸 높이). 애니메이션으로 부드럽게.
+        val makeRoom =
+            when {
+                dragging == null || dragTarget < 0 || isDragged -> 0f
+                dragging < dragTarget && index in (dragging + 1)..dragTarget -> -draggedHeight
+                dragging > dragTarget && index in dragTarget until dragging -> draggedHeight
+                else -> 0f
+            }
+        val animMakeRoom by animateFloatAsState(targetValue = makeRoom, label = "makeRoom")
+        val translationYValue = if (isDragged) dragOffset else animMakeRoom
+
+        Column(
+            modifier =
+                Modifier
+                    .zIndex(if (isDragged) 1f else 0f)
+                    .graphicsLayer { translationY = translationYValue }
+                    .onGloballyPositioned {
+                        slotTops[index] = it.positionInWindow().y
+                        slotHeights[index] = it.size.height
+                    },
+        ) {
+            CoursePlaceCard(
+                place = place,
+                onRemove = { onRequestRemove(place) },
+                onNoteChange = { onIntent(CourseCreateIntent.ChangePlaceNote(place.id, it)) },
+                onPhotosChange = { onIntent(CourseCreateIntent.ChangePlacePhotos(place.id, it)) },
+                dragHandleModifier =
+                    Modifier.pointerInput(place.id) {
+                        detectDragGestures(
+                            onDragStart = {
+                                val cur = placesState.value.indexOfFirst { it.id == place.id }
+                                draggedIndex = cur
+                                dragOffset = 0f
+                                dragTarget = cur
+                            },
+                            onDrag = { change, amount ->
+                                change.consume()
+                                dragOffset += amount.y
+                                val from = draggedIndex ?: return@detectDragGestures
+                                dragTarget =
+                                    computeDragTarget(slotTops, slotHeights, from, dragOffset, placesState.value.size)
+                                val screenTop = (slotTops[from] ?: 0f) + dragOffset
+                                val screenBottom = screenTop + (slotHeights[from] ?: 0)
+                                autoScrollSpeed =
+                                    when {
+                                        screenTop < viewportTopPx + DRAG_EDGE_PX && scrollState.value > 0 -> {
+                                            -DRAG_SCROLL_PX
+                                        }
+
+                                        screenBottom > viewportTopPx + viewportHeightPx - DRAG_EDGE_PX &&
+                                            scrollState.value < scrollState.maxValue -> {
+                                            DRAG_SCROLL_PX
+                                        }
+
+                                        else -> {
+                                            0f
+                                        }
+                                    }
+                            },
+                            onDragEnd = {
+                                val from = draggedIndex
+                                if (from != null && dragTarget >= 0 && dragTarget != from) {
+                                    onIntent(CourseCreateIntent.MovePlace(from, dragTarget))
+                                }
+                                draggedIndex = null
+                                dragOffset = 0f
+                                dragTarget = -1
+                                autoScrollSpeed = 0f
+                            },
+                            onDragCancel = {
+                                draggedIndex = null
+                                dragOffset = 0f
+                                dragTarget = -1
+                                autoScrollSpeed = 0f
+                            },
+                        )
+                    },
+            )
+            if (place.walkText.isNotEmpty()) {
+                CourseRouteConnector(text = place.walkText)
+            } else {
+                Spacer(Modifier.height(8.dp))
+            }
         }
     }
     Spacer(Modifier.height(2.dp))
     AddPlaceButton(onClick = onAddPlace)
 }
+
+/** 드래그 중 카드 중심([from] 슬롯 top + [dragOffset])이 넘어선 다른 슬롯 수 = 착지 인덱스. */
+private fun computeDragTarget(
+    slotTops: Map<Int, Float>,
+    slotHeights: Map<Int, Int>,
+    from: Int?,
+    dragOffset: Float,
+    count: Int,
+): Int {
+    if (from == null || from !in 0 until count) return -1
+    val draggedCenter = (slotTops[from] ?: 0f) + dragOffset + (slotHeights[from] ?: 0) / 2f
+    var target = 0
+    for (i in 0 until count) {
+        if (i == from) continue
+        val center = (slotTops[i] ?: 0f) + (slotHeights[i] ?: 0) / 2f
+        if (center < draggedCenter) target++
+    }
+    return target
+}
+
+private const val DRAG_EDGE_PX = 120f
+private const val DRAG_SCROLL_PX = 18f
 
 @Composable
 private fun AddPlaceButton(onClick: () -> Unit) {
@@ -276,8 +437,15 @@ private fun VisibilitySection(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
 ) {
-    CourseSectionHeader(number = 3, title = "공개 설정")
-    Spacer(Modifier.height(11.dp))
+    CourseSectionHeader(number = 3, title = "코스 설정")
+    Spacer(Modifier.height(10.dp))
+    CourseTagCard(
+        tags = uiState.tags,
+        suggestedTags = uiState.suggestedTags,
+        onAddTag = { onIntent(CourseCreateIntent.AddTag(it)) },
+        onRemoveTag = { onIntent(CourseCreateIntent.RemoveTag(it)) },
+    )
+    Spacer(Modifier.height(12.dp))
     CourseVisibilitySegment(
         selected = uiState.visibility,
         onSelect = { onIntent(CourseCreateIntent.ChangeVisibility(it)) },
@@ -286,16 +454,26 @@ private fun VisibilitySection(
 
 @Composable
 private fun SaveBar(
+    enabled: Boolean,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    Column(
         modifier =
             modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
                 .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        DsButton(text = "코스 저장하기", onClick = onSave)
+        if (!enabled) {
+            DsText(
+                text = "코스 이름 · 장소 2곳 이상 · 장소마다 사진 1장 이상이면 저장할 수 있어요",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+            )
+        }
+        DsButton(text = "코스 저장하기", enabled = enabled, onClick = onSave)
     }
 }
