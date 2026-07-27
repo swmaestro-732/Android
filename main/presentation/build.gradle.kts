@@ -69,6 +69,8 @@ dependencies {
     implementation(project(":course:domain"))
 
     implementation(libs.androidx.activity.compose)
+    // 프로필 이미지: 시스템 Photo Picker 로 고른 이미지 렌더(Coil).
+    implementation(libs.coil.compose)
     // 상세화면 Fragment 호스팅(FragmentActivity, FragmentContainerView).
     implementation(libs.androidx.fragment.ktx)
     api(libs.androidx.navigation3.runtime)
