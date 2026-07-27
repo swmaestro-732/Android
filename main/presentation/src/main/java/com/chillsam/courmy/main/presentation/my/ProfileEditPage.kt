@@ -113,7 +113,7 @@ private fun AvatarEditor(modifier: Modifier = Modifier) {
                 Modifier
                     .size(100.dp)
                     .clip(CircleShape)
-                    .background(color.borderDefaultLevel0),
+                    .background(color.imagePlaceholder),
         ) {
             Box(
                 modifier =

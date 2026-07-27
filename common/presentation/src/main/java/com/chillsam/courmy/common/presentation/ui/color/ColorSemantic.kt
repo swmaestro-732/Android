@@ -12,6 +12,8 @@ data class DesignSystemSemanticColors(
     val bgAccent: Color,
     val bgAccentPressed: Color,
     val bgAccentSubtle: Color,
+    // 이미지 플레이스홀더: 원격 이미지 로드 실패·로딩 중 기본으로 깔리는 배경. 값은 borderDefaultLevel1(Gray300)과 동일.
+    val imagePlaceholder: Color,
     val borderDefaultLevel0: Color,
     val borderDefaultLevel1: Color,
     val borderAccent: Color,
@@ -38,6 +40,7 @@ data class DesignSystemSemanticColors(
             "bgAccent" -> DesignSystemThemeImpl.designSystemColor.bgAccent
             "bgAccentPressed" -> DesignSystemThemeImpl.designSystemColor.bgAccentPressed
             "bgAccentSubtle" -> DesignSystemThemeImpl.designSystemColor.bgAccentSubtle
+            "imagePlaceholder" -> DesignSystemThemeImpl.designSystemColor.imagePlaceholder
             "borderDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0
             "borderDefaultLevel1" -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel1
             "borderAccent" -> DesignSystemThemeImpl.designSystemColor.borderAccent

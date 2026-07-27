@@ -80,7 +80,7 @@ private fun ProfileRow(onEdit: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(color.borderDefaultLevel0))
+        Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(color.imagePlaceholder))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             DsText(
                 text = "홍지호",

@@ -212,7 +212,7 @@ private fun CourseImage(
     val placeholder =
         modifier
             .clip(shape)
-            .background(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0)
+            .background(DesignSystemThemeImpl.designSystemColor.imagePlaceholder)
     if (url.isBlank()) {
         Box(modifier = placeholder)
     } else {
