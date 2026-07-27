@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -83,6 +84,7 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
                         color = color.contentAccent,
                     )
                 },
+                inputTrailing = { CheckButton(onClick = {}) },
             )
             LabeledField(
                 label = "소개",
@@ -172,6 +174,7 @@ private fun LabeledField(
     counter: String? = null,
     singleLine: Boolean = true,
     trailing: (@Composable () -> Unit)? = null,
+    inputTrailing: (@Composable () -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = modifier.fillMaxWidth().padding(top = 20.dp)) {
@@ -195,11 +198,49 @@ private fun LabeledField(
             }
             trailing?.invoke()
         }
-        DsTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = singleLine,
+        if (inputTrailing != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DsTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.weight(1f),
+                    singleLine = singleLine,
+                )
+                inputTrailing()
+            }
+        } else {
+            DsTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = singleLine,
+            )
+        }
+    }
+}
+
+/** 아이디 중복 확인 버튼(컴팩트, Secondary 스타일). 실동작은 아이디 API 연동 때 연결. */
+@Composable
+private fun CheckButton(onClick: () -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            Modifier
+                .height(46.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(color.bgAccentSubtle)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        DsText(
+            text = "중복 확인",
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = color.contentAccent,
         )
     }
 }
