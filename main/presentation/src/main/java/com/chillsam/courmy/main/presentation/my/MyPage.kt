@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.my
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,11 +33,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
@@ -211,8 +215,16 @@ private fun ProfileHeader(onSettings: () -> Unit) {
                         .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                CoverIconButton(symbol = "↗", onClick = {})
-                CoverIconButton(symbol = "⚙", onClick = onSettings)
+                CoverIconButton(
+                    iconRes = R.drawable.ic_share_24,
+                    contentDescription = "공유",
+                    onClick = {},
+                )
+                CoverIconButton(
+                    iconRes = R.drawable.ic_settings_24,
+                    contentDescription = "설정",
+                    onClick = onSettings,
+                )
             }
         }
         // 커버 하단에 걸친 아바타(하단 절반이 아래로 넘침).
@@ -230,7 +242,7 @@ private fun ProfileHeader(onSettings: () -> Unit) {
                         spotColor = color.contentDefaultLevel0.copy(alpha = 0.5f),
                     ).clip(CircleShape)
                     .background(color.bgDefaultLevel1)
-                    .padding(6.dp)
+                    .padding(5.dp)
                     .clip(CircleShape)
                     .background(color.imagePlaceholder),
         )
@@ -239,7 +251,8 @@ private fun ProfileHeader(onSettings: () -> Unit) {
 
 @Composable
 private fun CoverIconButton(
-    symbol: String,
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
     onClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -252,10 +265,11 @@ private fun CoverIconButton(
                 .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        DsText(
-            text = symbol,
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = color.contentDefaultLevel0,
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = contentDescription,
+            tint = color.contentDefaultLevel0,
+            modifier = Modifier.size(18.dp),
         )
     }
 }
