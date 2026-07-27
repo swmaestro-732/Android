@@ -40,7 +40,7 @@ fun DsChip(
         if (selected) {
             DesignSystemThemeImpl.designSystemColor.bgAccent
         } else {
-            DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0
+            DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
         }
     val contentColor =
         if (selected) {
@@ -57,9 +57,9 @@ fun DsChip(
                 .alpha(if (enabled) 1f else DISABLED_ALPHA)
                 .clip(shape)
                 .background(backgroundColor)
-                // Disabled 만 Figma 테두리(#ecece9 ≈ Gray400)를 borderDefaultLevel0 근사값으로.
+                // 미선택 칩: 흰 배경 + 테두리(Figma #e2e2dd ≈ borderDefaultLevel0). 선택 칩은 채운 강조라 테두리 없음.
                 .then(
-                    if (!enabled) {
+                    if (!selected) {
                         Modifier.border(
                             width = ChipBorderWidth,
                             color = DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0,

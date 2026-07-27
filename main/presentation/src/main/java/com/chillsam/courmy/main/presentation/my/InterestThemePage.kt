@@ -2,9 +2,11 @@ package com.chillsam.courmy.main.presentation.my
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -50,7 +52,10 @@ fun InterestThemePage(modifier: Modifier = Modifier) {
     var selected by remember { mutableStateOf(setOf("감성 카페", "전시·갤러리", "동네 산책")) }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
-        BackTopBar(title = "관심 테마", onBack = { navigationHelper.navigateToBack() })
+        // 상단 바 영역은 흰색(Figma FS-06). 가운데 콘텐츠만 Gray200.
+        Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
+            BackTopBar(title = "관심 테마", onBack = { navigationHelper.navigateToBack() })
+        }
 
         Column(
             modifier =
@@ -62,17 +67,24 @@ fun InterestThemePage(modifier: Modifier = Modifier) {
         ) {
             DsText(
                 text = "어떤 곳을\n좋아하세요?",
-                style = DesignSystemThemeImpl.typeScale.titleExtraL,
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
                 maxLines = 2,
-                modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
             )
-            DsText(
-                text = "최소 ${MIN_THEME_COUNT}개 이상 · ${selected.size}개 선택됨",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                modifier = Modifier.padding(bottom = 20.dp),
-            )
+            // "N개 선택됨" 부분만 강조색(Figma FS-06).
+            Row(modifier = Modifier.padding(bottom = 20.dp)) {
+                DsText(
+                    text = "최소 ${MIN_THEME_COUNT}개 이상 · ",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                )
+                DsText(
+                    text = "${selected.size}개 선택됨",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentAccent,
+                )
+            }
             ThemeChips(
                 selected = selected,
                 onToggle = { theme ->
