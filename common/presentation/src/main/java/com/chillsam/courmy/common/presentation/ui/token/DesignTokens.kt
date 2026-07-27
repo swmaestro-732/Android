@@ -61,6 +61,8 @@ val DefaultDesignSystemColor =
         bgAccentSubtle = CourmyPaletteColors.ForestTint.colorValue,
         // 이미지 로드 실패·로딩 중 기본 배경. borderDefaultLevel1 과 같은 Gray300.
         imagePlaceholder = CourmyPaletteColors.Gray300.colorValue,
+        // 스위치 off 트랙. imagePlaceholder 와 값(Gray300)은 같으나 역할이 달라 슬롯 분리.
+        bgSwitchOff = CourmyPaletteColors.Gray300.colorValue,
         borderDefaultLevel0 = CourmyPaletteColors.Gray400.colorValue,
         // 진한(틴트) 배경 위에서 쓰는 조금 더 진한 테두리. Level0(흰 배경용)보다 대비를 높인다.
         borderDefaultLevel1 = CourmyPaletteColors.Gray300.colorValue,

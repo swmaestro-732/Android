@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
-// Figma design_system > TOGGLE 기준값. Off track 근사색(#e2e2dd)은 borderDefaultLevel0 으로 스냅.
+// Figma design_system > TOGGLE 기준값. Off track 은 전용 슬롯 bgSwitchOff(Gray300) 를 사용한다.
 private val TrackWidth = 46.dp
 private val TrackHeight = 28.dp
 private val ThumbSize = 22.dp
@@ -32,7 +32,7 @@ private const val PILL_PERCENT = 50
 /**
  * 온/오프 토글. Figma `design_system > TOGGLE`.
  * - On: 강조 트랙([DesignSystemSemanticColors.bgAccent])
- * - Off: 기본 트랙([DesignSystemSemanticColors.borderDefaultLevel0])
+ * - Off: off 트랙([DesignSystemSemanticColors.bgSwitchOff])
  */
 @Composable
 fun DsSwitch(
@@ -46,7 +46,7 @@ fun DsSwitch(
         if (checked) {
             DesignSystemThemeImpl.designSystemColor.bgAccent
         } else {
-            DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0
+            DesignSystemThemeImpl.designSystemColor.bgSwitchOff
         }
     val thumbOffset by animateDpAsState(
         targetValue = if (checked) TrackWidth - ThumbSize - ThumbPadding else ThumbPadding,

@@ -14,6 +14,8 @@ data class DesignSystemSemanticColors(
     val bgAccentSubtle: Color,
     // 이미지 플레이스홀더: 원격 이미지 로드 실패·로딩 중 기본으로 깔리는 배경. 값은 borderDefaultLevel1(Gray300)과 동일.
     val imagePlaceholder: Color,
+    // 스위치(토글) off 트랙 배경. 값은 imagePlaceholder(Gray300)와 같지만 역할이 달라 슬롯 분리.
+    val bgSwitchOff: Color,
     val borderDefaultLevel0: Color,
     val borderDefaultLevel1: Color,
     val borderAccent: Color,
@@ -41,6 +43,7 @@ data class DesignSystemSemanticColors(
             "bgAccentPressed" -> DesignSystemThemeImpl.designSystemColor.bgAccentPressed
             "bgAccentSubtle" -> DesignSystemThemeImpl.designSystemColor.bgAccentSubtle
             "imagePlaceholder" -> DesignSystemThemeImpl.designSystemColor.imagePlaceholder
+            "bgSwitchOff" -> DesignSystemThemeImpl.designSystemColor.bgSwitchOff
             "borderDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0
             "borderDefaultLevel1" -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel1
             "borderAccent" -> DesignSystemThemeImpl.designSystemColor.borderAccent
