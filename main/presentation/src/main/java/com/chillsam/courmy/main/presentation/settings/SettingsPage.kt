@@ -46,7 +46,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     var recommendOn by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
-        BackTopBar(title = "설정", onBack = { navigationHelper.navigateToBack() })
+        BackTopBar(title = "설정", onBack = { navigationHelper.navigateToBack() }, boxed = true)
 
         Column(
             modifier =

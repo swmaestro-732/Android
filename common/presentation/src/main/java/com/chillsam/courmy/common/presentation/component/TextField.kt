@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -50,6 +51,7 @@ fun DsTextField(
     placeholder: String = "",
     isError: Boolean = false,
     enabled: Boolean = true,
+    singleLine: Boolean = true,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
@@ -71,20 +73,28 @@ fun DsTextField(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(TextFieldHeight)
-                    .clip(shape)
+                    .then(
+                        if (singleLine) {
+                            Modifier.height(TextFieldHeight)
+                        } else {
+                            Modifier.heightIn(min = TextFieldHeight)
+                        },
+                    ).clip(shape)
                     .background(colors.background)
                     .border(borderWidth, colors.border, shape)
-                    .padding(horizontal = TextFieldHorizontalPadding),
+                    .padding(
+                        horizontal = TextFieldHorizontalPadding,
+                        vertical = if (singleLine) 0.dp else 12.dp,
+                    ),
             enabled = enabled,
-            singleLine = true,
+            singleLine = singleLine,
             interactionSource = interactionSource,
             textStyle = DesignSystemThemeImpl.typeScale.textRegularS.copy(color = colors.text),
             cursorBrush = SolidColor(DesignSystemThemeImpl.designSystemColor.borderAccent),
             decorationBox = { innerTextField ->
                 Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.CenterStart,
+                    modifier = if (singleLine) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
+                    contentAlignment = if (singleLine) Alignment.CenterStart else Alignment.TopStart,
                 ) {
                     if (value.isEmpty()) DsTextFieldPlaceholder(placeholder)
                     innerTextField()

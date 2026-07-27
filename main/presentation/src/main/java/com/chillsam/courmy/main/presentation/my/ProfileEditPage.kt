@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,7 +27,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -47,7 +51,10 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
     var bio by remember { mutableStateOf("성수동 구석구석 카페 탐험가 · 걷기 좋은 코스를 만들어 나눠요") }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
-        BackTopBar(title = "프로필 편집", onBack = { navigationHelper.navigateToBack() })
+        // 상단 바 영역은 흰색(Figma FS-26). 가운데 콘텐츠만 Gray200.
+        Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
+            BackTopBar(title = "프로필 편집", onBack = { navigationHelper.navigateToBack() })
+        }
 
         Column(
             modifier =
@@ -77,7 +84,13 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
                     )
                 },
             )
-            LabeledField(label = "소개", value = bio, onValueChange = { bio = it }, counter = "${bio.length}/60")
+            LabeledField(
+                label = "소개",
+                value = bio,
+                onValueChange = { bio = it },
+                counter = "${bio.length}/60",
+                singleLine = false,
+            )
 
             InterestSummary(
                 title = "관심 테마",
@@ -88,19 +101,23 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
                 title = "관심 지역",
                 chips = listOf("성수", "연남", "한남"),
                 onEdit = { navigationHelper.navigateTo(InterestRegionPage) },
+                region = true,
             )
             Spacer(Modifier.height(12.dp))
         }
 
-        DsButton(
-            text = "변경 사항 저장",
-            onClick = { navigationHelper.navigateToBack() },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-        )
+        // 하단 저장 버튼 영역도 흰색(Figma FS-26).
+        Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
+            DsButton(
+                text = "변경 사항 저장",
+                onClick = { navigationHelper.navigateToBack() },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+            )
+        }
     }
 }
 
@@ -108,13 +125,23 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
 private fun AvatarEditor(modifier: Modifier = Modifier) {
     val color = DesignSystemThemeImpl.designSystemColor
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Box(
-            modifier =
-                Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(color.imagePlaceholder),
-        ) {
+        Box(modifier = Modifier.size(100.dp)) {
+            // 아바타 원(자식으로 두면 clip 에 배지가 잘리므로 배지와 형제로 분리).
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .shadow(
+                            elevation = 5.dp,
+                            shape = CircleShape,
+                            ambientColor = color.contentDefaultLevel0.copy(alpha = 0.12f),
+                            spotColor = color.contentDefaultLevel0.copy(alpha = 0.16f),
+                        ).clip(CircleShape)
+                        .background(color.bgDefaultLevel1)
+                        .padding(3.dp)
+                        .clip(CircleShape)
+                        .background(color.imagePlaceholder),
+            )
             Box(
                 modifier =
                     Modifier
@@ -125,10 +152,11 @@ private fun AvatarEditor(modifier: Modifier = Modifier) {
                         .clickable {},
                 contentAlignment = Alignment.Center,
             ) {
-                DsText(
-                    text = "📷",
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentOnAccent,
+                Icon(
+                    painter = painterResource(R.drawable.ic_camera_24),
+                    contentDescription = "사진 변경",
+                    tint = color.contentOnAccent,
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
@@ -142,18 +170,20 @@ private fun LabeledField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     counter: String? = null,
+    singleLine: Boolean = true,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = modifier.fillMaxWidth().padding(top = 20.dp)) {
+        // 라벨·카운터를 필드 텍스트 들여쓰기(DsTextField 링3+좌우14≈16)에 맞춰 정렬.
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DsText(
                 text = label,
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
+                color = color.contentDefaultLevel1,
                 modifier = Modifier.weight(1f),
             )
             counter?.let {
@@ -165,7 +195,12 @@ private fun LabeledField(
             }
             trailing?.invoke()
         }
-        DsTextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth())
+        DsTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = singleLine,
+        )
     }
 }
 
@@ -175,6 +210,7 @@ private fun InterestSummary(
     title: String,
     chips: List<String>,
     onEdit: () -> Unit,
+    region: Boolean = false,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
@@ -182,7 +218,7 @@ private fun InterestSummary(
             DsText(
                 text = title,
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
+                color = color.contentDefaultLevel1,
                 modifier = Modifier.weight(1f),
             )
             DsText(
@@ -194,8 +230,39 @@ private fun InterestSummary(
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             chips.forEach { chip ->
-                DsChip(text = chip, selected = true, enabled = false)
+                if (region) {
+                    RegionChip(text = chip)
+                } else {
+                    DsChip(text = chip, selected = true)
+                }
             }
         }
+    }
+}
+
+/** 관심 지역 요약 칩: 옅은 강조 배경 + 위치 아이콘 + 강조 텍스트(FS-26). */
+@Composable
+private fun RegionChip(text: String) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(
+        modifier =
+            Modifier
+                .clip(CircleShape)
+                .background(color.bgAccentSubtle)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_location_24),
+            contentDescription = null,
+            tint = color.contentAccent,
+            modifier = Modifier.size(14.dp),
+        )
+        DsText(
+            text = text,
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentAccent,
+        )
     }
 }

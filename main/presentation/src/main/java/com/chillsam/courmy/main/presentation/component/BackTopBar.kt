@@ -22,12 +22,18 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
-/** 편집·설정 화면 공용 상단바: 흰 라운드 박스의 뒤로가기 셰브론 + 제목. */
+/**
+ * 편집·설정 화면 공용 상단바: 뒤로가기 셰브론 + 제목.
+ *
+ * @param boxed true 면 뒤로가기를 흰 라운드 박스(테두리)로 감싸고 제목을 크게(설정 FS-28 스타일),
+ *   false(기본)면 플레인 셰브론 + 작은 제목(프로필 편집·관심 테마/지역 스타일).
+ */
 @Composable
 fun BackTopBar(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    boxed: Boolean = false,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
@@ -39,14 +45,17 @@ fun BackTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(
-            modifier =
+        val boxStyle =
+            if (boxed) {
                 Modifier
-                    .size(38.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(color.bgDefaultLevel1)
                     .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(12.dp))
-                    .clickable(onClick = onBack),
+            } else {
+                Modifier
+            }
+        Box(
+            modifier = Modifier.size(38.dp).then(boxStyle).clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -58,7 +67,12 @@ fun BackTopBar(
         }
         DsText(
             text = title,
-            style = DesignSystemThemeImpl.typeScale.titleExtraL,
+            style =
+                if (boxed) {
+                    DesignSystemThemeImpl.typeScale.titleExtraL
+                } else {
+                    DesignSystemThemeImpl.typeScale.textStrongS
+                },
             color = color.contentDefaultLevel0,
         )
     }
