@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlinx.serialization)
 }
 
 kotlin {
@@ -11,4 +12,5 @@ kotlin {
 
 dependencies {
     implementation(project(":common:entity"))
+    api(libs.kotlinx.serialization.json)
 }
