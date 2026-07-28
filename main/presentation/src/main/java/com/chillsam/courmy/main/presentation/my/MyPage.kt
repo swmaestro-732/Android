@@ -48,6 +48,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.entity.my.MyCourseVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
@@ -139,7 +140,11 @@ private fun MyContent(
         CourmyBottomBar(
             selectedTab = MainTab.MY,
             onTabSelected = { tab ->
-                if (tab == MainTab.HOME) navigationHelper.navigateTo(HomePage)
+                when (tab) {
+                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
+                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
+                    else -> Unit
+                }
             },
         )
     }

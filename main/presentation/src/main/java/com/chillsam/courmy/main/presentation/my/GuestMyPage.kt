@@ -35,6 +35,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.MyPage
+import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 
@@ -96,7 +97,11 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
         CourmyBottomBar(
             selectedTab = MainTab.MY,
             onTabSelected = { tab ->
-                if (tab == MainTab.HOME) navigationHelper.navigateTo(HomePage)
+                when (tab) {
+                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
+                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
+                    else -> Unit
+                }
             },
         )
     }
