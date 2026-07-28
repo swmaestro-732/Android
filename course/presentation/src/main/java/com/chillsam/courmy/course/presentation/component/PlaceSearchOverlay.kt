@@ -182,7 +182,7 @@ private fun SearchResultRow(
                 Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(color.borderDefaultLevel0),
+                    .background(color.imagePlaceholder),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             DsText(

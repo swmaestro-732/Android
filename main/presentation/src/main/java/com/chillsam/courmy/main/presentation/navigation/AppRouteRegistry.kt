@@ -12,14 +12,24 @@ import com.chillsam.courmy.course.presentation.CourseDetailViewModel
 import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
-import com.chillsam.courmy.main.domain.home.HomePage
-import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.presentation.home.HomePage
+import com.chillsam.courmy.main.presentation.my.GuestMyPage
+import com.chillsam.courmy.main.presentation.my.InterestRegionPage
+import com.chillsam.courmy.main.presentation.my.InterestThemePage
 import com.chillsam.courmy.main.presentation.my.MyPage
+import com.chillsam.courmy.main.presentation.my.ProfileEditPage
+import com.chillsam.courmy.main.presentation.settings.SettingsPage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
+import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
+import com.chillsam.courmy.main.domain.my.GuestMyPage as GuestMyRoute
+import com.chillsam.courmy.main.domain.my.InterestRegionPage as InterestRegionRoute
+import com.chillsam.courmy.main.domain.my.InterestThemePage as InterestThemeRoute
+import com.chillsam.courmy.main.domain.my.MyPage as MyRoute
+import com.chillsam.courmy.main.domain.my.ProfileEditPage as ProfileEditRoute
+import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
 
 /**
  * 앱의 모든 페이지 메타데이터 + 렌더러 모음.
@@ -28,7 +38,7 @@ import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 val appRoutes: List<AppRoute> =
     listOf(
         AppRoute(
-            path = HomePage.PATH,
+            path = HomeRoute.PATH,
             render = { HomePage() },
         ),
         // 코스 만들기: course 모듈의 실제 MVI 화면(SCRUM-234).
@@ -44,7 +54,7 @@ val appRoutes: List<AppRoute> =
                     onSaveDraft = {
                         // 임시저장하면 세션에 저장하고 홈으로 나간다.
                         viewModel.onIntent(CourseCreateIntent.SaveDraft)
-                        navigationHelper.navigateTo(HomePage)
+                        navigationHelper.navigateTo(HomeRoute)
                     },
                     onSaveCourse = { completed ->
                         viewModel.onIntent(CourseCreateIntent.CompleteCourse(completed))
@@ -59,8 +69,8 @@ val appRoutes: List<AppRoute> =
                 val navigationHelper = LocalNavigationHelper.current
                 CourseCompletePage(
                     viewModel = hiltViewModel<CourseCompleteViewModel>(),
-                    onClose = { navigationHelper.navigateTo(HomePage) },
-                    onViewMyCourses = { navigationHelper.navigateTo(MyPage) },
+                    onClose = { navigationHelper.navigateTo(HomeRoute) },
+                    onViewMyCourses = { navigationHelper.navigateTo(MyRoute) },
                 )
             },
         ),
@@ -69,8 +79,28 @@ val appRoutes: List<AppRoute> =
             render = { DraftListPage(viewModel = hiltViewModel<DraftListViewModel>()) },
         ),
         AppRoute(
-            path = MyPage.PATH,
+            path = MyRoute.PATH,
             render = { MyPage() },
+        ),
+        AppRoute(
+            path = GuestMyRoute.PATH,
+            render = { GuestMyPage() },
+        ),
+        AppRoute(
+            path = ProfileEditRoute.PATH,
+            render = { ProfileEditPage() },
+        ),
+        AppRoute(
+            path = InterestThemeRoute.PATH,
+            render = { InterestThemePage() },
+        ),
+        AppRoute(
+            path = InterestRegionRoute.PATH,
+            render = { InterestRegionPage() },
+        ),
+        AppRoute(
+            path = SettingsRoute.PATH,
+            render = { SettingsPage() },
         ),
         AppRoute(
             path = CourseDetailRoute.PATH,

@@ -59,6 +59,10 @@ val DefaultDesignSystemColor =
         bgAccentPressed = CourmyPaletteColors.Forest700.colorValue,
         // Secondary 버튼 배경(옅은 강조). Figma #eaf0ea ≈ ForestTint 로 스냅.
         bgAccentSubtle = CourmyPaletteColors.ForestTint.colorValue,
+        // 이미지 로드 실패·로딩 중 기본 배경. borderDefaultLevel1 과 같은 Gray300.
+        imagePlaceholder = CourmyPaletteColors.Gray300.colorValue,
+        // 스위치 off 트랙. imagePlaceholder 와 값(Gray300)은 같으나 역할이 달라 슬롯 분리.
+        bgSwitchOff = CourmyPaletteColors.Gray300.colorValue,
         borderDefaultLevel0 = CourmyPaletteColors.Gray400.colorValue,
         // 진한(틴트) 배경 위에서 쓰는 조금 더 진한 테두리. Level0(흰 배경용)보다 대비를 높인다.
         borderDefaultLevel1 = CourmyPaletteColors.Gray300.colorValue,
@@ -108,6 +112,14 @@ internal val DefaultDesignSystemStaticTypeScale =
                 fontWeight = FontWeight.Bold,
                 fontSize = 19,
                 lineHeight = 25.65f,
+                letterSpacing = 0f,
+            ),
+        _textStrongS =
+            DsStaticTypeScale(
+                fontFamily = pretendardTextFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16,
+                lineHeight = 21.6f,
                 letterSpacing = 0f,
             ),
         // (사용자 추가) Medium 19 — Heading 비강조 버전. Figma 원본 없음(잠정값)

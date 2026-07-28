@@ -174,7 +174,7 @@ private fun SummaryCard(course: CourseCompleteVO) {
                 Modifier
                     .fillMaxWidth()
                     .height(150.dp)
-                    .background(color.borderDefaultLevel0),
+                    .background(color.imagePlaceholder),
         )
         Column(
             modifier =
@@ -226,7 +226,7 @@ private fun StopRow(
                     Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(color.borderDefaultLevel0),
+                        .background(color.imagePlaceholder),
             )
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 DsText(
