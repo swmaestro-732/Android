@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.saved
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -131,6 +132,8 @@ private fun UnsaveConfirmDialog(
     onDismiss: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    // 커스텀 오버레이라 시스템 Back 이 화면을 이탈시키지 않고 다이얼로그만 닫도록 가로챈다.
+    BackHandler(onBack = onDismiss)
     Box(
         modifier =
             Modifier
