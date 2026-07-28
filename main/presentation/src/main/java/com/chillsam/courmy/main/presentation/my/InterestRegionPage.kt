@@ -80,13 +80,14 @@ private val REGION_RESULTS =
 @Composable
 fun InterestRegionPage(
     modifier: Modifier = Modifier,
-    onNext: (() -> Unit)? = null,
+    onNext: ((List<String>) -> Unit)? = null,
     progressStep: Int? = null,
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     var query by remember { mutableStateOf("") }
-    var selected by remember { mutableStateOf(listOf("성수", "연남", "한남")) }
+    // 기본은 아무것도 선택하지 않은 상태로 시작.
+    var selected by remember { mutableStateOf(emptyList<String>()) }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 상단 바 영역은 흰색(Figma FS-07). 가운데 콘텐츠만 Gray200.
@@ -175,7 +176,7 @@ fun InterestRegionPage(
             // 회원가입 플로우면 "다음", 편집이면 "저장".
             text = if (onNext != null) "다음" else "저장",
             enabled = selected.size >= MIN_REGION_COUNT,
-            onClick = { onNext?.invoke() ?: navigationHelper.navigateToBack() },
+            onClick = { onNext?.invoke(selected) ?: navigationHelper.navigateToBack() },
             modifier =
                 Modifier
                     .fillMaxWidth()

@@ -34,10 +34,16 @@ import com.chillsam.courmy.main.presentation.component.SignupProgressBar
 
 /** 온보딩 완료 화면(FS-08). 추천 코스를 보여주고 "Courmy 시작하기"로 로그인 완료 후 홈으로 진입. */
 @Composable
-fun OnboardingCompletePage(modifier: Modifier = Modifier) {
+fun OnboardingCompletePage(
+    modifier: Modifier = Modifier,
+    themes: List<String> = emptyList(),
+    regions: List<String> = emptyList(),
+) {
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor
+    // 앞서 고른 관심 테마·지역을 반영한 안내 문구(각각 최대 3개, 초과 시 "등").
+    val subtitle = buildRecommendationSubtitle(themes = themes, regions = regions)
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1).statusBarsPadding()) {
         SignupProgressBar(step = 4, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp))
@@ -67,7 +73,7 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = 20.dp),
             )
             DsText(
-                text = "감성 카페·전시 취향과 성수동을 바탕으로 첫 코스를 골라뒀어요.",
+                text = subtitle,
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel2,
                 maxLines = 2,
@@ -94,6 +100,39 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+/** 안내 문구에 한 번에 나열할 최대 항목 수. 초과분은 "등"으로 줄인다. */
+private const val MAX_SUMMARY_ITEMS = 3
+
+/**
+ * 관심 테마·지역을 반영한 완료 안내 문구를 만든다.
+ * 예) "감성 카페·전시 취향과 성수동을 바탕으로 첫 코스를 골라뒀어요."
+ * 항목이 [MAX_SUMMARY_ITEMS]개를 넘으면 앞의 3개만 "·"로 잇고 "등"을 붙인다.
+ */
+private fun buildRecommendationSubtitle(
+    themes: List<String>,
+    regions: List<String>,
+): String {
+    if (themes.isEmpty() || regions.isEmpty()) {
+        return "취향에 맞는 첫 코스를 골라뒀어요."
+    }
+    val themeText = summarize(themes)
+    val regionText = summarize(regions)
+    return "$themeText 취향과 $regionText${objectJosa(regionText)} 바탕으로 첫 코스를 골라뒀어요."
+}
+
+/** 최대 [MAX_SUMMARY_ITEMS]개까지 "·"로 잇고, 더 많으면 뒤에 "등"을 붙인다. */
+private fun summarize(items: List<String>): String {
+    val head = items.take(MAX_SUMMARY_ITEMS).joinToString("·")
+    return if (items.size > MAX_SUMMARY_ITEMS) "$head 등" else head
+}
+
+/** 목적격 조사(을/를)를 마지막 글자의 받침 유무로 고른다. 한글이 아니면 "를". */
+private fun objectJosa(word: String): String {
+    val last = word.lastOrNull() ?: return "를"
+    if (last.code !in 0xAC00..0xD7A3) return "를"
+    return if ((last.code - 0xAC00) % 28 != 0) "을" else "를"
 }
 
 @Composable

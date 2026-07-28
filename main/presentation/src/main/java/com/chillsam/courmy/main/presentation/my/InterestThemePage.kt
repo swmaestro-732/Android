@@ -50,12 +50,13 @@ private const val MIN_THEME_COUNT = 3
 @Composable
 fun InterestThemePage(
     modifier: Modifier = Modifier,
-    onNext: (() -> Unit)? = null,
+    onNext: ((List<String>) -> Unit)? = null,
     progressStep: Int? = null,
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    var selected by remember { mutableStateOf(setOf("감성 카페", "전시·갤러리", "동네 산책")) }
+    // 기본은 아무것도 선택하지 않은 상태로 시작.
+    var selected by remember { mutableStateOf(emptySet<String>()) }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 회원가입 플로우면 상단 진행 바, 편집이면 뒤로가기 바.
@@ -115,7 +116,7 @@ fun InterestThemePage(
             // 회원가입 플로우면 "다음 · N개 선택됨", 편집이면 "저장".
             text = if (onNext != null) "다음 · ${selected.size}개 선택됨" else "저장",
             enabled = selected.size >= MIN_THEME_COUNT,
-            onClick = { onNext?.invoke() ?: navigationHelper.navigateToBack() },
+            onClick = { onNext?.invoke(selected.toList()) ?: navigationHelper.navigateToBack() },
             modifier =
                 Modifier
                     .fillMaxWidth()

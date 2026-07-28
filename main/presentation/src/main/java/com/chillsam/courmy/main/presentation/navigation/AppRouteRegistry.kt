@@ -16,6 +16,7 @@ import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.login.LoginPage
 import com.chillsam.courmy.main.presentation.login.OnboardingCompletePage
 import com.chillsam.courmy.main.presentation.login.ProfileSetupPage
+import com.chillsam.courmy.main.presentation.login.SignupSelectionStore
 import com.chillsam.courmy.main.presentation.login.TermsAgreementPage
 import com.chillsam.courmy.main.presentation.my.GuestMyPage
 import com.chillsam.courmy.main.presentation.my.InterestRegionPage
@@ -91,12 +92,16 @@ val appRoutes: List<AppRoute> =
             render = { ProfileSetupPage() },
         ),
         // 회원가입 플로우용: 편집용 관심 테마/지역 화면을 "다음" 흐름으로 재사용.
+        // 각 단계 선택값은 완료 화면 안내 문구에 쓰려고 SignupSelectionStore 에 담는다.
         AppRoute(
             path = SignupThemeRoute.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current
                 InterestThemePage(
-                    onNext = { navigationHelper.navigateTo(SignupRegionRoute) },
+                    onNext = { themes ->
+                        SignupSelectionStore.themes = themes
+                        navigationHelper.navigateTo(SignupRegionRoute)
+                    },
                     progressStep = 2,
                 )
             },
@@ -106,14 +111,22 @@ val appRoutes: List<AppRoute> =
             render = {
                 val navigationHelper = LocalNavigationHelper.current
                 InterestRegionPage(
-                    onNext = { navigationHelper.navigateTo(CompleteRoute) },
+                    onNext = { regions ->
+                        SignupSelectionStore.regions = regions
+                        navigationHelper.navigateTo(CompleteRoute)
+                    },
                     progressStep = 3,
                 )
             },
         ),
         AppRoute(
             path = CompleteRoute.PATH,
-            render = { OnboardingCompletePage() },
+            render = {
+                OnboardingCompletePage(
+                    themes = SignupSelectionStore.themes,
+                    regions = SignupSelectionStore.regions,
+                )
+            },
         ),
         AppRoute(
             path = HomeRoute.PATH,
