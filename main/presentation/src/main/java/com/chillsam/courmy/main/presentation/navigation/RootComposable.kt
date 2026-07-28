@@ -14,6 +14,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +28,8 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import com.chillsam.courmy.common.domain.message.MessageEffect
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
+import com.chillsam.courmy.common.presentation.helper.SessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.home.HomePage
@@ -45,6 +48,7 @@ fun RootComposable(
     DesignSystemTheme {
         val backStack = rememberNavBackStack(*startStack.toTypedArray())
         val messageHelper = LocalMessageHelper.current
+        val sessionState = remember { SessionUiState() }
 
         val onShowOneButtonDialog =
             remember<(MessageEffect.ShowOneButtonDialog) -> Unit> {
@@ -113,10 +117,12 @@ fun RootComposable(
             contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
             snackbarHost = { SnackbarHost(snackBarHostState) },
         ) { innerPadding ->
-            AppNavHost(
-                backStack = backStack,
-                modifier = Modifier.padding(innerPadding),
-            )
+            CompositionLocalProvider(LocalSessionUiState provides sessionState) {
+                AppNavHost(
+                    backStack = backStack,
+                    modifier = Modifier.padding(innerPadding),
+                )
+            }
         }
     }
 }

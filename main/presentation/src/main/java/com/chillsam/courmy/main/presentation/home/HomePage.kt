@@ -12,8 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseCreatePage
+import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
@@ -27,6 +29,7 @@ import com.chillsam.courmy.main.presentation.component.MainTab
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
+    val session = LocalSessionUiState.current
     var menuExpanded by remember { mutableStateOf(false) }
 
     Box(
@@ -47,21 +50,27 @@ fun HomePage(modifier: Modifier = Modifier) {
             selectedTab = MainTab.HOME,
             onTabSelected = { tab ->
                 // 프로토타입: 마이 탭만 네비게이션 연결. 나머지 탭은 화면이 붙을 때 연결.
-                if (tab == MainTab.MY) navigationHelper.navigateTo(MyPage)
+                // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
+                if (tab == MainTab.MY) {
+                    navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
+                }
             },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
 
-        CreateCourseMenu(
-            expanded = menuExpanded,
-            onToggle = { menuExpanded = !menuExpanded },
-            onNewCourse = {
-                menuExpanded = false
-                navigationHelper.navigateTo(CourseCreatePage)
-            },
-            onLoadDraft = {
-                menuExpanded = false
-            },
-        )
+        // 코스 만들기 FAB 는 로그인 상태에서만 노출한다.
+        if (session.isLoggedIn) {
+            CreateCourseMenu(
+                expanded = menuExpanded,
+                onToggle = { menuExpanded = !menuExpanded },
+                onNewCourse = {
+                    menuExpanded = false
+                    navigationHelper.navigateTo(CourseCreatePage)
+                },
+                onLoadDraft = {
+                    menuExpanded = false
+                },
+            )
+        }
     }
 }

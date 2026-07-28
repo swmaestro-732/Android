@@ -31,8 +31,10 @@ import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 
@@ -43,6 +45,7 @@ import com.chillsam.courmy.main.presentation.component.MainTab
 @Composable
 fun GuestMyPage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
+    val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
@@ -61,7 +64,12 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(vertical = 20.dp),
             )
 
-            GuestWelcomeCard(onLogin = {})
+            GuestWelcomeCard(
+                onLogin = {
+                    session.login()
+                    navigationHelper.navigateTo(MyPage)
+                },
+            )
 
             DsText(
                 text = "가입하면 할 수 있어요",
