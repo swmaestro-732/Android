@@ -16,7 +16,8 @@ class OnboardingViewModel
     ) : ViewModel() {
         fun complete(onDone: () -> Unit) {
             viewModelScope.launch {
-                completeOnboardingUseCase()
+                // 플래그 저장이 실패해도 네비게이션은 진행(best-effort).
+                runCatching { completeOnboardingUseCase() }
                 onDone()
             }
         }

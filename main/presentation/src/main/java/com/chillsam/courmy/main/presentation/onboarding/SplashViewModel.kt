@@ -21,6 +21,9 @@ class SplashViewModel
         val onboarded: StateFlow<Boolean?> = _onboarded.asStateFlow()
 
         init {
-            viewModelScope.launch { _onboarded.value = getOnboardedUseCase() }
+            viewModelScope.launch {
+                // DataStore 읽기 실패해도 스플래시가 멈추지 않도록 항상 값을 채운다(실패 시 온보딩부터).
+                _onboarded.value = runCatching { getOnboardedUseCase() }.getOrDefault(false)
+            }
         }
     }
