@@ -35,11 +35,12 @@ private val TabIconSize = 24.dp
 enum class MainTab(
     @param:DrawableRes val iconRes: Int,
     @param:StringRes val labelRes: Int,
+    @param:DrawableRes val selectedIconRes: Int? = null,
 ) {
     HOME(R.drawable.ic_tab_home_24, R.string.home_nav_home),
     MAP(R.drawable.ic_tab_map_24, R.string.home_nav_map),
     CHAT(R.drawable.ic_tab_chat_24, R.string.home_nav_chat),
-    SAVED(R.drawable.ic_tab_bookmark_24, R.string.home_nav_saved),
+    SAVED(R.drawable.ic_tab_bookmark_24, R.string.home_nav_saved, R.drawable.ic_bookmark_filled_24),
     MY(R.drawable.ic_tab_person_24, R.string.home_nav_my),
 }
 
@@ -102,8 +103,10 @@ private fun BottomBarTabItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        // 선택된 탭에 채움 아이콘이 있으면 그걸 사용(예: 저장 탭 → 채운 북마크).
+        val iconRes = if (selected) (tab.selectedIconRes ?: tab.iconRes) else tab.iconRes
         Icon(
-            painter = painterResource(tab.iconRes),
+            painter = painterResource(iconRes),
             contentDescription = null,
             tint = tint,
             modifier = Modifier.size(TabIconSize),
