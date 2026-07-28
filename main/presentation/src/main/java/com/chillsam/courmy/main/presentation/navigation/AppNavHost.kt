@@ -130,15 +130,10 @@ private fun NavBackStack<NavKey>.bringToFront(key: NavKey) {
 }
 
 /**
- * 뒤로가기 정책: 홈이 아닌 화면에서는 곧장 홈(루트)으로 돌아간다.
- * 프로토타입 단계의 단일 백스택이라 중간 화면(코스 생성/완성 등)을 거치지 않고 홈으로 리셋한다.
- * 이미 홈(루트, size==1)이면 스택을 비워 시스템에 위임한다(앱 종료).
+ * 뒤로가기 정책: 백스택 최상단 한 단계만 pop 해 **직전 화면**으로 돌아간다.
+ * (마이→설정→프로필 편집 처럼 여러 단계를 거친 경우 각 단계로 순서대로 복귀.)
+ * 루트(size==1)면 스택을 비워 시스템에 위임한다(앱 종료).
  */
 private fun NavBackStack<NavKey>.handleBack() {
-    if (size > 1) resetToHome() else removeLastOrNull()
-}
-
-private fun NavBackStack<NavKey>.resetToHome() {
-    clear()
-    add(GenericNavKey(HomePage.PATH))
+    removeLastOrNull()
 }
