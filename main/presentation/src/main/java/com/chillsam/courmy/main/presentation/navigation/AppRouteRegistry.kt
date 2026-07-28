@@ -2,7 +2,6 @@ package com.chillsam.courmy.main.presentation.navigation
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
-import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.course.presentation.CourseCompletePage
 import com.chillsam.courmy.course.presentation.CourseCompleteViewModel
 import com.chillsam.courmy.course.presentation.CourseCreateIntent
@@ -14,6 +13,10 @@ import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.presentation.home.HomePage
+import com.chillsam.courmy.main.presentation.login.LoginPage
+import com.chillsam.courmy.main.presentation.login.OnboardingCompletePage
+import com.chillsam.courmy.main.presentation.login.ProfileSetupPage
+import com.chillsam.courmy.main.presentation.login.TermsAgreementPage
 import com.chillsam.courmy.main.presentation.my.GuestMyPage
 import com.chillsam.courmy.main.presentation.my.InterestRegionPage
 import com.chillsam.courmy.main.presentation.my.InterestThemePage
@@ -29,6 +32,12 @@ import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
+import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
+import com.chillsam.courmy.main.domain.login.OnboardingCompletePage as CompleteRoute
+import com.chillsam.courmy.main.domain.login.ProfileSetupPage as ProfileSetupRoute
+import com.chillsam.courmy.main.domain.login.SignupRegionPage as SignupRegionRoute
+import com.chillsam.courmy.main.domain.login.SignupThemePage as SignupThemeRoute
+import com.chillsam.courmy.main.domain.login.TermsAgreementPage as TermsRoute
 import com.chillsam.courmy.main.domain.my.GuestMyPage as GuestMyRoute
 import com.chillsam.courmy.main.domain.my.InterestRegionPage as InterestRegionRoute
 import com.chillsam.courmy.main.domain.my.InterestThemePage as InterestThemeRoute
@@ -60,19 +69,51 @@ val appRoutes: List<AppRoute> =
             path = OnboardingRoute.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current
-                val session = LocalSessionUiState.current
                 val viewModel = hiltViewModel<OnboardingViewModel>()
                 OnboardingPage(
-                    onLogin = {
-                        viewModel.complete {
-                            session.login()
-                            navigationHelper.navigateReplace(HomeRoute)
-                        }
-                    },
+                    // 로그인 하기 → 온보딩 완료 처리 후 로그인 플로우(FS-03)로 진입.
+                    onLogin = { viewModel.complete { navigationHelper.navigateTo(LoginRoute) } },
                     onBrowse = { viewModel.complete { navigationHelper.navigateReplace(HomeRoute) } },
                     onSkip = { viewModel.complete { navigationHelper.navigateReplace(HomeRoute) } },
                 )
             },
+        ),
+        AppRoute(
+            path = LoginRoute.PATH,
+            render = { LoginPage() },
+        ),
+        AppRoute(
+            path = TermsRoute.PATH,
+            render = { TermsAgreementPage() },
+        ),
+        AppRoute(
+            path = ProfileSetupRoute.PATH,
+            render = { ProfileSetupPage() },
+        ),
+        // 회원가입 플로우용: 편집용 관심 테마/지역 화면을 "다음" 흐름으로 재사용.
+        AppRoute(
+            path = SignupThemeRoute.PATH,
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
+                InterestThemePage(
+                    onNext = { navigationHelper.navigateTo(SignupRegionRoute) },
+                    progressStep = 2,
+                )
+            },
+        ),
+        AppRoute(
+            path = SignupRegionRoute.PATH,
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
+                InterestRegionPage(
+                    onNext = { navigationHelper.navigateTo(CompleteRoute) },
+                    progressStep = 3,
+                )
+            },
+        ),
+        AppRoute(
+            path = CompleteRoute.PATH,
+            render = { OnboardingCompletePage() },
         ),
         AppRoute(
             path = HomeRoute.PATH,

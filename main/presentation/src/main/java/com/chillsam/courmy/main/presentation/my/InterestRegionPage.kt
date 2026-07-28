@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -35,13 +36,18 @@ import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.component.SignupProgressBar
 
 private val POPULAR_REGIONS = listOf("홍대", "잠실", "을지로", "이태원", "망원", "삼청", "서촌", "압구정")
 private const val MIN_REGION_COUNT = 3
 
 /** 관심 지역 편집 화면(FS-07). 지역을 검색·선택하고 선택 칩을 삭제한다. */
 @Composable
-fun InterestRegionPage(modifier: Modifier = Modifier) {
+fun InterestRegionPage(
+    modifier: Modifier = Modifier,
+    onNext: (() -> Unit)? = null,
+    progressStep: Int? = null,
+) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     var query by remember { mutableStateOf("") }
@@ -49,8 +55,20 @@ fun InterestRegionPage(modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 상단 바 영역은 흰색(Figma FS-07). 가운데 콘텐츠만 Gray200.
-        Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
-            BackTopBar(title = "관심 지역", onBack = { navigationHelper.navigateToBack() })
+        if (progressStep != null) {
+            SignupProgressBar(
+                step = progressStep,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(color.bgDefaultLevel1)
+                        .statusBarsPadding()
+                        .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp),
+            )
+        } else {
+            Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
+                BackTopBar(title = "관심 지역", onBack = { navigationHelper.navigateToBack() })
+            }
         }
 
         Column(
@@ -107,9 +125,10 @@ fun InterestRegionPage(modifier: Modifier = Modifier) {
         }
 
         DsButton(
-            text = "저장",
+            // 회원가입 플로우면 "다음", 편집이면 "저장".
+            text = if (onNext != null) "다음" else "저장",
             enabled = selected.size >= MIN_REGION_COUNT,
-            onClick = { navigationHelper.navigateToBack() },
+            onClick = { onNext?.invoke() ?: navigationHelper.navigateToBack() },
             modifier =
                 Modifier
                     .fillMaxWidth()
