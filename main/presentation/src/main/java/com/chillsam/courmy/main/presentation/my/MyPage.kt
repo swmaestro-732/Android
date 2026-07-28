@@ -33,17 +33,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.entity.my.MyCourseVO
@@ -99,7 +102,10 @@ private fun MyContent(
                     .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            ProfileHeader(onSettings = { navigationHelper.navigateTo(SettingsPage) })
+            ProfileHeader(
+                imageUrl = profile.profileImageUrl,
+                onSettings = { navigationHelper.navigateTo(SettingsPage) },
+            )
             Spacer(Modifier.height(60.dp)) // 커버에 걸친 아바타 아래 절반만큼 여백
             DsText(
                 text = profile.nickname,
@@ -121,7 +127,12 @@ private fun MyContent(
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
             )
             StatsRow(profile = profile)
-            MyCoursesSection(profile = profile)
+            MyCoursesSection(
+                profile = profile,
+                onCourseClick = { courseId ->
+                    navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                },
+            )
             Spacer(Modifier.height(20.dp))
         }
 
@@ -172,7 +183,10 @@ private fun MyError(
 
 /** 초록 커버 + 우상단 공유/설정 버튼 + 커버 하단에 걸친 원형 아바타. */
 @Composable
-private fun ProfileHeader(onSettings: () -> Unit) {
+private fun ProfileHeader(
+    imageUrl: String,
+    onSettings: () -> Unit,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     Box(modifier = Modifier.fillMaxWidth()) {
         Box(
@@ -245,7 +259,17 @@ private fun ProfileHeader(onSettings: () -> Unit) {
                     .padding(5.dp)
                     .clip(CircleShape)
                     .background(color.imagePlaceholder),
-        )
+        ) {
+            // URL 이 있으면 실제 프로필 사진, 없으면 placeholder 배경만 노출.
+            if (imageUrl.isNotBlank()) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "프로필 이미지",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+        }
     }
 }
 
@@ -322,7 +346,10 @@ private fun StatItem(
 
 /** 내 코스 2열 카드 그리드. */
 @Composable
-private fun MyCoursesSection(profile: MyProfileVO) {
+private fun MyCoursesSection(
+    profile: MyProfileVO,
+    onCourseClick: (String) -> Unit,
+) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
         profile.myCourses.chunked(2).forEach { rowItems ->
             Row(
@@ -330,7 +357,11 @@ private fun MyCoursesSection(profile: MyProfileVO) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 rowItems.forEach { course ->
-                    MyCourseCard(course = course, modifier = Modifier.weight(1f))
+                    MyCourseCard(
+                        course = course,
+                        onClick = { onCourseClick(course.id) },
+                        modifier = Modifier.weight(1f),
+                    )
                 }
                 // 홀수 개일 때 마지막 칸 균형 맞춤.
                 if (rowItems.size == 1) Spacer(Modifier.weight(1f))
@@ -342,12 +373,14 @@ private fun MyCoursesSection(profile: MyProfileVO) {
 @Composable
 private fun MyCourseCard(
     course: MyCourseVO,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(
         modifier =
             modifier
+                .clickable(onClick = onClick)
                 .shadow(
                     // 낮은 elevation은 blur 가 거의 없어 테두리 선처럼 보인다.
                     // elevation 을 올리고 spot/ambient 를 옅게 줘 부드럽게 퍼지게 한다(API 28+ 반영).

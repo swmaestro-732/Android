@@ -59,11 +59,17 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
     var idResult by remember { mutableStateOf<IdCheckResult?>(null) }
     var bio by remember { mutableStateOf(ORIGINAL_BIO) }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    val handleChanged = handle != ORIGINAL_HANDLE
+    // 아이디를 바꿨다면 중복 확인에서 '사용 가능'을 받은 경우에만 저장 가능(검증 실패·미확인 시 비활성).
+    val handleSaveable = !handleChanged || idResult?.available == true
     val hasChanges =
-        nickname != ORIGINAL_NICKNAME ||
-            handle != ORIGINAL_HANDLE ||
-            bio != ORIGINAL_BIO ||
-            profileImageUri != null
+        handleSaveable &&
+            (
+                nickname != ORIGINAL_NICKNAME ||
+                    handleChanged ||
+                    bio != ORIGINAL_BIO ||
+                    profileImageUri != null
+            )
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 상단 바 영역은 흰색(Figma FS-26). 가운데 콘텐츠만 Gray200.

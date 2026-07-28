@@ -33,7 +33,9 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsSwitch
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.ProfileEditPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
@@ -42,6 +44,7 @@ import com.chillsam.courmy.main.presentation.component.BackTopBar
 @Composable
 fun SettingsPage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
+    val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor
     var pushOn by remember { mutableStateOf(true) }
     var recommendOn by remember { mutableStateOf(false) }
@@ -75,7 +78,12 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                 CardDivider()
                 MenuRow(label = "공지·도움말", onClick = {})
                 CardDivider()
-                LogoutRow(onClick = {})
+                LogoutRow(
+                    onClick = {
+                        session.logout()
+                        navigationHelper.navigateTo(HomePage)
+                    },
+                )
             }
             Spacer(Modifier.height(24.dp))
         }

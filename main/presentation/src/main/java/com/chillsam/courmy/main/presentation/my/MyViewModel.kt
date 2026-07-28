@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.my
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.my.GetMyProfileUseCase
@@ -50,7 +51,8 @@ class MyViewModel
                 }
 
                 is MyProfileReducerEvent.Failed -> {
-                    state.copy(isLoading = false, errorMessage = event.message)
+                    // 실패 시 이전 프로필을 비워, stale 데이터가 에러 화면을 가리지 않게 한다.
+                    state.copy(isLoading = false, profile = null, errorMessage = event.message)
                 }
             }
 
@@ -69,12 +71,16 @@ class MyViewModel
                         .onSuccess { profile -> dispatch(MyProfileReducerEvent.Loaded(profile)) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
-                            dispatch(MyProfileReducerEvent.Failed(e.message ?: "프로필을 불러오지 못했습니다."))
+                            // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
+                            Log.w(TAG, "마이 프로필 로드 실패", e)
+                            dispatch(MyProfileReducerEvent.Failed("프로필을 불러오지 못했습니다."))
                         }
                 }
         }
 
         companion object {
+            private const val TAG = "MyViewModel"
+
             /** 개발용 더미 토글. 실제 API 연동 시 false 로 바꾼다. */
             const val USE_SAMPLE = true
         }

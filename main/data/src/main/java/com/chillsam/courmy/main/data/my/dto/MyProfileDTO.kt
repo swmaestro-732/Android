@@ -59,6 +59,7 @@ fun MyProfileScreenDTO.toVO(): MyProfileVO {
         nickname = user?.nickname.orEmpty(),
         handle = user?.handle.orEmpty(),
         bio = user?.bio.orEmpty(),
+        profileImageUrl = user?.profileImageUrl.orEmpty(),
         myCourseCount = stats?.myCourseCount ?: 0,
         followerCount = stats?.followerCount?.ifBlank { "0" } ?: "0",
         followingCount = stats?.followingCount?.ifBlank { "0" } ?: "0",
