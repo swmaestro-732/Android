@@ -76,7 +76,7 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
             Spacer(Modifier.height(32.dp))
             RecommendedCourseCard(
                 title = "비 오는 날 성수 카페 코스",
-                meta = "4 스팟 · 3시간",
+                meta = "4 스팟",
             )
         }
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {

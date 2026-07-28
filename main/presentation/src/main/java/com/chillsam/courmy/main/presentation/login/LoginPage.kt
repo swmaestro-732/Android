@@ -77,14 +77,6 @@ fun LoginPage(modifier: Modifier = Modifier) {
                 onClick = { navigationHelper.navigateTo(TermsAgreementPage) },
             )
             SocialButton(
-                text = "구글로 시작하기",
-                iconRes = R.drawable.ic_google_24,
-                background = color.bgDefaultLevel1,
-                textColor = color.contentDefaultLevel0,
-                border = color.borderDefaultLevel1,
-                onClick = { navigationHelper.navigateTo(TermsAgreementPage) },
-            )
-            SocialButton(
                 text = "게스트로 돌아가기",
                 iconRes = null,
                 background = color.bgDefaultLevel0,

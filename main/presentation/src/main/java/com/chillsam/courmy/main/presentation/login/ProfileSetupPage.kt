@@ -102,18 +102,46 @@ fun ProfileSetupPage(modifier: Modifier = Modifier) {
                         handle = it
                         idResult = null // 값이 바뀌면 이전 확인 결과 무효화.
                     },
-                    placeholder = "@아이디",
+                    placeholder = "아이디",
+                    // 중복 확인 실패 시 위험(빨간 테두리) 표시.
+                    isError = idResult?.available == false,
+                    // "@"는 항상 붙는 기본값이라 입력창 앞 고정 프리픽스로 표시.
+                    leadingIcon = {
+                        DsText(
+                            text = "@",
+                            style = DesignSystemThemeImpl.typeScale.textRegularS,
+                            color = color.contentDefaultLevel2,
+                        )
+                    },
                     modifier = Modifier.weight(1f),
                 )
                 CheckButton(enabled = handle.isNotBlank(), onClick = { idResult = checkHandle(handle) })
             }
-            idResult?.let { result ->
+            val result = idResult
+            if (result != null) {
                 DsText(
                     text = result.message,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = if (result.available) color.contentSuccess else color.contentDanger,
                     modifier = Modifier.padding(start = 4.dp, top = 6.dp),
                 )
+            } else {
+                // 확인 전엔 아이디 조건을 줄마다 캡션으로 안내.
+                Column(
+                    modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    DsText(
+                        text = "영문 소문자, 숫자, 밑줄(_)만 사용 가능",
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel3,
+                    )
+                    DsText(
+                        text = "3~12자 이내로 입력 가능",
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel3,
+                    )
+                }
             }
             Spacer(Modifier.height(20.dp))
         }
@@ -214,10 +242,10 @@ private data class IdCheckResult(
 /** 목 검증: 길이 → 형식 → 중복 순으로 첫 실패 사유 반환(실 API 전 시연용). */
 private fun checkHandle(handle: String): IdCheckResult =
     when {
-        handle.length !in 3..12 -> IdCheckResult("3~12자로 입력해 주세요", available = false)
-        !handle.matches(HANDLE_REGEX) -> IdCheckResult("영문 소문자·숫자·_(밑줄)만 쓸 수 있어요", available = false)
+        handle.length !in 3..12 -> IdCheckResult("3~12자 이내로 입력해 주세요", available = false)
+        !handle.matches(HANDLE_REGEX) -> IdCheckResult("영문 소문자, 숫자, 밑줄(_)만 사용할 수 있어요", available = false)
         handle in TAKEN_HANDLES -> IdCheckResult("이미 사용 중인 아이디예요", available = false)
-        else -> IdCheckResult("사용 가능한 아이디예요", available = true)
+        else -> IdCheckResult("사용할 수 있는 아이디예요", available = true)
     }
 
 /** 아이디 중복 확인 버튼(컴팩트). 활성=강조 배경, 비활성=흰 배경+회색 테두리. */
