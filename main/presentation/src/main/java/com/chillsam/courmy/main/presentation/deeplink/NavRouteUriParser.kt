@@ -6,6 +6,7 @@ import androidx.navigation3.runtime.NavKey
 import com.chillsam.courmy.common.domain.navigation.NavRoute
 import com.chillsam.courmy.main.domain.deeplink.matchRoute
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.onboarding.SplashPage
 import com.chillsam.courmy.main.presentation.navigation.GenericNavKey
 import com.chillsam.courmy.main.presentation.navigation.appRouteByPath
 import com.chillsam.courmy.main.presentation.navigation.appRoutePatterns
@@ -55,8 +56,8 @@ fun resolveStartStack(uri: Uri?): List<NavKey> {
             Log.w(TAG, "No matching route for uri=$uri")
             return listOf(GenericNavKey(HomePage.PATH))
         }
-        // 일반 콜드 스타트(딥링크 없음)의 첫 화면은 홈.
-        return listOf(GenericNavKey(HomePage.PATH))
+        // 일반 콜드 스타트(딥링크 없음)의 첫 화면은 스플래시(→ 온보딩/홈 분기).
+        return listOf(GenericNavKey(SplashPage.PATH))
     }
     val appRoute =
         appRouteByPath[route.path]

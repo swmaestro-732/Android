@@ -32,13 +32,13 @@ import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.SessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
-import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.onboarding.SplashPage
 import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun RootComposable(
     modifier: Modifier = Modifier,
-    startStack: List<NavKey> = listOf(GenericNavKey(HomePage.PATH)),
+    startStack: List<NavKey> = listOf(GenericNavKey(SplashPage.PATH)),
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
     var oneButtonDialogEffect by remember {

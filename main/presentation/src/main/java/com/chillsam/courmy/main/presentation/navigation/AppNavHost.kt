@@ -3,6 +3,9 @@ package com.chillsam.courmy.main.presentation.navigation
 import android.util.Log
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +21,7 @@ import com.chillsam.courmy.common.domain.navigation.NavSignal
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.jank.JankPageEffect
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.onboarding.SplashPage
 
 @Composable
 fun AppNavHost(
@@ -31,6 +35,7 @@ fun AppNavHost(
             when (signal) {
                 is NavSignal.GoToDestPage -> handleNavRoute(signal.route, backStack)
                 is NavSignal.DeepLink -> handleDeepLink(signal.route, backStack)
+                is NavSignal.Replace -> handleReplace(signal.route, backStack)
                 NavSignal.Back -> backStack.handleBack()
             }
         }
@@ -40,7 +45,16 @@ fun AppNavHost(
         backStack = backStack,
         onBack = { backStack.handleBack() },
         modifier = modifier,
-        transitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
+        transitionSpec = {
+            // 스플래시가 들어오거나 나갈 때만 페이드(그 외 화면 전환은 즉시 유지).
+            val fromPath = (initialState.entries.lastOrNull()?.contentKey as? GenericNavKey)?.path
+            val toPath = (targetState.entries.lastOrNull()?.contentKey as? GenericNavKey)?.path
+            if (fromPath == SplashPage.PATH || toPath == SplashPage.PATH) {
+                fadeIn(tween(SPLASH_FADE_MS)) togetherWith fadeOut(tween(SPLASH_FADE_MS))
+            } else {
+                EnterTransition.None togetherWith ExitTransition.None
+            }
+        },
         popTransitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
         predictivePopTransitionSpec = { EnterTransition.None togetherWith ExitTransition.None },
         entryDecorators =
@@ -67,6 +81,7 @@ fun AppNavHost(
 }
 
 private const val TAG = "[Navigation]"
+private const val SPLASH_FADE_MS = 340
 
 /**
  * NavRoute 한 건을 받아 백스택에 push(앱 내 전진 이동).
@@ -87,6 +102,23 @@ fun handleNavRoute(
         backStack.bringToFront(navKey)
         Log.d(TAG, "navigateTo: $navKey")
     }
+}
+
+/**
+ * 백스택을 대상 화면 하나로 교체한다(스플래시/온보딩처럼 뒤로 돌아오면 안 되는 진입 흐름).
+ * 미등록 path 는 무시 + 경고 로그.
+ */
+fun handleReplace(
+    route: NavRoute,
+    backStack: NavBackStack<NavKey>,
+) {
+    if (appRouteByPath[route.path] == null) {
+        Log.w(TAG, "Unhandled replace route: ${route.path}")
+        return
+    }
+    backStack.clear()
+    backStack.add(GenericNavKey.of(route))
+    Log.d(TAG, "replace: ${route.path}")
 }
 
 /**
