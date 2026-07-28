@@ -49,6 +49,8 @@ dependencies {
     implementation(project(":common:data"))
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+    // Local storage (온보딩 완료 플래그)
+    implementation(libs.androidx.datastore.preferences)
     // Network
     implementation(libs.retrofit)
     implementation(libs.kotlinx.serialization.json)
