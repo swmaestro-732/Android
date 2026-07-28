@@ -46,6 +46,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
+import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 
 /** 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·소개·관심 테마/지역을 편집한다. */
@@ -275,9 +276,10 @@ private fun LabeledField(
     }
 }
 
-private const val ORIGINAL_HANDLE = "jiho_routes"
-private const val ORIGINAL_NICKNAME = "홍지호"
-private const val ORIGINAL_BIO = "성수동 구석구석 카페 탐험가 · 걷기 좋은 코스를 만들어 나눠요"
+// 편집 원본값은 프로필 정본(MyProfileVO.sample) 한 곳에서만 가져온다(값 중복 방지).
+private val ORIGINAL_HANDLE = MyProfileVO.sample.handle
+private val ORIGINAL_NICKNAME = MyProfileVO.sample.nickname
+private val ORIGINAL_BIO = MyProfileVO.sample.bio
 
 /** 아이디 중복 확인 목 판정용 예약(사용 중) 아이디. 실 API 연동 시 제거. */
 private val TAKEN_HANDLES = setOf("admin", "test", "courmy", "jiho")

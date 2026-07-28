@@ -35,6 +35,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.ProfileEditPage
+import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 
 /** 설정 화면(FS-28). 프로필·알림·계정을 iOS식 그룹 카드로 구성한다. */
@@ -116,12 +117,12 @@ private fun ProfileRow(onEdit: () -> Unit) {
         Box(modifier = Modifier.size(54.dp).clip(CircleShape).background(color.imagePlaceholder))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             DsText(
-                text = "홍지호",
+                text = MyProfileVO.sample.nickname,
                 style = DesignSystemThemeImpl.typeScale.textRegularM,
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = "@jiho_routes",
+                text = "@${MyProfileVO.sample.handle}",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
