@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.onboarding
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -26,6 +28,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,8 +42,13 @@ import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.sin
 
 private const val PAGE_COUNT = 3
+
+// 하단 영역을 페이지와 무관하게 고정 높이로(버튼 1행/2행 차이로 일러스트가 위아래로 튀지 않게).
+private val OnboardingBottomHeight = 160.dp
 
 private val ONBOARDING_HEADINGS =
     listOf(
@@ -84,7 +96,7 @@ fun OnboardingPage(
                     color = color.contentDefaultLevel0,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 56.dp),
                 )
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     OnboardingIllustration(page = page)
@@ -96,16 +108,21 @@ fun OnboardingPage(
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                    .height(OnboardingBottomHeight)
+                    .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.BottomCenter,
         ) {
             if (isLastPage) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
                     DsButton(text = "로그인 하기", onClick = onLogin)
                     DsButton(text = "로그인 없이 둘러보기", variant = DsButtonVariant.Secondary, onClick = onBrowse)
                 }
             } else {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
@@ -182,33 +199,33 @@ private fun OnboardingIllustration(page: Int) {
     when (page) {
         0 -> {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     Icon(
                         painter = painterResource(R.drawable.ic_location_24),
                         contentDescription = null,
                         tint = color.contentDefaultLevel3,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(30.dp),
                     )
                     Box(
                         modifier =
                             Modifier
-                                .size(width = 60.dp, height = 96.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .border(1.5.dp, color.contentDefaultLevel1, RoundedCornerShape(12.dp)),
+                                .size(width = 88.dp, height = 138.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .border(2.dp, color.contentDefaultLevel1, RoundedCornerShape(16.dp)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_bookmark_filled_24),
                             contentDescription = null,
                             tint = color.contentDefaultLevel1,
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(42.dp),
                         )
                     }
                     Icon(
                         painter = painterResource(R.drawable.ic_location_24),
                         contentDescription = null,
                         tint = color.contentDefaultLevel3,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(24.dp),
                     )
                 }
                 GroundLine()
@@ -216,21 +233,54 @@ private fun OnboardingIllustration(page: Int) {
         }
 
         1 -> {
+            // 높이가 다른 두 핀을 물결(사인) 점선으로 이어 "코스"가 되는 느낌.
+            val stroke = color.contentDefaultLevel1
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier =
-                        Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(color.bgAccentSubtle)
-                            .padding(24.dp),
-                ) {
+                Box(modifier = Modifier.size(width = 210.dp, height = 112.dp)) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val edge = 22.dp.toPx()
+                        val leftX = edge
+                        val rightX = size.width - edge
+                        val leftY = 42.dp.toPx()
+                        val rightY = 66.dp.toPx()
+                        val amp = 9.dp.toPx()
+                        val steps = 48
+                        val wave =
+                            Path().apply {
+                                moveTo(leftX, leftY)
+                                for (i in 1..steps) {
+                                    val t = i / steps.toFloat()
+                                    val x = leftX + (rightX - leftX) * t
+                                    val baseY = leftY + (rightY - leftY) * t
+                                    lineTo(x, baseY - sin(t * PI.toFloat() * 3f) * amp)
+                                }
+                            }
+                        drawPath(
+                            path = wave,
+                            color = stroke,
+                            style =
+                                Stroke(
+                                    width = 2.5.dp.toPx(),
+                                    cap = StrokeCap.Round,
+                                    join = StrokeJoin.Round,
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(11f, 12f)),
+                                ),
+                        )
+                    }
                     Icon(
-                        painter = painterResource(R.drawable.ic_tab_map_24),
+                        painter = painterResource(R.drawable.ic_location_24),
                         contentDescription = null,
-                        tint = color.contentDefaultLevel1,
-                        modifier = Modifier.size(72.dp),
+                        tint = stroke,
+                        modifier = Modifier.align(Alignment.TopStart).size(44.dp),
+                    )
+                    Icon(
+                        painter = painterResource(R.drawable.ic_location_24),
+                        contentDescription = null,
+                        tint = stroke,
+                        modifier = Modifier.align(Alignment.TopEnd).offset(y = 24.dp).size(44.dp),
                     )
                 }
+                GroundLine()
             }
         }
 
@@ -240,21 +290,21 @@ private fun OnboardingIllustration(page: Int) {
                     painter = painterResource(R.drawable.ic_heart_24),
                     contentDescription = null,
                     tint = color.contentDefaultLevel1,
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier.size(46.dp),
                 )
-                Spacer(Modifier.height(24.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(48.dp)) {
+                Spacer(Modifier.height(30.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(66.dp)) {
                     Icon(
                         painter = painterResource(R.drawable.ic_location_24),
                         contentDescription = null,
                         tint = color.contentDefaultLevel1,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(36.dp),
                     )
                     Icon(
                         painter = painterResource(R.drawable.ic_location_24),
                         contentDescription = null,
                         tint = color.contentDefaultLevel1,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(36.dp),
                     )
                 }
                 GroundLine()
@@ -265,12 +315,12 @@ private fun OnboardingIllustration(page: Int) {
 
 @Composable
 private fun GroundLine() {
-    Spacer(Modifier.height(10.dp))
+    Spacer(Modifier.height(14.dp))
     Box(
         modifier =
             Modifier
-                .width(140.dp)
-                .height(1.dp)
+                .width(210.dp)
+                .height(1.5.dp)
                 .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1),
     )
 }
