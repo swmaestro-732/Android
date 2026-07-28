@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Courmy" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- windowBackground 를 브랜드 초록으로 → 콜드 스타트 시 흰 배경/기본 아이콘 플래시 대신
+         Compose 스플래시와 이어지는 초록으로 보이게 한다. -->
+    <style name="Theme.Courmy" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FF30623C</item>
+    </style>
 </resources>
