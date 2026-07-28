@@ -21,6 +21,9 @@ interface NavigationHelper {
 
     fun navigateTo(page: Page)
 
+    /** 백스택을 [page] 하나로 교체(스플래시/온보딩 등 되돌아오면 안 되는 진입 흐름). */
+    fun navigateReplace(page: Page)
+
     fun navigateDeepLink(route: NavRoute)
 
     fun navigateToBack()

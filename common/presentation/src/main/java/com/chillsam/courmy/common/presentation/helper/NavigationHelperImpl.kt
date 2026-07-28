@@ -23,6 +23,10 @@ class NavigationHelperImpl : NavigationHelper {
         emit(NavSignal.GoToDestPage(route))
     }
 
+    override fun navigateReplace(page: Page) {
+        emit(NavSignal.Replace(page.toRoute()))
+    }
+
     override fun navigateDeepLink(route: NavRoute) {
         emit(NavSignal.DeepLink(route))
     }

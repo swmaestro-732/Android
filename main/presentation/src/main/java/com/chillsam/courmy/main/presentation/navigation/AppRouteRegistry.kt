@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.presentation.navigation
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.course.presentation.CourseCompletePage
 import com.chillsam.courmy.course.presentation.CourseCompleteViewModel
 import com.chillsam.courmy.course.presentation.CourseCreateIntent
@@ -18,6 +19,9 @@ import com.chillsam.courmy.main.presentation.my.InterestRegionPage
 import com.chillsam.courmy.main.presentation.my.InterestThemePage
 import com.chillsam.courmy.main.presentation.my.MyPage
 import com.chillsam.courmy.main.presentation.my.ProfileEditPage
+import com.chillsam.courmy.main.presentation.onboarding.OnboardingPage
+import com.chillsam.courmy.main.presentation.onboarding.OnboardingViewModel
+import com.chillsam.courmy.main.presentation.onboarding.SplashPage
 import com.chillsam.courmy.main.presentation.saved.SavedPage
 import com.chillsam.courmy.main.presentation.settings.SettingsPage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
@@ -30,6 +34,8 @@ import com.chillsam.courmy.main.domain.my.InterestRegionPage as InterestRegionRo
 import com.chillsam.courmy.main.domain.my.InterestThemePage as InterestThemeRoute
 import com.chillsam.courmy.main.domain.my.MyPage as MyRoute
 import com.chillsam.courmy.main.domain.my.ProfileEditPage as ProfileEditRoute
+import com.chillsam.courmy.main.domain.onboarding.OnboardingPage as OnboardingRoute
+import com.chillsam.courmy.main.domain.onboarding.SplashPage as SplashRoute
 import com.chillsam.courmy.main.domain.saved.SavedPage as SavedRoute
 import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
 
@@ -39,6 +45,35 @@ import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
  */
 val appRoutes: List<AppRoute> =
     listOf(
+        AppRoute(
+            path = SplashRoute.PATH,
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
+                SplashPage(
+                    onFinished = { onboarded ->
+                        navigationHelper.navigateReplace(if (onboarded) HomeRoute else OnboardingRoute)
+                    },
+                )
+            },
+        ),
+        AppRoute(
+            path = OnboardingRoute.PATH,
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
+                val session = LocalSessionUiState.current
+                val viewModel = hiltViewModel<OnboardingViewModel>()
+                OnboardingPage(
+                    onLogin = {
+                        viewModel.complete {
+                            session.login()
+                            navigationHelper.navigateReplace(HomeRoute)
+                        }
+                    },
+                    onBrowse = { viewModel.complete { navigationHelper.navigateReplace(HomeRoute) } },
+                    onSkip = { viewModel.complete { navigationHelper.navigateReplace(HomeRoute) } },
+                )
+            },
+        ),
         AppRoute(
             path = HomeRoute.PATH,
             render = { HomePage() },
