@@ -18,6 +18,7 @@ import com.chillsam.courmy.main.presentation.my.InterestRegionPage
 import com.chillsam.courmy.main.presentation.my.InterestThemePage
 import com.chillsam.courmy.main.presentation.my.MyPage
 import com.chillsam.courmy.main.presentation.my.ProfileEditPage
+import com.chillsam.courmy.main.presentation.saved.SavedPage
 import com.chillsam.courmy.main.presentation.settings.SettingsPage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
@@ -29,6 +30,7 @@ import com.chillsam.courmy.main.domain.my.InterestRegionPage as InterestRegionRo
 import com.chillsam.courmy.main.domain.my.InterestThemePage as InterestThemeRoute
 import com.chillsam.courmy.main.domain.my.MyPage as MyRoute
 import com.chillsam.courmy.main.domain.my.ProfileEditPage as ProfileEditRoute
+import com.chillsam.courmy.main.domain.saved.SavedPage as SavedRoute
 import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
 
 /**
@@ -101,6 +103,10 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = SettingsRoute.PATH,
             render = { SettingsPage() },
+        ),
+        AppRoute(
+            path = SavedRoute.PATH,
+            render = { SavedPage() },
         ),
         AppRoute(
             path = CourseDetailRoute.PATH,

@@ -17,6 +17,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
+import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 
@@ -49,10 +50,14 @@ fun HomePage(modifier: Modifier = Modifier) {
         CourmyBottomBar(
             selectedTab = MainTab.HOME,
             onTabSelected = { tab ->
-                // 프로토타입: 마이 탭만 네비게이션 연결. 나머지 탭은 화면이 붙을 때 연결.
-                // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
-                if (tab == MainTab.MY) {
-                    navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
+                // 프로토타입: 마이·저장 탭만 네비게이션 연결. 나머지 탭은 화면이 붙을 때 연결.
+                when (tab) {
+                    // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
+                    MainTab.MY -> navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
+
+                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
+
+                    else -> Unit
                 }
             },
             modifier = Modifier.align(Alignment.BottomCenter),
