@@ -5,11 +5,14 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
@@ -52,10 +55,11 @@ fun DsTextField(
     isError: Boolean = false,
     enabled: Boolean = true,
     singleLine: Boolean = true,
+    leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
-    val colors = textFieldColors(focused = focused, isError = isError, filled = value.isNotEmpty())
+    val colors = textFieldColors(focused = focused, isError = isError)
     val borderWidth = if (focused || isError) BorderWidthActive else BorderWidthDefault
     val shape = RoundedCornerShape(TextFieldCornerRadius)
 
@@ -92,12 +96,21 @@ fun DsTextField(
             textStyle = DesignSystemThemeImpl.typeScale.textRegularS.copy(color = colors.text),
             cursorBrush = SolidColor(DesignSystemThemeImpl.designSystemColor.borderAccent),
             decorationBox = { innerTextField ->
-                Box(
-                    modifier = if (singleLine) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
-                    contentAlignment = if (singleLine) Alignment.CenterStart else Alignment.TopStart,
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (value.isEmpty()) DsTextFieldPlaceholder(placeholder)
-                    innerTextField()
+                    if (leadingIcon != null) {
+                        leadingIcon()
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = if (singleLine) Alignment.CenterStart else Alignment.TopStart,
+                    ) {
+                        if (value.isEmpty()) DsTextFieldPlaceholder(placeholder)
+                        innerTextField()
+                    }
                 }
             },
         )
@@ -115,12 +128,11 @@ private class DsTextFieldColors(
 private fun textFieldColors(
     focused: Boolean,
     isError: Boolean,
-    filled: Boolean,
 ): DsTextFieldColors {
     val color = DesignSystemThemeImpl.designSystemColor
     return DsTextFieldColors(
-        // 값이 있거나(filled) focus·error 면 흰 배경, 빈 상태에서만 옅은 배경.
-        background = if (focused || isError || filled) color.bgDefaultLevel1 else color.bgDefaultLevel0,
+        // 입력 필드 배경은 항상 흰색(빈 상태에서도).
+        background = color.bgDefaultLevel1,
         border =
             when {
                 isError -> color.borderDanger
