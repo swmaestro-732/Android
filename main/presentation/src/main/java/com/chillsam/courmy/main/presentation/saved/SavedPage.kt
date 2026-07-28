@@ -2,9 +2,11 @@ package com.chillsam.courmy.main.presentation.saved
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,9 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,8 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -119,51 +121,121 @@ private fun SavedCourseList(modifier: Modifier = Modifier) {
     }
 }
 
-/** 저장 취소 확인 다이얼로그. 확인 시 해당 코스를 저장함에서 제거한다. */
+/**
+ * 저장 취소 확인 다이얼로그. 코스 작성 나가기 다이얼로그(ExitConfirmDialog)와 동일한 톤
+ * (스크림 + 중앙 라운드 카드 + 초록 기본/하위 텍스트 버튼). 확인 시 저장함에서 제거한다.
+ */
 @Composable
 private fun UnsaveConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+                .noRippleClickable(onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .padding(horizontal = 40.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(color.bgDefaultLevel0)
+                    .noRippleClickable {}
+                    .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             DsText(
-                text = "저장 취소",
+                text = "저장을 취소할까요?",
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel1,
-                maxLines = Int.MAX_VALUE,
+                color = color.contentDefaultLevel0,
             )
-        },
-        text = {
             DsText(
-                text = "이 코스의 저장을 취소할까요?\n저장함에서 사라집니다.",
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                text = "저장을 취소하면 이 코스가\n저장함에서 사라져요.",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
+                textAlign = TextAlign.Center,
                 maxLines = Int.MAX_VALUE,
             )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                DsText(
-                    text = "저장 취소",
-                    style = DesignSystemThemeImpl.typeScale.textStrongM,
-                    color = color.contentDanger,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                DsText(
-                    text = "닫기",
-                    style = DesignSystemThemeImpl.typeScale.textStrongM,
-                    color = color.contentDefaultLevel2,
-                )
-            }
-        },
-    )
+            Spacer(Modifier.height(12.dp))
+            DialogFilledButton(
+                text = "저장 취소",
+                background = color.contentDanger,
+                textColor = color.contentOnAccent,
+                onClick = onConfirm,
+            )
+            DialogTextButton(
+                text = "저장 유지",
+                textColor = color.contentDefaultLevel1,
+                onClick = onDismiss,
+            )
+        }
+    }
 }
+
+/** 다이얼로그용 채움 버튼(예: danger 배경의 파괴적 액션). */
+@Composable
+private fun DialogFilledButton(
+    text: String,
+    background: Color,
+    textColor: Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(background)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        DsText(
+            text = text,
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = textColor,
+        )
+    }
+}
+
+@Composable
+private fun DialogTextButton(
+    text: String,
+    textColor: Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick)
+                .padding(vertical = 14.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        DsText(
+            text = text,
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = textColor,
+        )
+    }
+}
+
+/** 리플 없는 클릭(스크림/카드 배경 소비용). */
+private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
+    this.composed {
+        clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = onClick,
+        )
+    }
 
 /** 저장한 코스 카드: 썸네일(태그 칩 + 북마크 배지) + 제목 + "장소 N곳 · @handle". */
 @Composable
