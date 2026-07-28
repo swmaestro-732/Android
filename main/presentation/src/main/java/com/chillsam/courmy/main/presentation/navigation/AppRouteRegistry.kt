@@ -9,6 +9,8 @@ import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
 import com.chillsam.courmy.course.presentation.CourseDetailPage
 import com.chillsam.courmy.course.presentation.CourseDetailViewModel
+import com.chillsam.courmy.course.presentation.DraftListPage
+import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
@@ -27,6 +29,7 @@ import com.chillsam.courmy.main.presentation.settings.SettingsPage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
+import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 
 /**
  * 앱의 모든 페이지 메타데이터 + 렌더러 모음.
@@ -48,7 +51,11 @@ val appRoutes: List<AppRoute> =
                 CourseCreatePage(
                     viewModel = viewModel,
                     onClose = { navigationHelper.navigateToBack() },
-                    onSaveDraft = { draftTitle -> viewModel.onIntent(CourseCreateIntent.SaveDraft(draftTitle)) },
+                    onSaveDraft = {
+                        // 임시저장하면 세션에 저장하고 홈으로 나간다.
+                        viewModel.onIntent(CourseCreateIntent.SaveDraft)
+                        navigationHelper.navigateTo(HomePage)
+                    },
                     onSaveCourse = { completed ->
                         viewModel.onIntent(CourseCreateIntent.CompleteCourse(completed))
                         navigationHelper.navigateTo(CourseCompleteRoute)
@@ -66,6 +73,10 @@ val appRoutes: List<AppRoute> =
                     onViewMyCourses = { navigationHelper.navigateTo(MyPage) },
                 )
             },
+        ),
+        AppRoute(
+            path = DraftListRoute.PATH,
+            render = { DraftListPage(viewModel = hiltViewModel<DraftListViewModel>()) },
         ),
         AppRoute(
             path = MyPage.PATH,

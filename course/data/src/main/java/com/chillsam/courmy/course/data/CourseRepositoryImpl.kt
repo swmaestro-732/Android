@@ -7,6 +7,7 @@ import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CourseVisibility
+import com.chillsam.courmy.course.entity.DraftSummaryVO
 import com.chillsam.courmy.course.entity.SavedCourseVO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,16 +29,49 @@ class CourseRepositoryImpl(
     private val _savedCourses = MutableStateFlow<List<SavedCourseVO>>(emptyList())
     override val savedCourses: StateFlow<List<SavedCourseVO>> = _savedCourses.asStateFlow()
 
-    private val _drafts = MutableStateFlow<List<SavedCourseVO>>(emptyList())
-    override val drafts: StateFlow<List<SavedCourseVO>> = _drafts.asStateFlow()
+    private val _drafts = MutableStateFlow<List<DraftSummaryVO>>(emptyList())
+    override val drafts: StateFlow<List<DraftSummaryVO>> = _drafts.asStateFlow()
 
     private val _lastCompleted = MutableStateFlow<CourseCompleteVO?>(null)
     override val lastCompleted: StateFlow<CourseCompleteVO?> = _lastCompleted.asStateFlow()
 
-    override suspend fun getCourseDraft(): CourseDraftVO = EMPTY_DRAFT
+    /** id → 저장 시각·전체 초안. 편집 세션 id 를 키로 upsert 하므로 제목을 바꿔도 중복이 생기지 않는다. */
+    private val draftsById = LinkedHashMap<String, StoredDraft>()
 
-    override fun saveDraft(title: String) {
-        _drafts.update { it + SavedCourseVO(title, System.currentTimeMillis()) }
+    /** 다음 [getCourseDraft] 가 이어서 편집할 초안 id. 한 번 소비하면 비운다. */
+    private var pendingEditId: String? = null
+
+    /** 현재 편집 세션의 초안 id. 저장 시 이 id 로 upsert 한다(제목 무관). */
+    private var editingId: String? = null
+
+    /** 새 초안 세션 id 발급용 카운터(랜덤/UUID 없이 안정적으로). */
+    private var draftSeq = 0
+
+    override suspend fun getCourseDraft(): CourseDraftVO {
+        val id = pendingEditId
+        pendingEditId = null
+        // 이어서 편집이면 그 초안 id 로, 새 코스면 새 세션 id 로 편집 세션을 연다.
+        editingId = id ?: newDraftId()
+        return id?.let { draftsById[it]?.content } ?: EMPTY_DRAFT
+    }
+
+    override fun beginEditDraft(draftId: String) {
+        pendingEditId = draftId
+    }
+
+    override fun saveDraft(draft: CourseDraftVO) {
+        // 편집 세션 id 로 upsert. 세션이 없으면(= Load 없이 저장) 새 id 를 발급해 기존 초안을 덮지 않는다.
+        val id = editingId ?: newDraftId()
+        val title = draft.name.ifBlank { DEFAULT_DRAFT_TITLE }
+        draftsById[id] = StoredDraft(id, System.currentTimeMillis(), title, draft)
+        _drafts.value = draftsById.values.map { DraftSummaryVO(it.id, it.title, it.savedAtMillis) }
+        // 저장으로 편집 세션을 닫는다(저장 후 홈으로 나감). 다음 저장은 새 세션 id 를 받아 덮어쓰기를 막는다.
+        editingId = null
+    }
+
+    private fun newDraftId(): String {
+        draftSeq += 1
+        return "draft-$draftSeq"
     }
 
     override fun completeCourse(course: CourseCompleteVO?) {
@@ -53,7 +87,18 @@ class CourseRepositoryImpl(
         return data.toVO()
     }
 
+    /** 임시저장 1건: id + 저장 시각 + 표시 제목 + 전체 초안 내용. */
+    private data class StoredDraft(
+        val id: String,
+        val savedAtMillis: Long,
+        val title: String,
+        val content: CourseDraftVO,
+    )
+
     private companion object {
+        /** 이름 없이 저장한 초안의 목록 표시용 기본 제목. */
+        const val DEFAULT_DRAFT_TITLE = "제목 없는 코스"
+
         val EMPTY_DRAFT =
             CourseDraftVO(
                 name = "",
