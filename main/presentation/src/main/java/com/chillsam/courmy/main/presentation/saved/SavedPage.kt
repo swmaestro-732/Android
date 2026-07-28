@@ -191,7 +191,7 @@ private fun SavedCourseCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .aspectRatio(2.0f)
+                    .aspectRatio(356f / 126f)
                     .background(color.imagePlaceholder),
         ) {
             if (course.thumbnailUrl.isNotBlank()) {
