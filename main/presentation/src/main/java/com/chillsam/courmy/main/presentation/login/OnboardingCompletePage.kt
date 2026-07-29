@@ -131,8 +131,8 @@ private fun summarize(items: List<String>): String {
 /** 목적격 조사(을/를)를 마지막 글자의 받침 유무로 고른다. 한글이 아니면 "를". */
 private fun objectJosa(word: String): String {
     val last = word.lastOrNull() ?: return "를"
-    if (last.code !in 0xAC00..0xD7A3) return "를"
-    return if ((last.code - 0xAC00) % 28 != 0) "을" else "를"
+    val hasFinalConsonant = last.code in 0xAC00..0xD7A3 && (last.code - 0xAC00) % 28 != 0
+    return if (hasFinalConsonant) "을" else "를"
 }
 
 @Composable
