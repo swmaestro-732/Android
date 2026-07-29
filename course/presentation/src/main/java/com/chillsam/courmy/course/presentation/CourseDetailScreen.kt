@@ -7,10 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,15 +26,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -78,12 +81,12 @@ fun CourseDetailScreen(
                     .verticalScroll(rememberScrollState()),
         ) {
             DetailHero(detail = detail, onBack = onBack)
+            // 작성자 라인은 화면 가로 전체를 채우는 흰색 밴드라 좌우 패딩 밖에 둔다.
+            AuthorRow(detail = detail, onFollow = onFollowAuthor)
             Column(
-                modifier = Modifier.padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                Spacer(Modifier.height(4.dp))
-                AuthorRow(detail = detail, onFollow = onFollowAuthor)
                 StatsRow(detail = detail)
                 DsText(
                     text = detail.description,
@@ -93,7 +96,7 @@ fun CourseDetailScreen(
                 )
                 PlacesSection(places = detail.places)
                 CourseRouteSection()
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
             }
         }
         DetailBottomBar(onShare = onShare, onSaveCourse = onSaveCourse)
@@ -156,7 +159,7 @@ private fun DetailHero(
                 Modifier
                     .align(Alignment.BottomStart)
                     .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
                 modifier =
@@ -243,16 +246,20 @@ private fun AuthorRow(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(color.bgDefaultLevel1)
+                .padding(horizontal = 20.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         CourseImage(
             url = detail.authorImageUrl,
             modifier = Modifier.size(40.dp),
             shape = CircleShape,
         )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DsText(
                 text = detail.authorName,
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
@@ -287,7 +294,7 @@ private fun AuthorRow(
 /** 요약 스탯 칩 3개: 장소 수 · 도보 · 따라감. 흰 배경 + 옅은 테두리 pill. */
 @Composable
 private fun StatsRow(detail: CourseDetailVO) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         StatChip(text = detail.placeCountText)
         StatChip(text = detail.walkText)
         StatChip(text = detail.followerText)
@@ -314,25 +321,39 @@ private fun StatChip(text: String) {
     }
 }
 
-/** 접힘 상태에서 콤팩트하게 보여줄 장소 수. 나머지는 "더보기"로 접는다. */
+/** 접힘 상태에서 콤팩트하게 보여줄 장소 수. 초과분은 "더보기"로 접는다. */
 private const val COLLAPSED_VISIBLE_PLACES = 2
+
+/** 이 수를 초과(4곳 이상)할 때만 "나머지 N곳 더보기"로 접는다. 3곳까지는 전부 노출. */
+private const val COLLAPSE_THRESHOLD = 3
 
 /** "코스 속 장소" 섹션: 헤더(접기/펼치기) + 펼침(사진·팁) / 접힘(콤팩트 타임라인) 목록. */
 @Composable
 private fun PlacesSection(places: List<CourseDetailPlaceVO>) {
     var expanded by remember { mutableStateOf(true) }
     val color = DesignSystemThemeImpl.designSystemColor
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    // 소개 문단과의 간격을 조금 더 준다.
+    Column(
+        modifier = Modifier.padding(top = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DsText(
-                text = "코스 속 장소 ${places.size}곳",
-                modifier = Modifier.weight(1f),
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-            )
+            // "코스 속 장소" 는 기본색, 개수("N곳") 만 accent 로 강조한다.
+            Row(modifier = Modifier.weight(1f)) {
+                DsText(
+                    text = "코스 속 장소 ",
+                    style = DesignSystemThemeImpl.typeScale.textStrongM,
+                    color = color.contentDefaultLevel0,
+                )
+                DsText(
+                    text = "${places.size}곳",
+                    style = DesignSystemThemeImpl.typeScale.textStrongM,
+                    color = color.contentAccent,
+                )
+            }
             DsText(
                 text = if (expanded) "접기" else "펼치기",
                 modifier = Modifier.clickable { expanded = !expanded },
@@ -351,116 +372,162 @@ private fun PlacesSection(places: List<CourseDetailPlaceVO>) {
     }
 }
 
-/** 접힘 목록: 앞 [COLLAPSED_VISIBLE_PLACES]곳만 콤팩트 행 + 타임라인 연결선 + "나머지 N곳 더보기". */
+/**
+ * 접힘 목록: 앞 [COLLAPSED_VISIBLE_PLACES]곳만 헤더 행 + "나머지 N곳 더보기".
+ * 펼침 상태([DetailPlaceItem])와 장소 헤더의 위치·디자인을 동일하게 맞춰, 접기/펼치기 시 겹치도록 한다.
+ */
 @Composable
 private fun CollapsedPlaces(
     places: List<CourseDetailPlaceVO>,
     onExpand: () -> Unit,
 ) {
-    val visible = places.take(COLLAPSED_VISIBLE_PLACES)
+    // 3곳까지는 전부 노출, 4곳 이상일 때만 앞 [COLLAPSED_VISIBLE_PLACES]곳 + "나머지 N곳 더보기".
+    val visible = if (places.size > COLLAPSE_THRESHOLD) places.take(COLLAPSED_VISIBLE_PLACES) else places
     val remaining = places.size - visible.size
-    Column {
+    val lineColor = DesignSystemThemeImpl.designSystemColor.bgAccent
+    // 각 노드(배지)의 세로 중심을 측정해, 노드끼리 잇는 세로 연결선을 배경으로 그린다.
+    // 행 자체는 펼침 헤더와 100% 동일한 레이아웃(패딩 없음)이라 접기/펼치기 시 위치가 어긋나지 않는다.
+    var columnTop by remember { mutableStateOf(0f) }
+    val nodeCenters = remember { mutableStateMapOf<Int, Float>() }
+    val nodeCount = visible.size + if (remaining > 0) 1 else 0
+
+    fun badgeModifier(index: Int): Modifier =
+        Modifier.onGloballyPositioned { coords ->
+            nodeCenters[index] = coords.positionInWindow().y - columnTop + coords.size.height / 2f
+        }
+
+    Column(
+        modifier =
+            Modifier
+                .onGloballyPositioned { columnTop = it.positionInWindow().y }
+                .drawBehind {
+                    val centers = (0 until nodeCount).mapNotNull { nodeCenters[it] }
+                    if (centers.size >= 2) {
+                        val x = 12.dp.toPx()
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(x, centers.first()),
+                            end = Offset(x, centers.last()),
+                            strokeWidth = 2.dp.toPx(),
+                        )
+                    }
+                },
+    ) {
         visible.forEachIndexed { index, place ->
-            CompactPlaceRow(
-                place = place,
-                connectAbove = index > 0,
-                connectBelow = index < visible.lastIndex || remaining > 0,
-            )
+            CompactPlaceRow(place = place, badgeModifier = badgeModifier(index))
+            // 노드 사이(다음 장소로 이어질 때)에 도보 시간을 넣는다. 간격도 이 행이 만든다.
+            if (index < visible.lastIndex || remaining > 0) {
+                WalkLabel(text = place.walkToNextText)
+            }
         }
         if (remaining > 0) {
-            MorePlacesRow(remaining = remaining, onClick = onExpand)
+            MorePlacesRow(
+                remaining = remaining,
+                onClick = onExpand,
+                badgeModifier = badgeModifier(visible.size),
+            )
         }
     }
 }
 
-/** 콤팩트 장소 행: 번호(타임라인) · 썸네일 · 이름/카테고리 · › . */
+/** 접힘 타임라인에서 노드와 노드 사이에 놓이는 도보 시간. 이름과 같은 x(선 오른쪽)에 정렬한다. */
+@Composable
+private fun WalkLabel(text: String?) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 36.dp, top = 10.dp, bottom = 10.dp),
+    ) {
+        if (text != null) {
+            DsText(
+                text = text,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+            )
+        }
+    }
+}
+
+/** 콤팩트 장소 행: 펼침 상태 [DetailPlaceItem] 의 헤더(번호·이름/카테고리·›)와 동일한 레이아웃. */
 @Composable
 private fun CompactPlaceRow(
     place: CourseDetailPlaceVO,
-    connectAbove: Boolean,
-    connectBelow: Boolean,
+    badgeModifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
-        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        PlaceRail(connectAbove = connectAbove, connectBelow = connectBelow) {
-            Box(
-                modifier = Modifier.size(28.dp).clip(CircleShape).background(color.bgAccent),
-                contentAlignment = Alignment.Center,
-            ) {
-                DsText(
-                    text = place.order.toString(),
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentOnAccent,
-                )
-            }
-        }
-        Row(
-            modifier = Modifier.weight(1f).padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Box(
+            modifier =
+                badgeModifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(color.bgAccent),
+            contentAlignment = Alignment.Center,
         ) {
-            CourseImage(
-                url = place.imageUrls.firstOrNull().orEmpty(),
-                modifier = Modifier.size(56.dp),
+            DsText(
+                text = place.order.toString(),
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentOnAccent,
             )
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                DsText(
-                    text = place.name,
-                    style = DesignSystemThemeImpl.typeScale.textStrongM,
-                    color = color.contentDefaultLevel0,
-                )
-                DsText(
-                    text = place.category,
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel2,
-                )
-            }
-            Box(
-                modifier = Modifier.size(32.dp).clip(CircleShape).background(color.bgAccentSubtle),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_chevron_right_24),
-                    contentDescription = null,
-                    tint = color.contentAccent,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
         }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            DsText(
+                text = place.name,
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+            )
+            DsText(
+                text = place.category,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+        }
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right_24),
+            contentDescription = null,
+            tint = color.contentDefaultLevel3,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
-/** "나머지 N곳 더보기" 행: 점선 원(⋯) 타임라인 마감 + 강조 텍스트. 누르면 펼친다. */
+/** "나머지 N곳 더보기" 행: 세로 연결선으로 이어진 점선 원(⋯) + 강조 텍스트. 누르면 펼친다. */
 @Composable
 private fun MorePlacesRow(
     remaining: Int,
     onClick: () -> Unit,
+    badgeModifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min)
                 .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        PlaceRail(connectAbove = true, connectBelow = false) {
-            Box(
-                modifier = Modifier.size(28.dp).dashedBorder(color.borderDefaultLevel0, cornerRadius = 14.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                DsText(
-                    text = "⋯",
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel2,
-                )
-            }
+        Box(
+            modifier =
+                badgeModifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(color.bgDefaultLevel0)
+                    .dashedBorder(color.contentAccent, cornerRadius = 12.dp, strokeWidth = 1.5.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            DsText(
+                text = "⋯",
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = color.contentDefaultLevel2,
+            )
         }
-        Box(modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 12.dp)) {
+        Box {
             DsText(
                 text = "나머지 ${remaining}곳 더보기",
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
@@ -470,51 +537,15 @@ private fun MorePlacesRow(
     }
 }
 
-/** 타임라인 레일: 세로 연결선(위/아래 선택) 위에 노드(번호 원/점선 원)를 중앙 배치. */
-@Composable
-private fun PlaceRail(
-    connectAbove: Boolean,
-    connectBelow: Boolean,
-    node: @Composable () -> Unit,
-) {
-    val lineColor = DesignSystemThemeImpl.designSystemColor.bgAccent
-    Box(
-        modifier = Modifier.width(28.dp).fillMaxHeight(),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (connectAbove) {
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .width(2.dp)
-                        .fillMaxHeight(0.5f)
-                        .background(lineColor),
-            )
-        }
-        if (connectBelow) {
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .width(2.dp)
-                        .fillMaxHeight(0.5f)
-                        .background(lineColor),
-            )
-        }
-        node()
-    }
-}
-
 /** 장소 1건: 순번·이름·카테고리 헤더 + 사진 + "지호님 팁". */
 @Composable
 private fun DetailPlaceItem(place: CourseDetailPlaceVO) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
                 modifier =
@@ -530,7 +561,7 @@ private fun DetailPlaceItem(place: CourseDetailPlaceVO) {
                     color = color.contentOnAccent,
                 )
             }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 DsText(
                     text = place.name,
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
@@ -585,7 +616,7 @@ private fun DetailPlaceItem(place: CourseDetailPlaceVO) {
                 }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
                 modifier =
                     Modifier
@@ -594,7 +625,7 @@ private fun DetailPlaceItem(place: CourseDetailPlaceVO) {
                         .clip(RoundedCornerShape(9999.dp))
                         .background(color.bgAccent),
             )
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 DsText(
                     text = "지호님 팁",
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -618,7 +649,7 @@ private fun RouteConnector(text: String) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(11.dp),
     ) {
         Box(
             modifier =
@@ -649,7 +680,11 @@ private fun RouteConnector(text: String) {
 @Composable
 private fun CourseRouteSection() {
     val color = DesignSystemThemeImpl.designSystemColor
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    // "코스 경로" 헤더 위에 장소 목록과의 간격을 조금 더 준다.
+    Column(
+        modifier = Modifier.padding(top = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
         DsText(
             text = "코스 경로",
             style = DesignSystemThemeImpl.typeScale.textStrongM,
@@ -696,7 +731,7 @@ private fun DetailBottomBar(
                     .navigationBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val buttonShape = RoundedCornerShape(15.dp)
             Box(
