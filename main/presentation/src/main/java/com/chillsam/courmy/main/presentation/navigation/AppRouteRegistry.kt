@@ -205,7 +205,8 @@ val appRoutes: List<AppRoute> =
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
                     onBack = { navigationHelper.navigateToBack() },
                     onFollowAuthor = { },
-                    onFollowCourse = { },
+                    onShare = { },
+                    onSaveCourse = { },
                 )
             },
         ),
