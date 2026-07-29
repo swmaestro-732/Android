@@ -84,7 +84,11 @@ class CourseRepositoryImpl(
     override suspend fun getCourseDetail(courseId: Long): CourseDetailVO {
         val envelope = courseDetailDataSource.getCourseDetail(courseId)
         val data = requireNotNull(envelope.data) { "코스 상세 응답에 data 가 없습니다: courseId=$courseId" }
-        return data.toVO()
+        val detail = data.toVO()
+        // 임시(map-in-course): API 응답에 장소 좌표가 없어 "코스 경로" 지도가 뜨지 않는다.
+        // 좌표가 하나도 없으면 좌표 포함 더미로 대체해 지도를 확인한다.
+        // API 에 좌표 필드가 추가되면(CoursePlaceDTO + toVO 매핑) 이 폴백을 제거한다.
+        return if (detail.places.any { it.latitude != null }) detail else CourseDetailVO.sample
     }
 
     /** 임시저장 1건: id + 저장 시각 + 표시 제목 + 전체 초안 내용. */
