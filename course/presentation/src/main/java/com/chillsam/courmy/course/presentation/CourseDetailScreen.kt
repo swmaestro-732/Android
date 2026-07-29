@@ -1,5 +1,9 @@
 package com.chillsam.courmy.course.presentation
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,14 +41,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -53,13 +63,19 @@ import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.naver.maps.geometry.LatLng
+import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
+import com.naver.maps.map.CameraUpdate
+import com.naver.maps.map.compose.CameraPositionState
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
+import com.naver.maps.map.compose.NaverMapComposable
 import com.naver.maps.map.compose.PathOverlay
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberUpdatedMarkerState
+import com.naver.maps.map.overlay.OverlayImage
 
 /**
  * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(제목·작성자) → 요약 스탯 → 소개 →
@@ -694,23 +710,40 @@ private fun CourseRouteSection(places: List<CourseDetailPlaceVO>) {
             val lng = place.longitude
             if (lat != null && lng != null) place.order to LatLng(lat, lng) else null
         }
+    var showFullMap by remember { mutableStateOf(false) }
     // "코스 경로" 헤더 위에 장소 목록과의 간격을 조금 더 준다.
     Column(
         modifier = Modifier.padding(top = 12.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        DsText(
-            text = "코스 경로",
-            style = DesignSystemThemeImpl.typeScale.textStrongM,
-            color = color.contentDefaultLevel0,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DsText(
+                text = "코스 경로",
+                modifier = Modifier.weight(1f),
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+            )
+            // 인라인 지도는 조작 불가라, 확대·이동해서 보려면 전체화면 지도로 연다.
+            if (points.isNotEmpty()) {
+                DsText(
+                    text = "자세히 보기",
+                    modifier = Modifier.clickable { showFullMap = true },
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentAccent,
+                )
+            }
+        }
         Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(color.imagePlaceholder),
+                    .background(color.imagePlaceholder)
+                    .then(if (points.isNotEmpty()) Modifier.clickable { showFullMap = true } else Modifier),
             contentAlignment = Alignment.Center,
         ) {
             if (points.isEmpty()) {
@@ -723,18 +756,28 @@ private fun CourseRouteSection(places: List<CourseDetailPlaceVO>) {
             } else {
                 CourseRouteMap(points = points, lineColor = color.bgAccent)
             }
+            // 지도가 덮지 않도록 테두리를 맨 위에 덧그린다.
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(14.dp)),
+            )
         }
+    }
+    if (showFullMap && points.isNotEmpty()) {
+        CourseRouteFullMapDialog(
+            points = points,
+            lineColor = color.bgAccent,
+            onDismiss = { showFullMap = false },
+        )
     }
 }
 
-/** 코스 경로 지도 본체: 장소 순번 핀 + 경로선. 카메라는 좌표들의 중심에 맞춘다. */
+/** 좌표들의 중심에 두고, 2개 이상이면 모든 핀이 들어오도록 경계(fitBounds)에 맞춘 카메라 상태. */
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
-private fun CourseRouteMap(
-    points: List<Pair<Int, LatLng>>,
-    lineColor: androidx.compose.ui.graphics.Color,
-) {
-    val coords = points.map { it.second }
+private fun rememberRouteCameraState(coords: List<LatLng>): CameraPositionState {
     val center =
         LatLng(
             coords.map { it.latitude }.average(),
@@ -742,28 +785,203 @@ private fun CourseRouteMap(
         )
     val cameraPositionState =
         rememberCameraPositionState {
-            position = CameraPosition(center, 14.5)
+            position = CameraPosition(center, 14.0)
         }
+    LaunchedEffect(coords) {
+        if (coords.size >= 2) {
+            val bounds = LatLngBounds.Builder().apply { coords.forEach { include(it) } }.build()
+            cameraPositionState.move(CameraUpdate.fitBounds(bounds, ROUTE_MAP_FIT_PADDING))
+        }
+    }
+    return cameraPositionState
+}
+
+/** 지도 위 오버레이: 장소 순번 핀 + 경로선. 인라인/전체 지도 공통. */
+@OptIn(ExperimentalNaverMapApi::class)
+@Composable
+@NaverMapComposable
+private fun RouteOverlays(
+    points: List<Pair<Int, LatLng>>,
+    lineColor: Color,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val density = LocalDensity.current.density
+    val fillArgb = lineColor.toArgb()
+    val textArgb = color.contentOnAccent.toArgb()
+    val coords = points.map { it.second }
+    if (coords.size >= 2) {
+        PathOverlay(
+            coords = coords,
+            width = 3.dp,
+            outlineWidth = 1.dp,
+            color = lineColor,
+            outlineColor = lineColor,
+        )
+    }
+    points.forEach { (order, position) ->
+        // 기본 삼각형 핀 대신 순번 숫자를 넣은 원형 마커(앱 장소 번호 배지와 동일 톤).
+        val icon =
+            remember(order, fillArgb, textArgb, density) {
+                numberedMarkerIcon(
+                    number = order,
+                    fillArgb = fillArgb,
+                    textArgb = textArgb,
+                    sizePx = (28 * density).toInt(),
+                )
+            }
+        Marker(
+            state = rememberUpdatedMarkerState(position = position),
+            icon = icon,
+            anchor = Offset(0.5f, 0.5f),
+        )
+    }
+}
+
+/** 순번 숫자가 들어간 원형 마커 아이콘을 그린다(초록 원 + 흰 숫자 + 흰 테두리). */
+private fun numberedMarkerIcon(
+    number: Int,
+    fillArgb: Int,
+    textArgb: Int,
+    sizePx: Int,
+): OverlayImage {
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val c = sizePx / 2f
+    val strokeWidth = sizePx * 0.08f
+    val radius = c - strokeWidth
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fillArgb }
+    val stroke =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = textArgb
+            style = Paint.Style.STROKE
+            this.strokeWidth = strokeWidth
+        }
+    canvas.drawCircle(c, c, radius, fill)
+    canvas.drawCircle(c, c, radius, stroke)
+    val text =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = textArgb
+            textAlign = Paint.Align.CENTER
+            textSize = sizePx * 0.5f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+    val fm = text.fontMetrics
+    canvas.drawText(number.toString(), c, c - (fm.ascent + fm.descent) / 2f, text)
+    return OverlayImage.fromBitmap(bitmap)
+}
+
+/** 인라인 코스 경로 지도: 모든 핀을 보여주되 조작(제스처·컨트롤)은 막는다. */
+@OptIn(ExperimentalNaverMapApi::class)
+@Composable
+private fun CourseRouteMap(
+    points: List<Pair<Int, LatLng>>,
+    lineColor: Color,
+) {
     NaverMap(
         modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState,
+        cameraPositionState = rememberRouteCameraState(points.map { it.second }),
+        uiSettings =
+            MapUiSettings(
+                isScrollGesturesEnabled = false,
+                isZoomGesturesEnabled = false,
+                isTiltGesturesEnabled = false,
+                isRotateGesturesEnabled = false,
+                isStopGesturesEnabled = false,
+                isZoomControlEnabled = false,
+                isScaleBarEnabled = false,
+                isCompassEnabled = false,
+                isLogoClickEnabled = false,
+            ),
     ) {
-        if (coords.size >= 2) {
-            PathOverlay(
-                coords = coords,
-                width = 4.dp,
-                color = lineColor,
-                outlineColor = lineColor,
-            )
-        }
-        points.forEach { (order, position) ->
-            Marker(
-                state = rememberUpdatedMarkerState(position = position),
-                captionText = order.toString(),
-            )
+        RouteOverlays(points = points, lineColor = lineColor)
+    }
+}
+
+/** "자세히 보기" 전체화면 지도: 확대·이동 가능한 인터랙티브 지도 + 닫기 버튼. */
+@OptIn(ExperimentalNaverMapApi::class)
+@Composable
+private fun CourseRouteFullMapDialog(
+    points: List<Pair<Int, LatLng>>,
+    lineColor: Color,
+    onDismiss: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val cameraPositionState = rememberRouteCameraState(points.map { it.second })
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(color.bgDefaultLevel1),
+        ) {
+            NaverMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                // 네이티브 줌 컨트롤은 끄고 아래에서 커스텀 버튼(우하단)으로 대체한다.
+                uiSettings = MapUiSettings(isZoomControlEnabled = false),
+            ) {
+                RouteOverlays(points = points, lineColor = lineColor)
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .statusBarsPadding()
+                        .padding(16.dp),
+            ) {
+                HeroCircleButton(
+                    iconRes = R.drawable.close_small_24,
+                    contentDescription = "닫기",
+                    onClick = onDismiss,
+                )
+            }
+            // 확대/축소 버튼 — 우하단.
+            Column(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(color.bgDefaultLevel1),
+            ) {
+                MapZoomButton(symbol = "+", onClick = { cameraPositionState.move(CameraUpdate.zoomIn()) })
+                Box(
+                    modifier =
+                        Modifier
+                            .width(40.dp)
+                            .height(1.dp)
+                            .background(color.borderDefaultLevel0),
+                )
+                MapZoomButton(symbol = "−", onClick = { cameraPositionState.move(CameraUpdate.zoomOut()) })
+            }
         }
     }
 }
+
+/** 전체 지도용 확대/축소 버튼 1개. */
+@Composable
+private fun MapZoomButton(
+    symbol: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.size(40.dp).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        DsText(
+            text = symbol,
+            style = DesignSystemThemeImpl.typeScale.textRegularM,
+            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+        )
+    }
+}
+
+/** fitBounds 여백(px). 핀 아이콘·캡션이 지도 가장자리에 잘리지 않게 넉넉히 둔다. */
+private const val ROUTE_MAP_FIT_PADDING = 96
 
 /** 하단 고정 액션바: 공유 버튼 + "코스 저장하기" 기본 버튼. 상단에 옅은 구분선. */
 @Composable
