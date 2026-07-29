@@ -45,6 +45,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
@@ -335,7 +336,6 @@ private fun SavedCourseCard(
 @Composable
 private fun GuestSaved(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
-    val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
@@ -392,7 +392,7 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                 )
                 DsButton(
                     text = "로그인 / 회원가입",
-                    onClick = { session.login() },
+                    onClick = { navigationHelper.navigateTo(LoginPage) },
                     modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
                 )
             }
