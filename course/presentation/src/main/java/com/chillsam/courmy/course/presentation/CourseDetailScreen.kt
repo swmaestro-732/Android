@@ -52,6 +52,14 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.presentation.component.dashedBorder
+import com.naver.maps.geometry.LatLng
+import com.naver.maps.map.CameraPosition
+import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.Marker
+import com.naver.maps.map.compose.NaverMap
+import com.naver.maps.map.compose.PathOverlay
+import com.naver.maps.map.compose.rememberCameraPositionState
+import com.naver.maps.map.compose.rememberUpdatedMarkerState
 
 /**
  * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(제목·작성자) → 요약 스탯 → 소개 →
@@ -95,7 +103,7 @@ fun CourseDetailScreen(
                     maxLines = Int.MAX_VALUE,
                 )
                 PlacesSection(places = detail.places)
-                CourseRouteSection()
+                CourseRouteSection(places = detail.places)
                 Spacer(Modifier.height(14.dp))
             }
         }
@@ -674,12 +682,18 @@ private fun RouteConnector(text: String) {
 }
 
 /**
- * "코스 경로" 섹션: 헤더 + 지도 영역. 네이버 지도 SDK 연동 전까지 placeholder 로 자리를 잡는다.
- * TODO(map-in-course): 네이버 지도(NaverMap) 로 교체하고 장소 좌표로 핀·경로선을 그린다.
+ * "코스 경로" 섹션: 헤더 + 네이버 지도. 좌표가 있는 장소에 순번 핀을 찍고 경로선으로 잇는다.
+ * 좌표가 하나도 없으면(예: API 미연동) 지도 대신 placeholder 를 보여준다.
  */
 @Composable
-private fun CourseRouteSection() {
+private fun CourseRouteSection(places: List<CourseDetailPlaceVO>) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val points =
+        places.mapNotNull { place ->
+            val lat = place.latitude
+            val lng = place.longitude
+            if (lat != null && lng != null) place.order to LatLng(lat, lng) else null
+        }
     // "코스 경로" 헤더 위에 장소 목록과의 간격을 조금 더 준다.
     Column(
         modifier = Modifier.padding(top = 12.dp),
@@ -699,11 +713,53 @@ private fun CourseRouteSection() {
                     .background(color.imagePlaceholder),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_tab_map_24),
-                contentDescription = "코스 경로 지도",
-                tint = color.contentDefaultLevel3,
-                modifier = Modifier.size(40.dp),
+            if (points.isEmpty()) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_tab_map_24),
+                    contentDescription = "코스 경로 지도",
+                    tint = color.contentDefaultLevel3,
+                    modifier = Modifier.size(40.dp),
+                )
+            } else {
+                CourseRouteMap(points = points, lineColor = color.bgAccent)
+            }
+        }
+    }
+}
+
+/** 코스 경로 지도 본체: 장소 순번 핀 + 경로선. 카메라는 좌표들의 중심에 맞춘다. */
+@OptIn(ExperimentalNaverMapApi::class)
+@Composable
+private fun CourseRouteMap(
+    points: List<Pair<Int, LatLng>>,
+    lineColor: androidx.compose.ui.graphics.Color,
+) {
+    val coords = points.map { it.second }
+    val center =
+        LatLng(
+            coords.map { it.latitude }.average(),
+            coords.map { it.longitude }.average(),
+        )
+    val cameraPositionState =
+        rememberCameraPositionState {
+            position = CameraPosition(center, 14.5)
+        }
+    NaverMap(
+        modifier = Modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState,
+    ) {
+        if (coords.size >= 2) {
+            PathOverlay(
+                coords = coords,
+                width = 4.dp,
+                color = lineColor,
+                outlineColor = lineColor,
+            )
+        }
+        points.forEach { (order, position) ->
+            Marker(
+                state = rememberUpdatedMarkerState(position = position),
+                captionText = order.toString(),
             )
         }
     }
@@ -816,6 +872,8 @@ private val previewCourseDetail =
                     photoCountText = "1/3",
                     tip = "통창 자리 꼭 앉으세요. 비 오는 날 이 뷰가 진짜 최고예요. 팡도르는 나오자마자!",
                     walkToNextText = "도보 6분",
+                    latitude = 37.5447,
+                    longitude = 127.0561,
                 ),
                 CourseDetailPlaceVO(
                     order = 2,
@@ -824,6 +882,8 @@ private val previewCourseDetail =
                     photoCountText = "1/2",
                     tip = "천장 높은 공간이라 사진이 잘 나와요. 안쪽 전시도 꼭 보세요.",
                     walkToNextText = "도보 5분",
+                    latitude = 37.5410,
+                    longitude = 127.0552,
                 ),
                 CourseDetailPlaceVO(
                     order = 3,
@@ -832,6 +892,8 @@ private val previewCourseDetail =
                     photoCountText = "1/2",
                     tip = "로스팅 향이 진해요. 핸드드립 한 잔 시켜서 잠깐 앉았다 가기 좋아요.",
                     walkToNextText = "도보 4분",
+                    latitude = 37.5433,
+                    longitude = 127.0575,
                 ),
                 CourseDetailPlaceVO(
                     order = 4,
@@ -840,6 +902,8 @@ private val previewCourseDetail =
                     photoCountText = "1/1",
                     tip = "마무리로 와인 한 잔. 안주는 관자 카르파초 강추예요.",
                     walkToNextText = null,
+                    latitude = 37.5428,
+                    longitude = 127.0532,
                 ),
             ),
         rating = "4.8",

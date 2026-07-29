@@ -26,6 +26,16 @@ fun signingSecret(
 val releaseStoreFile = signingSecret("storeFile", "KEYSTORE_FILE")
 val hasReleaseSigning = releaseStoreFile != null
 
+// 네이버 지도 인증(Client ID). local.properties(NAVER_MAP_CLIENT_ID) 또는 CI 환경변수에서 읽는다.
+// 값이 없으면 빈 문자열로 빌드는 되게 두고(초기 단계), 값이 들어오면 지도가 인증된다.
+val localProps =
+    Properties().apply {
+        val f = rootProject.file("local.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+val naverMapClientId: String =
+    (localProps.getProperty("NAVER_MAP_CLIENT_ID") ?: System.getenv("NAVER_MAP_CLIENT_ID")).orEmpty()
+
 android {
     namespace = "com.chillsam.courmy"
     compileSdk {
@@ -51,6 +61,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // AndroidManifest 의 네이버 지도 meta-data(${naverMapClientId})로 주입된다.
+        manifestPlaceholders["naverMapClientId"] = naverMapClientId
     }
 
     signingConfigs {

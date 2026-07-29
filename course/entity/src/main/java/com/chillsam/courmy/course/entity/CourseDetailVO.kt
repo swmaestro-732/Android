@@ -50,6 +50,8 @@ data class CourseDetailVO(
  * - [imageUrls]      장소 사진 URL 목록 (순서대로)
  * - [tip]            작성자 팁 ("지호님 팁" 본문)
  * - [walkToNextText] 다음 장소로의 도보 안내 (예: "도보 6분"). 마지막 장소는 null
+ * - [latitude]       위도. 좌표가 없으면 null (지도에 핀을 찍지 않는다)
+ * - [longitude]      경도. 좌표가 없으면 null
  */
 @Serializable
 data class CourseDetailPlaceVO(
@@ -60,6 +62,8 @@ data class CourseDetailPlaceVO(
     val tip: String,
     val imageUrls: List<String> = emptyList(),
     val walkToNextText: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 /**

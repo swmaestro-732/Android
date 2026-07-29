@@ -71,6 +71,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.coil.compose)
 
+    // 네이버 지도(코스 경로 표시). map-sdk 는 transitive 로 함께 온다.
+    implementation(libs.naver.map.compose)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

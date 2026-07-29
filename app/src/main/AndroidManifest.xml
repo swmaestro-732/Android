@@ -15,6 +15,12 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.Courmy">
+
+        <!-- 네이버 지도 인증 키. 값은 local.properties(NAVER_MAP_CLIENT_ID) → manifestPlaceholders 로 주입 -->
+        <meta-data
+            android:name="com.naver.maps.map.NCP_KEY_ID"
+            android:value="${naverMapClientId}" />
+
         <activity
             android:name=".main.presentation.MainActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|keyboard|navigation|uiMode|density|fontScale|locale|layoutDirection"
