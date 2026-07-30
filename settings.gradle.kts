@@ -19,6 +19,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // 네이버 지도 SDK(map-sdk / naver-map-compose) 배포 저장소
+        maven { url = uri("https://repository.map.naver.com/archive/maven") }
     }
 }
 

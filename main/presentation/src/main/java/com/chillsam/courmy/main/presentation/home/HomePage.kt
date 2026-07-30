@@ -2,7 +2,10 @@ package com.chillsam.courmy.main.presentation.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,28 +13,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.chillsam.courmy.common.presentation.component.DsText
+import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseCreatePage
+import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
+import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.component.SavedCourseCard
 
 /**
  * 앱의 기본 시작 화면.
  *
- * 코스 만들기 진입 플로우(FS-09) 작업 단계라, 본문은 아직 "Home" 플레이스홀더 하나만 두고
- * 하단 탭바([HomeBottomBar])와 코스 만들기 FAB([CreateCourseMenu])를 우선 구현한다.
+ * 코스 만들기 진입 플로우(FS-09) 작업 단계라, 본문은 저장함과 동일한 코스 카드 1개만 두고
+ * 하단 탭바([CourmyBottomBar])와 코스 만들기 FAB([CreateCourseMenu])를 우선 구현한다.
+ * 코스 카드는 로그인 여부와 무관하게 노출한다.
  */
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     var menuExpanded by remember { mutableStateOf(false) }
+    // 로그인 전에도 볼 수 있는 대표 코스 카드(백엔드 연동 전 더미).
+    val featuredCourse = remember { SavedCourseVO.sample.first() }
 
     Box(
         modifier =
@@ -39,13 +48,20 @@ fun HomePage(modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1),
     ) {
-        // 본문 플레이스홀더 — 실제 홈 콘텐츠는 이후 단계에서 채운다.
-        DsText(
-            text = "Home",
-            style = DesignSystemThemeImpl.typeScale.titleExtraL,
-            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
-            modifier = Modifier.align(Alignment.Center),
-        )
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp),
+        ) {
+            SavedCourseCard(
+                course = featuredCourse,
+                onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(featuredCourse.id)) },
+                onBookmarkClick = {},
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
 
         CourmyBottomBar(
             selectedTab = MainTab.HOME,

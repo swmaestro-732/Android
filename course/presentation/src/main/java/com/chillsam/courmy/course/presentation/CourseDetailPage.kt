@@ -28,7 +28,8 @@ fun CourseDetailPage(
     viewModel: CourseDetailViewModel,
     onBack: () -> Unit,
     onFollowAuthor: () -> Unit,
-    onFollowCourse: () -> Unit,
+    onShare: () -> Unit,
+    onSaveCourse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -39,7 +40,8 @@ fun CourseDetailPage(
                 detail = detail,
                 onBack = onBack,
                 onFollowAuthor = onFollowAuthor,
-                onFollowCourse = onFollowCourse,
+                onShare = onShare,
+                onSaveCourse = onSaveCourse,
                 modifier = modifier,
             )
         }

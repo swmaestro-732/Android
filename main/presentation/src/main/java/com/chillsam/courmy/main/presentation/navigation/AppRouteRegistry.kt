@@ -1,5 +1,7 @@
 package com.chillsam.courmy.main.presentation.navigation
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.course.presentation.CourseCompletePage
@@ -201,11 +203,15 @@ val appRoutes: List<AppRoute> =
             path = CourseDetailRoute.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current
+                val context = LocalContext.current
+                // 팔로우·공유·저장 플로우는 아직 미구현이라, 무반응 대신 "준비 중" 안내를 띄운다.
+                val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
                 CourseDetailPage(
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
                     onBack = { navigationHelper.navigateToBack() },
-                    onFollowAuthor = { },
-                    onFollowCourse = { },
+                    onFollowAuthor = { notReady() },
+                    onShare = { notReady() },
+                    onSaveCourse = { notReady() },
                 )
             },
         ),

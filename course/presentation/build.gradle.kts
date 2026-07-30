@@ -71,7 +71,14 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.coil.compose)
 
+    // 네이버 지도(코스 경로 표시). map-sdk 는 transitive 로 함께 온다.
+    implementation(libs.naver.map.compose)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+
+    // @Preview 애노테이션(main 소스에서 사용) + 렌더러(debug 전용)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling)
 }

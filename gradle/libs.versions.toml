@@ -26,6 +26,7 @@ javaxInject = "1"
 navigation3 = "1.1.1"
 lottieCompose = "6.7.1"
 coil = "3.4.0"
+naverMapCompose = "1.9.0"
 datastore = "1.1.7"
 mockk = "1.14.5"
 benchmark = "1.5.0-alpha05"
@@ -81,6 +82,7 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 
 coil = { group = "io.coil-kt.coil3", name = "coil", version.ref = "coil" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+naver-map-compose = { group = "io.github.fornewid", name = "naver-map-compose", version.ref = "naverMapCompose" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 coil-gif = { group = "io.coil-kt.coil3", name = "coil-gif", version.ref = "coil" }
 coil-video = { group = "io.coil-kt.coil3", name = "coil-video", version.ref = "coil" }

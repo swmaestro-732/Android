@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
  * - [authorName]     작성자 이름 (예: "지호님")
  * - [authorHandle]   작성자 핸들 (예: "@jiho_routes")
  * - [authorImageUrl] 작성자 프로필 이미지 URL
+ * - [isFollowingAuthor] 내가 이 작성자를 팔로우 중인지. true 면 팔로우 버튼을 숨긴다.
  * - [placeCountText] 장소 수 요약 (예: "4곳")
  * - [walkText]       총 도보 요약 (예: "도보 20분")
  * - [followerText]   따라간 사람 수 (예: "1.2k 따라감")
@@ -28,6 +29,7 @@ data class CourseDetailVO(
     val authorName: String,
     val authorHandle: String,
     val authorImageUrl: String = "",
+    val isFollowingAuthor: Boolean = false,
     val placeCountText: String,
     val walkText: String,
     val followerText: String,
@@ -48,6 +50,8 @@ data class CourseDetailVO(
  * - [imageUrls]      장소 사진 URL 목록 (순서대로)
  * - [tip]            작성자 팁 ("지호님 팁" 본문)
  * - [walkToNextText] 다음 장소로의 도보 안내 (예: "도보 6분"). 마지막 장소는 null
+ * - [latitude]       위도. 좌표가 없으면 null (지도에 핀을 찍지 않는다)
+ * - [longitude]      경도. 좌표가 없으면 null
  */
 @Serializable
 data class CourseDetailPlaceVO(
@@ -58,6 +62,8 @@ data class CourseDetailPlaceVO(
     val tip: String,
     val imageUrls: List<String> = emptyList(),
     val walkToNextText: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 /**
