@@ -36,6 +36,10 @@ val localProps =
 val naverMapClientId: String =
     (localProps.getProperty("NAVER_MAP_CLIENT_ID") ?: System.getenv("NAVER_MAP_CLIENT_ID")).orEmpty()
 
+// 카카오 로그인 네이티브 앱키. KakaoSdk.init 과 카카오톡 로그인 리다이렉트 scheme(kakao{appKey})에 쓰인다.
+val kakaoNativeAppKey: String =
+    (localProps.getProperty("KAKAO_NATIVE_APP_KEY") ?: System.getenv("KAKAO_NATIVE_APP_KEY")).orEmpty()
+
 android {
     namespace = "com.chillsam.courmy"
     compileSdk {
@@ -64,6 +68,10 @@ android {
 
         // AndroidManifest 의 네이버 지도 meta-data(${naverMapClientId})로 주입된다.
         manifestPlaceholders["naverMapClientId"] = naverMapClientId
+
+        // 카카오: KakaoSdk.init 용 BuildConfig + 카카오톡 로그인 리다이렉트 scheme(manifest) 주입.
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
+        manifestPlaceholders["kakaoNativeAppKey"] = kakaoNativeAppKey
     }
 
     signingConfigs {
@@ -155,6 +163,9 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+
+    // 카카오 로그인 SDK — CourmyApplication 의 KakaoSdk.init 용
+    implementation(libs.kakao.user)
 
     // Baseline Profile: 설치 시점에 dump 된 프로필을 ART 에 등록해 주는 런타임 라이브러리.
     // minSdk 24 ~ 27 백포트를 위해 필수.

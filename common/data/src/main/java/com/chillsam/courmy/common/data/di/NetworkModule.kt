@@ -1,6 +1,7 @@
 package com.chillsam.courmy.common.data.di
 
 import com.chillsam.courmy.common.data.BuildConfig
+import com.chillsam.courmy.common.data.auth.TokenStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,22 +33,23 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(tokenStore: TokenStore): OkHttpClient {
         val logging =
             HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
+                // 릴리스에서는 토큰(idToken·access·refresh)이 logcat 으로 새지 않도록 로깅을 끈다.
+                level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
             }
-        // API-CONFIG-INJECTION-POINT: 인증 헤더는 API_KEY 가 있을 때만 붙인다.
-        // Courmy 공개 엔드포인트(코스 상세 등)는 키가 없어도 되고, /my·생성 등 인증 필요 API 는
-        // 로그인 accessToken(Bearer) 도입 시 이 포맷을 교체한다.
+        // 인증 헤더: 로그인 accessToken 이 있으면 우선 사용하고, 없으면 API_KEY(공개 API·검색용) 폴백.
+        // 토큰이 둘 다 없으면 헤더를 붙이지 않는다(코스 상세 등 공개 엔드포인트).
         val authInterceptor =
             Interceptor { chain ->
                 val original = chain.request()
+                val token = tokenStore.accessToken ?: BuildConfig.API_KEY.ifBlank { null }
                 val request =
-                    if (BuildConfig.API_KEY.isNotBlank()) {
+                    if (token != null) {
                         original
                             .newBuilder()
-                            .addHeader("Authorization", "Bearer ${BuildConfig.API_KEY}")
+                            .addHeader("Authorization", "Bearer $token")
                             .build()
                     } else {
                         original

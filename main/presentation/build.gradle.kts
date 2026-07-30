@@ -78,6 +78,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.kotlinx.serialization.json)
 
+    // 카카오 로그인 SDK — UserApiClient 로 카카오 로그인(idToken 획득)
+    implementation(libs.kakao.user)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
