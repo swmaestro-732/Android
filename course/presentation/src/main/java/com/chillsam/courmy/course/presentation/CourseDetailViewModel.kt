@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
+import com.chillsam.courmy.course.entity.CourseDetailVO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -63,7 +64,7 @@ class CourseDetailViewModel
             loadJob =
                 viewModelScope.launch {
                     Log.d(TAG, "코스 상세 로드 시작: courseId=$DEFAULT_COURSE_ID")
-                    runCatching { getCourseDetailUseCase(DEFAULT_COURSE_ID) }
+                    runCatching { getCourseDetailUseCase(DEFAULT_COURSE_ID).withSampleFallbackInDebug() }
                         .onSuccess { detail ->
                             Log.d(
                                 TAG,
@@ -81,6 +82,14 @@ class CourseDetailViewModel
                         }
                 }
         }
+
+        /**
+         * 디버그 빌드 한정: API 응답에 장소 좌표가 없어 "코스 경로" 지도가 안 뜨면
+         * 좌표 포함 더미([courseDetailSample])로 대체해 화면을 확인한다. 릴리스는 실데이터 그대로.
+         * API 에 장소 좌표(CoursePlaceDTO + toVO)가 추가되면 제거한다. [wiki-needed]
+         */
+        private fun CourseDetailVO.withSampleFallbackInDebug(): CourseDetailVO =
+            if (BuildConfig.DEBUG && places.none { it.latitude != null }) courseDetailSample else this
 
         private companion object {
             const val TAG = "CourseDetail"

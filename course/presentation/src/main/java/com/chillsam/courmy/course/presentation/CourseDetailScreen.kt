@@ -1059,7 +1059,7 @@ private fun DetailBottomBar(
 private fun CourseDetailScreenPreview() {
     DesignSystemTheme {
         CourseDetailScreen(
-            detail = CourseDetailVO.sample,
+            detail = courseDetailSample,
             onBack = {},
             onFollowAuthor = {},
             onShare = {},
@@ -1067,3 +1067,68 @@ private fun CourseDetailScreenPreview() {
         )
     }
 }
+
+/**
+ * Preview·개발용 더미(성수동 좌표 포함). presentation 전용 프리뷰 픽스처다.
+ * 백엔드에 장소 좌표가 없어 "코스 경로" 지도가 안 뜨므로, 디버그 빌드에서만
+ * [CourseDetailViewModel] 이 이 더미로 대체해 화면을 확인한다(릴리스는 실데이터 그대로).
+ */
+internal val courseDetailSample: CourseDetailVO =
+    CourseDetailVO(
+        title = "비 오는 날 성수 감성 카페 코스",
+        coverImageUrl = "",
+        category = "성수 · 데이트",
+        authorName = "지호님",
+        authorHandle = "@jiho_routes",
+        authorImageUrl = "",
+        placeCountText = "4곳",
+        walkText = "도보 20분",
+        followerText = "1.2k 따라감",
+        description = "비가 오면 더 예쁜 성수 카페만 골라 담았어요. 전부 도보로 이어지고, 장소마다 제 팁을 남겨뒀으니 참고하세요 🌧",
+        places =
+            listOf(
+                CourseDetailPlaceVO(
+                    order = 1,
+                    name = "어니언 성수",
+                    category = "카페 · 베이커리",
+                    photoCountText = "1/3",
+                    tip = "통창 자리 꼭 앉으세요. 비 오는 날 이 뷰가 진짜 최고예요. 팡도르는 나오자마자!",
+                    walkToNextText = "도보 6분",
+                    latitude = 37.5447,
+                    longitude = 127.0561,
+                ),
+                CourseDetailPlaceVO(
+                    order = 2,
+                    name = "대림창고 갤러리",
+                    category = "전시 · 카페",
+                    photoCountText = "1/2",
+                    tip = "천장 높은 공간이라 사진이 잘 나와요. 안쪽 전시도 꼭 보세요.",
+                    walkToNextText = "도보 5분",
+                    latitude = 37.5410,
+                    longitude = 127.0552,
+                ),
+                CourseDetailPlaceVO(
+                    order = 3,
+                    name = "센터커피 로스터스",
+                    category = "카페 · 디저트",
+                    photoCountText = "1/2",
+                    tip = "로스팅 향이 진해요. 핸드드립 한 잔 시켜서 잠깐 앉았다 가기 좋아요.",
+                    walkToNextText = "도보 4분",
+                    latitude = 37.5433,
+                    longitude = 127.0575,
+                ),
+                CourseDetailPlaceVO(
+                    order = 4,
+                    name = "소금집 델리",
+                    category = "와인 · 안주",
+                    photoCountText = "1/1",
+                    tip = "마무리로 와인 한 잔. 안주는 관자 카르파초 강추예요.",
+                    walkToNextText = null,
+                    latitude = 37.5428,
+                    longitude = 127.0532,
+                ),
+            ),
+        rating = "4.8",
+        reviewCountText = "128개",
+        reviews = emptyList(),
+    )
