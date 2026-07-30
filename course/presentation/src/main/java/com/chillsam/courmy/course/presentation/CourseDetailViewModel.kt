@@ -88,8 +88,10 @@ class CourseDetailViewModel
          * 좌표 포함 더미([courseDetailSample])로 대체해 화면을 확인한다. 릴리스는 실데이터 그대로.
          * API 에 장소 좌표(CoursePlaceDTO + toVO)가 추가되면 제거한다. [wiki-needed]
          */
-        private fun CourseDetailVO.withSampleFallbackInDebug(): CourseDetailVO =
-            if (BuildConfig.DEBUG && places.none { it.latitude != null }) courseDetailSample else this
+        private fun CourseDetailVO.withSampleFallbackInDebug(): CourseDetailVO {
+            val hasNoMappablePlace = places.none { it.latitude != null && it.longitude != null }
+            return if (BuildConfig.DEBUG && hasNoMappablePlace) courseDetailSample else this
+        }
 
         private companion object {
             const val TAG = "CourseDetail"
