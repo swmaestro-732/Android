@@ -78,6 +78,7 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
-    // Compose Preview 렌더용 툴링(@Preview)
+    // @Preview 애노테이션(main 소스에서 사용) + 렌더러(debug 전용)
+    implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
