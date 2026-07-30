@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class MyProfileVO(
+    val id: Long = 0L,
     val nickname: String,
     val handle: String,
     val bio: String,
