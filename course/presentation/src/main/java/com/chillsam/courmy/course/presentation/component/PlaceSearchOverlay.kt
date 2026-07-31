@@ -19,7 +19,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -28,9 +30,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -58,14 +64,18 @@ fun PlaceSearchOverlay(
     val showLimitAlert = {
         Toast.makeText(context, "장소는 최대 ${maxPlaces}개만 담을 수 있습니다.", Toast.LENGTH_SHORT).show()
     }
+    // 기본은 결과 0(아무것도 안 보임). 키워드를 입력해야 후보를 필터링해 보여준다.
     val results =
         remember(query) {
             if (query.isBlank()) {
-                PLACE_CANDIDATES
+                emptyList()
             } else {
                 PLACE_CANDIDATES.filter { it.name.contains(query.trim(), ignoreCase = true) }
             }
         }
+    // 오버레이가 열리면(장소 더 담기) 검색창에 자동 포커스 + 키보드.
+    val searchFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { searchFocus.requestFocus() }
 
     Column(
         modifier =
@@ -78,34 +88,41 @@ fun PlaceSearchOverlay(
             query = query,
             onQueryChange = { query = it },
             onCancel = onDismiss,
+            focusRequester = searchFocus,
         )
-        DsText(
-            text = "검색 결과 ${results.size}",
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = color.contentDefaultLevel2,
-        )
-        LazyColumn(
-            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            items(results) { candidate ->
-                val order = selectedIds.indexOf(candidate.id)
-                SearchResultRow(
-                    candidate = candidate,
-                    orderNumber = if (order >= 0) order + 1 else null,
-                    onToggle = {
-                        when {
-                            candidate.id in selectedIds -> selectedIds.remove(candidate.id)
+        if (query.isNotBlank()) {
+            DsText(
+                text = "검색 결과 ${results.size}",
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+        }
+        if (results.isEmpty()) {
+            SearchEmptyState(hasQuery = query.isNotBlank(), modifier = Modifier.weight(1f))
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                items(results) { candidate ->
+                    val order = selectedIds.indexOf(candidate.id)
+                    SearchResultRow(
+                        candidate = candidate,
+                        orderNumber = if (order >= 0) order + 1 else null,
+                        onToggle = {
+                            when {
+                                candidate.id in selectedIds -> selectedIds.remove(candidate.id)
 
-                            // 남은 자리가 있을 때만 선택 추가(합계 최대 maxPlaces곳).
-                            selectedIds.size < remaining -> selectedIds.add(candidate.id)
+                                // 남은 자리가 있을 때만 선택 추가(합계 최대 maxPlaces곳).
+                                selectedIds.size < remaining -> selectedIds.add(candidate.id)
 
-                            // 상한 도달 시 선택되지 않고 알림만 띄운다.
-                            else -> showLimitAlert()
-                        }
-                    },
-                )
+                                // 상한 도달 시 선택되지 않고 알림만 띄운다.
+                                else -> showLimitAlert()
+                            }
+                        },
+                    )
+                }
             }
         }
         ConfirmBar(
@@ -121,6 +138,7 @@ private fun SearchTopBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onCancel: () -> Unit,
+    focusRequester: FocusRequester,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
@@ -132,22 +150,24 @@ private fun SearchTopBar(
             modifier =
                 Modifier
                     .weight(1f)
-                    .height(44.dp)
+                    .height(48.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(color.bgDefaultLevel1)
+                    .border(1.dp, color.borderAccent, RoundedCornerShape(12.dp))
                     .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            DsText(
-                text = "🔍",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel3,
+            Icon(
+                painter = painterResource(R.drawable.ic_search_24),
+                contentDescription = null,
+                tint = color.contentDefaultLevel3,
+                modifier = Modifier.size(20.dp),
             )
             BasicTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).focusRequester(focusRequester),
                 singleLine = true,
                 textStyle =
                     DesignSystemThemeImpl.typeScale.textRegularS
@@ -164,6 +184,23 @@ private fun SearchTopBar(
                     innerTextField()
                 },
             )
+            if (query.isNotEmpty()) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .background(color.contentDefaultLevel3)
+                            .clickable { onQueryChange("") },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    DsText(
+                        text = "✕",
+                        style = DesignSystemThemeImpl.typeScale.textExtraXS,
+                        color = color.contentOnAccent,
+                    )
+                }
+            }
         }
         DsText(
             text = "취소",
@@ -276,6 +313,24 @@ private fun ConfirmBar(
                 color = if (enabled) color.contentOnAccent else color.contentDefaultLevel2,
             )
         }
+    }
+}
+
+/** 검색 전(기본)·결과 없음 상태 안내. */
+@Composable
+private fun SearchEmptyState(
+    hasQuery: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        DsText(
+            text = if (hasQuery) "검색 결과가 없어요" else "장소나 주소를 검색해 보세요",
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+        )
     }
 }
 
