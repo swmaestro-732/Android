@@ -80,13 +80,12 @@ fun PlaceSearchOverlay(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(results) { candidate ->
+                val order = selectedIds.indexOf(candidate.id)
                 SearchResultRow(
                     candidate = candidate,
-                    selected = candidate.id in selectedIds,
+                    orderNumber = if (order >= 0) order + 1 else null,
                     onToggle = {
-                        if (candidate.id in
-                            selectedIds
-                        ) {
+                        if (candidate.id in selectedIds) {
                             selectedIds.remove(candidate.id)
                         } else {
                             selectedIds.add(candidate.id)
@@ -97,7 +96,8 @@ fun PlaceSearchOverlay(
         }
         ConfirmBar(
             selectedCount = selectedIds.size,
-            onConfirm = { onConfirm(PLACE_CANDIDATES.filter { it.id in selectedIds }) },
+            // 후보 목록 순서가 아니라 사용자가 탭한 순서 그대로 담기 순서로 넘긴다.
+            onConfirm = { onConfirm(selectedIds.mapNotNull { id -> PLACE_CANDIDATES.find { it.id == id } }) },
         )
     }
 }
@@ -163,7 +163,7 @@ private fun SearchTopBar(
 @Composable
 private fun SearchResultRow(
     candidate: CoursePlaceVO,
-    selected: Boolean,
+    orderNumber: Int?,
     onToggle: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -196,13 +196,14 @@ private fun SearchResultRow(
                 color = color.contentDefaultLevel2,
             )
         }
-        if (selected) {
+        if (orderNumber != null) {
+            // 선택 순서를 번호로 표시(담기 순서와 동일).
             Box(
                 modifier = Modifier.size(24.dp).clip(CircleShape).background(color.bgAccent),
                 contentAlignment = Alignment.Center,
             ) {
                 DsText(
-                    text = "✓",
+                    text = orderNumber.toString(),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentOnAccent,
                 )
