@@ -290,4 +290,9 @@ private val PLACE_CANDIDATES: List<CoursePlaceVO> =
         CoursePlaceVO(id = "p_seoulforest", name = "서울숲 산책로", category = "공원 · 산책"),
         CoursePlaceVO(id = "p_glow", name = "글로우 서울", category = "디저트 · 포토존"),
         CoursePlaceVO(id = "p_sogeumjip", name = "소금집 델리", category = "와인 · 안주"),
+        CoursePlaceVO(id = "p_ldarchive", name = "엘디 아카이브", category = "편집숍 · 성수동"),
+        CoursePlaceVO(id = "p_daelim_food", name = "성수족발", category = "맛집 · 성수동"),
+        CoursePlaceVO(id = "p_mesh", name = "메쉬커피", category = "카페 · 로스터리"),
+        CoursePlaceVO(id = "p_ttukseom", name = "뚝섬한강공원", category = "공원 · 피크닉"),
+        CoursePlaceVO(id = "p_seongsu_yeonbang", name = "성수연방", category = "복합문화공간 · 성수동"),
     )
