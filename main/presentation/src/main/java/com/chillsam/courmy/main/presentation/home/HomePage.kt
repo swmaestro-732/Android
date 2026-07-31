@@ -1,11 +1,20 @@
 package com.chillsam.courmy.main.presentation.home
 
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,7 +22,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -23,51 +35,53 @@ import com.chillsam.courmy.course.domain.DraftListPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
-import com.chillsam.courmy.main.entity.saved.SavedCourseVO
+import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
+import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 import com.chillsam.courmy.main.presentation.component.MainTab
-import com.chillsam.courmy.main.presentation.component.SavedCourseCard
 
 /**
- * 앱의 기본 시작 화면.
- *
- * 코스 만들기 진입 플로우(FS-09) 작업 단계라, 본문은 저장함과 동일한 코스 카드 1개만 두고
- * 하단 탭바([CourmyBottomBar])와 코스 만들기 FAB([CreateCourseMenu])를 우선 구현한다.
- * 코스 카드는 로그인 여부와 무관하게 노출한다.
+ * 앱의 기본 시작 화면(FS-09). 헤더(위치·날씨·인사) + 공개 코스 피드로 구성한다.
+ * 피드·헤더 값은 백엔드 연동 전까지 더미 고정값이며, 코스 카드는 로그인 여부와 무관하게 노출한다.
  */
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
+    val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
-    // 로그인 전에도 볼 수 있는 대표 코스 카드(백엔드 연동 전 더미).
-    val featuredCourse = remember { SavedCourseVO.sample.first() }
+    // 더미 공개 코스 피드(백엔드 미연동). 실제 홈 피드 API 연동 시 SavedPage 와 함께
+    // domain UseCase + ViewModel 로 전환한다(현재는 SavedPage 와 동일하게 presentation 에서 더미 참조). [wiki-needed]
+    val courses = remember { HomeCourseVO.sample }
+    // 저장(북마크) 토글은 아직 미연동이라 안내만 한다.
+    val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
 
     Box(
         modifier =
             modifier
                 .fillMaxSize()
-                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1),
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp),
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            contentPadding =
+                PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = BottomBarHeight + 40.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            SavedCourseCard(
-                course = featuredCourse,
-                onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(featuredCourse.id)) },
-                onBookmarkClick = {},
-                modifier = Modifier.padding(top = 12.dp),
-            )
+            item { HomeHeader() }
+            items(courses) { course ->
+                HomeCourseCard(
+                    course = course,
+                    onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
+                    onBookmarkClick = notReady,
+                )
+            }
         }
 
         CourmyBottomBar(
             selectedTab = MainTab.HOME,
             onTabSelected = { tab ->
-                // 프로토타입: 마이·저장 탭만 네비게이션 연결. 나머지 탭은 화면이 붙을 때 연결.
                 when (tab) {
                     // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
                     MainTab.MY -> navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
@@ -93,6 +107,53 @@ fun HomePage(modifier: Modifier = Modifier) {
                     menuExpanded = false
                     navigationHelper.navigateTo(DraftListPage)
                 },
+            )
+        }
+    }
+}
+
+/** 헤더 코스 개수 안내(더미 고정값). */
+private const val NEARBY_COURSE_COUNT = 42
+
+/** 홈 헤더: 위치·날씨 → 인사 타이틀 + 우상단 아바타 → 코스 개수 안내(더미 고정값). */
+@Composable
+private fun HomeHeader() {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(modifier = Modifier.weight(1f)) {
+                DsText(
+                    text = "성수동 · 흐림 18°",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                )
+                DsText(
+                    text = "지호님, 오늘은\n어디로 떠나볼까요?",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = DesignSystemThemeImpl.typeScale.titleExtraL,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 2,
+                )
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .padding(start = 12.dp)
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(color.imagePlaceholder),
+            )
+        }
+        Row(modifier = Modifier.padding(top = 16.dp)) {
+            DsText(
+                text = "성수동 주변 · 오늘 날씨에 맞는 코스 ",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+            DsText(
+                text = NEARBY_COURSE_COUNT.toString(),
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel0,
             )
         }
     }

@@ -38,8 +38,6 @@ enum class MainTab(
     @param:DrawableRes val selectedIconRes: Int? = null,
 ) {
     HOME(R.drawable.ic_tab_home_24, R.string.home_nav_home),
-    MAP(R.drawable.ic_tab_map_24, R.string.home_nav_map),
-    CHAT(R.drawable.ic_tab_chat_24, R.string.home_nav_chat),
     SAVED(R.drawable.ic_tab_bookmark_24, R.string.home_nav_saved, R.drawable.ic_bookmark_filled_24),
     MY(R.drawable.ic_tab_person_24, R.string.home_nav_my),
 }
