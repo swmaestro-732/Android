@@ -60,13 +60,13 @@ class CourseRepositoryImpl(
     }
 
     override fun saveDraft(draft: CourseDraftVO) {
-        // 편집 세션 id 로 upsert. 세션이 없으면(= Load 없이 저장) 새 id 를 발급해 기존 초안을 덮지 않는다.
+        // 현재 편집 세션 id 로 upsert. 같은 세션에서 제목을 바꿔 다시 저장해도 같은 초안을 덮어쓴다.
+        // 세션 id 는 새 코스/이어서 편집 진입 때 getCourseDraft 가 새로 발급하므로, 다른 코스와 섞이지 않는다.
         val id = editingId ?: newDraftId()
+        editingId = id
         val title = draft.name.ifBlank { DEFAULT_DRAFT_TITLE }
         draftsById[id] = StoredDraft(id, System.currentTimeMillis(), title, draft)
         _drafts.value = draftsById.values.map { DraftSummaryVO(it.id, it.title, it.savedAtMillis) }
-        // 저장으로 편집 세션을 닫는다(저장 후 홈으로 나감). 다음 저장은 새 세션 id 를 받아 덮어쓰기를 막는다.
-        editingId = null
     }
 
     private fun newDraftId(): String {

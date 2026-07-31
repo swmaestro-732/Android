@@ -71,10 +71,12 @@ fun CourseInfoCard(
         )
         Divider(focused = descriptionFocused)
         FieldLabel("썸네일 이미지")
+        // 썸네일은 1장만 선택하므로 "n/max" 개수 표시를 숨긴다.
         CoursePhotoRow(
             photos = thumbnailPhotos,
             maxPhotos = thumbnailMaxPhotos,
             onPhotosChange = actions.onThumbnailPhotosChange,
+            showCount = false,
         )
     }
 }
