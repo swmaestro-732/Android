@@ -82,17 +82,32 @@ class CourseRepositoryImplDraftTest {
         }
 
     @Test
-    fun `저장 뒤 Load 없이 또 저장해도 이전 초안을 덮지 않는다`() =
+    fun `같은 세션에서 제목을 바꿔 다시 저장하면 같은 초안을 덮어쓴다`() =
         runBlocking {
             val repo = newRepository()
 
             repo.getCourseDraft()
             repo.saveDraft(CourseDraftVO(name = "코스 A"))
-            // 저장으로 세션이 닫혔으므로, getCourseDraft() 없이 저장해도 새 초안이어야 한다.
+            val savedId =
+                repo.drafts.value
+                    .single()
+                    .id
+            // getCourseDraft() 없이(같은 편집 세션) 제목만 바꿔 다시 저장 → 같은 초안 갱신.
             repo.saveDraft(CourseDraftVO(name = "코스 B"))
 
-            assertEquals(2, repo.drafts.value.size)
-            assertEquals(listOf("코스 A", "코스 B"), repo.drafts.value.map { it.title })
+            assertEquals(1, repo.drafts.value.size)
+            assertEquals(
+                savedId,
+                repo.drafts.value
+                    .single()
+                    .id,
+            )
+            assertEquals(
+                "코스 B",
+                repo.drafts.value
+                    .single()
+                    .title,
+            )
         }
 
     private object UnusedApiService : CourseDetailApiService {
