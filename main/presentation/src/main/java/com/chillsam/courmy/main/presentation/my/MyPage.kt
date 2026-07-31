@@ -48,6 +48,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.my.FollowListPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.entity.my.MyCourseVO
@@ -127,7 +128,15 @@ private fun MyContent(
                 maxLines = 2,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
             )
-            StatsRow(profile = profile)
+            StatsRow(
+                profile = profile,
+                onFollowerClick = {
+                    navigationHelper.navigateByRoute(FollowListPage.route(FollowListPage.TAB_FOLLOWER))
+                },
+                onFollowingClick = {
+                    navigationHelper.navigateByRoute(FollowListPage.route(FollowListPage.TAB_FOLLOWING))
+                },
+            )
             MyCoursesSection(
                 profile = profile,
                 onCourseClick = { courseId ->
@@ -305,7 +314,11 @@ private fun CoverIconButton(
 
 /** 내 코스 · 팔로워 · 팔로잉 3열 통계(항목 사이 세로 구분선). */
 @Composable
-private fun StatsRow(profile: MyProfileVO) {
+private fun StatsRow(
+    profile: MyProfileVO,
+    onFollowerClick: () -> Unit,
+    onFollowingClick: () -> Unit,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp, vertical = 4.dp),
@@ -318,13 +331,13 @@ private fun StatsRow(profile: MyProfileVO) {
             color = color.borderDefaultLevel1,
             modifier = Modifier.height(28.dp),
         )
-        StatItem(value = profile.followerCount, label = "팔로워")
+        StatItem(value = profile.followerCount, label = "팔로워", onClick = onFollowerClick)
         VerticalDivider(
             thickness = 1.dp,
             color = color.borderDefaultLevel1,
             modifier = Modifier.height(28.dp),
         )
-        StatItem(value = profile.followingCount, label = "팔로잉")
+        StatItem(value = profile.followingCount, label = "팔로잉", onClick = onFollowingClick)
     }
 }
 
@@ -332,9 +345,13 @@ private fun StatsRow(profile: MyProfileVO) {
 private fun StatItem(
     value: String,
     label: String,
+    onClick: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         DsText(
             text = value,
             style = DesignSystemThemeImpl.typeScale.textStrongM,

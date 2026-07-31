@@ -20,6 +20,8 @@ import com.chillsam.courmy.main.presentation.login.OnboardingCompletePage
 import com.chillsam.courmy.main.presentation.login.ProfileSetupPage
 import com.chillsam.courmy.main.presentation.login.SignupSelectionStore
 import com.chillsam.courmy.main.presentation.login.TermsAgreementPage
+import com.chillsam.courmy.main.presentation.my.FollowListPage
+import com.chillsam.courmy.main.presentation.my.FollowTab
 import com.chillsam.courmy.main.presentation.my.GuestMyPage
 import com.chillsam.courmy.main.presentation.my.InterestRegionPage
 import com.chillsam.courmy.main.presentation.my.InterestThemePage
@@ -41,6 +43,7 @@ import com.chillsam.courmy.main.domain.login.ProfileSetupPage as ProfileSetupRou
 import com.chillsam.courmy.main.domain.login.SignupRegionPage as SignupRegionRoute
 import com.chillsam.courmy.main.domain.login.SignupThemePage as SignupThemeRoute
 import com.chillsam.courmy.main.domain.login.TermsAgreementPage as TermsRoute
+import com.chillsam.courmy.main.domain.my.FollowListPage as FollowListRoute
 import com.chillsam.courmy.main.domain.my.GuestMyPage as GuestMyRoute
 import com.chillsam.courmy.main.domain.my.InterestRegionPage as InterestRegionRoute
 import com.chillsam.courmy.main.domain.my.InterestThemePage as InterestThemeRoute
@@ -174,6 +177,18 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = MyRoute.PATH,
             render = { MyPage() },
+        ),
+        AppRoute(
+            path = FollowListRoute.PATH,
+            render = { args ->
+                val tab =
+                    if (args[FollowListRoute.ARG_TAB] == FollowListRoute.TAB_FOLLOWING) {
+                        FollowTab.FOLLOWING
+                    } else {
+                        FollowTab.FOLLOWER
+                    }
+                FollowListPage(initialTab = tab)
+            },
         ),
         AppRoute(
             path = GuestMyRoute.PATH,
