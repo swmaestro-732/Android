@@ -19,6 +19,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.course.domain.DraftListPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
@@ -90,6 +91,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                 },
                 onLoadDraft = {
                     menuExpanded = false
+                    navigationHelper.navigateTo(DraftListPage)
                 },
             )
         }
