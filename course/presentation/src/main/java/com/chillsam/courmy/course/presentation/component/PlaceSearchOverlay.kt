@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.presentation.component
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -43,11 +45,19 @@ import com.chillsam.courmy.course.entity.CoursePlaceVO
 fun PlaceSearchOverlay(
     onDismiss: () -> Unit,
     onConfirm: (List<CoursePlaceVO>) -> Unit,
+    maxPlaces: Int,
+    existingCount: Int,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     var query by remember { mutableStateOf("") }
     val selectedIds = remember { mutableStateListOf<String>() }
+    // 이미 담긴 장소까지 합쳐 최대 [maxPlaces]곳. 이 오버레이에서 더 고를 수 있는 수.
+    val remaining = (maxPlaces - existingCount).coerceAtLeast(0)
+    val context = LocalContext.current
+    val showLimitAlert = {
+        Toast.makeText(context, "장소는 최대 ${maxPlaces}개만 담을 수 있습니다.", Toast.LENGTH_SHORT).show()
+    }
     val results =
         remember(query) {
             if (query.isBlank()) {
@@ -85,10 +95,14 @@ fun PlaceSearchOverlay(
                     candidate = candidate,
                     orderNumber = if (order >= 0) order + 1 else null,
                     onToggle = {
-                        if (candidate.id in selectedIds) {
-                            selectedIds.remove(candidate.id)
-                        } else {
-                            selectedIds.add(candidate.id)
+                        when {
+                            candidate.id in selectedIds -> selectedIds.remove(candidate.id)
+
+                            // 남은 자리가 있을 때만 선택 추가(합계 최대 maxPlaces곳).
+                            selectedIds.size < remaining -> selectedIds.add(candidate.id)
+
+                            // 상한 도달 시 선택되지 않고 알림만 띄운다.
+                            else -> showLimitAlert()
                         }
                     },
                 )

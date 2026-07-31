@@ -161,6 +161,8 @@ private fun CourseCreateContent(
         if (showPlaceSearch) {
             PlaceSearchOverlay(
                 onDismiss = { showPlaceSearch = false },
+                maxPlaces = CourseCreateUIState.MAX_PLACES,
+                existingCount = uiState.places.size,
                 onConfirm = { picked ->
                     onIntent(CourseCreateIntent.AddPlaces(picked))
                     showPlaceSearch = false
