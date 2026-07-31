@@ -153,14 +153,16 @@ internal fun FieldLabel(text: String) {
 }
 
 /**
- * 사진 담기 행: 담은 사진 썸네일들 + 남은 자리가 있으면 "＋ n/max" 추가 슬롯.
+ * 사진 담기 행: 담은 사진 썸네일들 + 남은 자리가 있으면 추가 슬롯.
  * 코스 썸네일(①)·장소 사진(②)에서 공통으로 쓴다. 실제 선택은 시스템 Photo Picker.
+ * [showCount] 가 false 면 "n/max" 표시 없이 "＋" 만 보여준다(단일 선택 썸네일용).
  */
 @Composable
 internal fun CoursePhotoRow(
     photos: List<String>,
     maxPhotos: Int,
     onPhotosChange: (List<String>) -> Unit,
+    showCount: Boolean = true,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         photos.forEach { uri ->
@@ -170,6 +172,7 @@ internal fun CoursePhotoRow(
             AddPhotoSlot(
                 count = photos.size,
                 max = maxPhotos,
+                showCount = showCount,
                 onPicked = { picked -> onPhotosChange((photos + picked).take(maxPhotos)) },
             )
         }
@@ -218,6 +221,7 @@ private fun FilledPhotoSlot(
 private fun AddPhotoSlot(
     count: Int,
     max: Int,
+    showCount: Boolean,
     onPicked: (List<String>) -> Unit,
 ) {
     val remaining = max - count
@@ -253,11 +257,13 @@ private fun AddPhotoSlot(
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = DesignSystemThemeImpl.designSystemColor.contentAccent,
         )
-        DsText(
-            text = "$count/$max",
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = DesignSystemThemeImpl.designSystemColor.contentAccent,
-            textAlign = TextAlign.Center,
-        )
+        if (showCount) {
+            DsText(
+                text = "$count/$max",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = DesignSystemThemeImpl.designSystemColor.contentAccent,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }

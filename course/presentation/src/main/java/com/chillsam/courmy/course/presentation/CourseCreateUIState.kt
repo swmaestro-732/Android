@@ -32,8 +32,8 @@ data class CourseCreateUIState(
     companion object {
         val empty: CourseCreateUIState = CourseCreateUIState()
 
-        /** 썸네일(코스 대표 사진) 최대 장수(Figma "0/6"). */
-        const val MAX_THUMBNAIL_PHOTOS = 6
+        /** 썸네일(코스 대표 사진)은 1장만 선택한다. */
+        const val MAX_THUMBNAIL_PHOTOS = 1
 
         /** 코스 저장에 필요한 최소 장소 수. */
         const val MIN_PLACES = 2
