@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +48,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,6 +63,9 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
+import com.chillsam.courmy.course.entity.PlaceDetailVO
+import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
+import com.chillsam.courmy.course.presentation.component.PlaceDetailSheetActions
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.geometry.LatLngBounds
@@ -92,6 +97,11 @@ fun CourseDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val context = LocalContext.current
+    // 장소 행 화살표를 누르면 해당 장소 상세 시트를 띄운다(null 이면 시트 닫힘).
+    var selectedPlace by remember { mutableStateOf<CourseDetailPlaceVO?>(null) }
+    // 시트 내부 액션(저장·길찾기·코스 추가 등)은 아직 미연동이라 안내만 한다. [wiki-needed]
+    val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
     Column(
         modifier =
             modifier
@@ -118,12 +128,25 @@ fun CourseDetailScreen(
                     color = color.contentDefaultLevel1,
                     maxLines = Int.MAX_VALUE,
                 )
-                PlacesSection(places = detail.places)
+                PlacesSection(places = detail.places, onPlaceClick = { selectedPlace = it })
                 CourseRouteSection(places = detail.places)
                 Spacer(Modifier.height(14.dp))
             }
         }
         DetailBottomBar(onShare = onShare, onSaveCourse = onSaveCourse)
+    }
+    selectedPlace?.let { place ->
+        PlaceDetailSheet(
+            place = placeDetailSampleFor(place),
+            onDismiss = { selectedPlace = null },
+            actions =
+                PlaceDetailSheetActions(
+                    onSave = notReady,
+                    onShare = notReady,
+                    onDirections = notReady,
+                    onAddToCourse = notReady,
+                ),
+        )
     }
 }
 
@@ -353,7 +376,10 @@ private const val COLLAPSE_THRESHOLD = 3
 
 /** "코스 속 장소" 섹션: 헤더(접기/펼치기) + 펼침(사진·팁) / 접힘(콤팩트 타임라인) 목록. */
 @Composable
-private fun PlacesSection(places: List<CourseDetailPlaceVO>) {
+private fun PlacesSection(
+    places: List<CourseDetailPlaceVO>,
+    onPlaceClick: (CourseDetailPlaceVO) -> Unit,
+) {
     var expanded by remember { mutableStateOf(true) }
     val color = DesignSystemThemeImpl.designSystemColor
     // 소개 문단과의 간격을 조금 더 준다.
@@ -387,11 +413,15 @@ private fun PlacesSection(places: List<CourseDetailPlaceVO>) {
         }
         if (expanded) {
             places.forEach { place ->
-                DetailPlaceItem(place = place)
+                DetailPlaceItem(place = place, onClick = { onPlaceClick(place) })
                 place.walkToNextText?.let { RouteConnector(text = it) }
             }
         } else {
-            CollapsedPlaces(places = places, onExpand = { expanded = true })
+            CollapsedPlaces(
+                places = places,
+                onExpand = { expanded = true },
+                onPlaceClick = onPlaceClick,
+            )
         }
     }
 }
@@ -404,6 +434,7 @@ private fun PlacesSection(places: List<CourseDetailPlaceVO>) {
 private fun CollapsedPlaces(
     places: List<CourseDetailPlaceVO>,
     onExpand: () -> Unit,
+    onPlaceClick: (CourseDetailPlaceVO) -> Unit,
 ) {
     // 3곳까지는 전부 노출, 4곳 이상일 때만 앞 [COLLAPSED_VISIBLE_PLACES]곳 + "나머지 N곳 더보기".
     val visible = if (places.size > COLLAPSE_THRESHOLD) places.take(COLLAPSED_VISIBLE_PLACES) else places
@@ -438,7 +469,11 @@ private fun CollapsedPlaces(
                 },
     ) {
         visible.forEachIndexed { index, place ->
-            CompactPlaceRow(place = place, badgeModifier = badgeModifier(index))
+            CompactPlaceRow(
+                place = place,
+                badgeModifier = badgeModifier(index),
+                onClick = { onPlaceClick(place) },
+            )
             // 노드 사이(다음 장소로 이어질 때)에 도보 시간을 넣는다. 간격도 이 행이 만든다.
             if (index < visible.lastIndex || remaining > 0) {
                 WalkLabel(text = place.walkToNextText)
@@ -477,6 +512,7 @@ private fun WalkLabel(text: String?) {
 @Composable
 private fun CompactPlaceRow(
     place: CourseDetailPlaceVO,
+    onClick: () -> Unit,
     badgeModifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -511,10 +547,28 @@ private fun CompactPlaceRow(
                 color = color.contentDefaultLevel2,
             )
         }
+        PlaceDetailChevron(onClick = onClick)
+    }
+}
+
+/**
+ * 장소 상세로 이동하는 화살표. 아이콘(20dp)은 그대로 두되 접근성을 위해 터치 영역을 48dp 로 넓힌다.
+ * 아이콘은 오른쪽 끝에 정렬해 기존 레이아웃(행 우측 끝)과 위치를 맞춘다.
+ */
+@Composable
+private fun PlaceDetailChevron(onClick: () -> Unit) {
+    Box(
+        modifier =
+            Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
         Icon(
             painter = painterResource(R.drawable.ic_chevron_right_24),
-            contentDescription = null,
-            tint = color.contentDefaultLevel3,
+            contentDescription = "장소 상세",
+            tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
             modifier = Modifier.size(20.dp),
         )
     }
@@ -561,9 +615,12 @@ private fun MorePlacesRow(
     }
 }
 
-/** 장소 1건: 순번·이름·카테고리 헤더 + 사진 + "지호님 팁". */
+/** 장소 1건: 순번·이름·카테고리 헤더 + 사진 + "지호님 팁". 헤더 화살표로 장소 상세 시트를 연다. */
 @Composable
-private fun DetailPlaceItem(place: CourseDetailPlaceVO) {
+private fun DetailPlaceItem(
+    place: CourseDetailPlaceVO,
+    onClick: () -> Unit,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
@@ -597,12 +654,7 @@ private fun DetailPlaceItem(place: CourseDetailPlaceVO) {
                     color = color.contentDefaultLevel2,
                 )
             }
-            Icon(
-                painter = painterResource(R.drawable.ic_chevron_right_24),
-                contentDescription = null,
-                tint = color.contentDefaultLevel3,
-                modifier = Modifier.size(20.dp),
-            )
+            PlaceDetailChevron(onClick = onClick)
         }
         Box(
             modifier =
@@ -1131,4 +1183,26 @@ internal val courseDetailSample: CourseDetailVO =
         rating = "4.8",
         reviewCountText = "128개",
         reviews = emptyList(),
+    )
+
+/**
+ * 탭한 장소의 상세 시트 데이터. 이름·카테고리·사진은 탭한 장소에서 가져오고,
+ * 평점·주소·영업시간·리뷰 등은 서버 계약 연동 전까지 더미로 채운다(코스 상세 더미와 동일 방식). [wiki-needed]
+ */
+internal fun placeDetailSampleFor(place: CourseDetailPlaceVO): PlaceDetailVO =
+    PlaceDetailVO(
+        name = place.name,
+        category = place.category,
+        heroImageUrl = place.imageUrls.firstOrNull().orEmpty(),
+        rating = "4.8",
+        reviewCountText = "1,240",
+        savedCountText = "1.2k",
+        isOpen = true,
+        openStatusText = "영업중 · 22:00 종료",
+        walkText = "도보 6분",
+        areaText = "성수동",
+        imageUrls = place.imageUrls,
+        tags = listOf("시그니처 · 팡도르", "통창 좌석", "웨이팅 보통"),
+        address = "서울 성동구 아차산로 110",
+        hoursText = "매일 11:00 – 22:00",
     )
