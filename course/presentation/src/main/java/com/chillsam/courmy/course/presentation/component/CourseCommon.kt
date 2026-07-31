@@ -1,5 +1,9 @@
 package com.chillsam.courmy.course.presentation.component
 
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -224,20 +229,23 @@ private fun AddPhotoSlot(
     showCount: Boolean,
     onPicked: (List<String>) -> Unit,
 ) {
+    val context = LocalContext.current
     val remaining = max - count
-    // 남은 자리만큼만 고를 수 있게 한다. PickMultipleVisualMedia 는 maxItems >= 2 를 요구하므로
-    // 남은 자리가 1 이면 단일 선택 피커를 쓴다.
+    // 선택한 사진은 5MB 이하만 통과시킨다(초과분은 토스트 안내).
+    // PickMultipleVisualMedia 는 maxItems >= 2 를 요구하므로 남은 자리가 1 이면 단일 선택 피커를 쓴다.
     val multiLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.PickMultipleVisualMedia(remaining.coerceAtLeast(2)),
         ) { uris ->
-            if (uris.isNotEmpty()) onPicked(uris.map { it.toString() })
+            val within = filterWithinSizeLimit(context, uris)
+            if (within.isNotEmpty()) onPicked(within)
         }
     val singleLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.PickVisualMedia(),
         ) { uri ->
-            if (uri != null) onPicked(listOf(uri.toString()))
+            val within = if (uri != null) filterWithinSizeLimit(context, listOf(uri)) else emptyList()
+            if (within.isNotEmpty()) onPicked(within)
         }
     Column(
         modifier =
@@ -267,3 +275,35 @@ private fun AddPhotoSlot(
         }
     }
 }
+
+/** 코스 이미지 1장당 최대 용량(5MB). */
+private const val MAX_IMAGE_BYTES = 5L * 1024 * 1024
+
+/** 5MB 이하 이미지 URI 만 문자열로 반환하고, 초과분이 있으면 토스트로 알린다. */
+private fun filterWithinSizeLimit(
+    context: Context,
+    uris: List<Uri>,
+): List<String> {
+    if (uris.isEmpty()) return emptyList()
+    val (within, tooBig) =
+        uris.partition { uri ->
+            val size = uriSizeBytes(context, uri)
+            size == null || size <= MAX_IMAGE_BYTES
+        }
+    if (tooBig.isNotEmpty()) {
+        Toast.makeText(context, "5MB 이하 이미지만 추가할 수 있어요.", Toast.LENGTH_SHORT).show()
+    }
+    return within.map { it.toString() }
+}
+
+/** content URI 의 바이트 크기. 알 수 없으면 null(제한 통과). */
+private fun uriSizeBytes(
+    context: Context,
+    uri: Uri,
+): Long? =
+    context.contentResolver
+        .query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
+        ?.use { cursor ->
+            val index = cursor.getColumnIndex(OpenableColumns.SIZE)
+            if (index >= 0 && cursor.moveToFirst() && !cursor.isNull(index)) cursor.getLong(index) else null
+        }
