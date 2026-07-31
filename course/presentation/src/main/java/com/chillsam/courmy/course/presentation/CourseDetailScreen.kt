@@ -547,16 +547,29 @@ private fun CompactPlaceRow(
                 color = color.contentDefaultLevel2,
             )
         }
+        PlaceDetailChevron(onClick = onClick)
+    }
+}
+
+/**
+ * 장소 상세로 이동하는 화살표. 아이콘(20dp)은 그대로 두되 접근성을 위해 터치 영역을 48dp 로 넓힌다.
+ * 아이콘은 오른쪽 끝에 정렬해 기존 레이아웃(행 우측 끝)과 위치를 맞춘다.
+ */
+@Composable
+private fun PlaceDetailChevron(onClick: () -> Unit) {
+    Box(
+        modifier =
+            Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
         Icon(
             painter = painterResource(R.drawable.ic_chevron_right_24),
             contentDescription = "장소 상세",
-            tint = color.contentDefaultLevel3,
-            modifier =
-                Modifier
-                    .clip(CircleShape)
-                    .clickable(onClick = onClick)
-                    .padding(2.dp)
-                    .size(20.dp),
+            tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+            modifier = Modifier.size(20.dp),
         )
     }
 }
@@ -641,17 +654,7 @@ private fun DetailPlaceItem(
                     color = color.contentDefaultLevel2,
                 )
             }
-            Icon(
-                painter = painterResource(R.drawable.ic_chevron_right_24),
-                contentDescription = "장소 상세",
-                tint = color.contentDefaultLevel3,
-                modifier =
-                    Modifier
-                        .clip(CircleShape)
-                        .clickable(onClick = onClick)
-                        .padding(2.dp)
-                        .size(20.dp),
-            )
+            PlaceDetailChevron(onClick = onClick)
         }
         Box(
             modifier =
