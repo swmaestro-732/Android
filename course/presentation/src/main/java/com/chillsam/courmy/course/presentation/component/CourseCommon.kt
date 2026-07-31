@@ -28,6 +28,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -247,6 +248,11 @@ private fun AddPhotoSlot(
             val within = if (uri != null) filterWithinSizeLimit(context, listOf(uri)) else emptyList()
             if (within.isNotEmpty()) onPicked(within)
         }
+    // 시스템 포토피커에 앱 강조색 + 선택 순서 번호 배지를 입힌다(미지원 기기는 무시하고 정상 동작).
+    val accentColor =
+        DesignSystemThemeImpl.designSystemColor.bgAccent
+            .toArgb()
+            .toLong() and 0xFFFFFFFFL
     Column(
         modifier =
             Modifier
@@ -254,7 +260,13 @@ private fun AddPhotoSlot(
                 .clip(RoundedCornerShape(10.dp))
                 .dashedBorder(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, cornerRadius = 10.dp)
                 .clickable {
-                    val request = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    val request =
+                        PickVisualMediaRequest
+                            .Builder()
+                            .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            .setOrderedSelection(true)
+                            .setAccentColor(accentColor)
+                            .build()
                     if (remaining <= 1) singleLauncher.launch(request) else multiLauncher.launch(request)
                 },
         verticalArrangement = Arrangement.Center,
