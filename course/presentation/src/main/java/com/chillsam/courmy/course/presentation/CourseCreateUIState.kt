@@ -37,5 +37,8 @@ data class CourseCreateUIState(
 
         /** 코스 저장에 필요한 최소 장소 수. */
         const val MIN_PLACES = 2
+
+        /** 코스에 담을 수 있는 최대 장소 수. */
+        const val MAX_PLACES = 10
     }
 }

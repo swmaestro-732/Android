@@ -178,8 +178,11 @@ class CourseCreateViewModel
         }
 
         private fun addPlaces(places: List<CoursePlaceVO>) {
+            val remaining = CourseCreateUIState.MAX_PLACES - currentState.places.size
+            if (remaining <= 0) return
             val existingIds = currentState.places.map { it.id }.toSet()
-            val toAdd = places.filter { it.id !in existingIds }
+            // 중복 제외 후 남은 자리(최대 10곳)만큼만 담는다.
+            val toAdd = places.filter { it.id !in existingIds }.take(remaining)
             if (toAdd.isEmpty()) return
             dispatch(CourseCreateReducerEvent.PlacesChanged(currentState.places + toAdd))
         }

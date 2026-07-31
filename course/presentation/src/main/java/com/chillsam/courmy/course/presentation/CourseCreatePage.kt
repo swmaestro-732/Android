@@ -393,7 +393,10 @@ private fun PlaceSection(
         }
     }
     Spacer(Modifier.height(2.dp))
-    AddPlaceButton(onClick = onAddPlace)
+    AddPlaceButton(
+        onClick = onAddPlace,
+        atMax = uiState.places.size >= CourseCreateUIState.MAX_PLACES,
+    )
 }
 
 /** 드래그 중 카드 중심([from] 슬롯 top + [dragOffset])이 넘어선 다른 슬롯 수 = 착지 인덱스. */
@@ -419,21 +422,27 @@ private const val DRAG_EDGE_PX = 120f
 private const val DRAG_SCROLL_PX = 18f
 
 @Composable
-private fun AddPlaceButton(onClick: () -> Unit) {
+private fun AddPlaceButton(
+    onClick: () -> Unit,
+    atMax: Boolean,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    // 최대(10곳) 도달 시 비활성화하고 안내 문구로 바꾼다.
+    val label = if (atMax) "장소는 최대 ${CourseCreateUIState.MAX_PLACES}곳까지 담을 수 있어요" else "＋ 장소 더 담기"
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .dashedBorder(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, cornerRadius = 16.dp)
-                .clickable(onClick = onClick)
+                .dashedBorder(color.borderDefaultLevel0, cornerRadius = 16.dp)
+                .clickable(enabled = !atMax, onClick = onClick)
                 .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         DsText(
-            text = "＋ 장소 더 담기",
+            text = label,
             style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
+            color = if (atMax) color.contentDefaultLevel3 else color.contentDefaultLevel1,
         )
     }
 }
