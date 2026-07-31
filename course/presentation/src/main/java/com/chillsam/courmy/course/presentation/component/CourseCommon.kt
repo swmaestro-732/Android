@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +38,9 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** 라운드 사각형 점선 테두리(장소 더 담기 · 사진 추가 슬롯). Compose 기본 border 는 점선 미지원이라 직접 그린다. */
 fun Modifier.dashedBorder(
@@ -231,22 +235,31 @@ private fun AddPhotoSlot(
     onPicked: (List<String>) -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val remaining = max - count
-    // 선택한 사진은 5MB 이하만 통과시킨다(초과분은 토스트 안내).
+    // 선택한 사진은 5MB 이하만 통과시킨다(용량 조회는 IO 에서, 초과·미상은 제외 후 토스트 안내).
     // PickMultipleVisualMedia 는 maxItems >= 2 를 요구하므로 남은 자리가 1 이면 단일 선택 피커를 쓴다.
     val multiLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.PickMultipleVisualMedia(remaining.coerceAtLeast(2)),
         ) { uris ->
-            val within = filterWithinSizeLimit(context, uris)
-            if (within.isNotEmpty()) onPicked(within)
+            if (uris.isNotEmpty()) {
+                scope.launch {
+                    val within = filterWithinSizeLimit(context, uris)
+                    if (within.isNotEmpty()) onPicked(within)
+                }
+            }
         }
     val singleLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.PickVisualMedia(),
         ) { uri ->
-            val within = if (uri != null) filterWithinSizeLimit(context, listOf(uri)) else emptyList()
-            if (within.isNotEmpty()) onPicked(within)
+            if (uri != null) {
+                scope.launch {
+                    val within = filterWithinSizeLimit(context, listOf(uri))
+                    if (within.isNotEmpty()) onPicked(within)
+                }
+            }
         }
     // 시스템 포토피커에 앱 강조색 + 선택 순서 번호 배지를 입힌다(미지원 기기는 무시하고 정상 동작).
     val accentColor =
@@ -291,31 +304,40 @@ private fun AddPhotoSlot(
 /** 코스 이미지 1장당 최대 용량(5MB). */
 private const val MAX_IMAGE_BYTES = 5L * 1024 * 1024
 
-/** 5MB 이하 이미지 URI 만 문자열로 반환하고, 초과분이 있으면 토스트로 알린다. */
-private fun filterWithinSizeLimit(
+/** 5MB 이하 이미지 URI 만 문자열로 반환한다. 용량 조회는 IO 에서 하고, 초과·미상은 제외한 뒤 토스트로 알린다. */
+private suspend fun filterWithinSizeLimit(
     context: Context,
     uris: List<Uri>,
 ): List<String> {
     if (uris.isEmpty()) return emptyList()
-    val (within, tooBig) =
-        uris.partition { uri ->
-            val size = uriSizeBytes(context, uri)
-            size == null || size <= MAX_IMAGE_BYTES
+    // 용량을 확인할 수 없는(null) URI 는 5MB 우회를 막기 위해 제외한다.
+    val within =
+        withContext(Dispatchers.IO) {
+            uris.filter { uri ->
+                val size = uriSizeBytes(context, uri)
+                size != null && size <= MAX_IMAGE_BYTES
+            }
         }
-    if (tooBig.isNotEmpty()) {
+    if (within.size < uris.size) {
         Toast.makeText(context, "5MB 이하 이미지만 추가할 수 있어요.", Toast.LENGTH_SHORT).show()
     }
     return within.map { it.toString() }
 }
 
-/** content URI 의 바이트 크기. 알 수 없으면 null(제한 통과). */
+/** content URI 의 바이트 크기. SIZE 컬럼 → 파일 디스크립터 순으로 조회하고, 끝내 알 수 없으면 null. */
 private fun uriSizeBytes(
     context: Context,
     uri: Uri,
-): Long? =
-    context.contentResolver
-        .query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
-        ?.use { cursor ->
-            val index = cursor.getColumnIndex(OpenableColumns.SIZE)
-            if (index >= 0 && cursor.moveToFirst() && !cursor.isNull(index)) cursor.getLong(index) else null
-        }
+): Long? {
+    val fromColumn =
+        context.contentResolver
+            .query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
+            ?.use { cursor ->
+                val index = cursor.getColumnIndex(OpenableColumns.SIZE)
+                if (index >= 0 && cursor.moveToFirst() && !cursor.isNull(index)) cursor.getLong(index) else null
+            }
+    if (fromColumn != null) return fromColumn
+    return runCatching {
+        context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
+    }.getOrNull()?.takeIf { it >= 0 }
+}

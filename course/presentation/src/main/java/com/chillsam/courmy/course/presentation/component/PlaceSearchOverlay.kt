@@ -35,6 +35,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -224,7 +227,11 @@ private fun SearchResultRow(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(onClick = onToggle)
-                .padding(vertical = 10.dp),
+                // 접근성: 선택 여부·선택 순서를 스크린리더에 노출.
+                .semantics {
+                    selected = orderNumber != null
+                    if (orderNumber != null) stateDescription = "선택됨, ${orderNumber}번째"
+                }.padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
