@@ -51,6 +51,8 @@ fun HomePage(modifier: Modifier = Modifier) {
     val session = LocalSessionUiState.current
     val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
+    // 더미 공개 코스 피드(백엔드 미연동). 실제 홈 피드 API 연동 시 SavedPage 와 함께
+    // domain UseCase + ViewModel 로 전환한다(현재는 SavedPage 와 동일하게 presentation 에서 더미 참조). [wiki-needed]
     val courses = remember { HomeCourseVO.sample }
     // 저장(북마크) 토글은 아직 미연동이라 안내만 한다.
     val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }

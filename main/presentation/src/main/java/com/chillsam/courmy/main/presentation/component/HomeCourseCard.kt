@@ -76,9 +76,8 @@ fun HomeCourseCard(
                     color = color.contentDefaultLevel2,
                 )
             }
-            if (course.placePhotoUrls.isNotEmpty()) {
-                PlaceThumbRow(urls = course.placePhotoUrls)
-            }
+            // 사진이 없어도 카드 높이가 일정하도록 항상 렌더한다(빈 경우 4칸 placeholder).
+            PlaceThumbRow(urls = course.placePhotoUrls)
             DsText(
                 text = course.placeNamesText,
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -177,13 +176,15 @@ private fun CourseCover(
 @Composable
 private fun PlaceThumbRow(urls: List<String>) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val overflow = urls.size > MAX_THUMBS
-    val visibleCount = if (overflow) MAX_THUMBS - 1 else urls.size
+    // 사진이 없으면 4칸 placeholder 로 채워 카드 높이를 일정하게 유지한다.
+    val photos = urls.ifEmpty { List(MAX_THUMBS) { "" } }
+    val overflow = photos.size > MAX_THUMBS
+    val visibleCount = if (overflow) MAX_THUMBS - 1 else photos.size
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        urls.take(visibleCount).forEach { url ->
+        photos.take(visibleCount).forEach { url ->
             HomeImage(
                 url = url,
                 modifier = Modifier.weight(1f).aspectRatio(1f),
@@ -201,7 +202,7 @@ private fun PlaceThumbRow(urls: List<String>) {
                 contentAlignment = Alignment.Center,
             ) {
                 DsText(
-                    text = "+${urls.size - visibleCount}",
+                    text = "+${photos.size - visibleCount}",
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = color.contentOnAccent,
                 )
