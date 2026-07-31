@@ -116,7 +116,7 @@ internal fun TagInputRow(onAddTag: (String) -> Unit) {
                 .fillMaxWidth()
                 .height(44.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0)
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
                 .border(
                     1.dp,
                     if (focused) {
