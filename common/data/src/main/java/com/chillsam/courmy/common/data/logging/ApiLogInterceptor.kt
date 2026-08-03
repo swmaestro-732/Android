@@ -28,7 +28,8 @@ class ApiLogInterceptor(
         val request = chain.request()
         if (!enabled) return chain.proceed(request)
 
-        val path = request.url.encodedPath + (request.url.encodedQuery?.let { "?$it" } ?: "")
+        // 쿼리는 식별자(userId 등)가 평문으로 남을 수 있어 경로만 남긴다.
+        val path = request.url.encodedPath
         Log.d(TAG, "⇢ ${request.method} $path")
         request.body?.let { body ->
             Log.d(TAG, "  req: ${pretty(readRequestBody(body))}")
@@ -51,27 +52,41 @@ class ApiLogInterceptor(
         return response
     }
 
-    private fun readRequestBody(body: okhttp3.RequestBody): String =
-        runCatching {
+    /**
+     * 요청 바디를 로그용으로 읽는다. one-shot/duplex 바디는 한 번만 소비 가능하므로 미리 읽으면
+     * 실제 전송이 깨지고, 크기가 큰 바디(이미지 업로드 등)는 메모리에 이중으로 올라가므로 건너뛴다.
+     */
+    private fun readRequestBody(body: okhttp3.RequestBody): String {
+        val length = body.contentLength()
+        val loggable = !body.isOneShot() && !body.isDuplex() && length in 0..MAX_BODY_BYTES
+        if (!loggable) return "<body 생략(${if (length < 0) "unknown" else length}B, one-shot/duplex 가능)>"
+        return runCatching {
             Buffer().use { buffer ->
                 body.writeTo(buffer)
                 buffer.readUtf8()
             }
         }.getOrElse { "<unreadable body>" }
+    }
 
-    /** JSON 이면 마스킹 후 pretty-print, 아니면 원문 그대로(단, 길이 상한 적용). */
-    private fun pretty(raw: String): String =
-        runCatching {
-            val masked = mask(json.parseToJsonElement(raw))
-            prettyJson.encodeToString(JsonElement.serializer(), masked)
-        }.getOrElse { raw }.let { if (it.length > MAX_LOG_CHARS) it.take(MAX_LOG_CHARS) + "…(생략)" else it }
+    /** JSON 이면 마스킹 후 pretty-print, 아니면 토큰류만 정규식으로 가린 원문(단, 길이 상한 적용). */
+    private fun pretty(raw: String): String {
+        val text =
+            runCatching {
+                val masked = mask(json.parseToJsonElement(raw))
+                prettyJson.encodeToString(JsonElement.serializer(), masked)
+            }.getOrElse { redactNonJson(raw) }
+        return if (text.length > MAX_LOG_CHARS) text.take(MAX_LOG_CHARS) + "…(생략)" else text
+    }
+
+    /** 비-JSON(폼 인코딩 등) 본문에서 토큰류 `key=value` 의 값을 마스킹한다. */
+    private fun redactNonJson(raw: String): String = raw.replace(SENSITIVE_TEXT_REGEX) { "${it.groupValues[1]}=***" }
 
     private fun mask(element: JsonElement): JsonElement =
         when (element) {
             is JsonObject -> {
                 JsonObject(
                     element.mapValues { (key, value) ->
-                        if (key in SENSITIVE && value is JsonPrimitive && value.isString) {
+                        if (key.lowercase() in SENSITIVE && value is JsonPrimitive && value.isString) {
                             JsonPrimitive("***")
                         } else {
                             mask(value)
@@ -94,15 +109,26 @@ class ApiLogInterceptor(
         const val MAX_BODY_BYTES = 256L * 1024 // 256KB 까지만 미리보기
         const val MAX_LOG_CHARS = 8_000 // logcat 한 항목이 잘리지 않게 상한
 
-        /** 로그에 평문으로 남기면 안 되는 필드(값을 `***` 로 대체). */
+        /** 로그에 평문으로 남기면 안 되는 필드(값을 `***` 로 대체). 키는 소문자로 대소문자 무시 비교한다. */
         val SENSITIVE =
             setOf(
-                "idToken",
-                "accessToken",
-                "refreshToken",
-                "registrationToken",
+                "idtoken",
+                "id_token",
+                "accesstoken",
+                "access_token",
+                "refreshtoken",
+                "refresh_token",
+                "registrationtoken",
+                "registration_token",
                 "password",
                 "authorization",
+            )
+
+        /** 비-JSON 본문(폼 인코딩 등)에서 토큰류 값을 가리기 위한 정규식. */
+        val SENSITIVE_TEXT_REGEX =
+            Regex(
+                "(?i)(id_?token|access_?token|refresh_?token|" +
+                    "registration_?token|password|authorization)=[^&\\s]+",
             )
 
         val prettyJson = Json { prettyPrint = true }
