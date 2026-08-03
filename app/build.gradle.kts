@@ -40,6 +40,15 @@ val naverMapClientId: String =
 val kakaoNativeAppKey: String =
     (localProps.getProperty("KAKAO_NATIVE_APP_KEY") ?: System.getenv("KAKAO_NATIVE_APP_KEY")).orEmpty()
 
+// 릴리스 빌드는 앱키가 비면 KakaoSdk.init 이 스킵되고 리다이렉트 scheme 가 깨지므로, 패키징 전에 즉시 실패시킨다.
+// (디버그/로컬 개발은 키 없이도 진행 가능하게 둔다.)
+gradle.taskGraph.whenReady {
+    val buildingRelease = allTasks.any { it.name.contains("Release", ignoreCase = true) }
+    if (buildingRelease && kakaoNativeAppKey.isBlank()) {
+        throw GradleException("KAKAO_NATIVE_APP_KEY 가 설정되지 않았습니다. 릴리스 빌드에는 필수입니다(local.properties 또는 환경변수).")
+    }
+}
+
 android {
     namespace = "com.chillsam.courmy"
     compileSdk {
