@@ -8,5 +8,5 @@ class WithdrawUseCase
     constructor(
         private val repository: AuthRepository,
     ) {
-        suspend operator fun invoke(userId: Long) = repository.withdraw(userId)
+        suspend operator fun invoke() = repository.withdraw()
     }

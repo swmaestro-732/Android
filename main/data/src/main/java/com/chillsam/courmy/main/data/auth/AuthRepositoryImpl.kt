@@ -65,6 +65,10 @@ class AuthRepositoryImpl(
         )
     }
 
+    override suspend fun restoreSession() {
+        tokenStore.load()
+    }
+
     override val isLoggedIn: Boolean
         get() = tokenStore.isLoggedIn
 
@@ -76,7 +80,9 @@ class AuthRepositoryImpl(
         tokenStore.clear()
     }
 
-    override suspend fun withdraw(userId: Long) {
+    override suspend fun withdraw() {
+        val userId =
+            requireNotNull(tokenStore.userId) { "회원 탈퇴에 필요한 사용자 id 가 없습니다(세션 없음/토큰 파싱 실패)." }
         dataSource.withdraw(userId)
         tokenStore.clear()
     }

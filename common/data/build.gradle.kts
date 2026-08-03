@@ -70,7 +70,6 @@ dependencies {
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
 
     // Hilt
     implementation(libs.hilt.android)
@@ -78,4 +77,7 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+
+    // 세션 토큰 암호화 영속화(Keystore 암호문 → DataStore).
+    implementation(libs.androidx.datastore.preferences)
 }

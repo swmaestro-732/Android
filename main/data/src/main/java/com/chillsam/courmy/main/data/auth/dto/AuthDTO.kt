@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.auth.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** POST /api/v1/auth/social-login 요청. provider 는 서버 enum 문자열("KAKAO" 등)과 일치. */
@@ -46,6 +47,8 @@ data class SocialLoginDataDTO(
     val accessToken: String? = null,
     val refreshToken: String? = null,
     val registrationToken: String? = null,
+    // 서버는 신규 여부를 "isNewUser" 로 내려준다(도메인/레포는 newUser 로 계속 사용).
+    @SerialName("isNewUser")
     val newUser: Boolean = false,
 )
 

@@ -31,7 +31,7 @@ interface AuthApiService {
         @Body request: LogoutRequest,
     ): Response<SimpleEnvelope>
 
-    /** 회원 탈퇴. Bearer 필요. */
+    /** 회원 탈퇴. userId 는 accessToken(JWT sub)에서 얻어 쿼리로 전달한다. */
     @DELETE("api/v1/my")
     suspend fun withdraw(
         @Query("userId") userId: Long,

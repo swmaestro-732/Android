@@ -8,7 +8,6 @@ import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
 import com.chillsam.courmy.common.presentation.mvi.UiState
 import com.chillsam.courmy.main.domain.auth.LogoutUseCase
 import com.chillsam.courmy.main.domain.auth.WithdrawUseCase
-import com.chillsam.courmy.main.domain.my.GetMyProfileUseCase
 import com.chillsam.courmy.main.presentation.login.KakaoLoginClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -60,7 +59,8 @@ sealed interface AccountReducerEvent : ReducerEvent {
 
 /**
  * 계정 관리(로그아웃·회원 탈퇴) ViewModel.
- * 탈퇴는 현재 사용자 id 가 필요해 프로필을 조회해 얻은 뒤 삭제한다. 카카오 세션도 함께 정리한다.
+ * 탈퇴는 현재 사용자 id 가 필요한데, id 는 accessToken(JWT sub)에서 파생돼 세션에 있으므로
+ * data 레이어가 내부적으로 사용한다(여기선 별도 전달 없이 호출). 카카오 세션도 함께 정리한다.
  */
 @HiltViewModel
 class AccountViewModel
@@ -68,7 +68,6 @@ class AccountViewModel
     constructor(
         private val logoutUseCase: LogoutUseCase,
         private val withdrawUseCase: WithdrawUseCase,
-        private val getMyProfileUseCase: GetMyProfileUseCase,
     ) : MviViewModel<AccountIntent, AccountUiState, AccountReducerEvent>(AccountUiState.empty) {
         private var job: Job? = null
 
@@ -119,8 +118,7 @@ class AccountViewModel
             job =
                 viewModelScope.launch {
                     runCatching {
-                        val userId = getMyProfileUseCase().id
-                        withdrawUseCase(userId)
+                        withdrawUseCase()
                         runCatching { KakaoLoginClient.unlink() }
                     }.onSuccess { dispatch(AccountReducerEvent.Finished(AccountAction.WITHDRAWN)) }
                         .onFailure { e ->
