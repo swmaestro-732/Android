@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.login
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,14 +16,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -30,6 +37,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.entity.auth.SignupProfile
 import com.chillsam.courmy.main.presentation.component.SignupProgressBar
 
 /** 온보딩 완료 화면(FS-08). 추천 코스를 보여주고 "Courmy 시작하기"로 로그인 완료 후 홈으로 진입. */
@@ -42,62 +50,108 @@ fun OnboardingCompletePage(
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor
+    val viewModel: SignupViewModel = hiltViewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     // 앞서 고른 관심 테마·지역을 반영한 안내 문구(각각 최대 3개, 초과 시 "등").
     val subtitle = buildRecommendationSubtitle(themes = themes, regions = regions)
+    // 사용자가 입력한 닉네임으로 인사(비어 있으면 기본 호칭).
+    val displayName = SignupSelectionStore.nickname.ifBlank { "회원" }
 
-    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1).statusBarsPadding()) {
-        SignupProgressBar(step = 4, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp))
-        Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp)) {
+    // 가입 성공 → 세션 로그인 + 홈으로. 실패 → 안내.
+    LaunchedEffect(uiState.done) {
+        if (uiState.done) {
+            session.login()
+            SignupSelectionStore.clear()
+            navigationHelper.navigateReplace(HomePage)
+            viewModel.onIntent(SignupIntent.ConsumeDone)
+        }
+    }
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.onIntent(SignupIntent.ConsumeError)
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1)) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+            SignupProgressBar(step = 4, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp))
+            Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp)) {
+                Box(
+                    modifier =
+                        Modifier
+                            .padding(top = 28.dp)
+                            .size(56.dp)
+                            .shadow(6.dp, CircleShape, spotColor = color.contentDefaultLevel0.copy(alpha = 0.3f))
+                            .clip(CircleShape)
+                            .background(color.bgAccent),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_check_24),
+                        contentDescription = null,
+                        tint = color.contentOnAccent,
+                        modifier = Modifier.size(30.dp),
+                    )
+                }
+                DsText(
+                    text = "준비 완료!\n${displayName}님 추천 코스를 찾았어요",
+                    style = DesignSystemThemeImpl.typeScale.titleExtraL,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 2,
+                    modifier = Modifier.padding(top = 20.dp),
+                )
+                DsText(
+                    text = subtitle,
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = color.contentDefaultLevel2,
+                    maxLines = 2,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                Spacer(Modifier.height(32.dp))
+                RecommendedCourseCard(
+                    title = "비 오는 날 성수 카페 코스",
+                    meta = "4 스팟",
+                )
+            }
+            Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
+                DsButton(
+                    text = "Courmy 시작하기",
+                    enabled = !uiState.isLoading,
+                    onClick = {
+                        // 홀더에 담아둔 프로필로 회원가입 API 호출. 관심 태그·지역은 라벨→id 매핑이 아직
+                        // 없어(백엔드 목록 API 필요) 이번엔 전송하지 않는다.
+                        // 프로필 이미지 업로드 미구현이라 http URL 일 때만 전송(로컬 uri 는 제외).
+                        val imageUrl = SignupSelectionStore.profileImageUrl?.takeIf { it.startsWith("http") }
+                        viewModel.onIntent(
+                            SignupIntent.Submit(
+                                SignupProfile(
+                                    nickname = SignupSelectionStore.nickname,
+                                    handle = SignupSelectionStore.handle,
+                                    profileImageUrl = imageUrl,
+                                ),
+                            ),
+                        )
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                )
+            }
+        }
+        if (uiState.isLoading) {
             Box(
                 modifier =
                     Modifier
-                        .padding(top = 28.dp)
-                        .size(56.dp)
-                        .shadow(6.dp, CircleShape, spotColor = color.contentDefaultLevel0.copy(alpha = 0.3f))
-                        .clip(CircleShape)
-                        .background(color.bgAccent),
+                        .fillMaxSize()
+                        .background(color.contentDefaultLevel0.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_check_24),
-                    contentDescription = null,
-                    tint = color.contentOnAccent,
-                    modifier = Modifier.size(30.dp),
-                )
+                CircularProgressIndicator(color = color.contentAccent)
             }
-            DsText(
-                text = "준비 완료!\n지호님 추천 코스를 찾았어요",
-                style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                color = color.contentDefaultLevel0,
-                maxLines = 2,
-                modifier = Modifier.padding(top = 20.dp),
-            )
-            DsText(
-                text = subtitle,
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = color.contentDefaultLevel2,
-                maxLines = 2,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-            Spacer(Modifier.height(32.dp))
-            RecommendedCourseCard(
-                title = "비 오는 날 성수 카페 코스",
-                meta = "4 스팟",
-            )
-        }
-        Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
-            DsButton(
-                text = "Courmy 시작하기",
-                onClick = {
-                    session.login()
-                    navigationHelper.navigateReplace(HomePage)
-                },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-            )
         }
     }
 }

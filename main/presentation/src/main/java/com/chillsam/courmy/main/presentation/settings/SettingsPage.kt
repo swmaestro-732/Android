@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.settings
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,9 +18,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,8 +30,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsSwitch
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -46,47 +54,87 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor
+    val accountViewModel: AccountViewModel = hiltViewModel()
+    val accountState by accountViewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var pushOn by remember { mutableStateOf(true) }
     var recommendOn by remember { mutableStateOf(false) }
+    var showWithdrawDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
-        BackTopBar(title = "설정", onBack = { navigationHelper.navigateToBack() }, boxed = true)
-
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
-        ) {
-            Spacer(Modifier.height(8.dp))
-            SettingsCard {
-                ProfileRow(onEdit = { navigationHelper.navigateTo(ProfileEditPage) })
-            }
-
-            SectionLabel("알림")
-            SettingsCard {
-                ToggleRow(label = "푸시 알림", checked = pushOn, onCheckedChange = { pushOn = it })
-                CardDivider()
-                ToggleRow(label = "코스 추천 알림", checked = recommendOn, onCheckedChange = { recommendOn = it })
-            }
-
-            SectionLabel("계정")
-            SettingsCard {
-                MenuRow(label = "개인정보 보호", onClick = {})
-                CardDivider()
-                MenuRow(label = "공지·도움말", onClick = {})
-                CardDivider()
-                LogoutRow(
-                    onClick = {
-                        session.logout()
-                        navigationHelper.navigateTo(HomePage)
-                    },
-                )
-            }
-            Spacer(Modifier.height(24.dp))
+    // 로그아웃/탈퇴 완료 → 세션 해제 후 게스트 홈으로.
+    LaunchedEffect(accountState.result) {
+        if (accountState.result != null) {
+            session.logout()
+            navigationHelper.navigateReplace(HomePage)
+            accountViewModel.onIntent(AccountIntent.ConsumeResult)
         }
+    }
+    LaunchedEffect(accountState.errorMessage) {
+        accountState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            accountViewModel.onIntent(AccountIntent.ConsumeError)
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            BackTopBar(title = "설정", onBack = { navigationHelper.navigateToBack() }, boxed = true)
+
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp),
+            ) {
+                Spacer(Modifier.height(8.dp))
+                SettingsCard {
+                    ProfileRow(onEdit = { navigationHelper.navigateTo(ProfileEditPage) })
+                }
+
+                SectionLabel("알림")
+                SettingsCard {
+                    ToggleRow(label = "푸시 알림", checked = pushOn, onCheckedChange = { pushOn = it })
+                    CardDivider()
+                    ToggleRow(label = "코스 추천 알림", checked = recommendOn, onCheckedChange = { recommendOn = it })
+                }
+
+                SectionLabel("계정")
+                SettingsCard {
+                    MenuRow(label = "개인정보 보호", onClick = {})
+                    CardDivider()
+                    MenuRow(label = "공지·도움말", onClick = {})
+                    CardDivider()
+                    DangerRow(label = "로그아웃", onClick = { accountViewModel.onIntent(AccountIntent.Logout) })
+                    CardDivider()
+                    DangerRow(label = "회원 탈퇴", onClick = { showWithdrawDialog = true })
+                }
+                Spacer(Modifier.height(24.dp))
+            }
+        }
+
+        if (accountState.isLoading) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(color.contentDefaultLevel0.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = color.contentAccent)
+            }
+        }
+    }
+
+    if (showWithdrawDialog) {
+        WithdrawConfirmDialog(
+            onConfirm = {
+                showWithdrawDialog = false
+                accountViewModel.onIntent(AccountIntent.Withdraw)
+            },
+            onDismiss = { showWithdrawDialog = false },
+        )
     }
 }
 
@@ -211,8 +259,12 @@ private fun MenuRow(
     }
 }
 
+/** 파괴적 액션 행(로그아웃·회원 탈퇴). danger 색 텍스트. */
 @Composable
-private fun LogoutRow(onClick: () -> Unit) {
+private fun DangerRow(
+    label: String,
+    onClick: () -> Unit,
+) {
     Row(
         modifier =
             Modifier
@@ -222,9 +274,75 @@ private fun LogoutRow(onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         DsText(
-            text = "로그아웃",
+            text = label,
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = DesignSystemThemeImpl.designSystemColor.contentDanger,
         )
+    }
+}
+
+/** 회원 탈퇴 확인 다이얼로그(스크림 + 중앙 카드 + danger 확인/취소). */
+@Composable
+private fun WithdrawConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(color.bgDefaultLevel1)
+                    .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            DsText(
+                text = "정말 탈퇴할까요?",
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+            )
+            DsText(
+                // 수동 줄바꿈을 없애고 줄 수 제한을 풀어(큰 글꼴 배율에서도) 잘리지 않고 자연스럽게 줄바꿈되게 한다.
+                text = "탈퇴하면 계정과 코스 정보가 삭제되고 되돌릴 수 없어요.",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+                textAlign = TextAlign.Center,
+                maxLines = Int.MAX_VALUE,
+            )
+            Spacer(Modifier.height(12.dp))
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(color.contentDanger)
+                        .clickable(onClick = onConfirm),
+                contentAlignment = Alignment.Center,
+            ) {
+                DsText(
+                    text = "탈퇴하기",
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentOnAccent,
+                )
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onDismiss)
+                        .padding(vertical = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                DsText(
+                    text = "취소",
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = color.contentDefaultLevel1,
+                )
+            }
+        }
     }
 }

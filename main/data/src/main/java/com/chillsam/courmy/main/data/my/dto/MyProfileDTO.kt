@@ -29,6 +29,7 @@ data class MyProfileScreenDTO(
 
 @Serializable
 data class MyUserDTO(
+    val id: Long? = null,
     val nickname: String? = null,
     val handle: String? = null,
     val bio: String? = null,
@@ -56,6 +57,7 @@ fun MyProfileScreenDTO.toVO(): MyProfileVO {
     val user = this.user
     val stats = this.stats
     return MyProfileVO(
+        id = user?.id ?: 0L,
         nickname = user?.nickname.orEmpty(),
         handle = user?.handle.orEmpty(),
         bio = user?.bio.orEmpty(),

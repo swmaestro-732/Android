@@ -32,11 +32,11 @@ import kotlinx.coroutines.flow.first
 
 /**
  * 스플래시 화면(FS-01). 초록 배경 위에 "my course → Courmy" 로고 모프 애니메이션을 재생하고,
- * 재생이 끝나면 온보딩 완료 여부에 따라 [onFinished] 로 다음 화면을 알린다.
+ * 재생이 끝나면 온보딩 완료 여부·자동 로그인 여부에 따라 [onFinished] 로 다음 화면을 알린다.
  */
 @Composable
 fun SplashPage(
-    onFinished: (onboarded: Boolean) -> Unit,
+    onFinished: (onboarded: Boolean, loggedIn: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SplashViewModel = hiltViewModel(),
 ) {
@@ -162,20 +162,20 @@ fun SplashPage(
     }
 }
 
-/** 모프 애니메이션을 재생하고, 완료 + 온보딩 플래그 로드 후 [onFinished] 호출. */
+/** 모프 애니메이션을 재생하고, 완료 + 세션/온보딩 로드 후 [onFinished] 호출. */
 @Composable
 private fun LaunchedEffectMorph(
     progress: Animatable<Float, *>,
     exit: Animatable<Float, *>,
     viewModel: SplashViewModel,
-    onFinished: (Boolean) -> Unit,
+    onFinished: (Boolean, Boolean) -> Unit,
 ) {
     androidx.compose.runtime.LaunchedEffect(Unit) {
         progress.animateTo(1f, tween(durationMillis = 3200, easing = FastOutSlowInEasing))
         delay(350)
-        val onboarded = viewModel.onboarded.filterNotNull().first()
+        val destination = viewModel.destination.filterNotNull().first()
         // 초록 배경을 흰색으로 수렴시키며 로고를 함께 페이드아웃한 뒤 다음 화면으로.
         exit.animateTo(1f, tween(durationMillis = 480, easing = FastOutSlowInEasing))
-        onFinished(onboarded)
+        onFinished(destination.onboarded, destination.loggedIn)
     }
 }
