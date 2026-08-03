@@ -55,6 +55,8 @@ fun OnboardingCompletePage(
     val context = LocalContext.current
     // 앞서 고른 관심 테마·지역을 반영한 안내 문구(각각 최대 3개, 초과 시 "등").
     val subtitle = buildRecommendationSubtitle(themes = themes, regions = regions)
+    // 사용자가 입력한 닉네임으로 인사(비어 있으면 기본 호칭).
+    val displayName = SignupSelectionStore.nickname.ifBlank { "회원" }
 
     // 가입 성공 → 세션 로그인 + 홈으로. 실패 → 안내.
     LaunchedEffect(uiState.done) {
@@ -94,7 +96,7 @@ fun OnboardingCompletePage(
                     )
                 }
                 DsText(
-                    text = "준비 완료!\n지호님 추천 코스를 찾았어요",
+                    text = "준비 완료!\n${displayName}님 추천 코스를 찾았어요",
                     style = DesignSystemThemeImpl.typeScale.titleExtraL,
                     color = color.contentDefaultLevel0,
                     maxLines = 2,
