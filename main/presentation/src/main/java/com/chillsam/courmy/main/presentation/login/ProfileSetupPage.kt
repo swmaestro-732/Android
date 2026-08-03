@@ -149,7 +149,13 @@ fun ProfileSetupPage(modifier: Modifier = Modifier) {
             DsButton(
                 text = "다음",
                 enabled = canContinue,
-                onClick = { navigationHelper.navigateTo(SignupThemePage) },
+                onClick = {
+                    // 완료 화면의 회원가입 API 호출에 쓰도록 프로필을 홀더에 담는다.
+                    SignupSelectionStore.nickname = nickname
+                    SignupSelectionStore.handle = handle
+                    SignupSelectionStore.profileImageUrl = profileImageUri?.toString()
+                    navigationHelper.navigateTo(SignupThemePage)
+                },
                 modifier =
                     Modifier
                         .fillMaxWidth()

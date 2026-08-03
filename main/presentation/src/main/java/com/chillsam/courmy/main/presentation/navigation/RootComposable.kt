@@ -23,17 +23,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.chillsam.courmy.common.domain.message.MessageEffect
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
+import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.SessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.onboarding.SplashPage
 import kotlinx.coroutines.flow.Flow
+import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
 
 @Composable
 fun RootComposable(
@@ -48,7 +51,18 @@ fun RootComposable(
     DesignSystemTheme {
         val backStack = rememberNavBackStack(*startStack.toTypedArray())
         val messageHelper = LocalMessageHelper.current
+        val navigationHelper = LocalNavigationHelper.current
         val sessionState = remember { SessionUiState() }
+
+        // 세션 만료(refresh 재발급 실패) → 세션 해제 + 안내 후 로그인 화면으로 교체(백스택 초기화).
+        val sessionExpiryViewModel: SessionExpiryViewModel = hiltViewModel()
+        LaunchedEffect(Unit) {
+            sessionExpiryViewModel.expirations.collect {
+                sessionState.logout()
+                messageHelper.showToast("세션이 만료되었어요. 다시 로그인해 주세요.")
+                navigationHelper.navigateReplace(LoginRoute)
+            }
+        }
 
         val onShowOneButtonDialog =
             remember<(MessageEffect.ShowOneButtonDialog) -> Unit> {

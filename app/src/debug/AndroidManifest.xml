@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 디버그 빌드에서만 평문(HTTP) 허용: 로컬 백엔드(http://localhost:8080 등) 테스트용.
+         릴리스는 메인 매니페스트 기본값(cleartext 차단)을 따라 HTTPS 만 허용한다. -->
+    <application
+        android:usesCleartextTraffic="true"
+        tools:targetApi="28" />
+
+</manifest>

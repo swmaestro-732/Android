@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.course.presentation.CourseCompletePage
 import com.chillsam.courmy.course.presentation.CourseCompleteViewModel
 import com.chillsam.courmy.course.presentation.CourseCreateIntent
@@ -64,9 +65,12 @@ val appRoutes: List<AppRoute> =
             path = SplashRoute.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current
+                val session = LocalSessionUiState.current
                 SplashPage(
-                    onFinished = { onboarded ->
-                        navigationHelper.navigateReplace(if (onboarded) HomeRoute else OnboardingRoute)
+                    onFinished = { onboarded, loggedIn ->
+                        // 저장된 세션이 복원되면(자동 로그인) UI 세션도 로그인 상태로 맞추고 홈으로.
+                        if (loggedIn) session.login()
+                        navigationHelper.navigateReplace(if (onboarded || loggedIn) HomeRoute else OnboardingRoute)
                     },
                 )
             },

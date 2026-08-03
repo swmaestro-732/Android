@@ -12,6 +12,18 @@ import androidx.compose.runtime.setValue
  * 붙기 전까지의 시연용이다.
  */
 object SignupSelectionStore {
+    var nickname by mutableStateOf("")
+    var handle by mutableStateOf("")
+    var profileImageUrl by mutableStateOf<String?>(null)
     var themes by mutableStateOf<List<String>>(emptyList())
     var regions by mutableStateOf<List<String>>(emptyList())
+
+    /** 가입 완료/취소 시 다음 세션을 위해 비운다. */
+    fun clear() {
+        nickname = ""
+        handle = ""
+        profileImageUrl = null
+        themes = emptyList()
+        regions = emptyList()
+    }
 }
