@@ -162,7 +162,9 @@ private fun startKakaoLogin(
         runCatching { KakaoLoginClient.login(context) }
             .onSuccess { idToken -> viewModel.onIntent(LoginIntent.SocialLogin(idToken)) }
             .onFailure { e ->
-                // 취소는 조용히 앱에 머문다. 그 외 실패만 안내.
+                // 컴포지션 이탈로 코루틴이 취소되면(회전·재생성) 실패로 오인해 토스트를 띄우지 않도록 먼저 재던진다.
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                // 사용자 취소는 조용히 앱에 머문다. 그 외 실패만 안내.
                 if (e !is KakaoLoginClient.CanceledException) {
                     Log.w("Login", "카카오 SDK 로그인 실패: ${e.javaClass.simpleName} - ${e.message}", e)
                     Toast.makeText(context, "카카오 로그인을 완료하지 못했어요.", Toast.LENGTH_SHORT).show()
