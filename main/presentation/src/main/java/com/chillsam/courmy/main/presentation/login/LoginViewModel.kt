@@ -69,8 +69,10 @@ class LoginViewModel
                         .onSuccess { dispatch(LoginReducerEvent.Succeeded(it.newUser)) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
+                            // 원시 예외 메시지(개발자용 requireNotNull·URL 포함 등)는 로그로만 남기고,
+                            // 사용자에게는 고정 안내 문구를 보여준다.
                             Log.w(TAG, "소셜 로그인 실패: ${e.javaClass.simpleName} - ${e.message}", e)
-                            dispatch(LoginReducerEvent.Failed(e.message ?: "로그인에 실패했어요."))
+                            dispatch(LoginReducerEvent.Failed("로그인에 실패했어요. 잠시 후 다시 시도해 주세요."))
                         }
                 }
         }

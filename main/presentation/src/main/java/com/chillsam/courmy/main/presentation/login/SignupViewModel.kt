@@ -87,8 +87,9 @@ class SignupViewModel
                         .onSuccess { dispatch(SignupReducerEvent.Succeeded) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
+                            // 원시 예외 메시지는 로그로만 남기고 사용자에게는 고정 안내 문구를 보여준다.
                             Log.w(TAG, "회원가입 실패: ${e.javaClass.simpleName} - ${e.message}", e)
-                            dispatch(SignupReducerEvent.Failed(e.message ?: "회원가입에 실패했어요."))
+                            dispatch(SignupReducerEvent.Failed("회원가입에 실패했어요. 잠시 후 다시 시도해 주세요."))
                         }
                 }
         }
