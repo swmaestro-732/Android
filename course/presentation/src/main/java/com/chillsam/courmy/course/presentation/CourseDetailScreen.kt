@@ -1121,9 +1121,7 @@ private fun CourseDetailScreenPreview() {
 }
 
 /**
- * Preview·개발용 더미(성수동 좌표 포함). presentation 전용 프리뷰 픽스처다.
- * 백엔드에 장소 좌표가 없어 "코스 경로" 지도가 안 뜨므로, 디버그 빌드에서만
- * [CourseDetailViewModel] 이 이 더미로 대체해 화면을 확인한다(릴리스는 실데이터 그대로).
+ * Preview용 더미(성수동 좌표 포함). presentation 전용 프리뷰 픽스처다.
  */
 internal val courseDetailSample: CourseDetailVO =
     CourseDetailVO(

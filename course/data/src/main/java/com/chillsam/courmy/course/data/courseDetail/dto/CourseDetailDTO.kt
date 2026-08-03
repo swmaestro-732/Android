@@ -55,7 +55,14 @@ data class CoursePlaceDTO(
     val caption: String? = null,
     val walkingMinutesToNext: Int? = null,
     val categories: List<String>? = null,
+    val location: CoursePlaceLocationDTO? = null,
     val images: List<CoursePlaceImageDTO>? = null,
+)
+
+@Serializable
+data class CoursePlaceLocationDTO(
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 @Serializable
@@ -133,6 +140,8 @@ private fun CoursePlaceDTO.toVO(): CourseDetailPlaceVO {
         tip = caption.orEmpty(),
         imageUrls = urls,
         walkToNextText = walkingMinutesToNext?.let { "도보 ${it}분" },
+        latitude = location?.latitude,
+        longitude = location?.longitude,
     )
 }
 

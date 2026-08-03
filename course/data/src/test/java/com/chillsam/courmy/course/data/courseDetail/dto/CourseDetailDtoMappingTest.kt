@@ -120,6 +120,30 @@ class CourseDetailDtoMappingTest {
     }
 
     @Test
+    fun `장소 위치의 위도와 경도를 지도 좌표로 매핑한다`() {
+        val vo =
+            fullData()
+                .copy(
+                    course =
+                        fullData().course!!.copy(
+                            places =
+                                listOf(
+                                    place(orderNo = 0, name = "어니언 성수", walkToNext = null).copy(
+                                        location =
+                                            CoursePlaceLocationDTO(
+                                                latitude = 37.5445,
+                                                longitude = 127.0575,
+                                            ),
+                                    ),
+                                ),
+                        ),
+                ).toVO()
+
+        assertEquals(37.5445, vo.places.single().latitude!!, 0.0)
+        assertEquals(127.0575, vo.places.single().longitude!!, 0.0)
+    }
+
+    @Test
     fun `누락 필드는 기본값으로 안전하게 매핑된다`() {
         val vo = CourseScreenData(course = CourseScreenDTO(), reviewSummary = null).toVO()
 

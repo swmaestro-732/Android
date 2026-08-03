@@ -111,7 +111,9 @@ class CourseRepositoryImplDraftTest {
         }
 
     private object UnusedApiService : CourseDetailApiService {
-        override suspend fun getCourseDetail(courseId: Long): Response<CourseDetailEnvelope> =
-            error("draft 테스트에서는 호출되지 않아야 한다")
+        override suspend fun getCourseDetail(
+            courseId: Long,
+            mock: Boolean,
+        ): Response<CourseDetailEnvelope> = error("draft 테스트에서는 호출되지 않아야 한다")
     }
 }
