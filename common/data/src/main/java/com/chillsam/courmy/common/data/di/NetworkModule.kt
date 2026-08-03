@@ -12,6 +12,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -59,14 +60,17 @@ object NetworkModule {
             .build()
     }
 
-    // 인증 헤더: 로그인 accessToken 이 있으면 우선 사용하고, 없으면 API_KEY(공개 API·검색용) 폴백.
-    // 토큰이 둘 다 없으면 헤더를 붙이지 않는다(코스 상세 등 공개 엔드포인트).
+    // 우리 API 호스트로 가는 요청에만, accessToken 이 있을 때 Authorization 을 붙인다.
+    // 호스트를 확인해 서드파티 호스트·CDN·프리사인 업로드 URL 로 토큰이 새지 않게 하고,
+    // 토큰이 없으면 헤더를 생략한다(코스 상세 등 공개 엔드포인트).
+    private val apiHost: String? = BuildConfig.API_BASE_URL.toHttpUrlOrNull()?.host
+
     private fun authInterceptor(tokenStore: TokenStore): Interceptor =
         Interceptor { chain ->
             val original = chain.request()
-            val token = tokenStore.accessToken ?: BuildConfig.API_KEY.ifBlank { null }
+            val token = tokenStore.accessToken
             val request =
-                if (token != null) {
+                if (token != null && original.url.host == apiHost) {
                     original
                         .newBuilder()
                         .header("Authorization", "Bearer $token")
