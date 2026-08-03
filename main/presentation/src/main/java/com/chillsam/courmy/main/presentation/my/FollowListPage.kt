@@ -202,10 +202,11 @@ private fun FollowUserRow(
                     .clickable(onClick = onRemove),
             contentAlignment = Alignment.Center,
         ) {
-            DsText(
-                text = "✕",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
+            Icon(
+                painter = painterResource(R.drawable.close_small_24),
+                contentDescription = "${user.name} 제거",
+                tint = color.contentDefaultLevel2,
+                modifier = Modifier.size(14.dp),
             )
         }
     }
