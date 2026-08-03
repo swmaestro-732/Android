@@ -304,11 +304,12 @@ private fun WithdrawConfirmDialog(
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = "탈퇴하면 계정과 코스 정보가\n삭제되고 되돌릴 수 없어요.",
+                // 수동 줄바꿈을 없애고 줄 수 제한을 풀어(큰 글꼴 배율에서도) 잘리지 않고 자연스럽게 줄바꿈되게 한다.
+                text = "탈퇴하면 계정과 코스 정보가 삭제되고 되돌릴 수 없어요.",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
+                maxLines = Int.MAX_VALUE,
             )
             Spacer(Modifier.height(12.dp))
             Box(
