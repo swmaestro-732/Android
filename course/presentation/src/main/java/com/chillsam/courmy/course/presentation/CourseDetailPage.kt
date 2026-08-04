@@ -35,7 +35,7 @@ fun CourseDetailPage(
     onSaveCourse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LaunchedEffect(courseId) { viewModel.setCourseId(courseId) }
+    LaunchedEffect(courseId) { viewModel.onIntent(CourseDetailIntent.Load(courseId)) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val detail = uiState.detail
     when {
