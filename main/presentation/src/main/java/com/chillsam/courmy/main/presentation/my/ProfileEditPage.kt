@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.my
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -60,6 +63,7 @@ fun ProfileEditPage(
     modifier: Modifier = Modifier,
     handleCheckViewModel: HandleCheckViewModel = hiltViewModel(),
     myViewModel: MyViewModel = hiltViewModel(),
+    editViewModel: ProfileEditViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
@@ -75,6 +79,8 @@ fun ProfileEditPage(
     var bio by remember(originalBio) { mutableStateOf(originalBio) }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     val checkState by handleCheckViewModel.uiState.collectAsStateWithLifecycle()
+    val editState by editViewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     // 확인 후 입력이 바뀌었으면 이전 판정을 쓰지 않는다.
     val idResult = checkState.result?.takeIf { checkState.checkedHandle == handle }
     val handleChanged = handle != originalHandle
@@ -88,6 +94,19 @@ fun ProfileEditPage(
                     bio != originalBio ||
                     profileImageUri != null
             )
+
+    LaunchedEffect(editState.saved) {
+        if (editState.saved) {
+            editViewModel.onIntent(ProfileEditIntent.ConsumeSaved)
+            navigationHelper.navigateToBack()
+        }
+    }
+    LaunchedEffect(editState.errorMessage) {
+        editState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            editViewModel.onIntent(ProfileEditIntent.ConsumeError)
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 상단 바 영역은 흰색(Figma FS-26). 가운데 콘텐츠만 Gray200.
@@ -167,17 +186,18 @@ fun ProfileEditPage(
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
                 text = "변경 사항 저장",
-                enabled = hasChanges,
+                enabled = hasChanges && !editState.isSaving,
+                loading = editState.isSaving,
                 onClick = {
-                    // 실 저장 API(PATCH 프로필)는 마이페이지 배포 후 연결한다.
-                    // 그전까지는 더미 홀더에 남겨 편집 결과가 화면에 보이게 한다.
-                    SampleProfileStore.update(
-                        nickname = nickname,
-                        handle = handle,
-                        bio = bio,
-                        profileImageUrl = profileImageUri?.toString(),
+                    // 바뀐 항목만 넘긴다(아이디를 그대로 다시 보내면 중복으로 거부될 수 있다).
+                    editViewModel.onIntent(
+                        ProfileEditIntent.Save(
+                            nickname = nickname.takeIf { it != originalNickname },
+                            handle = handle.takeIf { it != originalHandle },
+                            bio = bio.takeIf { it != originalBio },
+                            localImageUri = profileImageUri?.toString(),
+                        ),
                     )
-                    navigationHelper.navigateToBack()
                 },
                 modifier =
                     Modifier
