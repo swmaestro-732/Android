@@ -236,6 +236,9 @@ val appRoutes: List<AppRoute> =
                 CourseDetailPage(
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
                     onBack = { navigationHelper.navigateToBack() },
+                    onAuthorClick = { handle ->
+                        navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
+                    },
                     onFollowAuthor = { notReady() },
                     onShare = { notReady() },
                     onSaveCourse = { notReady() },
