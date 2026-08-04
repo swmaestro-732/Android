@@ -97,6 +97,9 @@ object SampleProfileStore {
      * 권한 없이 계속 읽을 수 있다. 실패하면 null 을 돌려 원본 URI 를 그대로 쓴다(최소한 이번 세션엔 보인다).
      *
      * 더미 전용 경로라 클릭 스레드에서 동기 복사한다(이미지 1장, 1회성).
+     *
+     * 파일명은 매번 새로 만든다. 고정 파일명이면 두 번째로 고른 사진이 같은 경로를 덮어써 URL 문자열이
+     * 그대로라, Coil 이 model 문자열을 캐시 키로 쓰는 탓에 이전 비트맵을 다시 그린다.
      */
     private fun copyImageToInternalStorage(uri: String): String? {
         val context = appContext
@@ -112,15 +115,27 @@ object SampleProfileStore {
 
             else -> {
                 runCatching {
-                    val file = File(context.filesDir, IMAGE_FILE_NAME)
+                    val file = File(context.filesDir, "$IMAGE_FILE_PREFIX${System.currentTimeMillis()}")
                     context.contentResolver.openInputStream(Uri.parse(uri))?.use { input ->
                         file.outputStream().use(input::copyTo)
                     } ?: error("이미지를 읽지 못했습니다: $uri")
+                    // 복사에 성공한 뒤에만 이전 사본을 지운다(실패 시 기존 사진을 잃지 않게).
+                    deleteCopiedImages(context, keep = file.name)
                     Uri.fromFile(file).toString()
                 }.onFailure { Log.w(TAG, "프로필 이미지 복사 실패", it) }
                     .getOrNull()
             }
         }
+    }
+
+    /** 내부 저장소에 쌓인 프로필 사진 사본을 지운다. [keep] 과 이름이 같은 파일은 남긴다. */
+    private fun deleteCopiedImages(
+        context: Context,
+        keep: String? = null,
+    ) {
+        context.filesDir
+            .listFiles { file -> file.name.startsWith(IMAGE_FILE_PREFIX) && file.name != keep }
+            ?.forEach { it.delete() }
     }
 
     fun clear() {
@@ -129,12 +144,12 @@ object SampleProfileStore {
         bio = null
         profileImageUrl = null
         prefs?.edit()?.clear()?.apply()
-        appContext?.let { runCatching { File(it.filesDir, IMAGE_FILE_NAME).delete() } }
+        appContext?.let { runCatching { deleteCopiedImages(it) } }
     }
 
     private const val KEY_NICKNAME = "nickname"
     private const val KEY_HANDLE = "handle"
     private const val KEY_BIO = "bio"
     private const val KEY_IMAGE = "profile_image_url"
-    private const val IMAGE_FILE_NAME = "sample_profile_image"
+    private const val IMAGE_FILE_PREFIX = "sample_profile_image_"
 }

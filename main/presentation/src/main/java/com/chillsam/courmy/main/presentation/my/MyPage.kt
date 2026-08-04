@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.my
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -77,6 +79,9 @@ private fun MyContent(
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
+    val context = LocalContext.current
+    // 공유할 프로필 URL(App Link)이 아직 없어 안내만 한다. 무반응 버튼으로 두지 않는다.
+    val shareNotReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(
@@ -91,7 +96,7 @@ private fun MyContent(
                 ProfileCoverIconButton(
                     iconRes = R.drawable.ic_share_24,
                     contentDescription = "공유",
-                    onClick = {},
+                    onClick = shareNotReady,
                 )
                 ProfileCoverIconButton(
                     iconRes = R.drawable.ic_settings_24,

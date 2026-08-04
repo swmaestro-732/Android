@@ -37,6 +37,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -46,19 +48,24 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
-import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
 /** 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·소개·관심 테마/지역을 편집한다. */
 @Composable
-fun ProfileEditPage(modifier: Modifier = Modifier) {
+fun ProfileEditPage(
+    modifier: Modifier = Modifier,
+    myViewModel: MyViewModel = hiltViewModel(),
+) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    val profile = SampleProfileStore.applyTo(MyProfileVO.sample)
-    val originalNickname = profile?.nickname ?: ORIGINAL_NICKNAME
-    val originalHandle = profile?.handle ?: ORIGINAL_HANDLE
-    val originalBio = profile?.bio ?: ORIGINAL_BIO
+    // 편집 원본은 MyViewModel 상태 하나뿐이다. MyProfileVO.sample 을 직접 넘기면 applyTo 가
+    // 비활성(release)일 때 인자가 그대로 통과해 실 빌드에서도 더미가 편집 원본이 된다.
+    val myState by myViewModel.uiState.collectAsStateWithLifecycle()
+    val profile = SampleProfileStore.applyTo(myState.profile)
+    val originalNickname = profile?.nickname.orEmpty()
+    val originalHandle = profile?.handle.orEmpty()
+    val originalBio = profile?.bio.orEmpty()
     var nickname by remember(originalNickname) { mutableStateOf(originalNickname) }
     var handle by remember(originalHandle) { mutableStateOf(originalHandle) }
     var idResult by remember { mutableStateOf<IdCheckResult?>(null) }
@@ -297,11 +304,6 @@ private fun LabeledField(
         belowField?.invoke()
     }
 }
-
-// 편집 원본값은 프로필 정본(MyProfileVO.sample) 한 곳에서만 가져온다(값 중복 방지).
-private val ORIGINAL_HANDLE = MyProfileVO.sample.handle
-private val ORIGINAL_NICKNAME = MyProfileVO.sample.nickname
-private val ORIGINAL_BIO = MyProfileVO.sample.bio
 
 /** 아이디 중복 확인 목 판정용 예약(사용 중) 아이디. 실 API 연동 시 제거. */
 private val TAKEN_HANDLES = setOf("admin", "test", "courmy", "jiho")

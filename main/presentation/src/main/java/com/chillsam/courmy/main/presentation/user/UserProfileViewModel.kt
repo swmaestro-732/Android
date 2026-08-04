@@ -98,12 +98,14 @@ class UserProfileViewModel
             }
 
         private fun load() {
-            if (sampleMode) {
-                dispatch(UserProfileReducerEvent.Loaded(UserProfileVO.sample.copy(handle = handle)))
-                return
-            }
+            // handle 검증이 더미 분기보다 먼저다. 라우트 인자가 빠지면 빈 handle 이 들어오는데,
+            // 순서가 반대면 debug 빌드에서 handle 이 빈 더미 프로필을 정상 화면처럼 렌더한다.
             if (handle.isBlank()) {
                 dispatch(UserProfileReducerEvent.Failed("사용자를 찾을 수 없습니다."))
+                return
+            }
+            if (sampleMode) {
+                dispatch(UserProfileReducerEvent.Loaded(UserProfileVO.sample.copy(handle = handle)))
                 return
             }
             dispatch(UserProfileReducerEvent.LoadStarted)
