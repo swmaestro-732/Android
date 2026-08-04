@@ -37,6 +37,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -46,27 +48,38 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
-import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.login.HandleCheckIntent
+import com.chillsam.courmy.main.presentation.login.HandleCheckViewModel
+import com.chillsam.courmy.main.presentation.login.message
 import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
 /** 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·소개·관심 테마/지역을 편집한다. */
 @Composable
-fun ProfileEditPage(modifier: Modifier = Modifier) {
+fun ProfileEditPage(
+    modifier: Modifier = Modifier,
+    handleCheckViewModel: HandleCheckViewModel = hiltViewModel(),
+    myViewModel: MyViewModel = hiltViewModel(),
+) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    val profile = SampleProfileStore.applyTo(MyProfileVO.sample)
-    val originalNickname = profile?.nickname ?: ORIGINAL_NICKNAME
-    val originalHandle = profile?.handle ?: ORIGINAL_HANDLE
-    val originalBio = profile?.bio ?: ORIGINAL_BIO
+    // 편집 원본값은 실제 내 프로필(GET /service/v1/mypage)에서 가져온다.
+    val myState by myViewModel.uiState.collectAsStateWithLifecycle()
+    val profile = SampleProfileStore.applyTo(myState.profile)
+    val originalNickname = profile?.nickname.orEmpty()
+    val originalHandle = profile?.handle.orEmpty()
+    val originalBio = profile?.bio.orEmpty()
+    // 프로필이 늦게 도착하면 그 값으로 입력칸을 다시 채운다.
     var nickname by remember(originalNickname) { mutableStateOf(originalNickname) }
     var handle by remember(originalHandle) { mutableStateOf(originalHandle) }
-    var idResult by remember { mutableStateOf<IdCheckResult?>(null) }
     var bio by remember(originalBio) { mutableStateOf(originalBio) }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    val checkState by handleCheckViewModel.uiState.collectAsStateWithLifecycle()
+    // 확인 후 입력이 바뀌었으면 이전 판정을 쓰지 않는다.
+    val idResult = checkState.result?.takeIf { checkState.checkedHandle == handle }
     val handleChanged = handle != originalHandle
     // 아이디를 바꿨다면 중복 확인에서 '사용 가능'을 받은 경우에만 저장 가능(검증 실패·미확인 시 비활성).
-    val handleSaveable = !handleChanged || idResult?.available == true
+    val handleSaveable = !handleChanged || idResult?.isAvailable == true
     val hasChanges =
         handleSaveable &&
             (
@@ -108,20 +121,21 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
                 value = handle,
                 onValueChange = {
                     handle = it
-                    idResult = null // 값이 바뀌면 이전 검증 결과 무효화.
+                    // 값이 바뀌면 이전 검증 결과 무효화.
+                    handleCheckViewModel.onIntent(HandleCheckIntent.Reset)
                 },
                 inputTrailing = {
                     CheckButton(
-                        enabled = handle != originalHandle,
-                        onClick = { idResult = checkHandle(handle) },
+                        enabled = handleChanged && !checkState.isChecking,
+                        onClick = { handleCheckViewModel.onIntent(HandleCheckIntent.Check(handle)) },
                     )
                 },
                 belowField = {
                     idResult?.let { result ->
                         DsText(
-                            text = result.message,
+                            text = result.message(),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                            color = if (result.available) color.contentSuccess else color.contentDanger,
+                            color = if (result.isAvailable) color.contentSuccess else color.contentDanger,
                             modifier = Modifier.padding(start = 16.dp, top = 6.dp),
                         )
                     }
@@ -297,31 +311,6 @@ private fun LabeledField(
         belowField?.invoke()
     }
 }
-
-// 편집 원본값은 프로필 정본(MyProfileVO.sample) 한 곳에서만 가져온다(값 중복 방지).
-private val ORIGINAL_HANDLE = MyProfileVO.sample.handle
-private val ORIGINAL_NICKNAME = MyProfileVO.sample.nickname
-private val ORIGINAL_BIO = MyProfileVO.sample.bio
-
-/** 아이디 중복 확인 목 판정용 예약(사용 중) 아이디. 실 API 연동 시 제거. */
-private val TAKEN_HANDLES = setOf("admin", "test", "courmy", "jiho")
-
-private val HANDLE_REGEX = Regex("^[a-z0-9_]+$")
-
-/** 아이디 검증 결과(사유 포함). 실 판정은 아이디 API·검증 스펙 확정 후. */
-private data class IdCheckResult(
-    val message: String,
-    val available: Boolean,
-)
-
-/** 목 검증: 길이 → 형식 → 중복 순으로 첫 실패 사유 반환(실 API 전 시연용). */
-private fun checkHandle(handle: String): IdCheckResult =
-    when {
-        handle.length !in 3..12 -> IdCheckResult("3~12자로 입력해 주세요", available = false)
-        !handle.matches(HANDLE_REGEX) -> IdCheckResult("영문 소문자·숫자·_(밑줄)만 쓸 수 있어요", available = false)
-        handle in TAKEN_HANDLES -> IdCheckResult("이미 사용 중인 아이디예요", available = false)
-        else -> IdCheckResult("사용 가능한 아이디예요", available = true)
-    }
 
 /**
  * 아이디 중복 확인 액션 버튼(컴팩트). [enabled]=아이디가 원래값과 다를 때 활성.

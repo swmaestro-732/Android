@@ -47,6 +47,7 @@ import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.ProfileEditPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
@@ -58,6 +59,9 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     val color = DesignSystemThemeImpl.designSystemColor
     val accountViewModel: AccountViewModel = hiltViewModel()
     val accountState by accountViewModel.uiState.collectAsStateWithLifecycle()
+    // 설정 상단 프로필 요약은 마이 화면과 같은 소스(GET /service/v1/mypage)를 쓴다.
+    val myViewModel: MyViewModel = hiltViewModel()
+    val myState by myViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var pushOn by remember { mutableStateOf(true) }
     var recommendOn by remember { mutableStateOf(false) }
@@ -93,7 +97,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                 Spacer(Modifier.height(8.dp))
                 SettingsCard {
                     ProfileRow(
-                        profile = SampleProfileStore.applyTo(MyProfileVO.sample),
+                        profile = SampleProfileStore.applyTo(myState.profile),
                         onEdit = { navigationHelper.navigateTo(ProfileEditPage) },
                     )
                 }
@@ -186,7 +190,7 @@ private fun ProfileRow(
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = "@${profile?.handle.orEmpty()}",
+                text = profile?.handle?.let { "@$it" }.orEmpty(),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )

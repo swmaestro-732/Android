@@ -35,4 +35,18 @@ interface TokenReissueApi {
     fun reissue(
         @Body request: TokenReissueRequest,
     ): Call<TokenReissueEnvelope>
+
+    /**
+     * 재발급 경로 폴백.
+     *
+     * 백엔드 develop 이 같은 기능을 `POST /api/v1/auth/refresh` 로 옮겨 둬, 배포 시점에 따라
+     * 둘 중 하나만 살아 있다. 재발급이 실패하면 토큰 만료 시점에 전원 강제 로그아웃으로 이어지므로,
+     * [reissue] 가 "경로 없음"으로 실패했을 때만 이쪽을 한 번 더 시도한다([TokenAuthenticator]).
+     *
+     * TODO-API-SPEC: 백엔드 경로가 하나로 확정되면 나머지 하나와 폴백 분기를 제거한다. [wiki-needed]
+     */
+    @POST("api/v1/auth/refresh")
+    fun reissueFallback(
+        @Body request: TokenReissueRequest,
+    ): Call<TokenReissueEnvelope>
 }

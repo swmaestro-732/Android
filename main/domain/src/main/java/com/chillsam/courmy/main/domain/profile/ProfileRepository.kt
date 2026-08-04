@@ -20,4 +20,11 @@ interface ProfileRepository {
         userId: Long,
         follow: Boolean,
     ): FollowResultVO
+
+    /** 내 프로필 부분 수정. null 인 항목은 건드리지 않는다. */
+    suspend fun updateProfile(
+        nickname: String? = null,
+        handle: String? = null,
+        profileImageUrl: String? = null,
+    )
 }

@@ -33,4 +33,7 @@ interface AuthRepository {
 
     /** 회원 탈퇴. 서버 계정(Bearer 토큰으로 식별)을 삭제하고 로컬 토큰을 제거한다. */
     suspend fun withdraw()
+
+    /** 아이디(핸들) 사용 가능 여부. 예약어이거나 이미 사용 중이면 false. */
+    suspend fun isHandleAvailable(handle: String): Boolean
 }

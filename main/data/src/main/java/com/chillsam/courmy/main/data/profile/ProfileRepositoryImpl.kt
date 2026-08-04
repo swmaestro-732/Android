@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.data.profile
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.main.data.profile.dto.MyPageEnvelope
 import com.chillsam.courmy.main.data.profile.dto.MyPageScreenDTO
+import com.chillsam.courmy.main.data.profile.dto.UpdateProfileRequest
 import com.chillsam.courmy.main.data.profile.dto.formatCount
 import com.chillsam.courmy.main.data.profile.dto.toMyProfileVO
 import com.chillsam.courmy.main.data.profile.dto.toUserProfileVO
@@ -36,6 +37,24 @@ class ProfileRepositoryImpl(
         return FollowResultVO(
             isFollowing = data.isFollowing,
             followerCount = formatCount(data.followersCnt ?: 0),
+        )
+    }
+
+    override suspend fun updateProfile(
+        nickname: String?,
+        handle: String?,
+        profileImageUrl: String?,
+    ) {
+        val userId =
+            requireNotNull(tokenStore.userId) { "프로필 수정에 필요한 사용자 id 가 없습니다(세션 없음/토큰 파싱 실패)." }
+        dataSource.updateProfile(
+            userId = userId,
+            request =
+                UpdateProfileRequest(
+                    nickname = nickname,
+                    handle = handle,
+                    profileImageUrl = profileImageUrl,
+                ),
         )
     }
 

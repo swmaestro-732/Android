@@ -143,3 +143,17 @@ private fun trimTrailingZero(value: Double): String {
     val truncated = (value * 10).toInt() / 10.0
     return if (truncated % 1.0 == 0.0) truncated.toInt().toString() else truncated.toString()
 }
+
+/** `PATCH /api/v1/my/profile` 요청. null 인 필드는 서버에서 무시(부분 수정)한다. */
+@Serializable
+data class UpdateProfileRequest(
+    val nickname: String? = null,
+    val handle: String? = null,
+    val profileImageUrl: String? = null,
+)
+
+@Serializable
+data class UpdateProfileEnvelope(
+    val code: Int? = null,
+    val message: String? = null,
+)
