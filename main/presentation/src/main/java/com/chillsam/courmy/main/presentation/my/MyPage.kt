@@ -12,6 +12,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -51,9 +54,15 @@ fun MyPage(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val profile = uiState.profile
-    // 프로필 편집에서 돌아왔을 때 수정된 값이 보이도록, 화면이 다시 보일 때마다 새로 불러온다.
+    // 프로필 편집에서 돌아왔을 때 수정된 값이 보이도록, 다시 보일 때마다 새로 불러온다.
+    // 첫 resume 은 건너뛴다 — ViewModel 이 init 에서 이미 불러와 같은 요청이 두 번 나간다.
+    var skipFirstResume by remember { mutableStateOf(true) }
     LifecycleResumeEffect(Unit) {
-        viewModel.onIntent(MyProfileIntent.Retry)
+        if (skipFirstResume) {
+            skipFirstResume = false
+        } else {
+            viewModel.onIntent(MyProfileIntent.Retry)
+        }
         onPauseOrDispose {}
     }
     when {
