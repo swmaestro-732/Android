@@ -40,21 +40,21 @@ class ProfileRepositoryImpl(
         )
     }
 
+    /**
+     * 공백만 있는 값은 서버가 거부하므로(`@Size(min=1)`) null 로 바꿔 "변경 안 함"으로 보낸다.
+     * 대상은 서버가 JWT 로 식별하므로 userId 를 싣지 않는다.
+     */
     override suspend fun updateProfile(
         nickname: String?,
         handle: String?,
         profileImageUrl: String?,
     ) {
-        val userId =
-            requireNotNull(tokenStore.userId) { "프로필 수정에 필요한 사용자 id 가 없습니다(세션 없음/토큰 파싱 실패)." }
         dataSource.updateProfile(
-            userId = userId,
-            request =
-                UpdateProfileRequest(
-                    nickname = nickname,
-                    handle = handle,
-                    profileImageUrl = profileImageUrl,
-                ),
+            UpdateProfileRequest(
+                nickname = nickname?.takeIf { it.isNotBlank() },
+                handle = handle?.takeIf { it.isNotBlank() },
+                profileImageUrl = profileImageUrl?.takeIf { it.isNotBlank() },
+            ),
         )
     }
 

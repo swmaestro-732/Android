@@ -55,9 +55,16 @@ import com.chillsam.courmy.main.presentation.component.BackTopBar
 import com.chillsam.courmy.main.presentation.login.HandleCheckIntent
 import com.chillsam.courmy.main.presentation.login.HandleCheckViewModel
 import com.chillsam.courmy.main.presentation.login.message
-import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
-/** 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·소개·관심 테마/지역을 편집한다. */
+/** 닉네임 최대 길이(Figma FS-26 카운터 기준). 서버 한도(20)보다 엄격한 앱 규칙이다. */
+private const val NICKNAME_MAX_LENGTH = 12
+
+/**
+ * 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·관심 테마/지역을 편집한다.
+ *
+ * 소개(bio)는 서버 `UpdateProfileRequest` 에 필드가 없어 저장할 수 없으므로 렌더하지 않는다
+ * ([ProfileEditViewModel] 주석 참고).
+ */
 @Composable
 fun ProfileEditPage(
     modifier: Modifier = Modifier,
@@ -69,14 +76,12 @@ fun ProfileEditPage(
     val color = DesignSystemThemeImpl.designSystemColor
     // 편집 원본값은 실제 내 프로필(GET /service/v1/mypage)에서 가져온다.
     val myState by myViewModel.uiState.collectAsStateWithLifecycle()
-    val profile = SampleProfileStore.applyTo(myState.profile)
+    val profile = myState.profile
     val originalNickname = profile?.nickname.orEmpty()
     val originalHandle = profile?.handle.orEmpty()
-    val originalBio = profile?.bio.orEmpty()
     // 프로필이 늦게 도착하면 그 값으로 입력칸을 다시 채운다.
     var nickname by remember(originalNickname) { mutableStateOf(originalNickname) }
     var handle by remember(originalHandle) { mutableStateOf(originalHandle) }
-    var bio by remember(originalBio) { mutableStateOf(originalBio) }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     val checkState by handleCheckViewModel.uiState.collectAsStateWithLifecycle()
     val editState by editViewModel.uiState.collectAsStateWithLifecycle()
@@ -88,12 +93,7 @@ fun ProfileEditPage(
     val handleSaveable = !handleChanged || idResult?.isAvailable == true
     val hasChanges =
         handleSaveable &&
-            (
-                nickname != originalNickname ||
-                    handleChanged ||
-                    bio != originalBio ||
-                    profileImageUri != null
-            )
+            (nickname != originalNickname || handleChanged || profileImageUri != null)
 
     LaunchedEffect(editState.saved) {
         if (editState.saved) {
@@ -132,8 +132,9 @@ fun ProfileEditPage(
             LabeledField(
                 label = "닉네임",
                 value = nickname,
-                onValueChange = { nickname = it },
-                counter = "${nickname.length}/12",
+                // 카운터가 광고하는 한도를 입력 단계에서 지킨다(넘겨 입력하면 서버가 저장을 거부한다).
+                onValueChange = { if (it.length <= NICKNAME_MAX_LENGTH) nickname = it },
+                counter = "${nickname.length}/$NICKNAME_MAX_LENGTH",
             )
             LabeledField(
                 label = "아이디",
@@ -160,14 +161,6 @@ fun ProfileEditPage(
                     }
                 },
             )
-            LabeledField(
-                label = "소개",
-                value = bio,
-                onValueChange = { bio = it },
-                counter = "${bio.length}/60",
-                singleLine = false,
-            )
-
             InterestSummary(
                 title = "관심 테마",
                 chips = listOf("감성 카페", "전시·갤러리", "동네 산책"),
@@ -194,7 +187,6 @@ fun ProfileEditPage(
                         ProfileEditIntent.Save(
                             nickname = nickname.takeIf { it != originalNickname },
                             handle = handle.takeIf { it != originalHandle },
-                            bio = bio.takeIf { it != originalBio },
                             localImageUri = profileImageUri?.toString(),
                         ),
                     )

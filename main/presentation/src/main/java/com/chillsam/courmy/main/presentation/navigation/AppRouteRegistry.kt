@@ -238,6 +238,9 @@ val appRoutes: List<AppRoute> =
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
                     courseId = args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
                     onBack = { navigationHelper.navigateToBack() },
+                    onAuthorClick = { handle ->
+                        navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
+                    },
                     onFollowAuthor = { notReady() },
                     onShare = { notReady() },
                     onSaveCourse = { notReady() },

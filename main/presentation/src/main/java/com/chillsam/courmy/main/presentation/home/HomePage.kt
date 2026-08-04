@@ -38,23 +38,20 @@ import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
-import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
 /**
  * 앱의 기본 시작 화면(FS-09). 헤더(위치·날씨·인사) + 공개 코스 피드로 구성한다.
  * 피드·헤더 값은 백엔드 연동 전까지 더미 고정값이며, 코스 카드는 로그인 여부와 무관하게 노출한다.
  */
 @Composable
-fun HomePage(
-    modifier: Modifier = Modifier,
-    myViewModel: MyViewModel = hiltViewModel(),
-) {
+fun HomePage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     val context = LocalContext.current
@@ -63,8 +60,7 @@ fun HomePage(
     // domain UseCase + ViewModel 로 전환한다(현재는 SavedPage 와 동일하게 presentation 에서 더미 참조). [wiki-needed]
     val courses = remember { HomeCourseVO.sample }
     // 헤더 인사말·아바타는 내 프로필에서 가져온다(더미 모드에선 가입·편집 결과가 반영된 값).
-    val myState by myViewModel.uiState.collectAsStateWithLifecycle()
-    val profile = SampleProfileStore.applyTo(myState.profile)
+    val profile = if (session.isLoggedIn) myProfileForHeader() else null
     // 저장(북마크) 토글은 아직 미연동이라 안내만 한다.
     val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
 
@@ -121,6 +117,20 @@ fun HomePage(
             )
         }
     }
+}
+
+/**
+ * 홈 헤더용 내 프로필.
+ *
+ * [MyViewModel] 은 생성 즉시 `GET /service/v1/mypage` 를 호출하므로 **로그인 상태에서만** 만든다.
+ * 게스트도 보는 홈에서 무조건 만들면 JWT 없이 요청이 나가 401 로 실패하고,
+ * refreshToken 도 없어 TokenAuthenticator 가 재시도를 포기한다.
+ */
+@Composable
+private fun myProfileForHeader(): MyProfileVO? {
+    val myViewModel: MyViewModel = hiltViewModel()
+    val myState by myViewModel.uiState.collectAsStateWithLifecycle()
+    return myState.profile
 }
 
 /** 헤더 코스 개수 안내(더미 고정값). */

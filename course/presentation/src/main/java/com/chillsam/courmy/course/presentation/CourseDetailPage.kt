@@ -29,6 +29,7 @@ fun CourseDetailPage(
     viewModel: CourseDetailViewModel,
     courseId: Long,
     onBack: () -> Unit,
+    onAuthorClick: (String) -> Unit,
     onFollowAuthor: () -> Unit,
     onShare: () -> Unit,
     onSaveCourse: () -> Unit,
@@ -42,6 +43,12 @@ fun CourseDetailPage(
             CourseDetailScreen(
                 detail = detail,
                 onBack = onBack,
+                onAuthorClick = {
+                    detail.authorHandle
+                        .removePrefix("@")
+                        .takeIf(String::isNotBlank)
+                        ?.let(onAuthorClick)
+                },
                 onFollowAuthor = onFollowAuthor,
                 onShare = onShare,
                 onSaveCourse = onSaveCourse,

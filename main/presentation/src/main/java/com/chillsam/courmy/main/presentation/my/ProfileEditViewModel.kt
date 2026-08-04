@@ -7,7 +7,6 @@ import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
 import com.chillsam.courmy.common.presentation.mvi.UiState
 import com.chillsam.courmy.main.domain.profile.UpdateProfileUseCase
-import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -19,7 +18,6 @@ sealed interface ProfileEditIntent : MviIntent {
     data class Save(
         val nickname: String?,
         val handle: String?,
-        val bio: String?,
         val localImageUri: String?,
     ) : ProfileEditIntent
 
@@ -55,11 +53,10 @@ sealed interface ProfileEditReducerEvent : ReducerEvent {
 /**
  * 프로필 편집(FS-26) 저장 ViewModel.
  *
- * 실 저장은 [UpdateProfileUseCase](이미지가 있으면 presign 업로드 → PATCH 프로필)가 담당한다.
- * 다만 조회 API 가 아직 미배포라 화면이 더미로 도는 동안에는 서버에 보내봐야 실패하고 화면도
- * 되돌아가므로, 더미 모드에서는 [SampleProfileStore] 에만 반영한다.
+ * 실 저장은 [UpdateProfileUseCase](이미지가 있으면 presign 업로드 → `PATCH /api/v1/users`)가 담당한다.
  *
- * TODO-API-SPEC: 백엔드 배포 후 USE_SAMPLE 을 끄면 더미 분기를 제거한다. [wiki-needed]
+ * TODO-API-SPEC: 서버 `UpdateProfileRequest` 에 한 줄 소개(bio) 필드가 없어 소개는 저장할 수 없다.
+ * 저장되지 않는 입력을 노출하지 않으려 편집 화면에서도 렌더하지 않는다. [wiki-needed]
  */
 @HiltViewModel
 class ProfileEditViewModel
@@ -93,10 +90,6 @@ class ProfileEditViewModel
 
         private fun save(intent: ProfileEditIntent.Save) {
             if (currentState.isSaving) return
-            if (SampleProfileStore.isActive) {
-                saveToSampleStore(intent)
-                return
-            }
             dispatch(ProfileEditReducerEvent.Started)
             saveJob?.cancel()
             saveJob =
@@ -115,17 +108,6 @@ class ProfileEditViewModel
                             dispatch(ProfileEditReducerEvent.Failed("저장에 실패했어요. 잠시 후 다시 시도해 주세요."))
                         }
                 }
-        }
-
-        /** 더미 모드 전용: 서버 대신 로컬 홀더에 반영해 편집 결과가 화면에 남게 한다. */
-        private fun saveToSampleStore(intent: ProfileEditIntent.Save) {
-            SampleProfileStore.update(
-                nickname = intent.nickname,
-                handle = intent.handle,
-                bio = intent.bio,
-                profileImageUrl = intent.localImageUri,
-            )
-            dispatch(ProfileEditReducerEvent.Succeeded)
         }
 
         private companion object {

@@ -43,8 +43,9 @@ class SignupUseCase
                         if (e is CancellationException) throw e
                         null
                     }
-            val imageUrl = uploaded ?: fallbackImageUrl ?: return false
-            return runCatching { profileRepository.updateProfile(profileImageUrl = imageUrl) }.isSuccess &&
+            val imageUrl = uploaded ?: fallbackImageUrl
+            return imageUrl != null &&
+                runCatching { profileRepository.updateProfile(profileImageUrl = imageUrl) }.isSuccess &&
                 uploaded != null
         }
     }

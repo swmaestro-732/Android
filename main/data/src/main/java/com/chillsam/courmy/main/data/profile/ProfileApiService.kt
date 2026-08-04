@@ -41,21 +41,14 @@ interface ProfileApiService {
         @Path("userId") userId: Long,
     ): Response<FollowEnvelope>
 
-    /** 내 프로필 수정(넘긴 필드만 반영). */
-    @PATCH("api/v1/my/profile")
-    suspend fun updateProfile(
-        @Query("userId") userId: Long,
-        @Body request: UpdateProfileRequest,
-    ): Response<UpdateProfileEnvelope>
-
     /**
-     * 프로필 수정 폴백. 백엔드 develop 이 `PATCH /api/v1/users`(대상은 JWT 의 나)로 옮겨,
-     * 배포 시점에 따라 둘 중 하나만 살아 있다.
+     * 내 프로필 수정(넘긴 필드만 반영). 대상은 JWT 로 식별하므로 경로·쿼리에 id 를 싣지 않는다.
      *
-     * TODO-API-SPEC: 경로가 하나로 확정되면 나머지 하나와 폴백 분기를 제거한다. [wiki-needed]
+     * 경로가 `/api/v1/my/profile` 이 아니라 컬렉션 경로인 점에 주의한다 — 서버 `UserController` 는
+     * `@RequestMapping("/api/v1/users")` + `@PatchMapping` 이고, `/my/profile` 매핑은 없다.
      */
     @PATCH("api/v1/users")
-    suspend fun updateProfileFallback(
+    suspend fun updateProfile(
         @Body request: UpdateProfileRequest,
     ): Response<UpdateProfileEnvelope>
 }
