@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.domain.my
 
+import com.chillsam.courmy.main.domain.profile.ProfileRepository
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import javax.inject.Inject
 
@@ -10,7 +11,7 @@ import javax.inject.Inject
 class GetMyProfileUseCase
     @Inject
     constructor(
-        private val repository: MyProfileRepository,
+        private val repository: ProfileRepository,
     ) {
         suspend operator fun invoke(): MyProfileVO = repository.getMyProfile()
     }

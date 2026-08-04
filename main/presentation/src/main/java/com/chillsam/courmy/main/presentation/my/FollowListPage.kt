@@ -39,6 +39,7 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.domain.user.UserProfilePage
 import com.chillsam.courmy.main.entity.my.FollowUserVO
 
 /**
@@ -65,7 +66,13 @@ fun FollowListPage(
             LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 items(users) { user ->
                     // ✕ 는 바로 해제하지 않고 확인 다이얼로그를 띄운다.
-                    FollowUserRow(user = user, onRemove = { pendingRemoval = user })
+                    FollowUserRow(
+                        user = user,
+                        onClick = {
+                            navigationHelper.navigateByRoute(UserProfilePage.route(user.handle))
+                        },
+                        onRemove = { pendingRemoval = user },
+                    )
                 }
             }
         }
@@ -166,11 +173,16 @@ private fun FollowTabItem(
 @Composable
 private fun FollowUserRow(
     user: FollowUserVO,
+    onClick: () -> Unit,
     onRemove: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
