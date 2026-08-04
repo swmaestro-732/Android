@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -123,6 +124,35 @@ fun ProfileCoverHeader(
                     contentScale = ContentScale.Crop,
                 )
             }
+        }
+    }
+}
+
+/**
+ * 원형 프로필 아바타(홈 우상단·설정 프로필 행 등 작은 자리용).
+ * URL 이 비어 있으면 placeholder 배경만 노출한다.
+ */
+@Composable
+fun ProfileAvatar(
+    imageUrl: String,
+    size: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(color.imagePlaceholder),
+    ) {
+        if (imageUrl.isNotBlank()) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "프로필 이미지",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
         }
     }
 }

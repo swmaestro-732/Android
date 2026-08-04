@@ -35,6 +35,7 @@ import com.chillsam.courmy.main.presentation.profile.ProfileCoverIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
 import com.chillsam.courmy.main.presentation.profile.ProfileStatsRow
+import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
 /**
  * 마이·프로필 화면(FS-15). [MyViewModel] 이 로드한 프로필 상태에 따라
@@ -47,7 +48,8 @@ fun MyPage(
     viewModel: MyViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val profile = uiState.profile
+    // 더미 모드에서 가입·프로필 편집 결과를 반영해 보여준다(실 연동 시 무영향).
+    val profile = SampleProfileStore.applyTo(uiState.profile)
     when {
         profile != null -> {
             MyContent(profile = profile, modifier = modifier)
@@ -109,19 +111,16 @@ private fun MyContent(
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
-            // 서버 응답에 bio 가 없어 현재는 항상 비어 있다(MyProfileVO 주석 참고).
-            if (profile.bio.isNotBlank()) {
-                DsText(
-                    text = profile.bio,
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel1,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                )
-            } else {
-                Spacer(Modifier.height(12.dp))
-            }
+            // 소개가 없으면 빈 줄 대신 안내 문구를 옅게 표시해, 편집으로 채울 수 있음을 알린다.
+            val hasBio = profile.bio.isNotBlank()
+            DsText(
+                text = if (hasBio) profile.bio else "아직 소개가 없어요",
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = if (hasBio) color.contentDefaultLevel1 else color.contentDefaultLevel3,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+            )
             ProfileStatsRow(
                 courseCount = profile.myCourseCount,
                 followerCount = profile.followerCount,

@@ -44,6 +44,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.login.SignupThemePage
 import com.chillsam.courmy.main.presentation.component.SignupProgressBar
+import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
 /** 프로필·아이디 설정 화면(FS-05). 아바타·닉네임·아이디를 정하고 다음(완료)으로 이어진다. */
 @Composable
@@ -154,6 +155,12 @@ fun ProfileSetupPage(modifier: Modifier = Modifier) {
                     SignupSelectionStore.nickname = nickname
                     SignupSelectionStore.handle = handle
                     SignupSelectionStore.profileImageUrl = profileImageUri?.toString()
+                    // 더미 모드에서 가입 결과가 마이 화면에 보이도록 남긴다(실 연동 시 무영향).
+                    SampleProfileStore.update(
+                        nickname = nickname,
+                        handle = handle,
+                        profileImageUrl = profileImageUri?.toString(),
+                    )
                     navigationHelper.navigateTo(SignupThemePage)
                 },
                 modifier =

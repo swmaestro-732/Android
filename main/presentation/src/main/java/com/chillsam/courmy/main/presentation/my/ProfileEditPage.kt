@@ -48,26 +48,31 @@ import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
 /** 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·소개·관심 테마/지역을 편집한다. */
 @Composable
 fun ProfileEditPage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    var nickname by remember { mutableStateOf(ORIGINAL_NICKNAME) }
-    var handle by remember { mutableStateOf(ORIGINAL_HANDLE) }
+    val profile = SampleProfileStore.applyTo(MyProfileVO.sample)
+    val originalNickname = profile?.nickname ?: ORIGINAL_NICKNAME
+    val originalHandle = profile?.handle ?: ORIGINAL_HANDLE
+    val originalBio = profile?.bio ?: ORIGINAL_BIO
+    var nickname by remember(originalNickname) { mutableStateOf(originalNickname) }
+    var handle by remember(originalHandle) { mutableStateOf(originalHandle) }
     var idResult by remember { mutableStateOf<IdCheckResult?>(null) }
-    var bio by remember { mutableStateOf(ORIGINAL_BIO) }
+    var bio by remember(originalBio) { mutableStateOf(originalBio) }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
-    val handleChanged = handle != ORIGINAL_HANDLE
+    val handleChanged = handle != originalHandle
     // 아이디를 바꿨다면 중복 확인에서 '사용 가능'을 받은 경우에만 저장 가능(검증 실패·미확인 시 비활성).
     val handleSaveable = !handleChanged || idResult?.available == true
     val hasChanges =
         handleSaveable &&
             (
-                nickname != ORIGINAL_NICKNAME ||
+                nickname != originalNickname ||
                     handleChanged ||
-                    bio != ORIGINAL_BIO ||
+                    bio != originalBio ||
                     profileImageUri != null
             )
 
@@ -86,7 +91,8 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
                     .padding(horizontal = 20.dp),
         ) {
             AvatarEditor(
-                imageUri = profileImageUri,
+                // 새로 고른 게 없으면 현재 프로필 사진을 그대로 보여준다.
+                imageUri = profileImageUri?.toString() ?: profile?.profileImageUrl.orEmpty(),
                 onImagePicked = { profileImageUri = it },
                 modifier = Modifier.padding(top = 28.dp, bottom = 12.dp),
             )
@@ -106,7 +112,7 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
                 },
                 inputTrailing = {
                     CheckButton(
-                        enabled = handle != ORIGINAL_HANDLE,
+                        enabled = handle != originalHandle,
                         onClick = { idResult = checkHandle(handle) },
                     )
                 },
@@ -148,7 +154,17 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
             DsButton(
                 text = "변경 사항 저장",
                 enabled = hasChanges,
-                onClick = { navigationHelper.navigateToBack() },
+                onClick = {
+                    // 실 저장 API(PATCH 프로필)는 마이페이지 배포 후 연결한다.
+                    // 그전까지는 더미 홀더에 남겨 편집 결과가 화면에 보이게 한다.
+                    SampleProfileStore.update(
+                        nickname = nickname,
+                        handle = handle,
+                        bio = bio,
+                        profileImageUrl = profileImageUri?.toString(),
+                    )
+                    navigationHelper.navigateToBack()
+                },
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -161,7 +177,7 @@ fun ProfileEditPage(modifier: Modifier = Modifier) {
 
 @Composable
 private fun AvatarEditor(
-    imageUri: Uri?,
+    imageUri: String,
     onImagePicked: (Uri) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -187,7 +203,7 @@ private fun AvatarEditor(
                         .padding(3.dp),
             ) {
                 Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(color.imagePlaceholder)) {
-                    if (imageUri != null) {
+                    if (imageUri.isNotBlank()) {
                         AsyncImage(
                             model = imageUri,
                             contentDescription = "프로필 이미지",
