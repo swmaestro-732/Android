@@ -82,7 +82,7 @@ fun CourseCreatePage(
         uiState.savedCourseId?.let { courseId ->
             // 사진이 빠진 채 저장됐으면 알려 준다(코스 자체는 만들어졌다).
             if (uiState.imagesMissing) {
-                Toast.makeText(context, "사진은 저장되지 않았어요. 편집에서 다시 올려 주세요.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "사진 업로드에 실패해 임시 이미지로 저장했어요.", Toast.LENGTH_LONG).show()
             }
             onSaveCourse(courseId)
         }

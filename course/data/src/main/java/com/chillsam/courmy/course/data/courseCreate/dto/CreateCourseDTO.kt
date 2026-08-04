@@ -18,7 +18,14 @@ data class CreateCourseRequest(
     val visibility: String,
     val forkedFromId: Long? = null,
     val places: List<CreateCoursePlaceRequest> = emptyList(),
-    val published: Boolean,
+    /**
+     * 발행 여부. 서버 DTO 필드명이 `isPublished` 라 그대로 맞춘다.
+     *
+     * 배포된 swagger 는 `published` 로 표기하지만 그건 springdoc 이 boolean getter 의 `is` 를
+     * 떼서 그리는 것이고, 실제 역직렬화는 `isPublished` 를 기대한다
+     * (틀리면 값이 누락돼 400 "요청 본문 형식이 올바르지 않습니다"). `isFollowing`·`isNewUser` 와 같은 유형.
+     */
+    val isPublished: Boolean,
 )
 
 /**
@@ -59,12 +66,12 @@ fun CourseDraftVO.toCreateRequest(
     published: Boolean,
 ): CreateCourseRequest =
     CreateCourseRequest(
-        title = name,
+        title = name.trim(),
         thumbnailUrl = thumbnailUrl,
         description = description.ifBlank { null },
         tags = tags,
         visibility = visibility.name,
-        published = published,
+        isPublished = published,
         places =
             places
                 .mapNotNull { place -> place.id.toLongOrNull()?.let { it to place } }

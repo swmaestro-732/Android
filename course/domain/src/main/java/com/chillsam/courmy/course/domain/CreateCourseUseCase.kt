@@ -23,14 +23,20 @@ class CreateCourseUseCase
         private val repository: CourseRepository,
         private val mediaRepository: MediaRepository,
     ) {
+        /**
+         * @param fallbackImageUrl 업로드 실패 시 대신 쓸 이미지 URL. null 이면 해당 사진을 뺀다.
+         *   발행 코스는 서버가 커버 이미지와 장소별 사진 1장 이상을 요구하므로, 업로드가 막힌 동안
+         *   생성 경로를 확인하려면 대체 URL 이 필요하다(디버그 빌드에서만 넘긴다).
+         */
         suspend operator fun invoke(
             draft: CourseDraftVO,
             thumbnailUris: List<String> = emptyList(),
             published: Boolean = true,
+            fallbackImageUrl: String? = null,
         ): CreateCourseResultVO {
-            val uploader = ImageUploader()
-            val places = draft.places.map { place -> place.uploadPhotos(uploader) }
-            val thumbnailUrl = thumbnailUris.firstOrNull()?.let { uploader.upload(it) }
+            val uploader = ImageUploader(fallbackImageUrl)
+            val places = draft.places.map { place -> place.uploadPhotos(uploader, fallbackImageUrl) }
+            val thumbnailUrl = thumbnailUris.firstOrNull()?.let { uploader.upload(it) } ?: fallbackImageUrl
             val courseId =
                 repository.createCourse(
                     draft = draft.copy(places = places),
@@ -40,11 +46,23 @@ class CreateCourseUseCase
             return CreateCourseResultVO(courseId = courseId, imagesUploaded = uploader.allSucceeded)
         }
 
-        private suspend fun CoursePlaceVO.uploadPhotos(uploader: ImageUploader) =
-            copy(photoUrls = photoUrls.mapNotNull { uploader.upload(it) })
+        /**
+         * 사진을 한 장도 고르지 않은 장소는 업로드할 게 없어 빈 목록으로 남는데, 발행 코스는 장소별 사진을
+         * 요구하므로 [fallbackImageUrl] 이 있으면 그 자리도 더미로 채운다(디버그 전용 우회).
+         */
+        private suspend fun CoursePlaceVO.uploadPhotos(
+            uploader: ImageUploader,
+            fallbackImageUrl: String?,
+        ): CoursePlaceVO {
+            val uploaded = photoUrls.mapNotNull { uploader.upload(it) }
+            val filled = uploaded.ifEmpty { listOfNotNull(fallbackImageUrl) }
+            return copy(photoUrls = filled)
+        }
 
         /** 업로드 결과를 모아 두는 헬퍼. 하나라도 실패하면 [allSucceeded] 가 false 가 된다. */
-        private inner class ImageUploader {
+        private inner class ImageUploader(
+            private val fallbackImageUrl: String?,
+        ) {
             var allSucceeded: Boolean = true
                 private set
 
@@ -62,7 +80,7 @@ class CreateCourseUseCase
                         .getOrElse { e ->
                             if (e is CancellationException) throw e
                             allSucceeded = false
-                            null
+                            fallbackImageUrl
                         }
                 }
         }
