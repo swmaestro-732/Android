@@ -77,6 +77,8 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    // 코스 상세 안의 장소 상세 시트가 hiltViewModel() 로 ViewModel 을 얻는다.
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // @Preview 애노테이션(main 소스에서 사용) + 렌더러(debug 전용)
     implementation(libs.androidx.compose.ui.tooling.preview)

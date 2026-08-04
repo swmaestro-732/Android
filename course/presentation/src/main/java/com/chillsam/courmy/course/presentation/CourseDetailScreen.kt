@@ -56,6 +56,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -63,7 +65,6 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
-import com.chillsam.courmy.course.entity.PlaceDetailVO
 import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
 import com.chillsam.courmy.course.presentation.component.PlaceDetailSheetActions
 import com.chillsam.courmy.course.presentation.component.dashedBorder
@@ -101,6 +102,8 @@ fun CourseDetailScreen(
     val context = LocalContext.current
     // 장소 행 화살표를 누르면 해당 장소 상세 시트를 띄운다(null 이면 시트 닫힘).
     var selectedPlace by remember { mutableStateOf<CourseDetailPlaceVO?>(null) }
+    val placeDetailViewModel: PlaceDetailViewModel = hiltViewModel()
+    val placeDetailState by placeDetailViewModel.uiState.collectAsStateWithLifecycle()
     // 시트 내부 액션(저장·길찾기·코스 추가 등)은 아직 미연동이라 안내만 한다. [wiki-needed]
     val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
     Column(
@@ -133,25 +136,49 @@ fun CourseDetailScreen(
                     color = color.contentDefaultLevel1,
                     maxLines = Int.MAX_VALUE,
                 )
-                PlacesSection(places = detail.places, onPlaceClick = { selectedPlace = it })
+                PlacesSection(
+                    places = detail.places,
+                    onPlaceClick = { place ->
+                        selectedPlace = place
+                        // 도보 안내는 장소가 아니라 이 코스의 다음 장소까지 값이라 여기서 넘긴다.
+                        placeDetailViewModel.open(
+                            placeId = place.placeId,
+                            walkText = place.walkToNextText.orEmpty(),
+                        )
+                    },
+                )
                 CourseRouteSection(places = detail.places)
                 Spacer(Modifier.height(14.dp))
             }
         }
         DetailBottomBar(onShare = onShare, onSaveCourse = onSaveCourse)
     }
-    selectedPlace?.let { place ->
-        PlaceDetailSheet(
-            place = placeDetailSampleFor(place),
-            onDismiss = { selectedPlace = null },
-            actions =
-                PlaceDetailSheetActions(
-                    onSave = notReady,
-                    onShare = notReady,
-                    onDirections = notReady,
-                    onAddToCourse = notReady,
-                ),
-        )
+    if (selectedPlace != null) {
+        val dismiss = {
+            selectedPlace = null
+            placeDetailViewModel.clear()
+        }
+        // 로드가 끝나기 전에는 시트를 띄우지 않는다(빈 값으로 잠깐 그려졌다 바뀌는 깜빡임 방지).
+        placeDetailState.place?.let { place ->
+            PlaceDetailSheet(
+                place = place,
+                onDismiss = dismiss,
+                actions =
+                    PlaceDetailSheetActions(
+                        onSave = notReady,
+                        onShare = notReady,
+                        onDirections = notReady,
+                        onAddToCourse = notReady,
+                    ),
+            )
+        }
+        // 실패하면 토스트로 알리고 시트를 닫는다(빈 시트를 남겨 두지 않는다).
+        LaunchedEffect(placeDetailState.errorMessage) {
+            placeDetailState.errorMessage?.let { message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                dismiss()
+            }
+        }
     }
 }
 
@@ -1197,26 +1224,4 @@ internal val courseDetailSample: CourseDetailVO =
         rating = "4.8",
         reviewCountText = "128개",
         reviews = emptyList(),
-    )
-
-/**
- * 탭한 장소의 상세 시트 데이터. 이름·카테고리·사진은 탭한 장소에서 가져오고,
- * 평점·주소·영업시간·리뷰 등은 서버 계약 연동 전까지 더미로 채운다(코스 상세 더미와 동일 방식). [wiki-needed]
- */
-internal fun placeDetailSampleFor(place: CourseDetailPlaceVO): PlaceDetailVO =
-    PlaceDetailVO(
-        name = place.name,
-        category = place.category,
-        heroImageUrl = place.imageUrls.firstOrNull().orEmpty(),
-        rating = "4.8",
-        reviewCountText = "1,240",
-        savedCountText = "1.2k",
-        isOpen = true,
-        openStatusText = "영업중 · 22:00 종료",
-        walkText = "도보 6분",
-        areaText = "성수동",
-        imageUrls = place.imageUrls,
-        tags = listOf("시그니처 · 팡도르", "통창 좌석", "웨이팅 보통"),
-        address = "서울 성동구 아차산로 110",
-        hoursText = "매일 11:00 – 22:00",
     )

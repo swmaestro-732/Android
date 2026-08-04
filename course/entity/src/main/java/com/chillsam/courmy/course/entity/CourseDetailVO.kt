@@ -43,6 +43,7 @@ data class CourseDetailVO(
 /**
  * 코스 상세의 장소 1건("코스 속 장소").
  *
+ * - [placeId]        place 도메인 식별자. 장소 상세(`GET /service/v1/places/{placeId}`) 조회 키
  * - [order]          순번 (1부터)
  * - [name]           장소명
  * - [category]       카테고리 (예: "카페 · 베이커리")
@@ -55,6 +56,7 @@ data class CourseDetailVO(
  */
 @Serializable
 data class CourseDetailPlaceVO(
+    val placeId: Long = 0L,
     val order: Int,
     val name: String,
     val category: String,

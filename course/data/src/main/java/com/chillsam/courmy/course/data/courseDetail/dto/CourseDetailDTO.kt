@@ -50,6 +50,8 @@ data class AuthorDTO(
 
 @Serializable
 data class CoursePlaceDTO(
+    /** place 도메인 식별자. 장소 상세(`GET /service/v1/places/{placeId}`) 조회 키다(코스 내 식별자 `id` 와 다르다). */
+    val placeId: Long? = null,
     val orderNo: Int? = null,
     val name: String? = null,
     val caption: String? = null,
@@ -133,6 +135,7 @@ private fun CoursePlaceDTO.toVO(): CourseDetailPlaceVO {
             .sortedBy { it.orderNo ?: 0 }
             .mapNotNull { it.imageUrl }
     return CourseDetailPlaceVO(
+        placeId = placeId ?: 0L,
         order = (orderNo ?: 0) + 1,
         name = name.orEmpty(),
         category = categories.orEmpty().joinToString(SEPARATOR),
