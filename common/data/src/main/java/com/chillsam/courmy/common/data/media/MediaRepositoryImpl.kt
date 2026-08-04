@@ -1,11 +1,11 @@
-package com.chillsam.courmy.main.data.media
+package com.chillsam.courmy.common.data.media
 
 import android.content.Context
 import android.net.Uri
 import com.chillsam.courmy.common.data.BaseRemoteDataSource
-import com.chillsam.courmy.main.data.media.dto.PresignPurpose
-import com.chillsam.courmy.main.data.media.dto.PresignRequest
-import com.chillsam.courmy.main.domain.media.MediaRepository
+import com.chillsam.courmy.common.data.media.dto.PresignRequest
+import com.chillsam.courmy.common.domain.media.MediaRepository
+import com.chillsam.courmy.common.domain.media.UploadPurpose
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 
@@ -20,7 +20,10 @@ class MediaRepositoryImpl(
     private val context: Context,
 ) : BaseRemoteDataSource(),
     MediaRepository {
-    override suspend fun uploadProfileImage(localUri: String): String {
+    override suspend fun uploadImage(
+        localUri: String,
+        purpose: UploadPurpose,
+    ): String {
         val uri = Uri.parse(localUri)
         val bytes =
             requireNotNull(context.contentResolver.openInputStream(uri)?.use { it.readBytes() }) {
@@ -33,7 +36,7 @@ class MediaRepositoryImpl(
                 checkResponse(
                     apiService.presign(
                         PresignRequest(
-                            purpose = PresignPurpose.PROFILE,
+                            purpose = purpose.name,
                             contentType = contentType,
                             contentLength = bytes.size.toLong(),
                         ),

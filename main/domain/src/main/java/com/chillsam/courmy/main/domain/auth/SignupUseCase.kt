@@ -1,6 +1,6 @@
 package com.chillsam.courmy.main.domain.auth
 
-import com.chillsam.courmy.main.domain.media.MediaRepository
+import com.chillsam.courmy.common.domain.media.MediaRepository
 import com.chillsam.courmy.main.domain.profile.ProfileRepository
 import com.chillsam.courmy.main.entity.auth.SignupProfile
 import javax.inject.Inject
@@ -34,7 +34,7 @@ class SignupUseCase
             if (localImageUri.isNullOrBlank()) return true
 
             return runCatching {
-                val imageUrl = mediaRepository.uploadProfileImage(localImageUri)
+                val imageUrl = mediaRepository.uploadImage(localImageUri)
                 profileRepository.updateProfile(profileImageUrl = imageUrl)
             }.isSuccess
         }

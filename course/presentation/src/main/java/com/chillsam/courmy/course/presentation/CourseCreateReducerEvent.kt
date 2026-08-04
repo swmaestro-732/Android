@@ -38,4 +38,18 @@ sealed interface CourseCreateReducerEvent : ReducerEvent {
     data class VisibilityChanged(
         val visibility: CourseVisibility,
     ) : CourseCreateReducerEvent
+
+    data object SaveStarted : CourseCreateReducerEvent
+
+    data class SaveSucceeded(
+        val courseId: Long,
+        /** 사진 업로드가 모두 성공했는지. false 면 코스는 만들어졌지만 사진이 빠졌다. */
+        val imagesUploaded: Boolean,
+    ) : CourseCreateReducerEvent
+
+    data class SaveFailed(
+        val message: String,
+    ) : CourseCreateReducerEvent
+
+    data object SaveErrorConsumed : CourseCreateReducerEvent
 }

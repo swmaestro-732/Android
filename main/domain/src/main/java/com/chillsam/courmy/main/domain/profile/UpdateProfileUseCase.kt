@@ -1,6 +1,6 @@
 package com.chillsam.courmy.main.domain.profile
 
-import com.chillsam.courmy.main.domain.media.MediaRepository
+import com.chillsam.courmy.common.domain.media.MediaRepository
 import javax.inject.Inject
 
 /**
@@ -26,7 +26,7 @@ class UpdateProfileUseCase
             val imageUrl =
                 localImageUri
                     ?.takeIf { it.isNotBlank() }
-                    ?.let { mediaRepository.uploadProfileImage(it) }
+                    ?.let { mediaRepository.uploadImage(it) }
             profileRepository.updateProfile(
                 nickname = nickname,
                 handle = handle,

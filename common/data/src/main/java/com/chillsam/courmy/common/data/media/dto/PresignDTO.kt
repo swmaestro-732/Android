@@ -1,4 +1,4 @@
-package com.chillsam.courmy.main.data.media.dto
+package com.chillsam.courmy.common.data.media.dto
 
 import kotlinx.serialization.Serializable
 
@@ -34,8 +34,3 @@ data class PresignDTO(
     val uploadUrl: String? = null,
     val imageUrl: String? = null,
 )
-
-/** 업로드 용도. 서버 enum 과 문자열이 일치해야 한다. */
-object PresignPurpose {
-    const val PROFILE = "PROFILE"
-}

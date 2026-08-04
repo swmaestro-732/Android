@@ -1,7 +1,7 @@
-package com.chillsam.courmy.main.data.media
+package com.chillsam.courmy.common.data.media
 
-import com.chillsam.courmy.main.data.media.dto.PresignEnvelope
-import com.chillsam.courmy.main.data.media.dto.PresignRequest
+import com.chillsam.courmy.common.data.media.dto.PresignEnvelope
+import com.chillsam.courmy.common.data.media.dto.PresignRequest
 import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body

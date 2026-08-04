@@ -1,7 +1,7 @@
-package com.chillsam.courmy.main.data.media
+package com.chillsam.courmy.common.data.media
 
 import android.content.Context
-import com.chillsam.courmy.main.domain.media.MediaRepository
+import com.chillsam.courmy.common.domain.media.MediaRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

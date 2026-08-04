@@ -1,14 +1,19 @@
 package com.chillsam.courmy.course.presentation
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CompleteCourseUseCase
+import com.chillsam.courmy.course.domain.CreateCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDraftUseCase
 import com.chillsam.courmy.course.domain.SaveDraftUseCase
+import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,9 +24,12 @@ class CourseCreateViewModel
         private val getCourseDraftUseCase: GetCourseDraftUseCase,
         private val saveDraftUseCase: SaveDraftUseCase,
         private val completeCourseUseCase: CompleteCourseUseCase,
+        private val createCourseUseCase: CreateCourseUseCase,
     ) : MviViewModel<CourseCreateIntent, CourseCreateUIState, CourseCreateReducerEvent>(
             CourseCreateUIState.empty,
         ) {
+        private var saveJob: Job? = null
+
         init {
             onIntent(CourseCreateIntent.Load)
         }
@@ -107,7 +115,11 @@ class CourseCreateViewModel
                 }
 
                 is CourseCreateIntent.CompleteCourse -> {
-                    completeCourseUseCase(intent.course)
+                    createCourse(intent.course)
+                }
+
+                CourseCreateIntent.ConsumeSaveError -> {
+                    dispatch(CourseCreateReducerEvent.SaveErrorConsumed)
                 }
             }
         }
@@ -156,6 +168,26 @@ class CourseCreateViewModel
                 is CourseCreateReducerEvent.VisibilityChanged -> {
                     state.copy(visibility = event.visibility)
                 }
+
+                CourseCreateReducerEvent.SaveStarted -> {
+                    state.copy(isSaving = true, errorMessage = null)
+                }
+
+                is CourseCreateReducerEvent.SaveSucceeded -> {
+                    state.copy(
+                        isSaving = false,
+                        savedCourseId = event.courseId,
+                        imagesMissing = !event.imagesUploaded,
+                    )
+                }
+
+                is CourseCreateReducerEvent.SaveFailed -> {
+                    state.copy(isSaving = false, errorMessage = event.message)
+                }
+
+                CourseCreateReducerEvent.SaveErrorConsumed -> {
+                    state.copy(errorMessage = null)
+                }
             }
 
         private fun addTag(tag: String) {
@@ -187,6 +219,39 @@ class CourseCreateViewModel
             dispatch(CourseCreateReducerEvent.PlacesChanged(currentState.places + toAdd))
         }
 
+        /**
+         * 초안을 서버에 코스로 생성하고(POST /api/v1/courses), 성공하면 완성 화면용 요약을 로컬에 보관한다.
+         * 서버 저장이 끝나기 전에는 완성 화면으로 넘기지 않는다(실패했는데 성공처럼 보이지 않게).
+         */
+        private fun createCourse(completed: CourseCompleteVO?) {
+            if (currentState.isSaving) return
+            dispatch(CourseCreateReducerEvent.SaveStarted)
+            saveJob?.cancel()
+            saveJob =
+                viewModelScope.launch {
+                    runCatching {
+                        createCourseUseCase(
+                            draft = currentState.toDraftVO(),
+                            thumbnailUris = currentState.thumbnailPhotos,
+                            published = true,
+                        )
+                    }.onSuccess { result ->
+                        completeCourseUseCase(completed)
+                        dispatch(
+                            CourseCreateReducerEvent.SaveSucceeded(
+                                courseId = result.courseId,
+                                imagesUploaded = result.imagesUploaded,
+                            ),
+                        )
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
+                        Log.w(TAG, "코스 생성 실패", e)
+                        dispatch(CourseCreateReducerEvent.SaveFailed("코스 저장에 실패했어요. 잠시 후 다시 시도해 주세요."))
+                    }
+                }
+        }
+
         private fun load() {
             dispatch(CourseCreateReducerEvent.LoadStarted)
             viewModelScope.launch {
@@ -204,4 +269,8 @@ class CourseCreateViewModel
                 places = places,
                 visibility = visibility,
             )
+
+        private companion object {
+            const val TAG = "CourseCreate"
+        }
     }

@@ -43,4 +43,14 @@ interface CourseRepository {
 
     /** 코스 상세(FS-11)를 서버(`GET /service/v1/courses/{id}`)에서 조회한다. */
     suspend fun getCourseDetail(courseId: Long): CourseDetailVO
+
+    /**
+     * 초안을 서버에 코스로 생성하고(`POST /api/v1/courses`) 서버가 매긴 courseId 를 돌려준다.
+     * 실패 시 예외를 throw 한다.
+     */
+    suspend fun createCourse(
+        draft: CourseDraftVO,
+        thumbnailUrl: String?,
+        published: Boolean,
+    ): Long
 }

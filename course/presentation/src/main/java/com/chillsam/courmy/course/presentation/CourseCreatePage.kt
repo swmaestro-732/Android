@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.presentation
 
+import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -70,15 +72,34 @@ fun CourseCreatePage(
     viewModel: CourseCreateViewModel,
     onClose: () -> Unit,
     onSaveDraft: () -> Unit,
-    onSaveCourse: (CourseCompleteVO?) -> Unit,
+    onSaveCourse: (Long) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    // 서버 저장이 끝난 뒤에만 완성 화면으로 넘어간다(실패했는데 성공처럼 보이지 않게).
+    LaunchedEffect(uiState.savedCourseId) {
+        uiState.savedCourseId?.let { courseId ->
+            // 사진이 빠진 채 저장됐으면 알려 준다(코스 자체는 만들어졌다).
+            if (uiState.imagesMissing) {
+                Toast.makeText(context, "사진은 저장되지 않았어요. 편집에서 다시 올려 주세요.", Toast.LENGTH_LONG).show()
+            }
+            onSaveCourse(courseId)
+        }
+    }
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.onIntent(CourseCreateIntent.ConsumeSaveError)
+        }
+    }
+
     CourseCreateContent(
         uiState = uiState,
         onIntent = viewModel::onIntent,
         onClose = onClose,
         onSaveDraft = onSaveDraft,
-        onSaveCourse = onSaveCourse,
+        onRequestSave = { completed -> viewModel.onIntent(CourseCreateIntent.CompleteCourse(completed)) },
     )
 }
 
@@ -88,7 +109,7 @@ private fun CourseCreateContent(
     onIntent: (CourseCreateIntent) -> Unit,
     onClose: () -> Unit,
     onSaveDraft: () -> Unit,
-    onSaveCourse: (CourseCompleteVO?) -> Unit,
+    onRequestSave: (CourseCompleteVO?) -> Unit,
 ) {
     var showPlaceSearch by remember { mutableStateOf(false) }
     var placeToRemove by remember { mutableStateOf<CoursePlaceVO?>(null) }
@@ -153,9 +174,10 @@ private fun CourseCreateContent(
         }
 
         SaveBar(
-            enabled = uiState.canSave,
+            // 저장 중에는 중복 탭을 막는다(업로드 + 생성이라 왕복이 길다).
+            enabled = uiState.canSave && !uiState.isSaving,
             modifier = Modifier.align(Alignment.BottomCenter),
-            onSave = { onSaveCourse(uiState.toCompleteVO()) },
+            onSave = { onRequestSave(uiState.toCompleteVO()) },
         )
 
         if (showPlaceSearch) {

@@ -1,5 +1,7 @@
 package com.chillsam.courmy.course.data
 
+import com.chillsam.courmy.course.data.courseCreate.CourseCreateDataSource
+import com.chillsam.courmy.course.data.courseCreate.dto.toCreateRequest
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
 import com.chillsam.courmy.course.data.courseDetail.dto.toVO
 import com.chillsam.courmy.course.domain.CourseRepository
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.update
  */
 class CourseRepositoryImpl(
     private val courseDetailDataSource: CourseDetailDataSource,
+    private val courseCreateDataSource: CourseCreateDataSource,
 ) : CourseRepository {
     private val _savedCourses = MutableStateFlow<List<SavedCourseVO>>(emptyList())
     override val savedCourses: StateFlow<List<SavedCourseVO>> = _savedCourses.asStateFlow()
@@ -108,5 +111,18 @@ class CourseRepositoryImpl(
                 places = emptyList(),
                 visibility = CourseVisibility.PUBLIC,
             )
+    }
+
+    override suspend fun createCourse(
+        draft: CourseDraftVO,
+        thumbnailUrl: String?,
+        published: Boolean,
+    ): Long {
+        val envelope = courseCreateDataSource.createCourse(draft.toCreateRequest(thumbnailUrl, published))
+        val data =
+            requireNotNull(envelope.data) {
+                envelope.message ?: "코스 생성 응답에 data 가 없습니다."
+            }
+        return requireNotNull(data.courseId) { "코스 생성 응답에 courseId 가 없습니다." }
     }
 }

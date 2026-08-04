@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,12 +27,14 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 @Composable
 fun CourseDetailPage(
     viewModel: CourseDetailViewModel,
+    courseId: Long,
     onBack: () -> Unit,
     onFollowAuthor: () -> Unit,
     onShare: () -> Unit,
     onSaveCourse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    LaunchedEffect(courseId) { viewModel.setCourseId(courseId) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val detail = uiState.detail
     when {

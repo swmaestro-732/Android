@@ -57,13 +57,23 @@ class CourseDetailViewModel
                 }
             }
 
+        /** 라우트 인자로 받은 코스 id. 지정 전에는 목 백엔드가 제공하는 [DEFAULT_COURSE_ID] 를 본다. */
+        private var courseId: Long = DEFAULT_COURSE_ID
+
+        /** 화면 진입 시 조회할 코스를 지정한다. 이미 같은 코스면 다시 부르지 않는다. */
+        fun setCourseId(id: Long) {
+            if (id <= 0L || id == courseId) return
+            courseId = id
+            load()
+        }
+
         private fun load() {
             dispatch(CourseDetailReducerEvent.LoadStarted)
             loadJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    Log.d(TAG, "코스 상세 로드 시작: courseId=$DEFAULT_COURSE_ID")
-                    runCatching { getCourseDetailUseCase(DEFAULT_COURSE_ID) }
+                    Log.d(TAG, "코스 상세 로드 시작: courseId=$courseId")
+                    runCatching { getCourseDetailUseCase(courseId) }
                         .onSuccess { detail ->
                             Log.d(
                                 TAG,
@@ -85,7 +95,7 @@ class CourseDetailViewModel
         private companion object {
             const val TAG = "CourseDetail"
 
-            /** 목 백엔드가 제공하는 유일한 코스 id. */
+            /** 라우트가 코스 id 를 싣지 않은 경우의 기본값(목 백엔드가 제공하는 코스). */
             const val DEFAULT_COURSE_ID = 1L
         }
     }

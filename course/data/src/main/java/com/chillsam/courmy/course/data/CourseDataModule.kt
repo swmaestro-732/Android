@@ -1,5 +1,7 @@
 package com.chillsam.courmy.course.data
 
+import com.chillsam.courmy.course.data.courseCreate.CourseCreateApiService
+import com.chillsam.courmy.course.data.courseCreate.CourseCreateDataSource
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailApiService
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
 import com.chillsam.courmy.course.data.place.PlaceApiService
@@ -29,8 +31,19 @@ object CourseDataModule {
 
     @Provides
     @Singleton
-    fun provideCourseRepository(courseDetailDataSource: CourseDetailDataSource): CourseRepository =
-        CourseRepositoryImpl(courseDetailDataSource)
+    fun provideCourseCreateApiService(retrofit: Retrofit): CourseCreateApiService = retrofit.create()
+
+    @Provides
+    @Singleton
+    fun provideCourseCreateDataSource(apiService: CourseCreateApiService): CourseCreateDataSource =
+        CourseCreateDataSource(apiService)
+
+    @Provides
+    @Singleton
+    fun provideCourseRepository(
+        courseDetailDataSource: CourseDetailDataSource,
+        courseCreateDataSource: CourseCreateDataSource,
+    ): CourseRepository = CourseRepositoryImpl(courseDetailDataSource, courseCreateDataSource)
 
     @Provides
     @Singleton
