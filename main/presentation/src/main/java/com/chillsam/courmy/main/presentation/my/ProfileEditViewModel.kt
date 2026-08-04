@@ -118,7 +118,13 @@ class ProfileEditViewModel
                 }
 
                 is ProfileEditReducerEvent.HandleChecked -> {
-                    state.copy(isCheckingHandle = false, handleCheck = event.result)
+                    // 확인 요청을 보낸 뒤 값이 또 바뀌었으면, 이 결과는 다른 아이디의 것이라 버린다.
+                    // (버리지 않으면 서버가 확인한 적 없는 값으로 저장이 열린다)
+                    if (event.handle == state.handle) {
+                        state.copy(isCheckingHandle = false, handleCheck = event.result)
+                    } else {
+                        state.copy(isCheckingHandle = false)
+                    }
                 }
 
                 ProfileEditReducerEvent.SaveStarted -> {
@@ -160,7 +166,8 @@ class ProfileEditViewModel
             if (formatError != null) {
                 dispatch(
                     ProfileEditReducerEvent.HandleChecked(
-                        HandleCheckResult(formatError.toMessage(), available = false),
+                        handle = handle,
+                        result = HandleCheckResult(formatError.toMessage(), available = false),
                     ),
                 )
                 return
@@ -173,10 +180,12 @@ class ProfileEditViewModel
                         .onSuccess { available ->
                             dispatch(
                                 ProfileEditReducerEvent.HandleChecked(
-                                    HandleCheckResult(
-                                        message = if (available) "사용 가능한 아이디예요" else "이미 사용 중인 아이디예요",
-                                        available = available,
-                                    ),
+                                    handle = handle,
+                                    result =
+                                        HandleCheckResult(
+                                            message = if (available) "사용 가능한 아이디예요" else "이미 사용 중인 아이디예요",
+                                            available = available,
+                                        ),
                                 ),
                             )
                         }.onFailure { e ->
@@ -184,7 +193,8 @@ class ProfileEditViewModel
                             Log.w(TAG, "아이디 확인 실패: handle=$handle", e)
                             dispatch(
                                 ProfileEditReducerEvent.HandleChecked(
-                                    HandleCheckResult("확인하지 못했어요. 잠시 후 다시 시도해 주세요", available = false),
+                                    handle = handle,
+                                    result = HandleCheckResult("확인하지 못했어요. 잠시 후 다시 시도해 주세요", available = false),
                                 ),
                             )
                         }

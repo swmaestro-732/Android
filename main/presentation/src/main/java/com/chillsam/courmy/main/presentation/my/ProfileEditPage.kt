@@ -49,6 +49,11 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.profile.ProfileError
+import com.chillsam.courmy.main.presentation.profile.ProfileLoading
+
+/** 닉네임 최대 길이(Figma FS-26 카운터 기준). 서버 한도(20)보다 엄격한 앱 규칙이다. */
+private const val NICKNAME_MAX_LENGTH = 12
 
 /**
  * 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·관심 테마/지역을 편집한다.
@@ -81,6 +86,23 @@ fun ProfileEditPage(
         }
     }
 
+    // 편집 원본을 못 불러온 상태에서 폼을 열면 빈 값이 원본처럼 보이므로, 로딩·에러를 먼저 처리한다.
+    when {
+        uiState.loadErrorMessage != null -> {
+            ProfileError(
+                message = uiState.loadErrorMessage,
+                onRetry = { viewModel.onIntent(ProfileEditIntent.Retry) },
+                modifier = modifier,
+            )
+            return
+        }
+
+        uiState.isLoading -> {
+            ProfileLoading(modifier = modifier)
+            return
+        }
+    }
+
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 상단 바 영역은 흰색(Figma FS-26). 가운데 콘텐츠만 Gray200.
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
@@ -105,8 +127,13 @@ fun ProfileEditPage(
             LabeledField(
                 label = "닉네임",
                 value = uiState.nickname,
-                onValueChange = { viewModel.onIntent(ProfileEditIntent.NicknameChanged(it)) },
-                counter = "${uiState.nickname.length}/12",
+                // 카운터가 광고하는 한도를 입력 단계에서 지킨다(넘겨 입력하면 저장이 서버에서 막힌다).
+                onValueChange = {
+                    if (it.length <= NICKNAME_MAX_LENGTH) {
+                        viewModel.onIntent(ProfileEditIntent.NicknameChanged(it))
+                    }
+                },
+                counter = "${uiState.nickname.length}/$NICKNAME_MAX_LENGTH",
             )
             LabeledField(
                 label = "아이디",

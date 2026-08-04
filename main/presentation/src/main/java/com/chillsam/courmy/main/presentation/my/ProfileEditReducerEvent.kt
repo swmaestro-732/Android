@@ -30,7 +30,12 @@ sealed interface ProfileEditReducerEvent : ReducerEvent {
 
     data object HandleCheckStarted : ProfileEditReducerEvent
 
+    /**
+     * [handle] 은 실제로 확인한 값이다. 확인 중에 사용자가 값을 더 고쳤을 수 있으므로,
+     * reducer 가 현재 입력과 대조해 어긋나면 결과를 버린다.
+     */
     data class HandleChecked(
+        val handle: String,
         val result: HandleCheckResult,
     ) : ProfileEditReducerEvent
 
