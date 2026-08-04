@@ -10,7 +10,6 @@ import com.chillsam.courmy.course.domain.SaveDraftUseCase
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
-import com.chillsam.courmy.course.presentation.BuildConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -235,7 +234,6 @@ class CourseCreateViewModel
                             draft = currentState.toDraftVO(),
                             thumbnailUris = currentState.thumbnailPhotos,
                             published = true,
-                            fallbackImageUrl = if (BuildConfig.DEBUG) PLACEHOLDER_IMAGE_URL else null,
                         )
                     }.onSuccess { result ->
                         completeCourseUseCase(completed)
@@ -274,13 +272,5 @@ class CourseCreateViewModel
 
         private companion object {
             const val TAG = "CourseCreate"
-
-            /**
-             * TODO-API-SPEC: 업로드(presign)가 서버 S3 미설정으로 500 인 동안 코스 생성 경로를 확인하기 위한
-             * 임시 대체 이미지. 발행 코스는 커버·장소 사진이 필수라 비워 두면 400 으로 거부된다.
-             * 실제로 뜨는 이미지가 아니라 "URL 문자열이 들어갔는지"만 보는 더미다.
-             * S3 가 설정되면 이 상수와 fallbackImageUrl 전달을 제거한다. [wiki-needed]
-             */
-            const val PLACEHOLDER_IMAGE_URL = "https://test.com/test.jpg"
         }
     }
