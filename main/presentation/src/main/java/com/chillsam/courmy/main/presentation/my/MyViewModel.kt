@@ -4,8 +4,6 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.my.GetMyProfileUseCase
-import com.chillsam.courmy.main.entity.my.MyProfileVO
-import com.chillsam.courmy.main.presentation.BuildConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -58,10 +56,6 @@ class MyViewModel
             }
 
         private fun load() {
-            if (BuildConfig.DEBUG && USE_SAMPLE) {
-                dispatch(MyProfileReducerEvent.Loaded(MyProfileVO.sample))
-                return
-            }
             dispatch(MyProfileReducerEvent.LoadStarted)
             loadJob?.cancel()
             loadJob =
@@ -79,11 +73,5 @@ class MyViewModel
 
         companion object {
             private const val TAG = "MyViewModel"
-
-            /**
-             * 개발용 더미 토글. `/service/v1/mypage` 가 prod 미배포라 실 응답으로는 화면을 볼 수 없어
-             * 켜 둔다. 배포되면 false 로 바꾼다. release 빌드에서는 BuildConfig.DEBUG 로 항상 꺼진다.
-             */
-            const val USE_SAMPLE = true
         }
     }

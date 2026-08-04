@@ -7,7 +7,6 @@ import com.chillsam.courmy.main.domain.user.GetUserProfileUseCase
 import com.chillsam.courmy.main.domain.user.ToggleFollowUseCase
 import com.chillsam.courmy.main.entity.user.FollowRelation
 import com.chillsam.courmy.main.entity.user.UserProfileVO
-import com.chillsam.courmy.main.presentation.BuildConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -104,10 +103,6 @@ class UserProfileViewModel
                 dispatch(UserProfileReducerEvent.Failed("사용자를 찾을 수 없습니다."))
                 return
             }
-            if (sampleMode) {
-                dispatch(UserProfileReducerEvent.Loaded(UserProfileVO.sample.copy(handle = handle)))
-                return
-            }
             dispatch(UserProfileReducerEvent.LoadStarted)
             loadJob?.cancel()
             loadJob =
@@ -128,18 +123,7 @@ class UserProfileViewModel
             // 자기 자신에게는 버튼을 노출하지 않지만, 중복 탭·경합으로 들어오는 경우를 막는다.
             if (profile.isMe || uiState.value.isFollowInFlight) return
 
-            if (sampleMode) cycleSampleRelation(profile) else requestFollow(profile)
-        }
-
-        /** 더미 모드에선 탭할 때마다 4가지 관계를 순환시켜 버튼 상태를 모두 확인할 수 있게 한다. */
-        private fun cycleSampleRelation(profile: UserProfileVO) {
-            val next = FollowRelation.entries[(profile.relation.ordinal + 1) % FollowRelation.entries.size]
-            dispatch(
-                UserProfileReducerEvent.FollowUpdated(
-                    relation = next,
-                    followerCount = profile.followerCount,
-                ),
-            )
+            requestFollow(profile)
         }
 
         private fun requestFollow(profile: UserProfileVO) {
@@ -173,19 +157,7 @@ class UserProfileViewModel
                 }
         }
 
-        /**
-         * TODO-API-SPEC: 백엔드 `/service/v1/mypage/{handle}` 이 develop 에만 있고 prod 미배포라
-         * 실 응답으로는 화면을 볼 수 없다. 디자인 대조용으로 더미를 렌더한다.
-         * 배포되면 [USE_SAMPLE] 을 false 로 바꾸고, 안정화되면 이 분기들을 제거한다.
-         * release 빌드에서는 BuildConfig.DEBUG 로 항상 꺼진다. [wiki-needed]
-         */
-        private val sampleMode: Boolean
-            get() = BuildConfig.DEBUG && USE_SAMPLE
-
         companion object {
             private const val TAG = "UserProfileViewModel"
-
-            /** 개발용 더미 토글. 백엔드 배포 후 false 로 바꾼다. */
-            const val USE_SAMPLE = true
         }
     }

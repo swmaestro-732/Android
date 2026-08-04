@@ -22,25 +22,4 @@ data class MyProfileVO(
     val followerCount: String,
     val followingCount: String,
     val myCourses: List<ProfileCourseVO>,
-) {
-    companion object {
-        /** 개발/프리뷰용 더미 프로필. */
-        val sample: MyProfileVO =
-            MyProfileVO(
-                nickname = "홍지호",
-                handle = "jiho_routes",
-                bio = "성수동 구석구석 카페 탐험가 · 걷기 좋은 코스를 만들어 나눠요",
-                profileImageUrl = "",
-                myCourseCount = 8,
-                followerCount = "1.4k",
-                followingCount = "312",
-                myCourses =
-                    listOf(
-                        ProfileCourseVO("1", "비 오는 날 성수 카페 코스"),
-                        ProfileCourseVO("2", "연남 브런치 산책"),
-                        ProfileCourseVO("3", "한남 갤러리 도장깨기"),
-                        ProfileCourseVO("4", "서울숲 아침 산책"),
-                    ),
-            )
-    }
-}
+)

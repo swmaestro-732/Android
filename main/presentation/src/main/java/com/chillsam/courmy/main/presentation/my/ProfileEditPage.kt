@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.my
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,15 +27,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,39 +49,37 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
 import com.chillsam.courmy.main.presentation.component.BackTopBar
-import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
-/** 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·소개·관심 테마/지역을 편집한다. */
+/**
+ * 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·관심 테마/지역을 편집한다.
+ *
+ * 저장은 [ProfileEditViewModel] 이 `PATCH /api/v1/users` 로 처리하며, 사진을 새로 골랐으면
+ * 프리사인 업로드를 먼저 끝낸다.
+ *
+ * TODO-API-SPEC: Figma 의 "소개"(bio) 입력은 서버 `UpdateProfileRequest`·마이페이지 응답 어디에도
+ * 필드가 없어 저장할 방법이 없다. 저장되지 않는 입력을 노출하지 않으려 지금은 렌더하지 않는다.
+ * 서버에 bio 가 생기면 입력과 매핑을 함께 되살린다. [wiki-needed]
+ */
 @Composable
 fun ProfileEditPage(
     modifier: Modifier = Modifier,
-    myViewModel: MyViewModel = hiltViewModel(),
+    viewModel: ProfileEditViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    // 편집 원본은 MyViewModel 상태 하나뿐이다. MyProfileVO.sample 을 직접 넘기면 applyTo 가
-    // 비활성(release)일 때 인자가 그대로 통과해 실 빌드에서도 더미가 편집 원본이 된다.
-    val myState by myViewModel.uiState.collectAsStateWithLifecycle()
-    val profile = SampleProfileStore.applyTo(myState.profile)
-    val originalNickname = profile?.nickname.orEmpty()
-    val originalHandle = profile?.handle.orEmpty()
-    val originalBio = profile?.bio.orEmpty()
-    var nickname by remember(originalNickname) { mutableStateOf(originalNickname) }
-    var handle by remember(originalHandle) { mutableStateOf(originalHandle) }
-    var idResult by remember { mutableStateOf<IdCheckResult?>(null) }
-    var bio by remember(originalBio) { mutableStateOf(originalBio) }
-    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
-    val handleChanged = handle != originalHandle
-    // 아이디를 바꿨다면 중복 확인에서 '사용 가능'을 받은 경우에만 저장 가능(검증 실패·미확인 시 비활성).
-    val handleSaveable = !handleChanged || idResult?.available == true
-    val hasChanges =
-        handleSaveable &&
-            (
-                nickname != originalNickname ||
-                    handleChanged ||
-                    bio != originalBio ||
-                    profileImageUri != null
-            )
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // 저장이 끝나면 이전 화면으로. 마이 화면은 resume 시 프로필을 다시 불러 갱신된 값을 보여준다.
+    LaunchedEffect(uiState.isSaved) {
+        if (uiState.isSaved) navigationHelper.navigateToBack()
+    }
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.onIntent(ProfileEditIntent.ConsumeError)
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 상단 바 영역은 흰색(Figma FS-26). 가운데 콘텐츠만 Gray200.
@@ -99,32 +97,29 @@ fun ProfileEditPage(
         ) {
             AvatarEditor(
                 // 새로 고른 게 없으면 현재 프로필 사진을 그대로 보여준다.
-                imageUri = profileImageUri?.toString() ?: profile?.profileImageUrl.orEmpty(),
-                onImagePicked = { profileImageUri = it },
+                imageUri = uiState.displayImageUrl,
+                onImagePicked = { viewModel.onIntent(ProfileEditIntent.ImagePicked(it.toString())) },
                 modifier = Modifier.padding(top = 28.dp, bottom = 12.dp),
             )
 
             LabeledField(
                 label = "닉네임",
-                value = nickname,
-                onValueChange = { nickname = it },
-                counter = "${nickname.length}/12",
+                value = uiState.nickname,
+                onValueChange = { viewModel.onIntent(ProfileEditIntent.NicknameChanged(it)) },
+                counter = "${uiState.nickname.length}/12",
             )
             LabeledField(
                 label = "아이디",
-                value = handle,
-                onValueChange = {
-                    handle = it
-                    idResult = null // 값이 바뀌면 이전 검증 결과 무효화.
-                },
+                value = uiState.handle,
+                onValueChange = { viewModel.onIntent(ProfileEditIntent.HandleChanged(it)) },
                 inputTrailing = {
                     CheckButton(
-                        enabled = handle != originalHandle,
-                        onClick = { idResult = checkHandle(handle) },
+                        enabled = uiState.handleChanged && !uiState.isCheckingHandle,
+                        onClick = { viewModel.onIntent(ProfileEditIntent.CheckHandle) },
                     )
                 },
                 belowField = {
-                    idResult?.let { result ->
+                    uiState.handleCheck?.let { result ->
                         DsText(
                             text = result.message,
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -133,13 +128,6 @@ fun ProfileEditPage(
                         )
                     }
                 },
-            )
-            LabeledField(
-                label = "소개",
-                value = bio,
-                onValueChange = { bio = it },
-                counter = "${bio.length}/60",
-                singleLine = false,
             )
 
             InterestSummary(
@@ -159,19 +147,9 @@ fun ProfileEditPage(
         // 하단 저장 버튼 영역도 흰색(Figma FS-26).
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
-                text = "변경 사항 저장",
-                enabled = hasChanges,
-                onClick = {
-                    // 실 저장 API(PATCH 프로필)는 마이페이지 배포 후 연결한다.
-                    // 그전까지는 더미 홀더에 남겨 편집 결과가 화면에 보이게 한다.
-                    SampleProfileStore.update(
-                        nickname = nickname,
-                        handle = handle,
-                        bio = bio,
-                        profileImageUrl = profileImageUri?.toString(),
-                    )
-                    navigationHelper.navigateToBack()
-                },
+                text = if (uiState.isSaving) "저장 중…" else "변경 사항 저장",
+                enabled = uiState.hasChanges && !uiState.isSaving,
+                onClick = { viewModel.onIntent(ProfileEditIntent.Save) },
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -304,26 +282,6 @@ private fun LabeledField(
         belowField?.invoke()
     }
 }
-
-/** 아이디 중복 확인 목 판정용 예약(사용 중) 아이디. 실 API 연동 시 제거. */
-private val TAKEN_HANDLES = setOf("admin", "test", "courmy", "jiho")
-
-private val HANDLE_REGEX = Regex("^[a-z0-9_]+$")
-
-/** 아이디 검증 결과(사유 포함). 실 판정은 아이디 API·검증 스펙 확정 후. */
-private data class IdCheckResult(
-    val message: String,
-    val available: Boolean,
-)
-
-/** 목 검증: 길이 → 형식 → 중복 순으로 첫 실패 사유 반환(실 API 전 시연용). */
-private fun checkHandle(handle: String): IdCheckResult =
-    when {
-        handle.length !in 3..12 -> IdCheckResult("3~12자로 입력해 주세요", available = false)
-        !handle.matches(HANDLE_REGEX) -> IdCheckResult("영문 소문자·숫자·_(밑줄)만 쓸 수 있어요", available = false)
-        handle in TAKEN_HANDLES -> IdCheckResult("이미 사용 중인 아이디예요", available = false)
-        else -> IdCheckResult("사용 가능한 아이디예요", available = true)
-    }
 
 /**
  * 아이디 중복 확인 액션 버튼(컴팩트). [enabled]=아이디가 원래값과 다를 때 활성.

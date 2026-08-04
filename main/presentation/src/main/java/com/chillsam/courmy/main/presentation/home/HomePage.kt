@@ -45,7 +45,6 @@ import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
-import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
 /**
  * 앱의 기본 시작 화면(FS-09). 헤더(위치·날씨·인사) + 공개 코스 피드로 구성한다.
@@ -131,7 +130,7 @@ fun HomePage(modifier: Modifier = Modifier) {
 private fun myProfileForHeader(): MyProfileVO? {
     val myViewModel: MyViewModel = hiltViewModel()
     val myState by myViewModel.uiState.collectAsStateWithLifecycle()
-    return SampleProfileStore.applyTo(myState.profile)
+    return myState.profile
 }
 
 /** 헤더 코스 개수 안내(더미 고정값). */

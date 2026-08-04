@@ -49,7 +49,6 @@ import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
-import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
 /** 설정 화면(FS-28). 프로필·알림·계정을 iOS식 그룹 카드로 구성한다. */
 @Composable
@@ -59,8 +58,6 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     val color = DesignSystemThemeImpl.designSystemColor
     val accountViewModel: AccountViewModel = hiltViewModel()
     val accountState by accountViewModel.uiState.collectAsStateWithLifecycle()
-    // 프로필 행의 소스는 MyViewModel 상태 하나뿐이다. 여기서 MyProfileVO.sample 을 직접 넘기면
-    // applyTo 가 비활성(release)일 때 인자가 그대로 통과해 실 빌드에서도 더미가 렌더된다.
     val myViewModel: MyViewModel = hiltViewModel()
     val myState by myViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -98,7 +95,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                 Spacer(Modifier.height(8.dp))
                 SettingsCard {
                     ProfileRow(
-                        profile = SampleProfileStore.applyTo(myState.profile),
+                        profile = myState.profile,
                         onEdit = { navigationHelper.navigateTo(ProfileEditPage) },
                     )
                 }

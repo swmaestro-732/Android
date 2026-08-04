@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -37,7 +38,6 @@ import com.chillsam.courmy.main.presentation.profile.ProfileCoverIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
 import com.chillsam.courmy.main.presentation.profile.ProfileStatsRow
-import com.chillsam.courmy.main.presentation.profile.SampleProfileStore
 
 /**
  * 마이·프로필 화면(FS-15). [MyViewModel] 이 로드한 프로필 상태에 따라
@@ -50,8 +50,12 @@ fun MyPage(
     viewModel: MyViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    // 더미 모드에서 가입·프로필 편집 결과를 반영해 보여준다(실 연동 시 무영향).
-    val profile = SampleProfileStore.applyTo(uiState.profile)
+    val profile = uiState.profile
+    // 프로필 편집에서 돌아왔을 때 수정된 값이 보이도록, 화면이 다시 보일 때마다 새로 불러온다.
+    LifecycleResumeEffect(Unit) {
+        viewModel.onIntent(MyProfileIntent.Retry)
+        onPauseOrDispose {}
+    }
     when {
         profile != null -> {
             MyContent(profile = profile, modifier = modifier)

@@ -25,25 +25,4 @@ data class UserProfileVO(
     val relation: FollowRelation = FollowRelation.NONE,
     val isMe: Boolean = false,
     val courses: List<ProfileCourseVO> = emptyList(),
-) {
-    companion object {
-        /** 개발/프리뷰용 더미. */
-        val sample: UserProfileVO =
-            UserProfileVO(
-                id = 1L,
-                nickname = "User1",
-                handle = "happy",
-                courseCount = 8,
-                followerCount = "1.4k",
-                followingCount = "312",
-                relation = FollowRelation.NONE,
-                courses =
-                    listOf(
-                        ProfileCourseVO("1", "비 오는 날 성수 카페 코스"),
-                        ProfileCourseVO("2", "연남 브런치 산책"),
-                        ProfileCourseVO("3", "한남 갤러리 도장깨기"),
-                        ProfileCourseVO("4", "서울숲 아침 산책"),
-                    ),
-            )
-    }
-}
+)
