@@ -91,6 +91,7 @@ import com.naver.maps.map.overlay.OverlayImage
 fun CourseDetailScreen(
     detail: CourseDetailVO,
     onBack: () -> Unit,
+    onAuthorClick: () -> Unit,
     onFollowAuthor: () -> Unit,
     onShare: () -> Unit,
     onSaveCourse: () -> Unit,
@@ -116,7 +117,11 @@ fun CourseDetailScreen(
         ) {
             DetailHero(detail = detail, onBack = onBack)
             // 작성자 라인은 화면 가로 전체를 채우는 흰색 밴드라 좌우 패딩 밖에 둔다.
-            AuthorRow(detail = detail, onFollow = onFollowAuthor)
+            AuthorRow(
+                detail = detail,
+                onAuthorClick = onAuthorClick,
+                onFollow = onFollowAuthor,
+            )
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -289,6 +294,7 @@ private fun CourseImage(
 @Composable
 private fun AuthorRow(
     detail: CourseDetailVO,
+    onAuthorClick: () -> Unit,
     onFollow: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -301,22 +307,31 @@ private fun AuthorRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        CourseImage(
-            url = detail.authorImageUrl,
-            modifier = Modifier.size(40.dp),
-            shape = CircleShape,
-        )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            DsText(
-                text = detail.authorName,
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
+        Row(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .clickable(onClick = onAuthorClick),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            CourseImage(
+                url = detail.authorImageUrl,
+                modifier = Modifier.size(40.dp),
+                shape = CircleShape,
             )
-            DsText(
-                text = detail.authorHandle,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                DsText(
+                    text = detail.authorName,
+                    style = DesignSystemThemeImpl.typeScale.textStrongM,
+                    color = color.contentDefaultLevel0,
+                )
+                DsText(
+                    text = detail.authorHandle,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                )
+            }
         }
         // 이미 팔로우 중이면 버튼을 숨긴다(팔로우 안 한 경우에만 노출).
         if (!detail.isFollowingAuthor) {
@@ -1113,6 +1128,7 @@ private fun CourseDetailScreenPreview() {
         CourseDetailScreen(
             detail = courseDetailSample,
             onBack = {},
+            onAuthorClick = {},
             onFollowAuthor = {},
             onShare = {},
             onSaveCourse = {},

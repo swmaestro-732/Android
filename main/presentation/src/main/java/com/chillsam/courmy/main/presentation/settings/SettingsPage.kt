@@ -47,6 +47,8 @@ import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.ProfileEditPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.my.MyViewModel
+import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 
 /** 설정 화면(FS-28). 프로필·알림·계정을 iOS식 그룹 카드로 구성한다. */
 @Composable
@@ -56,6 +58,8 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     val color = DesignSystemThemeImpl.designSystemColor
     val accountViewModel: AccountViewModel = hiltViewModel()
     val accountState by accountViewModel.uiState.collectAsStateWithLifecycle()
+    val myViewModel: MyViewModel = hiltViewModel()
+    val myState by myViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var pushOn by remember { mutableStateOf(true) }
     var recommendOn by remember { mutableStateOf(false) }
@@ -90,7 +94,10 @@ fun SettingsPage(modifier: Modifier = Modifier) {
             ) {
                 Spacer(Modifier.height(8.dp))
                 SettingsCard {
-                    ProfileRow(onEdit = { navigationHelper.navigateTo(ProfileEditPage) })
+                    ProfileRow(
+                        profile = myState.profile,
+                        onEdit = { navigationHelper.navigateTo(ProfileEditPage) },
+                    )
                 }
 
                 SectionLabel("알림")
@@ -163,22 +170,25 @@ private fun CardDivider() {
 }
 
 @Composable
-private fun ProfileRow(onEdit: () -> Unit) {
+private fun ProfileRow(
+    profile: MyProfileVO?,
+    onEdit: () -> Unit,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Box(modifier = Modifier.size(54.dp).clip(CircleShape).background(color.imagePlaceholder))
+        ProfileAvatar(imageUrl = profile?.profileImageUrl.orEmpty(), size = 54.dp)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             DsText(
-                text = MyProfileVO.sample.nickname,
+                text = profile?.nickname.orEmpty(),
                 style = DesignSystemThemeImpl.typeScale.textRegularM,
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = "@${MyProfileVO.sample.handle}",
+                text = "@${profile?.handle.orEmpty()}",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )

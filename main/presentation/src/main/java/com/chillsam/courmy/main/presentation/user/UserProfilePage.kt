@@ -1,4 +1,4 @@
-package com.chillsam.courmy.main.presentation.my
+package com.chillsam.courmy.main.presentation.user
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -11,17 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -29,10 +25,9 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
-import com.chillsam.courmy.main.domain.my.FollowListPage
+import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
-import com.chillsam.courmy.main.domain.settings.SettingsPage
-import com.chillsam.courmy.main.entity.my.MyProfileVO
+import com.chillsam.courmy.main.entity.user.UserProfileVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.profile.ProfileCoursesGrid
@@ -43,31 +38,40 @@ import com.chillsam.courmy.main.presentation.profile.ProfileLoading
 import com.chillsam.courmy.main.presentation.profile.ProfileStatsRow
 
 /**
- * 마이·프로필 화면(FS-15). [MyViewModel] 이 로드한 프로필 상태에 따라
- * 정상([MyContent]) / 로딩 / 에러 를 분기한다. 커버·통계·코스 그리드는 타유저 프로필과
- * `presentation/profile` 의 공용 컴포저블을 공유한다.
+ * 타유저 프로필 화면(FS-15 OtherUserPageActivity).
+ * 커버·통계·코스 그리드는 마이 화면과 `presentation/profile` 공용 컴포저블을 공유하고,
+ * 상단 액션은 공유 버튼만, 통계 아래에는 팔로우 버튼([FollowButton])이 붙는다.
+ *
+ * 조회 키는 handle 이며(`GET /service/v1/mypage/{handle}`), 라우트 인자로 받아 로드한다.
  */
 @Composable
-fun MyPage(
+fun UserProfilePage(
+    handle: String,
     modifier: Modifier = Modifier,
-    viewModel: MyViewModel = hiltViewModel(),
+    viewModel: UserProfileViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val profile = uiState.profile
-    // 프로필 편집에서 돌아왔을 때 수정된 값이 보이도록, 다시 보일 때마다 새로 불러온다.
-    // 첫 resume 은 건너뛴다 — ViewModel 이 init 에서 이미 불러와 같은 요청이 두 번 나간다.
-    var skipFirstResume by remember { mutableStateOf(true) }
-    LifecycleResumeEffect(Unit) {
-        if (skipFirstResume) {
-            skipFirstResume = false
-        } else {
-            viewModel.onIntent(MyProfileIntent.Retry)
-        }
-        onPauseOrDispose {}
+    val context = LocalContext.current
+
+    LaunchedEffect(handle) {
+        viewModel.onIntent(UserProfileIntent.Load(handle))
     }
+    LaunchedEffect(uiState.followErrorMessage) {
+        uiState.followErrorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.onIntent(UserProfileIntent.ConsumeFollowError)
+        }
+    }
+
+    val profile = uiState.profile
     when {
         profile != null -> {
-            MyContent(profile = profile, modifier = modifier)
+            UserProfileContent(
+                profile = profile,
+                isFollowInFlight = uiState.isFollowInFlight,
+                onToggleFollow = { viewModel.onIntent(UserProfileIntent.ToggleFollow) },
+                modifier = modifier,
+            )
         }
 
         uiState.isLoading -> {
@@ -77,17 +81,18 @@ fun MyPage(
         else -> {
             ProfileError(
                 message = uiState.errorMessage,
-                onRetry = { viewModel.onIntent(MyProfileIntent.Retry) },
+                onRetry = { viewModel.onIntent(UserProfileIntent.Retry) },
                 modifier = modifier,
             )
         }
     }
 }
 
-/** 프로필 로드 성공 시 실제 마이 화면(커버+아바타 헤더, 통계, "내 코스" 그리드, 하단 탭바). */
 @Composable
-private fun MyContent(
-    profile: MyProfileVO,
+private fun UserProfileContent(
+    profile: UserProfileVO,
+    isFollowInFlight: Boolean,
+    onToggleFollow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navigationHelper = LocalNavigationHelper.current
@@ -111,11 +116,6 @@ private fun MyContent(
                     contentDescription = "공유",
                     onClick = shareNotReady,
                 )
-                ProfileCoverIconButton(
-                    iconRes = R.drawable.ic_settings_24,
-                    contentDescription = "설정",
-                    onClick = { navigationHelper.navigateTo(SettingsPage) },
-                )
             }
             Spacer(Modifier.height(60.dp)) // 커버에 걸친 아바타 아래 절반만큼 여백
             DsText(
@@ -129,30 +129,27 @@ private fun MyContent(
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
-            // 소개가 없으면 빈 줄 대신 안내 문구를 옅게 표시해, 편집으로 채울 수 있음을 알린다.
-            val hasBio = profile.bio.isNotBlank()
-            DsText(
-                text = if (hasBio) profile.bio else "아직 소개가 없어요",
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = if (hasBio) color.contentDefaultLevel1 else color.contentDefaultLevel3,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-            )
+            // Figma 는 여기에 한 줄 소개(bio)가 있으나 서버 응답에 필드가 없어 생략한다(UserProfileVO 주석 참고).
+            Spacer(Modifier.height(12.dp))
             ProfileStatsRow(
-                courseCount = profile.myCourseCount,
+                courseCount = profile.courseCount,
                 followerCount = profile.followerCount,
                 followingCount = profile.followingCount,
-                courseLabel = "내 코스",
-                onFollowerClick = {
-                    navigationHelper.navigateByRoute(FollowListPage.route(FollowListPage.TAB_FOLLOWER))
-                },
-                onFollowingClick = {
-                    navigationHelper.navigateByRoute(FollowListPage.route(FollowListPage.TAB_FOLLOWING))
-                },
+                courseLabel = "코스",
             )
+            // 자기 자신을 연 경우(응답 id == 내 id)에는 팔로우 버튼을 노출하지 않는다.
+            if (!profile.isMe) {
+                FollowButton(
+                    relation = profile.relation,
+                    onClick = onToggleFollow,
+                    inFlight = isFollowInFlight,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                )
+            } else {
+                Spacer(Modifier.height(16.dp))
+            }
             ProfileCoursesGrid(
-                courses = profile.myCourses,
+                courses = profile.courses,
                 onCourseClick = { courseId ->
                     navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
                 },
@@ -160,13 +157,15 @@ private fun MyContent(
             Spacer(Modifier.height(20.dp))
         }
 
+        // Figma 는 타유저 프로필에서도 "마이" 를 선택 상태로 두지만, 실제로는 내 화면이 아니므로
+        // 탭을 누르면 내 마이로 이동시킨다(선택 표시만 디자인을 따르고 동작은 살려 둔다).
         CourmyBottomBar(
             selectedTab = MainTab.MY,
             onTabSelected = { tab ->
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
                     MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
-                    else -> Unit
+                    MainTab.MY -> navigationHelper.navigateTo(MyPage)
                 }
             },
         )

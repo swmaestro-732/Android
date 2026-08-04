@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
@@ -36,10 +38,13 @@ import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.my.MyViewModel
+import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 
 /**
  * 앱의 기본 시작 화면(FS-09). 헤더(위치·날씨·인사) + 공개 코스 피드로 구성한다.
@@ -54,6 +59,8 @@ fun HomePage(modifier: Modifier = Modifier) {
     // 더미 공개 코스 피드(백엔드 미연동). 실제 홈 피드 API 연동 시 SavedPage 와 함께
     // domain UseCase + ViewModel 로 전환한다(현재는 SavedPage 와 동일하게 presentation 에서 더미 참조). [wiki-needed]
     val courses = remember { HomeCourseVO.sample }
+    // 헤더 인사말·아바타는 내 프로필에서 가져온다(더미 모드에선 가입·편집 결과가 반영된 값).
+    val profile = if (session.isLoggedIn) myProfileForHeader() else null
     // 저장(북마크) 토글은 아직 미연동이라 안내만 한다.
     val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
 
@@ -69,7 +76,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                 PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = BottomBarHeight + 40.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item { HomeHeader() }
+            item { HomeHeader(nickname = profile?.nickname.orEmpty(), imageUrl = profile?.profileImageUrl.orEmpty()) }
             items(courses) { course ->
                 HomeCourseCard(
                     course = course,
@@ -112,12 +119,29 @@ fun HomePage(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * 홈 헤더용 내 프로필.
+ *
+ * [MyViewModel] 은 생성 즉시 `GET /service/v1/mypage` 를 호출하므로 **로그인 상태에서만** 만든다.
+ * 게스트도 보는 홈에서 무조건 만들면 JWT 없이 요청이 나가 401 로 실패하고,
+ * refreshToken 도 없어 TokenAuthenticator 가 재시도를 포기한다.
+ */
+@Composable
+private fun myProfileForHeader(): MyProfileVO? {
+    val myViewModel: MyViewModel = hiltViewModel()
+    val myState by myViewModel.uiState.collectAsStateWithLifecycle()
+    return myState.profile
+}
+
 /** 헤더 코스 개수 안내(더미 고정값). */
 private const val NEARBY_COURSE_COUNT = 42
 
 /** 홈 헤더: 위치·날씨 → 인사 타이틀 + 우상단 아바타 → 코스 개수 안내(더미 고정값). */
 @Composable
-private fun HomeHeader() {
+private fun HomeHeader(
+    nickname: String,
+    imageUrl: String,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column {
         Row(verticalAlignment = Alignment.Top) {
@@ -128,20 +152,17 @@ private fun HomeHeader() {
                     color = color.contentDefaultLevel2,
                 )
                 DsText(
-                    text = "지호님, 오늘은\n어디로 떠나볼까요?",
+                    text = "${nickname.ifBlank { "회원" }}님, 오늘은\n어디로 떠나볼까요?",
                     modifier = Modifier.padding(top = 6.dp),
                     style = DesignSystemThemeImpl.typeScale.titleExtraL,
                     color = color.contentDefaultLevel0,
                     maxLines = 2,
                 )
             }
-            Box(
-                modifier =
-                    Modifier
-                        .padding(start = 12.dp)
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(color.imagePlaceholder),
+            ProfileAvatar(
+                imageUrl = imageUrl,
+                size = 44.dp,
+                modifier = Modifier.padding(start = 12.dp),
             )
         }
         Row(modifier = Modifier.padding(top = 16.dp)) {

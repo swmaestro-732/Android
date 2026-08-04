@@ -33,6 +33,7 @@ import com.chillsam.courmy.main.presentation.onboarding.OnboardingViewModel
 import com.chillsam.courmy.main.presentation.onboarding.SplashPage
 import com.chillsam.courmy.main.presentation.saved.SavedPage
 import com.chillsam.courmy.main.presentation.settings.SettingsPage
+import com.chillsam.courmy.main.presentation.user.UserProfilePage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
@@ -54,6 +55,7 @@ import com.chillsam.courmy.main.domain.onboarding.OnboardingPage as OnboardingRo
 import com.chillsam.courmy.main.domain.onboarding.SplashPage as SplashRoute
 import com.chillsam.courmy.main.domain.saved.SavedPage as SavedRoute
 import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
+import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
  * 앱의 모든 페이지 메타데이터 + 렌더러 모음.
@@ -195,6 +197,12 @@ val appRoutes: List<AppRoute> =
             },
         ),
         AppRoute(
+            path = UserProfileRoute.PATH,
+            render = { args ->
+                UserProfilePage(handle = args[UserProfileRoute.ARG_HANDLE].orEmpty())
+            },
+        ),
+        AppRoute(
             path = GuestMyRoute.PATH,
             render = { GuestMyPage() },
         ),
@@ -228,6 +236,9 @@ val appRoutes: List<AppRoute> =
                 CourseDetailPage(
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
                     onBack = { navigationHelper.navigateToBack() },
+                    onAuthorClick = { handle ->
+                        navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
+                    },
                     onFollowAuthor = { notReady() },
                     onShare = { notReady() },
                     onSaveCourse = { notReady() },
