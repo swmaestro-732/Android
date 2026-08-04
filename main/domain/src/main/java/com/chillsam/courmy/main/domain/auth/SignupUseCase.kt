@@ -25,27 +25,19 @@ class SignupUseCase
     ) {
         /**
          * @param localImageUri 사용자가 고른 로컬 이미지(content://). 없으면 null.
-         * @param fallbackImageUrl 업로드 실패 시 대신 반영할 이미지 URL(디버그 빌드에서만 넘긴다).
-         *   presign 이 서버 사정으로 막혀 있어도 프로필 사진이 붙은 상태를 확인할 수 있게 한다.
          * @return 이미지까지 정상 반영됐으면 true. 가입만 성공하고 이미지가 실패했으면 false.
          */
         suspend operator fun invoke(
             profile: SignupProfile,
             localImageUri: String? = null,
-            fallbackImageUrl: String? = null,
         ): Boolean {
             repository.signup(profile)
             if (localImageUri.isNullOrBlank()) return true
 
-            val uploaded =
-                runCatching { mediaRepository.uploadImage(localImageUri) }
-                    .getOrElse { e ->
-                        if (e is CancellationException) throw e
-                        null
-                    }
-            val imageUrl = uploaded ?: fallbackImageUrl
-            return imageUrl != null &&
-                runCatching { profileRepository.updateProfile(profileImageUrl = imageUrl) }.isSuccess &&
-                uploaded != null
+            return runCatching {
+                val imageUrl = mediaRepository.uploadImage(localImageUri)
+                profileRepository.updateProfile(profileImageUrl = imageUrl)
+            }.onFailure { if (it is CancellationException) throw it }
+                .isSuccess
         }
     }

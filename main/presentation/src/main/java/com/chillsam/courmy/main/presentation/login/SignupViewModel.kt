@@ -8,7 +8,6 @@ import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
 import com.chillsam.courmy.common.presentation.mvi.UiState
 import com.chillsam.courmy.main.domain.auth.SignupUseCase
 import com.chillsam.courmy.main.entity.auth.SignupProfile
-import com.chillsam.courmy.main.presentation.BuildConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -31,8 +30,6 @@ data class SignupUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val done: Boolean = false,
-    /** 가입은 됐지만 프로필 사진 업로드가 실패한 경우 true. 안내만 하고 가입은 성공으로 본다. */
-    val imageMissing: Boolean = false,
 ) : UiState {
     companion object {
         val empty = SignupUiState()
@@ -42,10 +39,7 @@ data class SignupUiState(
 sealed interface SignupReducerEvent : ReducerEvent {
     data object Started : SignupReducerEvent
 
-    data class Succeeded(
-        /** 프로필 사진 업로드까지 성공했는지. false 면 계정은 만들어졌지만 사진이 빠졌다. */
-        val imagesUploaded: Boolean,
-    ) : SignupReducerEvent
+    data object Succeeded : SignupReducerEvent
 
     data class Failed(
         val message: String,
@@ -82,8 +76,8 @@ class SignupViewModel
                     state.copy(isLoading = true, errorMessage = null)
                 }
 
-                is SignupReducerEvent.Succeeded -> {
-                    state.copy(isLoading = false, done = true, imageMissing = !event.imagesUploaded)
+                SignupReducerEvent.Succeeded -> {
+                    state.copy(isLoading = false, done = true)
                 }
 
                 is SignupReducerEvent.Failed -> {
@@ -108,17 +102,10 @@ class SignupViewModel
             job?.cancel()
             job =
                 viewModelScope.launch {
-                    runCatching {
-                        signupUseCase(
-                            profile = profile,
-                            localImageUri = localImageUri,
-                            fallbackImageUrl = if (BuildConfig.DEBUG) PLACEHOLDER_IMAGE_URL else null,
-                        )
-                    }
+                    runCatching { signupUseCase(profile, localImageUri) }
                         // 이미지 업로드가 실패해도(false) 계정은 만들어졌으므로 가입은 성공으로 끝낸다.
-                        .onSuccess { imagesUploaded ->
-                            dispatch(SignupReducerEvent.Succeeded(imagesUploaded = imagesUploaded))
-                        }.onFailure { e ->
+                        .onSuccess { dispatch(SignupReducerEvent.Succeeded) }
+                        .onFailure { e ->
                             if (e is CancellationException) throw e
                             // 원시 예외 메시지는 로그로만 남기고 사용자에게는 고정 안내 문구를 보여준다.
                             Log.w(TAG, "회원가입 실패: ${e.javaClass.simpleName} - ${e.message}", e)
@@ -129,12 +116,5 @@ class SignupViewModel
 
         private companion object {
             const val TAG = "Signup"
-
-            /**
-             * TODO-API-SPEC: presign 이 서버 S3 미설정으로 500 인 동안 프로필 사진이 붙은 상태를
-             * 확인하기 위한 임시 대체 이미지. 실제로 뜨는 이미지가 아니라 "URL 문자열이 들어갔는지"만 보는 더미다.
-             * S3 가 설정되면 이 상수와 전달을 제거한다. [wiki-needed]
-             */
-            const val PLACEHOLDER_IMAGE_URL = "https://test.com/test.jpg"
         }
     }
