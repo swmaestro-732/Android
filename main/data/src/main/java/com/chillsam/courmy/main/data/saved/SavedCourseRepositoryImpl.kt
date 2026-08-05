@@ -15,8 +15,4 @@ class SavedCourseRepositoryImpl(
             }
         return data.toVOList()
     }
-
-    override suspend fun unsaveCourse(courseId: Long) {
-        dataSource.unsaveCourse(courseId)
-    }
 }

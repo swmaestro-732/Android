@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
+import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -21,11 +22,13 @@ class CourseDetailViewModel
     @Inject
     constructor(
         private val getCourseDetailUseCase: GetCourseDetailUseCase,
+        private val setCourseSavedUseCase: SetCourseSavedUseCase,
     ) : MviViewModel<CourseDetailIntent, CourseDetailUIState, CourseDetailReducerEvent>(
             CourseDetailUIState.empty,
         ) {
         /** 진행 중인 로드 코루틴. 재요청 시 이전 것을 취소해 중복 실행·stale 결과 반영을 막는다. */
         private var loadJob: Job? = null
+        private var saveJob: Job? = null
 
         /** 조회 대상 코스. null 이면 아직 [CourseDetailIntent.Load] 를 받지 못한 상태다. */
         private var courseId: Long? = null
@@ -41,6 +44,14 @@ class CourseDetailViewModel
 
                 CourseDetailIntent.Retry -> {
                     load()
+                }
+
+                CourseDetailIntent.ToggleSave -> {
+                    toggleSave()
+                }
+
+                CourseDetailIntent.ConsumeError -> {
+                    dispatch(CourseDetailReducerEvent.ErrorConsumed)
                 }
             }
         }
@@ -61,7 +72,48 @@ class CourseDetailViewModel
                 is CourseDetailReducerEvent.Failed -> {
                     state.copy(isLoading = false, errorMessage = event.message)
                 }
+
+                CourseDetailReducerEvent.SaveStarted -> {
+                    state.copy(isSaving = true, actionErrorMessage = null)
+                }
+
+                is CourseDetailReducerEvent.SaveFinished -> {
+                    state.copy(isSaving = false, detail = state.detail?.copy(isSaved = event.saved))
+                }
+
+                is CourseDetailReducerEvent.SaveFailed -> {
+                    state.copy(isSaving = false, actionErrorMessage = event.message)
+                }
+
+                CourseDetailReducerEvent.ErrorConsumed -> {
+                    state.copy(actionErrorMessage = null)
+                }
             }
+
+        /**
+         * 서버가 확정한 뒤에 상태를 바꾼다(먼저 바꾸고 실패 시 되돌리면 버튼이 튀어 보인다).
+         * 진행 중 중복 탭은 무시한다.
+         */
+        private fun toggleSave() {
+            val state = currentState
+            val id = courseId
+            val detail = state.detail
+            if (state.isSaving || id == null || detail == null) return
+            val target = !detail.isSaved
+            dispatch(CourseDetailReducerEvent.SaveStarted)
+            saveJob?.cancel()
+            saveJob =
+                viewModelScope.launch {
+                    runCatching { setCourseSavedUseCase(courseId = id, saved = target) }
+                        .onSuccess { dispatch(CourseDetailReducerEvent.SaveFinished(target)) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "코스 저장 토글 실패: courseId=$id, target=$target", e)
+                            val message = if (target) "저장하지 못했어요." else "저장을 취소하지 못했어요."
+                            dispatch(CourseDetailReducerEvent.SaveFailed(message))
+                        }
+                }
+        }
 
         private fun load() {
             // 라우트 인자가 없거나 숫자가 아니면 0 이 넘어온다. 서버에 물어볼 것도 없이 에러로 끝낸다.

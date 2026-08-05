@@ -3,8 +3,8 @@ package com.chillsam.courmy.main.presentation.saved
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.main.domain.saved.GetSavedCoursesUseCase
-import com.chillsam.courmy.main.domain.saved.UnsaveCourseUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 /**
  * 저장함 · 코스 탭(FS-14) ViewModel. `GET /service/v1/my/saved-courses` 로 목록을 로드하고,
- * 저장 취소는 `DELETE /api/v1/courses/save/{courseId}` 로 보낸다.
+ * 저장 취소는 코스 상세·홈 피드와 같은 [SetCourseSavedUseCase] 를 쓴다(중복 구현 방지).
  *
  * 로그인 사용자만 진입하는 화면이라(게스트는 별도 화면) JWT 가 있다고 전제한다.
  */
@@ -23,7 +23,7 @@ class SavedCoursesViewModel
     @Inject
     constructor(
         private val getSavedCoursesUseCase: GetSavedCoursesUseCase,
-        private val unsaveCourseUseCase: UnsaveCourseUseCase,
+        private val setCourseSavedUseCase: SetCourseSavedUseCase,
     ) : MviViewModel<SavedCoursesIntent, SavedCoursesUIState, SavedCoursesReducerEvent>(
             SavedCoursesUIState.empty,
         ) {
@@ -118,7 +118,7 @@ class SavedCoursesViewModel
             unsaveJob?.cancel()
             unsaveJob =
                 viewModelScope.launch {
-                    runCatching { unsaveCourseUseCase(id) }
+                    runCatching { setCourseSavedUseCase(courseId = id, saved = false) }
                         .onSuccess { dispatch(SavedCoursesReducerEvent.Unsaved(courseId)) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e

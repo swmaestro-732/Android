@@ -38,6 +38,8 @@ data class CourseDetailVO(
     val rating: String,
     val reviewCountText: String,
     val reviews: List<CourseReviewVO>,
+    /** 내가 이 코스를 저장했는지(서버 viewer.hasSaved). 하단 저장 버튼 상태에 쓴다. */
+    val isSaved: Boolean = false,
 )
 
 /**

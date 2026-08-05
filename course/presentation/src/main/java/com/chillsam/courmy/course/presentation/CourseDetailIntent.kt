@@ -12,4 +12,9 @@ sealed interface CourseDetailIntent : MviIntent {
     ) : CourseDetailIntent
 
     data object Retry : CourseDetailIntent
+
+    /** 하단 "코스 저장하기" 탭 — 현재 상태의 반대로 요청한다. */
+    data object ToggleSave : CourseDetailIntent
+
+    data object ConsumeError : CourseDetailIntent
 }

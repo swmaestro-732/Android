@@ -41,6 +41,7 @@ import com.chillsam.courmy.main.entity.home.HomeCourseVO
 @Composable
 fun HomeCourseCard(
     course: HomeCourseVO,
+    isSaved: Boolean,
     onClick: () -> Unit,
     onBookmarkClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -59,7 +60,7 @@ fun HomeCourseCard(
                 .background(color.bgDefaultLevel1)
                 .clickable(onClick = onClick),
     ) {
-        CourseCover(course = course, onBookmarkClick = onBookmarkClick)
+        CourseCover(course = course, isSaved = isSaved, onBookmarkClick = onBookmarkClick)
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -86,6 +87,7 @@ fun HomeCourseCard(
 @Composable
 private fun CourseCover(
     course: HomeCourseVO,
+    isSaved: Boolean,
     onBookmarkClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -144,11 +146,12 @@ private fun CourseCover(
                     .clickable(onClick = onBookmarkClick),
             contentAlignment = Alignment.Center,
         ) {
-            // TODO-API-SPEC: 피드 응답에 저장 여부가 없어 항상 비어 있는 아이콘으로 그린다.
-            // 서버가 저장 상태를 내려주면 채워진 아이콘과 "저장 취소" 문구를 되살린다. [wiki-needed]
             Icon(
-                painter = painterResource(R.drawable.ic_tab_bookmark_24),
-                contentDescription = "저장",
+                painter =
+                    painterResource(
+                        if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
+                    ),
+                contentDescription = if (isSaved) "저장 취소" else "저장",
                 tint = color.contentDefaultLevel0,
                 modifier = Modifier.size(18.dp),
             )

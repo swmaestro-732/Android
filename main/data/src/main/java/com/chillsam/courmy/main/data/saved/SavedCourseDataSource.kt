@@ -7,8 +7,4 @@ class SavedCourseDataSource(
     private val apiService: SavedCourseApiService,
 ) : BaseRemoteDataSource() {
     suspend fun getSavedCourses(size: Int): SavedCourseEnvelope = checkResponse(apiService.getSavedCourses(size))
-
-    suspend fun unsaveCourse(courseId: Long) {
-        checkSuccess(apiService.unsaveCourse(courseId))
-    }
 }

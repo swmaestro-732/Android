@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,8 +65,14 @@ fun HomePage(modifier: Modifier = Modifier) {
     val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
     // 헤더 인사말·아바타는 내 프로필에서 가져온다.
     val profile = if (session.isLoggedIn) myProfileForHeader() else null
-    // 저장(북마크) 토글은 아직 미연동이라 안내만 한다.
-    val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
+
+    // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
+    LaunchedEffect(feedState.actionErrorMessage) {
+        feedState.actionErrorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            feedViewModel.onIntent(HomeFeedIntent.ConsumeError)
+        }
+    }
 
     Box(
         modifier =
@@ -86,8 +93,9 @@ fun HomePage(modifier: Modifier = Modifier) {
                     items(feedState.courses, key = { it.id }) { course ->
                         HomeCourseCard(
                             course = course,
+                            isSaved = course.id in feedState.savedCourseIds,
                             onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
-                            onBookmarkClick = notReady,
+                            onBookmarkClick = { feedViewModel.onIntent(HomeFeedIntent.ToggleSave(course.id)) },
                         )
                     }
                 }

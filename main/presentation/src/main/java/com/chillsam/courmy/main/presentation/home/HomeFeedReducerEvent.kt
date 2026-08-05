@@ -14,4 +14,21 @@ sealed interface HomeFeedReducerEvent : ReducerEvent {
     data class Failed(
         val message: String,
     ) : HomeFeedReducerEvent
+
+    data class SaveStarted(
+        val courseId: String,
+    ) : HomeFeedReducerEvent
+
+    /** 저장/취소가 서버에서 확정됨. */
+    data class SaveFinished(
+        val courseId: String,
+        val saved: Boolean,
+    ) : HomeFeedReducerEvent
+
+    data class SaveFailed(
+        val courseId: String,
+        val message: String,
+    ) : HomeFeedReducerEvent
+
+    data object ErrorConsumed : HomeFeedReducerEvent
 }

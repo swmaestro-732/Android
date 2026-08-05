@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -32,16 +34,25 @@ fun CourseDetailPage(
     onAuthorClick: (String) -> Unit,
     onFollowAuthor: () -> Unit,
     onShare: () -> Unit,
-    onSaveCourse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(courseId) { viewModel.onIntent(CourseDetailIntent.Load(courseId)) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val detail = uiState.detail
+
+    // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
+    LaunchedEffect(uiState.actionErrorMessage) {
+        uiState.actionErrorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.onIntent(CourseDetailIntent.ConsumeError)
+        }
+    }
     when {
         detail != null -> {
             CourseDetailScreen(
                 detail = detail,
+                isSaving = uiState.isSaving,
                 onBack = onBack,
                 onAuthorClick = {
                     detail.authorHandle
@@ -51,7 +62,7 @@ fun CourseDetailPage(
                 },
                 onFollowAuthor = onFollowAuthor,
                 onShare = onShare,
-                onSaveCourse = onSaveCourse,
+                onSaveCourse = { viewModel.onIntent(CourseDetailIntent.ToggleSave) },
                 modifier = modifier,
             )
         }

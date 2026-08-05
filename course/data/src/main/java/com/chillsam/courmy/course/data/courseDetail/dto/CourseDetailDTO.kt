@@ -21,6 +21,13 @@ data class CourseDetailEnvelope(
 data class CourseScreenData(
     val course: CourseScreenDTO? = null,
     val reviewSummary: ReviewSummaryDTO? = null,
+    /** 로그인 사용자 관점 상태(저장 여부 등). 비로그인이면 서버가 false 로 채운다. */
+    val viewer: CourseViewerDTO? = null,
+)
+
+@Serializable
+data class CourseViewerDTO(
+    val hasSaved: Boolean = false,
 )
 
 @Serializable
@@ -125,6 +132,7 @@ fun CourseScreenData.toVO(): CourseDetailVO {
         rating = (summary?.averageRating ?: 0.0).toString(),
         reviewCountText = "${summary?.totalCount ?: 0}개",
         reviews = summary?.previews.orEmpty().map { it.toVO() },
+        isSaved = viewer?.hasSaved ?: false,
     )
 }
 

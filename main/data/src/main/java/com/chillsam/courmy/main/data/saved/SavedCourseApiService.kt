@@ -1,11 +1,8 @@
 package com.chillsam.courmy.main.data.saved
 
-import com.chillsam.courmy.main.data.auth.dto.SimpleEnvelope
 import com.chillsam.courmy.main.data.saved.dto.SavedCourseEnvelope
 import retrofit2.Response
-import retrofit2.http.DELETE
 import retrofit2.http.GET
-import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface SavedCourseApiService {
@@ -17,10 +14,4 @@ interface SavedCourseApiService {
     suspend fun getSavedCourses(
         @Query("size") size: Int,
     ): Response<SavedCourseEnvelope>
-
-    /** 코스 저장 취소. 화면 조합 경로가 아니라 도메인 API 다(경로 주의). */
-    @DELETE("api/v1/courses/save/{courseId}")
-    suspend fun unsaveCourse(
-        @Path("courseId") courseId: Long,
-    ): Response<SimpleEnvelope>
 }

@@ -91,6 +91,7 @@ import com.naver.maps.map.overlay.OverlayImage
 @Composable
 fun CourseDetailScreen(
     detail: CourseDetailVO,
+    isSaving: Boolean,
     onBack: () -> Unit,
     onAuthorClick: () -> Unit,
     onFollowAuthor: () -> Unit,
@@ -151,7 +152,12 @@ fun CourseDetailScreen(
                 Spacer(Modifier.height(14.dp))
             }
         }
-        DetailBottomBar(onShare = onShare, onSaveCourse = onSaveCourse)
+        DetailBottomBar(
+            isSaved = detail.isSaved,
+            isSaving = isSaving,
+            onShare = onShare,
+            onSaveCourse = onSaveCourse,
+        )
     }
     if (selectedPlace != null) {
         val dismiss = {
@@ -1077,9 +1083,14 @@ private fun MapZoomButton(
 /** fitBounds 여백(px). 핀 아이콘·캡션이 지도 가장자리에 잘리지 않게 넉넉히 둔다. */
 private const val ROUTE_MAP_FIT_PADDING = 96
 
-/** 하단 고정 액션바: 공유 버튼 + "코스 저장하기" 기본 버튼. 상단에 옅은 구분선. */
+/**
+ * 하단 고정 액션바: 공유 버튼 + 코스 저장 버튼. 상단에 옅은 구분선.
+ * [isSaved] 면 "저장됨"으로 바뀌고, 누르면 저장이 취소된다.
+ */
 @Composable
 private fun DetailBottomBar(
+    isSaved: Boolean,
+    isSaving: Boolean,
     onShare: () -> Unit,
     onSaveCourse: () -> Unit,
 ) {
@@ -1126,22 +1137,26 @@ private fun DetailBottomBar(
                         .weight(1f)
                         .height(56.dp)
                         .clip(buttonShape)
-                        .background(color.bgAccent)
-                        .clickable(onClick = onSaveCourse),
+                        .background(if (isSaved) color.bgAccentSubtle else color.bgAccent)
+                        .clickable(enabled = !isSaving, onClick = onSaveCourse),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
             ) {
+                val contentColor = if (isSaved) color.contentDefaultLevel1 else color.contentOnAccent
                 Icon(
-                    painter = painterResource(R.drawable.ic_tab_bookmark_24),
+                    painter =
+                        painterResource(
+                            if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
+                        ),
                     contentDescription = null,
-                    tint = color.contentOnAccent,
+                    tint = contentColor,
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(Modifier.width(8.dp))
                 DsText(
-                    text = "코스 저장하기",
+                    text = if (isSaved) "저장됨" else "코스 저장하기",
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
-                    color = color.contentOnAccent,
+                    color = contentColor,
                 )
             }
         }
@@ -1154,6 +1169,7 @@ private fun CourseDetailScreenPreview() {
     DesignSystemTheme {
         CourseDetailScreen(
             detail = courseDetailSample,
+            isSaving = false,
             onBack = {},
             onAuthorClick = {},
             onFollowAuthor = {},

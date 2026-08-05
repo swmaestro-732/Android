@@ -243,7 +243,6 @@ val appRoutes: List<AppRoute> =
                     },
                     onFollowAuthor = { notReady() },
                     onShare = { notReady() },
-                    onSaveCourse = { notReady() },
                 )
             },
         ),

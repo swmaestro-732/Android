@@ -7,4 +7,11 @@ sealed interface HomeFeedIntent : MviIntent {
     data object Load : HomeFeedIntent
 
     data object Retry : HomeFeedIntent
+
+    /** 카드 북마크 탭 — 저장/저장 취소를 토글한다. */
+    data class ToggleSave(
+        val courseId: String,
+    ) : HomeFeedIntent
+
+    data object ConsumeError : HomeFeedIntent
 }

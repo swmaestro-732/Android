@@ -11,6 +11,9 @@ data class CourseDetailUIState(
     val isLoading: Boolean = true,
     val detail: CourseDetailVO? = null,
     val errorMessage: String? = null,
+    val isSaving: Boolean = false,
+    /** 저장 실패처럼 토스트로 한 번 알리고 지우는 일시 오류. */
+    val actionErrorMessage: String? = null,
 ) : UiState {
     companion object {
         val empty: CourseDetailUIState = CourseDetailUIState()
