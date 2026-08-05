@@ -5,6 +5,9 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -72,6 +75,7 @@ class MainActivity : FragmentActivity() {
         )
 
         enableEdgeToEdge()
+        hideNavigationBar()
         setContent {
             CompositionLocalProvider(
                 LocalNavigationHelper provides navigationHelper,
@@ -81,6 +85,29 @@ class MainActivity : FragmentActivity() {
             ) {
                 RootComposable(startStack = startStack)
             }
+        }
+    }
+
+    /**
+     * 다이얼로그·키보드·시스템 UI 가 뜨면 안드로이드가 내비게이션 바를 되돌려 놓는다.
+     * 포커스를 되찾을 때마다 다시 숨겨 몰입 상태를 유지한다.
+     */
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideNavigationBar()
+    }
+
+    /**
+     * 시스템 내비게이션 바(뒤로가기·홈·최근앱)를 숨긴다. 상태 바는 그대로 둔다.
+     *
+     * 완전히 막지는 않는다 — 화면 아래 가장자리에서 위로 쓸면 잠시 나타났다 사라진다
+     * (BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE). 제스처 내비게이션 기기에서는 뒤로가기 제스처가
+     * 그대로 동작하므로, 버튼 내비게이션 기기에서만 스와이프가 필요하다.
+     */
+    private fun hideNavigationBar() {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.navigationBars())
         }
     }
 
