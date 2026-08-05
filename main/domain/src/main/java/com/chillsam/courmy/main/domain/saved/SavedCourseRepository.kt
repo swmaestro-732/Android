@@ -11,4 +11,12 @@ import com.chillsam.courmy.main.entity.saved.SavedCourseVO
  */
 interface SavedCourseRepository {
     suspend fun getSavedCourses(size: Int): List<SavedCourseVO>
+
+    /**
+     * 저장한 코스 id 집합. 목록 화면이 아니라 **다른 화면의 저장 여부 표시**에 쓴다.
+     *
+     * TODO-API-SPEC: 홈 피드 응답에 저장 여부가 없어 필요한 우회다.
+     * 피드가 `hasSaved` 를 내려주면 이 조회와 호출부를 함께 제거한다. [wiki-needed]
+     */
+    suspend fun getSavedCourseIds(size: Int): Set<String>
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.main.domain.home.GetHomeFeedUseCase
+import com.chillsam.courmy.main.domain.saved.GetSavedCourseIdsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
@@ -24,6 +25,7 @@ class HomeFeedViewModel
     constructor(
         private val getHomeFeedUseCase: GetHomeFeedUseCase,
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
+        private val getSavedCourseIdsUseCase: GetSavedCourseIdsUseCase,
     ) : MviViewModel<HomeFeedIntent, HomeFeedUIState, HomeFeedReducerEvent>(
             HomeFeedUIState.empty,
         ) {
@@ -58,6 +60,7 @@ class HomeFeedViewModel
                     state.copy(
                         isLoading = false,
                         courses = event.courses.toImmutableList(),
+                        savedCourseIds = event.savedCourseIds.toImmutableSet(),
                         errorMessage = null,
                     )
                 }
@@ -124,8 +127,9 @@ class HomeFeedViewModel
             loadJob =
                 viewModelScope.launch {
                     runCatching { getHomeFeedUseCase() }
-                        .onSuccess { courses -> dispatch(HomeFeedReducerEvent.Loaded(courses)) }
-                        .onFailure { e ->
+                        .onSuccess { courses ->
+                            dispatch(HomeFeedReducerEvent.Loaded(courses, loadSavedCourseIds()))
+                        }.onFailure { e ->
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "코스 피드 로드 실패", e)
@@ -133,6 +137,18 @@ class HomeFeedViewModel
                         }
                 }
         }
+
+        /**
+         * 저장 여부 표시용 id 집합. 실패해도 피드는 그대로 보여준다(부가 정보이므로).
+         * 비로그인이면 401 이라 빈 집합이 되고, 카드는 모두 저장 전 아이콘으로 그려진다.
+         */
+        private suspend fun loadSavedCourseIds(): Set<String> =
+            runCatching { getSavedCourseIdsUseCase() }
+                .getOrElse { e ->
+                    if (e is CancellationException) throw e
+                    Log.d(TAG, "저장 코스 id 조회 실패(피드는 그대로 표시): ${e.message}")
+                    emptySet()
+                }
 
         private companion object {
             const val TAG = "HomeFeed"

@@ -9,6 +9,8 @@ sealed interface HomeFeedReducerEvent : ReducerEvent {
 
     data class Loaded(
         val courses: List<HomeCourseVO>,
+        /** 저장 여부 표시용. 피드 응답에 저장 여부가 없어 따로 조회해 함께 싣는다. */
+        val savedCourseIds: Set<String>,
     ) : HomeFeedReducerEvent
 
     data class Failed(
