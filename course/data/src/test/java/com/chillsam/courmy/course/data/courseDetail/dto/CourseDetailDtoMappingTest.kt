@@ -72,6 +72,36 @@ class CourseDetailDtoMappingTest {
         assertEquals("1일 전", vo.reviews[0].dateText)
     }
 
+    /** 서버가 author.isFollowing 을 주는데 DTO 가 받지 않아 항상 "팔로우하기" 가 뜨던 문제를 고정한다. */
+    @Test
+    fun `작성자 팔로우 여부를 매핑한다`() {
+        val following =
+            fullData()
+                .copy(course = fullData().course!!.copy(author = AuthorDTO(handle = "jiho", isFollowing = true)))
+                .toVO()
+        val notFollowing =
+            fullData()
+                .copy(course = fullData().course!!.copy(author = AuthorDTO(handle = "jiho", isFollowing = false)))
+                .toVO()
+
+        assertEquals(true, following.isFollowingAuthor)
+        assertEquals(false, notFollowing.isFollowingAuthor)
+    }
+
+    /** 서버는 포맷된 문자열이 아니라 raw 숫자(tracingCount)를 준다. 이름·타입이 어긋나면 항상 0 이 된다. */
+    @Test
+    fun `따라감 수는 raw 숫자를 축약해 표시한다`() {
+        fun voWith(count: Int) =
+            fullData()
+                .copy(course = fullData().course!!.copy(stats = CourseStatsDTO(tracingCount = count)))
+                .toVO()
+
+        assertEquals("0 따라감", voWith(0).followerText)
+        assertEquals("999 따라감", voWith(999).followerText)
+        assertEquals("1k 따라감", voWith(1000).followerText)
+        assertEquals("1.2k 따라감", voWith(1200).followerText)
+    }
+
     @Test
     fun `이미지 URL 을 매핑한다 - 커버_작성자_장소_리뷰`() {
         val data =
@@ -79,7 +109,7 @@ class CourseDetailDtoMappingTest {
                 course =
                     fullData().course!!.copy(
                         coverImageUrl = "cover.jpg",
-                        author = AuthorDTO("지호님", "jiho_routes", "avatar.jpg"),
+                        author = AuthorDTO(nickname = "지호님", handle = "jiho_routes", profileImageUrl = "avatar.jpg"),
                         places =
                             listOf(
                                 CoursePlaceDTO(
@@ -178,7 +208,7 @@ class CourseDetailDtoMappingTest {
                     title = "비 오는 날 성수 감성 카페 코스",
                     themes = listOf("성수", "데이트"),
                     description = "소개",
-                    stats = CourseStatsDTO(placeCount = 4, walkingMinutes = 20, tracingCountLabel = "1.2k"),
+                    stats = CourseStatsDTO(placeCount = 4, walkingMinutes = 20, tracingCount = 1200),
                     author = AuthorDTO(nickname = "지호님", handle = "jiho_routes"),
                     places = listOf(place(orderNo = 0, name = "어니언 성수", walkToNext = 6)),
                 ),

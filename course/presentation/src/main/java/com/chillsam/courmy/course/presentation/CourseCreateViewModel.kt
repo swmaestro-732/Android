@@ -129,6 +129,10 @@ class CourseCreateViewModel
             event: CourseCreateReducerEvent,
         ): CourseCreateUIState =
             when (event) {
+                is CourseCreateReducerEvent.LoadFailed -> {
+                    state.copy(isLoading = false, errorMessage = event.message)
+                }
+
                 CourseCreateReducerEvent.LoadStarted -> {
                     state.copy(isLoading = true)
                 }
@@ -255,7 +259,14 @@ class CourseCreateViewModel
         private fun load() {
             dispatch(CourseCreateReducerEvent.LoadStarted)
             viewModelScope.launch {
-                dispatch(CourseCreateReducerEvent.DraftLoaded(getCourseDraftUseCase()))
+                runCatching { getCourseDraftUseCase() }
+                    .onSuccess { dispatch(CourseCreateReducerEvent.DraftLoaded(it)) }
+                    .onFailure { e ->
+                        if (e is CancellationException) throw e
+                        // 스피너를 걷지 않으면 화면이 영구 정지한다(초안 없이도 작성은 가능하다).
+                        Log.w(TAG, "임시저장 초안 로드 실패", e)
+                        dispatch(CourseCreateReducerEvent.LoadFailed("임시저장한 내용을 불러오지 못했어요."))
+                    }
             }
         }
 

@@ -45,14 +45,20 @@ data class CourseScreenDTO(
 data class CourseStatsDTO(
     val placeCount: Int? = null,
     val walkingMinutes: Int? = null,
-    val tracingCountLabel: String? = null,
+    /** 따라간 사람 수(raw). 서버는 포맷된 문자열이 아니라 숫자를 준다. */
+    val tracingCount: Int? = null,
 )
 
 @Serializable
 data class AuthorDTO(
+    val id: Long? = null,
     val nickname: String? = null,
     val handle: String? = null,
     val profileImageUrl: String? = null,
+    /** 내가 이 작성자를 팔로우 중인지. 팔로우 버튼 노출 여부를 정한다. */
+    val isFollowing: Boolean = false,
+    /** 이 작성자가 나를 팔로우하는지. 지금은 쓰지 않지만 맞팔 표시에 필요하다. */
+    val isFollower: Boolean = false,
 )
 
 @Serializable
@@ -122,7 +128,7 @@ fun CourseScreenData.toVO(): CourseDetailVO {
         authorImageUrl = course.author?.profileImageUrl.orEmpty(),
         placeCountText = "${stats?.placeCount ?: 0}곳",
         walkText = "도보 ${stats?.walkingMinutes ?: 0}분",
-        followerText = "${stats?.tracingCountLabel ?: "0"} 따라감",
+        followerText = "${formatTracingCount(stats?.tracingCount ?: 0)} 따라감",
         description = course.description.orEmpty(),
         places =
             course.places
@@ -133,8 +139,20 @@ fun CourseScreenData.toVO(): CourseDetailVO {
         reviewCountText = "${summary?.totalCount ?: 0}개",
         reviews = summary?.previews.orEmpty().map { it.toVO() },
         isSaved = viewer?.hasSaved ?: false,
+        isFollowingAuthor = course.author?.isFollowing ?: false,
     )
 }
+
+/** 따라감 수 표시(1200 → "1.2k"). 프로필 통계와 같은 규칙을 쓴다. */
+private fun formatTracingCount(value: Int): String =
+    if (value >= THOUSAND) {
+        val truncated = (value / THOUSAND.toDouble() * 10).toInt() / 10.0
+        if (truncated % 1.0 == 0.0) "${truncated.toInt()}k" else "${truncated}k"
+    } else {
+        value.toString()
+    }
+
+private const val THOUSAND = 1000
 
 private fun CoursePlaceDTO.toVO(): CourseDetailPlaceVO {
     val urls =
