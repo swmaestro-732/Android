@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
@@ -56,6 +57,8 @@ fun UserProfilePage(
     LaunchedEffect(handle) {
         viewModel.onIntent(UserProfileIntent.Load(handle))
     }
+    // 팔로우하고 돌아오면 팔로워 수·관계가 바뀌어 있을 수 있어 다시 보일 때마다 새로 불러온다.
+    RefreshOnResume { viewModel.onIntent(UserProfileIntent.Retry) }
     LaunchedEffect(uiState.followErrorMessage) {
         uiState.followErrorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()

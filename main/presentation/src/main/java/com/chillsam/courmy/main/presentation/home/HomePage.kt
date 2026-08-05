@@ -46,6 +46,7 @@ import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 
@@ -202,6 +203,8 @@ private fun FeedMessage(
 private fun myProfileForHeader(): MyProfileVO? {
     val myViewModel: MyViewModel = hiltViewModel()
     val myState by myViewModel.uiState.collectAsStateWithLifecycle()
+    // MyViewModel 은 init 에서 로드하지 않으므로 여기서도 호출해야 헤더가 채워진다.
+    RefreshOnResume { myViewModel.onIntent(MyProfileIntent.Retry) }
     return myState.profile
 }
 

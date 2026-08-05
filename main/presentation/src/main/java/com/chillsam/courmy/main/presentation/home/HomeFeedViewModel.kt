@@ -18,6 +18,9 @@ import javax.inject.Inject
  * 홈 공개 코스 피드(FS-09) ViewModel. `GET /service/v1/courses` 를 [GetHomeFeedUseCase] 로 로드한다.
  *
  * 공개 엔드포인트라 로그인 여부와 무관하게 호출한다(게스트 홈에서도 피드가 보인다).
+ *
+ * 생성 시점에는 로드하지 않는다. 화면이 RefreshOnResume 으로 부르므로,
+ * init 에서도 부르면 진입할 때 같은 요청이 두 번 나간다.
  */
 @HiltViewModel
 class HomeFeedViewModel
@@ -30,10 +33,6 @@ class HomeFeedViewModel
             HomeFeedUIState.empty,
         ) {
         private var loadJob: Job? = null
-
-        init {
-            onIntent(HomeFeedIntent.Load)
-        }
 
         override fun onIntent(intent: HomeFeedIntent) {
             when (intent) {

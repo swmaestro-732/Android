@@ -13,6 +13,9 @@ import javax.inject.Inject
 /**
  * 마이·프로필(FS-15) ViewModel. `GET /service/v1/mypage`(BFF)를 [GetMyProfileUseCase] 로 로드하고
  * 로딩/성공/실패를 [MyProfileUIState] 로 노출한다(에러 시 [MyProfileIntent.Retry]).
+ *
+ * 생성 시점에는 로드하지 않는다. 화면이 RefreshOnResume 으로 부르므로,
+ * init 에서도 부르면 진입할 때 같은 요청이 두 번 나간다.
  */
 @HiltViewModel
 class MyViewModel
@@ -23,10 +26,6 @@ class MyViewModel
             MyProfileUIState.empty,
         ) {
         private var loadJob: Job? = null
-
-        init {
-            onIntent(MyProfileIntent.Load)
-        }
 
         override fun onIntent(intent: MyProfileIntent) {
             when (intent) {

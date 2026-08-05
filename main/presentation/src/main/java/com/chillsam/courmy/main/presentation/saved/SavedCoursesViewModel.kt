@@ -17,6 +17,9 @@ import javax.inject.Inject
  * 저장 취소는 코스 상세·홈 피드와 같은 [SetCourseSavedUseCase] 를 쓴다(중복 구현 방지).
  *
  * 로그인 사용자만 진입하는 화면이라(게스트는 별도 화면) JWT 가 있다고 전제한다.
+ *
+ * 생성 시점에는 로드하지 않는다. 화면이 RefreshOnResume 으로 부르므로,
+ * init 에서도 부르면 진입할 때 같은 요청이 두 번 나간다.
  */
 @HiltViewModel
 class SavedCoursesViewModel
@@ -29,10 +32,6 @@ class SavedCoursesViewModel
         ) {
         private var loadJob: Job? = null
         private var unsaveJob: Job? = null
-
-        init {
-            onIntent(SavedCoursesIntent.Load)
-        }
 
         override fun onIntent(intent: SavedCoursesIntent) {
             when (intent) {
