@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -15,16 +16,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.coroutines.delay
 
@@ -259,6 +266,91 @@ internal fun CourseDeleteConfirmDialog(
                 textColor = color.contentDanger,
                 background = Color.Transparent,
                 onClick = onConfirm,
+            )
+            SheetActionButton(
+                text = "취소",
+                textColor = color.contentDefaultLevel2,
+                background = Color.Transparent,
+                onClick = onDismiss,
+            )
+        }
+    }
+}
+
+/**
+ * 새로운 위치 추가 다이얼로그.
+ *
+ * 등록된 장소 검색으로 찾지 못한 곳을 이름으로 직접 찾아 담는다.
+ * 확인을 누르면 외부 지도 검색(`GET /api/v1/places/search`)을 호출한다.
+ */
+@Composable
+internal fun AddPlaceDialog(
+    isSearching: Boolean,
+    errorMessage: String?,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    var name by remember { mutableStateOf("") }
+    val canSubmit = name.isNotBlank() && !isSearching
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
+    // 커스텀 오버레이라 시스템 Back 이 화면을 이탈시키지 않고 다이얼로그만 닫도록 가로챈다.
+    BackHandler(onBack = onDismiss)
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+                .noRippleClickable(onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .padding(horizontal = 40.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(color.bgDefaultLevel0)
+                    .noRippleClickable {}
+                    .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            DsText(
+                text = "새로운 위치 추가",
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+            )
+            DsText(
+                text = "찾는 장소의 이름을 입력하면\n지도에서 찾아 후보로 보여드려요.",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+                textAlign = TextAlign.Center,
+                maxLines = Int.MAX_VALUE,
+            )
+            Spacer(Modifier.height(4.dp))
+            DsTextField(
+                value = name,
+                onValueChange = { name = it },
+                placeholder = "예) 어니언 성수",
+                enabled = !isSearching,
+                modifier = Modifier.focusRequester(focusRequester),
+            )
+            if (errorMessage != null) {
+                DsText(
+                    text = errorMessage,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDanger,
+                    textAlign = TextAlign.Center,
+                    maxLines = Int.MAX_VALUE,
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            DsButton(
+                text = if (isSearching) "찾는 중…" else "찾기",
+                enabled = canSubmit,
+                onClick = { onConfirm(name.trim()) },
             )
             SheetActionButton(
                 text = "취소",

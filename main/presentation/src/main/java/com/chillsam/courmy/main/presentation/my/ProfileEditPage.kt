@@ -48,6 +48,7 @@ import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
@@ -76,6 +77,8 @@ fun ProfileEditPage(
     val color = DesignSystemThemeImpl.designSystemColor
     // 편집 원본값은 실제 내 프로필(GET /service/v1/mypage)에서 가져온다.
     val myState by myViewModel.uiState.collectAsStateWithLifecycle()
+    // MyViewModel 은 init 에서 로드하지 않는다. 여기서 부르지 않으면 편집 원본이 빈 값이 된다.
+    RefreshOnResume { myViewModel.onIntent(MyProfileIntent.Retry) }
     val profile = myState.profile
     val originalNickname = profile?.nickname.orEmpty()
     val originalHandle = profile?.handle.orEmpty()

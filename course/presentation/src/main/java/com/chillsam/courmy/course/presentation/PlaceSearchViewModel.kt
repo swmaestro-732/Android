@@ -22,8 +22,13 @@ sealed interface PlaceSearchIntent : MviIntent {
         val query: String,
     ) : PlaceSearchIntent
 
-    /** "지도에서 검색" 탭 — 등록된 장소에 없는 곳을 외부 지도에서 찾는다. */
-    data object SearchOnMap : PlaceSearchIntent
+    /**
+     * "새로운 위치 추가" 확인 — 다이얼로그에 입력한 이름으로 외부 지도에서 찾는다.
+     * 검색창 입력과 별개라 이름을 함께 싣는다.
+     */
+    data class SearchOnMap(
+        val name: String,
+    ) : PlaceSearchIntent
 }
 
 /** [query] 는 화면 입력값, [results] 는 마지막으로 조회에 성공한 결과다. */
@@ -77,7 +82,7 @@ class PlaceSearchViewModel
         override fun onIntent(intent: PlaceSearchIntent) {
             when (intent) {
                 is PlaceSearchIntent.QueryChanged -> search(intent.query)
-                PlaceSearchIntent.SearchOnMap -> searchOnMap()
+                is PlaceSearchIntent.SearchOnMap -> searchOnMap(intent.name)
             }
         }
 
@@ -115,11 +120,14 @@ class PlaceSearchViewModel
             }
 
         /**
-         * 외부 지도 검색. 입력이 멎기를 기다리지 않고 버튼 탭 즉시 부른다
+         * 외부 지도 검색. 다이얼로그에서 확인을 누른 즉시 부른다
          * (사용자가 명시적으로 요청한 동작이라 debounce 가 오히려 반응을 늦춘다).
+         *
+         * 결과는 검색창 목록 자리에 그대로 보여 준다 — 담는 방식(선택 → 담기 완료)이 같아
+         * 별도 화면을 두면 흐름만 길어진다.
          */
-        private fun searchOnMap() {
-            val query = currentState.query
+        private fun searchOnMap(name: String) {
+            val query = name.trim()
             if (query.isBlank()) return
             searchJob?.cancel()
             searchJob =
