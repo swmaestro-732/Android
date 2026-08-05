@@ -68,6 +68,9 @@ dependencies {
     implementation(project(":course:presentation"))
     implementation(project(":course:domain"))
 
+    // UIState 컬렉션은 ImmutableList 로 노출한다(compose_stability.conf 규약).
+    implementation(libs.kotlinx.collections.immutable)
+
     implementation(libs.androidx.activity.compose)
     // 프로필 이미지: 시스템 Photo Picker 로 고른 이미지 렌더(Coil).
     implementation(libs.coil.compose)
