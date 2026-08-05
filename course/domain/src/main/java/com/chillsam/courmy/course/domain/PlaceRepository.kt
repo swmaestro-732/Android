@@ -9,4 +9,10 @@ interface PlaceRepository {
      * 검색어가 비면 호출하지 않는 것을 전제로 한다(화면에서 거른다).
      */
     suspend fun searchPlaces(query: String): List<CoursePlaceVO>
+
+    /**
+     * 외부 지도(카카오)에서 장소를 찾는다. 등록되지 않은 장소도 나오며,
+     * 서버가 검색 시점에 내부 저장까지 마쳐 결과 id 를 코스 생성에 그대로 쓸 수 있다.
+     */
+    suspend fun searchExternalPlaces(query: String): List<CoursePlaceVO>
 }

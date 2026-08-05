@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.presentation.mvi.MviIntent
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
 import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.course.domain.SearchExternalPlacesUseCase
 import com.chillsam.courmy.course.domain.SearchPlacesUseCase
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +21,9 @@ sealed interface PlaceSearchIntent : MviIntent {
     data class QueryChanged(
         val query: String,
     ) : PlaceSearchIntent
+
+    /** "지도에서 검색" 탭 — 등록된 장소에 없는 곳을 외부 지도에서 찾는다. */
+    data object SearchOnMap : PlaceSearchIntent
 }
 
 /** [query] 는 화면 입력값, [results] 는 마지막으로 조회에 성공한 결과다. */
@@ -28,6 +32,8 @@ data class PlaceSearchUiState(
     val isSearching: Boolean = false,
     val results: List<CoursePlaceVO> = emptyList(),
     val errorMessage: String? = null,
+    /** 현재 결과가 외부 지도 검색에서 온 것인지. 화면이 출처를 알려 주는 데 쓴다. */
+    val fromMapSearch: Boolean = false,
 ) : UiState {
     companion object {
         val empty = PlaceSearchUiState()
@@ -43,6 +49,7 @@ sealed interface PlaceSearchReducerEvent : ReducerEvent {
 
     data class Loaded(
         val results: List<CoursePlaceVO>,
+        val fromMapSearch: Boolean = false,
     ) : PlaceSearchReducerEvent
 
     data class Failed(
@@ -61,6 +68,7 @@ class PlaceSearchViewModel
     @Inject
     constructor(
         private val searchPlacesUseCase: SearchPlacesUseCase,
+        private val searchExternalPlacesUseCase: SearchExternalPlacesUseCase,
     ) : MviViewModel<PlaceSearchIntent, PlaceSearchUiState, PlaceSearchReducerEvent>(
             PlaceSearchUiState.empty,
         ) {
@@ -69,6 +77,7 @@ class PlaceSearchViewModel
         override fun onIntent(intent: PlaceSearchIntent) {
             when (intent) {
                 is PlaceSearchIntent.QueryChanged -> search(intent.query)
+                PlaceSearchIntent.SearchOnMap -> searchOnMap()
             }
         }
 
@@ -79,7 +88,12 @@ class PlaceSearchViewModel
             when (event) {
                 is PlaceSearchReducerEvent.QueryUpdated -> {
                     // 검색어가 바뀌면 이전 결과를 즉시 비워, 다른 키워드의 결과가 남아 보이지 않게 한다.
-                    state.copy(query = event.query, results = emptyList(), errorMessage = null)
+                    state.copy(
+                        query = event.query,
+                        results = emptyList(),
+                        errorMessage = null,
+                        fromMapSearch = false,
+                    )
                 }
 
                 PlaceSearchReducerEvent.Started -> {
@@ -87,13 +101,39 @@ class PlaceSearchViewModel
                 }
 
                 is PlaceSearchReducerEvent.Loaded -> {
-                    state.copy(isSearching = false, results = event.results, errorMessage = null)
+                    state.copy(
+                        isSearching = false,
+                        results = event.results,
+                        errorMessage = null,
+                        fromMapSearch = event.fromMapSearch,
+                    )
                 }
 
                 is PlaceSearchReducerEvent.Failed -> {
                     state.copy(isSearching = false, results = emptyList(), errorMessage = event.message)
                 }
             }
+
+        /**
+         * 외부 지도 검색. 입력이 멎기를 기다리지 않고 버튼 탭 즉시 부른다
+         * (사용자가 명시적으로 요청한 동작이라 debounce 가 오히려 반응을 늦춘다).
+         */
+        private fun searchOnMap() {
+            val query = currentState.query
+            if (query.isBlank()) return
+            searchJob?.cancel()
+            searchJob =
+                viewModelScope.launch {
+                    dispatch(PlaceSearchReducerEvent.Started)
+                    runCatching { searchExternalPlacesUseCase(query) }
+                        .onSuccess { dispatch(PlaceSearchReducerEvent.Loaded(it, fromMapSearch = true)) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "지도 장소 검색 실패: query=$query", e)
+                            dispatch(PlaceSearchReducerEvent.Failed("장소를 찾지 못했어요. 잠시 후 다시 시도해 주세요."))
+                        }
+                }
+        }
 
         private fun search(query: String) {
             dispatch(PlaceSearchReducerEvent.QueryUpdated(query))

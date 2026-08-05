@@ -98,12 +98,27 @@ fun PlaceSearchOverlay(
             focusRequester = searchFocus,
         )
         if (query.isNotBlank()) {
-            DsText(
-                text = "검색 결과 ${results.size}",
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DsText(
+                    text =
+                        if (uiState.fromMapSearch) {
+                            "지도 검색 결과 ${results.size}"
+                        } else {
+                            "검색 결과 ${results.size}"
+                        },
+                    modifier = Modifier.weight(1f),
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                )
+                // 등록된 장소에 없는 곳은 지도에서 찾아 담는다(서버가 검색 시 내부 저장까지 마친다).
+                MapSearchButton(
+                    enabled = !uiState.isSearching,
+                    onClick = { viewModel.onIntent(PlaceSearchIntent.SearchOnMap) },
+                )
+            }
         }
         if (results.isEmpty()) {
             SearchEmptyState(hasQuery = query.isNotBlank(), modifier = Modifier.weight(1f))
@@ -144,6 +159,30 @@ fun PlaceSearchOverlay(
             selectedCount = selectedIds.size,
             // 후보 목록 순서가 아니라 사용자가 탭한 순서 그대로 담기 순서로 넘긴다.
             onConfirm = { onConfirm(selectedIds.mapNotNull(selectedPlaces::get)) },
+        )
+    }
+}
+
+/** "지도에서 검색" 액션. 등록된 장소 검색으로 못 찾은 곳을 외부 지도에서 찾아 담을 때 쓴다. */
+@Composable
+private fun MapSearchButton(
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val shape = RoundedCornerShape(9999.dp)
+    Box(
+        modifier =
+            Modifier
+                .clip(shape)
+                .border(1.dp, color.borderDefaultLevel1, shape)
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        DsText(
+            text = "지도에서 검색",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = if (enabled) color.contentAccent else color.contentDefaultLevel3,
         )
     }
 }
