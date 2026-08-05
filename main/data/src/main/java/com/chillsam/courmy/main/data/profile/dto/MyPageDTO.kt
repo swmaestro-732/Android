@@ -144,7 +144,7 @@ private fun trimTrailingZero(value: Double): String {
     return if (truncated % 1.0 == 0.0) truncated.toInt().toString() else truncated.toString()
 }
 
-/** `PATCH /api/v1/my/profile` 요청. null 인 필드는 서버에서 무시(부분 수정)한다. */
+/** `PATCH /api/v1/users` 요청. null 인 필드는 서버가 건드리지 않는다(부분 수정). */
 @Serializable
 data class UpdateProfileRequest(
     val nickname: String? = null,

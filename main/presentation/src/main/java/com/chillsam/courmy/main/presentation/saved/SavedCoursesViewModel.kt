@@ -31,7 +31,7 @@ class SavedCoursesViewModel
             SavedCoursesUIState.empty,
         ) {
         private var loadJob: Job? = null
-        private var unsaveJob: Job? = null
+        private val unsaveJobs = mutableMapOf<String, Job>()
 
         override fun onIntent(intent: SavedCoursesIntent) {
             when (intent) {
@@ -105,6 +105,8 @@ class SavedCoursesViewModel
 
         /**
          * 서버가 성공을 확인한 뒤에만 목록에서 뺀다.
+         * 요청은 코스마다 독립이라 하나의 job 으로 묶어 취소하면, 앞선 취소 요청이 서버에는 반영되고
+         * 화면에는 남는 불일치가 생긴다.
          * 먼저 지우고 실패 시 되돌리는 방식은 실패가 잦은 초기 연동에서 화면이 튀어 보이기 쉽다.
          */
         private fun unsave(courseId: String) {
@@ -114,16 +116,21 @@ class SavedCoursesViewModel
                 dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
                 return
             }
-            unsaveJob?.cancel()
-            unsaveJob =
+            // 코스마다 독립된 요청이라 서로 취소하지 않는다. 같은 코스의 중복 탭만 무시한다.
+            if (unsaveJobs[courseId]?.isActive == true) return
+            unsaveJobs[courseId] =
                 viewModelScope.launch {
-                    runCatching { setCourseSavedUseCase(courseId = id, saved = false) }
-                        .onSuccess { dispatch(SavedCoursesReducerEvent.Unsaved(courseId)) }
-                        .onFailure { e ->
-                            if (e is CancellationException) throw e
-                            Log.w(TAG, "저장 취소 실패: courseId=$courseId", e)
-                            dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
-                        }
+                    try {
+                        runCatching { setCourseSavedUseCase(courseId = id, saved = false) }
+                            .onSuccess { dispatch(SavedCoursesReducerEvent.Unsaved(courseId)) }
+                            .onFailure { e ->
+                                if (e is CancellationException) throw e
+                                Log.w(TAG, "저장 취소 실패: courseId=$courseId", e)
+                                dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
+                            }
+                    } finally {
+                        unsaveJobs.remove(courseId)
+                    }
                 }
         }
 

@@ -142,8 +142,10 @@ class CourseDetailViewModel
             saveJob =
                 viewModelScope.launch {
                     runCatching { setCourseSavedUseCase(courseId = id, saved = target) }
-                        .onSuccess { dispatch(CourseDetailReducerEvent.SaveFinished(target)) }
-                        .onFailure { e ->
+                        .onSuccess {
+                            // 요청 중에 다른 코스로 이동했으면 그 코스의 상태를 바꾸면 안 된다.
+                            if (courseId == id) dispatch(CourseDetailReducerEvent.SaveFinished(target))
+                        }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "코스 저장 토글 실패: courseId=$id, target=$target", e)
                             val message = if (target) "저장하지 못했어요." else "저장을 취소하지 못했어요."

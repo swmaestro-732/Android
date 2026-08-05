@@ -18,11 +18,10 @@ data class HomeFeedUIState(
     val courses: ImmutableList<HomeCourseVO> = persistentListOf(),
     val errorMessage: String? = null,
     /**
-     * 이 화면에서 저장한 코스 id.
+     * 저장한 코스 id. 로드 시 `GET /api/v1/my/saved-courses` 와 대조해 채우고, 저장/취소로 갱신한다.
      *
-     * TODO-API-SPEC: 피드 응답(`CourseFeedResponse.Item`)에 저장 여부가 없어 진입 시점의 상태를 알 수 없다.
-     * 그래서 "이 화면에서 방금 저장한 것"만 채워진 아이콘으로 보여준다. 서버가 저장 여부를 내려주면
-     * 초기값을 채워 정확한 상태로 바꾼다. [wiki-needed]
+     * TODO-API-SPEC: 피드 응답(`CourseFeedResponse.Item`)에 저장 여부가 없어 별도 조회로 우회하는 것이다.
+     * 서버가 `hasSaved` 를 내려주면 이 집합과 대조 로직을 함께 제거한다. [wiki-needed]
      */
     val savedCourseIds: ImmutableSet<String> = persistentSetOf(),
     /** 저장 요청이 진행 중인 코스 id(중복 탭 방지). */

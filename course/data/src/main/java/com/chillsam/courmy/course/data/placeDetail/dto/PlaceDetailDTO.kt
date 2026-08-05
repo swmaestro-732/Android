@@ -2,6 +2,7 @@ package com.chillsam.courmy.course.data.placeDetail.dto
 
 import com.chillsam.courmy.course.entity.PlaceDetailVO
 import kotlinx.serialization.Serializable
+import java.util.Locale
 
 /**
  * `GET /service/v1/places/{placeId}`(장소 상세 화면 조합) 응답 DTO.
@@ -53,7 +54,7 @@ fun PlaceDetailScreenDTO.toVO(walkText: String): PlaceDetailVO {
         name = place?.name.orEmpty(),
         category = place?.categories.orEmpty().joinToString(" · "),
         heroImageUrl = place?.imageUrls?.firstOrNull().orEmpty(),
-        rating = summary?.averageRating?.let { "%.1f".format(it) }.orEmpty(),
+        rating = summary?.averageRating?.let { String.format(Locale.US, "%.1f", it) }.orEmpty(),
         reviewCountText = summary?.totalCount?.toString().orEmpty(),
         savedCountText = "",
         isOpen = place?.openStatus == OPEN_STATUS,

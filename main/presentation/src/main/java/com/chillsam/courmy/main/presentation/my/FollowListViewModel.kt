@@ -30,7 +30,7 @@ class FollowListViewModel
             FollowListUIState.empty,
         ) {
         private var loadJob: Job? = null
-        private var actionJob: Job? = null
+        private val unfollowJobs = mutableMapOf<Long, Job>()
 
         override fun onIntent(intent: FollowListIntent) {
             when (intent) {
@@ -118,18 +118,26 @@ class FollowListViewModel
                 }
         }
 
-        /** 서버가 확정한 뒤에 목록에서 뺀다(먼저 지우고 실패 시 되돌리면 목록이 튄다). */
+        /**
+         * 서버가 확정한 뒤에 목록에서 뺀다(먼저 지우고 실패 시 되돌리면 목록이 튄다).
+         * 사용자마다 독립된 요청이라 서로 취소하지 않는다 — 하나로 묶으면 앞선 해제가 서버에는
+         * 반영되고 화면에는 남는다. 같은 사용자의 중복 탭만 무시한다.
+         */
         private fun unfollow(userId: Long) {
-            actionJob?.cancel()
-            actionJob =
+            if (unfollowJobs[userId]?.isActive == true) return
+            unfollowJobs[userId] =
                 viewModelScope.launch {
-                    runCatching { toggleFollowUseCase(userId = userId, currentlyFollowing = true) }
-                        .onSuccess { dispatch(FollowListReducerEvent.Unfollowed(userId)) }
-                        .onFailure { e ->
-                            if (e is CancellationException) throw e
-                            Log.w(TAG, "팔로잉 해제 실패: userId=$userId", e)
-                            dispatch(FollowListReducerEvent.ActionFailed("팔로잉을 해제하지 못했어요."))
-                        }
+                    try {
+                        runCatching { toggleFollowUseCase(userId = userId, currentlyFollowing = true) }
+                            .onSuccess { dispatch(FollowListReducerEvent.Unfollowed(userId)) }
+                            .onFailure { e ->
+                                if (e is CancellationException) throw e
+                                Log.w(TAG, "팔로잉 해제 실패: userId=$userId", e)
+                                dispatch(FollowListReducerEvent.ActionFailed("팔로잉을 해제하지 못했어요."))
+                            }
+                    } finally {
+                        unfollowJobs.remove(userId)
+                    }
                 }
         }
 

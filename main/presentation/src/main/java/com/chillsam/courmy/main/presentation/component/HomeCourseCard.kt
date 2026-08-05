@@ -115,20 +115,23 @@ private fun CourseCover(
                         ),
                     ),
         )
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.TopStart)
-                    .padding(12.dp)
-                    .clip(RoundedCornerShape(9999.dp))
-                    .background(color.bgDefaultLevel1)
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-        ) {
-            DsText(
-                text = course.categoryLabel,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel1,
-            )
+        // 카테고리가 없는 코스(theme 미선택)는 빈 알약이 뜨지 않도록 칩 자체를 생략한다.
+        if (course.categoryLabel.isNotBlank()) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
+                        .clip(RoundedCornerShape(9999.dp))
+                        .background(color.bgDefaultLevel1)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+            ) {
+                DsText(
+                    text = course.categoryLabel,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel1,
+                )
+            }
         }
         Box(
             modifier =
