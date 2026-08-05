@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
+import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
@@ -65,6 +66,9 @@ fun HomePage(modifier: Modifier = Modifier) {
     val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
     // 헤더 인사말·아바타는 내 프로필에서 가져온다.
     val profile = if (session.isLoggedIn) myProfileForHeader() else null
+
+    // 코스를 만들거나 저장한 뒤 탭을 옮겼다 오면 목록이 바뀌어 있을 수 있어 다시 불러온다.
+    RefreshOnResume { feedViewModel.onIntent(HomeFeedIntent.Retry) }
 
     // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
     LaunchedEffect(feedState.actionErrorMessage) {

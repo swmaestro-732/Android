@@ -43,6 +43,7 @@ import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
+import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
@@ -79,6 +80,9 @@ private fun SavedCourseList(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingRemoval by remember { mutableStateOf<SavedCourseVO?>(null) }
+
+    // 다른 화면에서 저장한 코스가 반영되도록 다시 보일 때마다 새로 불러온다.
+    RefreshOnResume { viewModel.onIntent(SavedCoursesIntent.Retry) }
 
     // 저장 취소 실패는 화면을 바꾸지 않고 토스트로만 알린다.
     LaunchedEffect(uiState.errorMessage) {
