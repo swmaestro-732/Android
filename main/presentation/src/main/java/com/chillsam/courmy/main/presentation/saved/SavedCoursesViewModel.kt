@@ -1,0 +1,134 @@
+package com.chillsam.courmy.main.presentation.saved
+
+import android.util.Log
+import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.main.domain.saved.GetSavedCoursesUseCase
+import com.chillsam.courmy.main.domain.saved.UnsaveCourseUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+/**
+ * 저장함 · 코스 탭(FS-14) ViewModel. `GET /service/v1/my/saved-courses` 로 목록을 로드하고,
+ * 저장 취소는 `DELETE /api/v1/courses/save/{courseId}` 로 보낸다.
+ *
+ * 로그인 사용자만 진입하는 화면이라(게스트는 별도 화면) JWT 가 있다고 전제한다.
+ */
+@HiltViewModel
+class SavedCoursesViewModel
+    @Inject
+    constructor(
+        private val getSavedCoursesUseCase: GetSavedCoursesUseCase,
+        private val unsaveCourseUseCase: UnsaveCourseUseCase,
+    ) : MviViewModel<SavedCoursesIntent, SavedCoursesUIState, SavedCoursesReducerEvent>(
+            SavedCoursesUIState.empty,
+        ) {
+        private var loadJob: Job? = null
+        private var unsaveJob: Job? = null
+
+        init {
+            onIntent(SavedCoursesIntent.Load)
+        }
+
+        override fun onIntent(intent: SavedCoursesIntent) {
+            when (intent) {
+                SavedCoursesIntent.Load,
+                SavedCoursesIntent.Retry,
+                -> {
+                    load()
+                }
+
+                is SavedCoursesIntent.Unsave -> {
+                    unsave(intent.courseId)
+                }
+
+                SavedCoursesIntent.ConsumeError -> {
+                    dispatch(SavedCoursesReducerEvent.ErrorConsumed)
+                }
+            }
+        }
+
+        override fun reduce(
+            state: SavedCoursesUIState,
+            event: SavedCoursesReducerEvent,
+        ): SavedCoursesUIState =
+            when (event) {
+                SavedCoursesReducerEvent.LoadStarted -> {
+                    state.copy(isLoading = true, loadErrorMessage = null)
+                }
+
+                is SavedCoursesReducerEvent.Loaded -> {
+                    state.copy(
+                        isLoading = false,
+                        courses = event.courses.toImmutableList(),
+                        loadErrorMessage = null,
+                    )
+                }
+
+                is SavedCoursesReducerEvent.LoadFailed -> {
+                    state.copy(isLoading = false, loadErrorMessage = event.message)
+                }
+
+                is SavedCoursesReducerEvent.Unsaved -> {
+                    state.copy(
+                        courses = state.courses.filterNot { it.id == event.courseId }.toImmutableList(),
+                    )
+                }
+
+                is SavedCoursesReducerEvent.UnsaveFailed -> {
+                    state.copy(errorMessage = event.message)
+                }
+
+                SavedCoursesReducerEvent.ErrorConsumed -> {
+                    state.copy(errorMessage = null)
+                }
+            }
+
+        private fun load() {
+            dispatch(SavedCoursesReducerEvent.LoadStarted)
+            loadJob?.cancel()
+            loadJob =
+                viewModelScope.launch {
+                    runCatching { getSavedCoursesUseCase() }
+                        .onSuccess { courses -> dispatch(SavedCoursesReducerEvent.Loaded(courses)) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
+                            Log.w(TAG, "저장 코스 로드 실패", e)
+                            dispatch(SavedCoursesReducerEvent.LoadFailed("저장한 코스를 불러오지 못했습니다."))
+                        }
+                }
+        }
+
+        /**
+         * 서버가 성공을 확인한 뒤에만 목록에서 뺀다.
+         * 먼저 지우고 실패 시 되돌리는 방식은 실패가 잦은 초기 연동에서 화면이 튀어 보이기 쉽다.
+         */
+        private fun unsave(courseId: String) {
+            val id = courseId.toLongOrNull()
+            if (id == null) {
+                Log.w(TAG, "잘못된 코스 id: $courseId")
+                dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
+                return
+            }
+            unsaveJob?.cancel()
+            unsaveJob =
+                viewModelScope.launch {
+                    runCatching { unsaveCourseUseCase(id) }
+                        .onSuccess { dispatch(SavedCoursesReducerEvent.Unsaved(courseId)) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "저장 취소 실패: courseId=$courseId", e)
+                            dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
+                        }
+                }
+        }
+
+        private companion object {
+            const val TAG = "SavedCourses"
+        }
+    }

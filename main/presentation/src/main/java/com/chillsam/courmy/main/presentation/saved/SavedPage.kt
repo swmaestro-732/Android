@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.saved
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,8 +18,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,9 +32,12 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -62,13 +68,25 @@ fun SavedPage(modifier: Modifier = Modifier) {
     }
 }
 
-/** 로그인 상태: 저장한 코스 카드 리스트. */
+/** 로그인 상태: 저장한 코스 카드 리스트(`GET /service/v1/my/saved-courses`). */
 @Composable
-private fun SavedCourseList(modifier: Modifier = Modifier) {
+private fun SavedCourseList(
+    modifier: Modifier = Modifier,
+    viewModel: SavedCoursesViewModel = hiltViewModel(),
+) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    var courses by remember { mutableStateOf(SavedCourseVO.sample) }
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingRemoval by remember { mutableStateOf<SavedCourseVO?>(null) }
+
+    // 저장 취소 실패는 화면을 바꾸지 않고 토스트로만 알린다.
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.onIntent(SavedCoursesIntent.ConsumeError)
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(
@@ -86,13 +104,31 @@ private fun SavedCourseList(modifier: Modifier = Modifier) {
                 color = color.contentDefaultLevel0,
                 modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
             )
-            courses.forEach { course ->
-                SavedCourseCard(
-                    course = course,
-                    onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
-                    onBookmarkClick = { pendingRemoval = course },
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
+            when {
+                uiState.courses.isNotEmpty() -> {
+                    uiState.courses.forEach { course ->
+                        SavedCourseCard(
+                            course = course,
+                            onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
+                            onBookmarkClick = { pendingRemoval = course },
+                            modifier = Modifier.padding(bottom = 16.dp),
+                        )
+                    }
+                }
+
+                uiState.isLoading -> {
+                    SavedListLoading()
+                }
+
+                else -> {
+                    SavedListMessage(
+                        message = uiState.loadErrorMessage ?: "아직 저장한 코스가 없어요.",
+                        onRetry =
+                            uiState.loadErrorMessage?.let {
+                                { viewModel.onIntent(SavedCoursesIntent.Retry) }
+                            },
+                    )
+                }
             }
         }
 
@@ -111,11 +147,50 @@ private fun SavedCourseList(modifier: Modifier = Modifier) {
     pendingRemoval?.let { course ->
         UnsaveConfirmDialog(
             onConfirm = {
-                courses = courses.filterNot { it.id == course.id }
+                viewModel.onIntent(SavedCoursesIntent.Unsave(course.id))
                 pendingRemoval = null
             },
             onDismiss = { pendingRemoval = null },
         )
+    }
+}
+
+/** 저장 목록 로딩 자리. */
+@Composable
+private fun SavedListLoading() {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(color = DesignSystemThemeImpl.designSystemColor.contentAccent)
+    }
+}
+
+/** 저장 목록이 비었거나 로드에 실패했을 때의 안내. [onRetry] 가 있으면 재시도를 노출한다. */
+@Composable
+private fun SavedListMessage(
+    message: String,
+    onRetry: (() -> Unit)?,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        DsText(
+            text = message,
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = color.contentDefaultLevel2,
+        )
+        if (onRetry != null) {
+            DsText(
+                text = "다시 시도",
+                style = DesignSystemThemeImpl.typeScale.textRegularM,
+                color = color.contentAccent,
+                modifier = Modifier.clickable(onClick = onRetry),
+            )
+        }
     }
 }
 

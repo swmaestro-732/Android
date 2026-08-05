@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.home.dto
 
+import com.chillsam.courmy.main.data.course.toCourseCategoryLabel
 import com.chillsam.courmy.main.data.profile.dto.formatCount
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import kotlinx.serialization.Serializable
@@ -43,28 +44,7 @@ fun CourseFeedDTO.toVOList(): List<HomeCourseVO> =
                 id = item.id.toString(),
                 title = item.title.orEmpty(),
                 coverImageUrl = item.coverImageUrl.orEmpty(),
-                categoryLabel = item.theme.toCategoryLabel(),
+                categoryLabel = item.theme.toCourseCategoryLabel(),
                 saveCountText = formatCount(item.savesCnt ?: 0),
             )
         }
-
-/**
- * 서버 `CourseCategory` enum 이름을 화면 라벨로 옮긴다.
- * 모르는 값(서버에 카테고리가 추가된 경우)이나 null 은 빈 문자열 — 칩을 렌더하지 않는다.
- */
-private fun String?.toCategoryLabel(): String =
-    when (this) {
-        "DATE" -> "데이트"
-        "HEALING" -> "힐링"
-        "FOOD" -> "맛집"
-        "CAFETOUR" -> "카페투어"
-        "CULTURE" -> "문화·전시"
-        "NATURE" -> "자연"
-        "NIGHTVIEW" -> "야경"
-        "SHOPPING" -> "쇼핑"
-        "TRADITION" -> "전통"
-        "ACTIVITY" -> "액티비티"
-        "FAMILY" -> "가족"
-        "SOLO" -> "혼자"
-        else -> ""
-    }

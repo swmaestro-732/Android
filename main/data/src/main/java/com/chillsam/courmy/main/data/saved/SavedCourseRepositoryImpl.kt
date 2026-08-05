@@ -1,0 +1,22 @@
+package com.chillsam.courmy.main.data.saved
+
+import com.chillsam.courmy.main.data.saved.dto.toVOList
+import com.chillsam.courmy.main.domain.saved.SavedCourseRepository
+import com.chillsam.courmy.main.entity.saved.SavedCourseVO
+
+class SavedCourseRepositoryImpl(
+    private val dataSource: SavedCourseDataSource,
+) : SavedCourseRepository {
+    override suspend fun getSavedCourses(size: Int): List<SavedCourseVO> {
+        val envelope = dataSource.getSavedCourses(size)
+        val data =
+            requireNotNull(envelope.data) {
+                envelope.message ?: "저장 코스 응답에 data 가 없습니다."
+            }
+        return data.toVOList()
+    }
+
+    override suspend fun unsaveCourse(courseId: Long) {
+        dataSource.unsaveCourse(courseId)
+    }
+}
