@@ -243,6 +243,9 @@ val appRoutes: List<AppRoute> =
                     },
                     onFollowAuthor = { notReady() },
                     onShare = { notReady() },
+                    // TODO-API-SPEC: 편집은 PATCH /api/v1/courses/{courseId} 가 서버에 있으나
+                    // 기존 코스를 불러오는 편집 화면이 아직 없다. 화면이 생기면 그쪽으로 이동시킨다. [wiki-needed]
+                    onEditCourse = { notReady() },
                 )
             },
         ),

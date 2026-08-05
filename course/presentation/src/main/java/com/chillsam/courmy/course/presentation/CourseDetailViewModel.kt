@@ -3,6 +3,7 @@ package com.chillsam.courmy.course.presentation
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.course.domain.DeleteCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,12 +24,14 @@ class CourseDetailViewModel
     constructor(
         private val getCourseDetailUseCase: GetCourseDetailUseCase,
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
+        private val deleteCourseUseCase: DeleteCourseUseCase,
     ) : MviViewModel<CourseDetailIntent, CourseDetailUIState, CourseDetailReducerEvent>(
             CourseDetailUIState.empty,
         ) {
         /** 진행 중인 로드 코루틴. 재요청 시 이전 것을 취소해 중복 실행·stale 결과 반영을 막는다. */
         private var loadJob: Job? = null
         private var saveJob: Job? = null
+        private var deleteJob: Job? = null
 
         /** 조회 대상 코스. null 이면 아직 [CourseDetailIntent.Load] 를 받지 못한 상태다. */
         private var courseId: Long? = null
@@ -48,6 +51,10 @@ class CourseDetailViewModel
 
                 CourseDetailIntent.ToggleSave -> {
                     toggleSave()
+                }
+
+                CourseDetailIntent.Delete -> {
+                    delete()
                 }
 
                 CourseDetailIntent.ConsumeError -> {
@@ -88,7 +95,37 @@ class CourseDetailViewModel
                 CourseDetailReducerEvent.ErrorConsumed -> {
                     state.copy(actionErrorMessage = null)
                 }
+
+                CourseDetailReducerEvent.DeleteStarted -> {
+                    state.copy(isDeleting = true, actionErrorMessage = null)
+                }
+
+                CourseDetailReducerEvent.Deleted -> {
+                    state.copy(isDeleting = false, isDeleted = true)
+                }
+
+                is CourseDetailReducerEvent.DeleteFailed -> {
+                    state.copy(isDeleting = false, actionErrorMessage = event.message)
+                }
             }
+
+        /** 되돌릴 수 없는 동작이라 중복 탭을 막고, 서버가 확정한 뒤에만 화면을 닫는다. */
+        private fun delete() {
+            val id = courseId
+            if (currentState.isDeleting || id == null) return
+            dispatch(CourseDetailReducerEvent.DeleteStarted)
+            deleteJob?.cancel()
+            deleteJob =
+                viewModelScope.launch {
+                    runCatching { deleteCourseUseCase(id) }
+                        .onSuccess { dispatch(CourseDetailReducerEvent.Deleted) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "코스 삭제 실패: courseId=$id", e)
+                            dispatch(CourseDetailReducerEvent.DeleteFailed("삭제하지 못했어요. 잠시 후 다시 시도해 주세요."))
+                        }
+                }
+        }
 
         /**
          * 서버가 확정한 뒤에 상태를 바꾼다(먼저 바꾸고 실패 시 되돌리면 버튼이 튀어 보인다).

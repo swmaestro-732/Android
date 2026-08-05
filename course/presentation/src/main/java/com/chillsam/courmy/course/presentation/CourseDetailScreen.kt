@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -92,11 +93,8 @@ import com.naver.maps.map.overlay.OverlayImage
 fun CourseDetailScreen(
     detail: CourseDetailVO,
     isSaving: Boolean,
-    onBack: () -> Unit,
-    onAuthorClick: () -> Unit,
-    onFollowAuthor: () -> Unit,
-    onShare: () -> Unit,
-    onSaveCourse: () -> Unit,
+    isDeleting: Boolean,
+    actions: CourseDetailActions,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -119,12 +117,12 @@ fun CourseDetailScreen(
                     .weight(1f)
                     .verticalScroll(rememberScrollState()),
         ) {
-            DetailHero(detail = detail, onBack = onBack)
+            DetailHero(detail = detail, onBack = actions.onBack)
             // 작성자 라인은 화면 가로 전체를 채우는 흰색 밴드라 좌우 패딩 밖에 둔다.
             AuthorRow(
                 detail = detail,
-                onAuthorClick = onAuthorClick,
-                onFollow = onFollowAuthor,
+                onAuthorClick = actions.onAuthorClick,
+                onFollow = actions.onFollowAuthor,
             )
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
@@ -139,6 +137,7 @@ fun CourseDetailScreen(
                 )
                 PlacesSection(
                     places = detail.places,
+                    authorName = detail.authorName,
                     onPlaceClick = { place ->
                         selectedPlace = place
                         // 도보 안내는 장소가 아니라 이 코스의 다음 장소까지 값이라 여기서 넘긴다.
@@ -153,10 +152,11 @@ fun CourseDetailScreen(
             }
         }
         DetailBottomBar(
+            isMine = detail.isMine,
             isSaved = detail.isSaved,
             isSaving = isSaving,
-            onShare = onShare,
-            onSaveCourse = onSaveCourse,
+            isDeleting = isDeleting,
+            actions = actions,
         )
     }
     if (selectedPlace != null) {
@@ -366,8 +366,8 @@ private fun AuthorRow(
                 )
             }
         }
-        // 이미 팔로우 중이면 버튼을 숨긴다(팔로우 안 한 경우에만 노출).
-        if (!detail.isFollowingAuthor) {
+        // 내 코스면 나를 팔로우할 수 없고, 이미 팔로우 중이면 다시 노출할 이유가 없다.
+        if (!detail.isMine && !detail.isFollowingAuthor) {
             Box(
                 modifier =
                     Modifier
@@ -426,6 +426,7 @@ private const val COLLAPSE_THRESHOLD = 3
 @Composable
 private fun PlacesSection(
     places: List<CourseDetailPlaceVO>,
+    authorName: String,
     onPlaceClick: (CourseDetailPlaceVO) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(true) }
@@ -461,7 +462,7 @@ private fun PlacesSection(
         }
         if (expanded) {
             places.forEach { place ->
-                DetailPlaceItem(place = place, onClick = { onPlaceClick(place) })
+                DetailPlaceItem(place = place, authorName = authorName, onClick = { onPlaceClick(place) })
                 place.walkToNextText?.let { RouteConnector(text = it) }
             }
         } else {
@@ -663,10 +664,11 @@ private fun MorePlacesRow(
     }
 }
 
-/** 장소 1건: 순번·이름·카테고리 헤더 + 사진 + "지호님 팁". 헤더 화살표로 장소 상세 시트를 연다. */
+/** 장소 1건: 순번·이름·카테고리 헤더 + 사진 + "Tip.{작성자}". 헤더 화살표로 장소 상세 시트를 연다. */
 @Composable
 private fun DetailPlaceItem(
     place: CourseDetailPlaceVO,
+    authorName: String,
     onClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -751,7 +753,7 @@ private fun DetailPlaceItem(
             )
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 DsText(
-                    text = "지호님 팁",
+                    text = "Tip.$authorName",
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentAccent,
                 )
@@ -1089,10 +1091,11 @@ private const val ROUTE_MAP_FIT_PADDING = 96
  */
 @Composable
 private fun DetailBottomBar(
+    isMine: Boolean,
     isSaved: Boolean,
     isSaving: Boolean,
-    onShare: () -> Unit,
-    onSaveCourse: () -> Unit,
+    isDeleting: Boolean,
+    actions: CourseDetailActions,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = Modifier.background(color.bgDefaultLevel1)) {
@@ -1121,7 +1124,7 @@ private fun DetailBottomBar(
                         .clip(buttonShape)
                         .border(1.dp, color.borderDefaultLevel0, buttonShape)
                         .background(color.bgDefaultLevel1)
-                        .clickable(onClick = onShare),
+                        .clickable(onClick = actions.onShare),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -1131,35 +1134,78 @@ private fun DetailBottomBar(
                     modifier = Modifier.size(22.dp),
                 )
             }
-            Row(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .height(56.dp)
-                        .clip(buttonShape)
-                        .background(if (isSaved) color.bgAccentSubtle else color.bgAccent)
-                        .clickable(enabled = !isSaving, onClick = onSaveCourse),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                val contentColor = if (isSaved) color.contentDefaultLevel1 else color.contentOnAccent
-                Icon(
-                    painter =
-                        painterResource(
-                            if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
-                        ),
-                    contentDescription = null,
-                    tint = contentColor,
-                    modifier = Modifier.size(20.dp),
+            if (isMine) {
+                // 내 코스는 저장할 이유가 없다. 편집·삭제를 대신 노출한다.
+                BottomBarButton(
+                    text = "코스 편집하기",
+                    shape = buttonShape,
+                    background = color.bgAccent,
+                    contentColor = color.contentOnAccent,
+                    enabled = !isDeleting,
+                    onClick = actions.onEditCourse,
                 )
-                Spacer(Modifier.width(8.dp))
-                DsText(
+                BottomBarButton(
+                    text = if (isDeleting) "삭제 중…" else "코스 삭제하기",
+                    shape = buttonShape,
+                    background = color.bgDefaultLevel1,
+                    contentColor = color.contentDanger,
+                    enabled = !isDeleting,
+                    borderColor = color.borderDefaultLevel0,
+                    onClick = actions.onDeleteCourse,
+                )
+            } else {
+                BottomBarButton(
                     text = if (isSaved) "저장됨" else "코스 저장하기",
-                    style = DesignSystemThemeImpl.typeScale.textStrongM,
-                    color = contentColor,
+                    shape = buttonShape,
+                    background = if (isSaved) color.bgAccentSubtle else color.bgAccent,
+                    contentColor = if (isSaved) color.contentDefaultLevel1 else color.contentOnAccent,
+                    enabled = !isSaving,
+                    iconRes = if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
+                    onClick = actions.onSaveCourse,
                 )
             }
         }
+    }
+}
+
+/** 하단 액션바의 가로 확장 버튼. 저장·편집·삭제가 같은 형태를 공유한다. */
+@Composable
+private fun RowScope.BottomBarButton(
+    text: String,
+    shape: Shape,
+    background: Color,
+    contentColor: Color,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    iconRes: Int? = null,
+    borderColor: Color? = null,
+) {
+    Row(
+        modifier =
+            Modifier
+                .weight(1f)
+                .height(56.dp)
+                .clip(shape)
+                .background(background)
+                .then(if (borderColor != null) Modifier.border(1.dp, borderColor, shape) else Modifier)
+                .clickable(enabled = enabled, onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        if (iconRes != null) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+        }
+        DsText(
+            text = text,
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = contentColor,
+        )
     }
 }
 
@@ -1170,11 +1216,17 @@ private fun CourseDetailScreenPreview() {
         CourseDetailScreen(
             detail = courseDetailSample,
             isSaving = false,
-            onBack = {},
-            onAuthorClick = {},
-            onFollowAuthor = {},
-            onShare = {},
-            onSaveCourse = {},
+            isDeleting = false,
+            actions =
+                CourseDetailActions(
+                    onBack = {},
+                    onAuthorClick = {},
+                    onFollowAuthor = {},
+                    onShare = {},
+                    onSaveCourse = {},
+                    onEditCourse = {},
+                    onDeleteCourse = {},
+                ),
         )
     }
 }

@@ -40,6 +40,11 @@ data class CourseDetailVO(
     val reviews: List<CourseReviewVO>,
     /** 내가 이 코스를 저장했는지(서버 viewer.hasSaved). 하단 저장 버튼 상태에 쓴다. */
     val isSaved: Boolean = false,
+    /**
+     * 내가 만든 코스인지. 서버가 내려주지 않아 작성자 id 와 세션 사용자 id 를 비교해 채운다.
+     * true 면 저장 대신 편집·삭제를 노출하고 작성자 팔로우 버튼을 숨긴다.
+     */
+    val isMine: Boolean = false,
 )
 
 /**

@@ -29,4 +29,13 @@ sealed interface CourseDetailReducerEvent : ReducerEvent {
     ) : CourseDetailReducerEvent
 
     data object ErrorConsumed : CourseDetailReducerEvent
+
+    data object DeleteStarted : CourseDetailReducerEvent
+
+    /** 삭제 확정 — 화면이 이 값을 보고 이전 화면으로 돌아간다. */
+    data object Deleted : CourseDetailReducerEvent
+
+    data class DeleteFailed(
+        val message: String,
+    ) : CourseDetailReducerEvent
 }

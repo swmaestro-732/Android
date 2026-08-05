@@ -10,7 +10,7 @@ import org.junit.Test
 class CourseDetailDtoMappingTest {
     @Test
     fun `course 필드를 화면 표시용 VO 로 포맷팅한다`() {
-        val vo = fullData().toVO()
+        val vo = fullData().toVO(myUserId = null)
 
         assertEquals("비 오는 날 성수 감성 카페 코스", vo.title)
         assertEquals("성수 · 데이트", vo.category)
@@ -36,7 +36,7 @@ class CourseDetailDtoMappingTest {
                                     place(orderNo = 0, name = "첫째", walkToNext = 6),
                                 ),
                         ),
-                ).toVO()
+                ).toVO(myUserId = null)
 
         assertEquals(listOf("첫째", "둘째"), vo.places.map { it.name })
         assertEquals(listOf(1, 2), vo.places.map { it.order })
@@ -65,11 +65,28 @@ class CourseDetailDtoMappingTest {
                                     ),
                                 ),
                         ),
-                ).toVO()
+                ).toVO(myUserId = null)
 
         assertEquals("익명", vo.reviews[0].author)
         assertEquals(listOf("a", "b"), vo.reviews[0].photoUrls)
         assertEquals("1일 전", vo.reviews[0].dateText)
+    }
+
+    /** 서버가 isMine 을 주지 않아 작성자 id 와 세션 id 비교로 판정한다. 잘못되면 남의 코스에 삭제 버튼이 뜬다. */
+    @Test
+    fun `내 코스 여부는 작성자 id 와 내 id 비교로 정한다`() {
+        fun voWith(
+            authorId: Long?,
+            myId: Long?,
+        ) = fullData()
+            .copy(course = fullData().course!!.copy(author = AuthorDTO(id = authorId, handle = "jiho")))
+            .toVO(myUserId = myId)
+
+        assertEquals(true, voWith(authorId = 7L, myId = 7L).isMine)
+        assertEquals(false, voWith(authorId = 7L, myId = 9L).isMine)
+        // 비로그인이거나 작성자 id 가 없으면 내 코스로 보지 않는다(삭제 버튼이 뜨면 안 된다).
+        assertEquals(false, voWith(authorId = 7L, myId = null).isMine)
+        assertEquals(false, voWith(authorId = null, myId = null).isMine)
     }
 
     /** 서버가 author.isFollowing 을 주는데 DTO 가 받지 않아 항상 "팔로우하기" 가 뜨던 문제를 고정한다. */
@@ -78,11 +95,11 @@ class CourseDetailDtoMappingTest {
         val following =
             fullData()
                 .copy(course = fullData().course!!.copy(author = AuthorDTO(handle = "jiho", isFollowing = true)))
-                .toVO()
+                .toVO(myUserId = null)
         val notFollowing =
             fullData()
                 .copy(course = fullData().course!!.copy(author = AuthorDTO(handle = "jiho", isFollowing = false)))
-                .toVO()
+                .toVO(myUserId = null)
 
         assertEquals(true, following.isFollowingAuthor)
         assertEquals(false, notFollowing.isFollowingAuthor)
@@ -94,7 +111,7 @@ class CourseDetailDtoMappingTest {
         fun voWith(count: Int) =
             fullData()
                 .copy(course = fullData().course!!.copy(stats = CourseStatsDTO(tracingCount = count)))
-                .toVO()
+                .toVO(myUserId = null)
 
         assertEquals("0 따라감", voWith(0).followerText)
         assertEquals("999 따라감", voWith(999).followerText)
@@ -139,7 +156,7 @@ class CourseDetailDtoMappingTest {
                             ),
                     ),
             )
-        val vo = data.toVO()
+        val vo = data.toVO(myUserId = null)
 
         assertEquals("cover.jpg", vo.coverImageUrl)
         assertEquals("avatar.jpg", vo.authorImageUrl)
@@ -167,7 +184,7 @@ class CourseDetailDtoMappingTest {
                                     ),
                                 ),
                         ),
-                ).toVO()
+                ).toVO(myUserId = null)
 
         assertEquals(37.5445, vo.places.single().latitude!!, 0.0)
         assertEquals(127.0575, vo.places.single().longitude!!, 0.0)
@@ -175,7 +192,7 @@ class CourseDetailDtoMappingTest {
 
     @Test
     fun `누락 필드는 기본값으로 안전하게 매핑된다`() {
-        val vo = CourseScreenData(course = CourseScreenDTO(), reviewSummary = null).toVO()
+        val vo = CourseScreenData(course = CourseScreenDTO(), reviewSummary = null).toVO(myUserId = null)
 
         assertEquals("", vo.title)
         assertEquals("", vo.category)

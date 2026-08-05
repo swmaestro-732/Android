@@ -22,7 +22,7 @@ class CourseRepositoryImplDraftTest {
         CourseRepositoryImpl(
             CourseDetailDataSource(UnusedApiService),
             CourseCreateDataSource(UnusedCreateApiService),
-        )
+        ) { null }
 
     @Test
     fun `새 코스를 임시저장하면 목록에 1건 생긴다`() =

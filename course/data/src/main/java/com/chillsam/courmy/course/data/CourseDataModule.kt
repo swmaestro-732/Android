@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data
 
+import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.course.data.courseCreate.CourseCreateApiService
 import com.chillsam.courmy.course.data.courseCreate.CourseCreateDataSource
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailApiService
@@ -43,7 +44,8 @@ object CourseDataModule {
     fun provideCourseRepository(
         courseDetailDataSource: CourseDetailDataSource,
         courseCreateDataSource: CourseCreateDataSource,
-    ): CourseRepository = CourseRepositoryImpl(courseDetailDataSource, courseCreateDataSource)
+        tokenStore: TokenStore,
+    ): CourseRepository = CourseRepositoryImpl(courseDetailDataSource, courseCreateDataSource) { tokenStore.userId }
 
     @Provides
     @Singleton

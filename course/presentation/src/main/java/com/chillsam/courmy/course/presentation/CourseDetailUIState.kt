@@ -14,6 +14,9 @@ data class CourseDetailUIState(
     val isSaving: Boolean = false,
     /** 저장 실패처럼 토스트로 한 번 알리고 지우는 일시 오류. */
     val actionErrorMessage: String? = null,
+    val isDeleting: Boolean = false,
+    /** 삭제가 끝나 화면을 닫아도 되는 상태. */
+    val isDeleted: Boolean = false,
 ) : UiState {
     companion object {
         val empty: CourseDetailUIState = CourseDetailUIState()

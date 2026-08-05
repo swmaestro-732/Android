@@ -21,8 +21,6 @@ data class CourseDetailEnvelope(
 data class CourseScreenData(
     val course: CourseScreenDTO? = null,
     val reviewSummary: ReviewSummaryDTO? = null,
-    /** 로그인 사용자 관점 상태(저장 여부 등). 비로그인이면 서버가 false 로 채운다. */
-    val viewer: CourseViewerDTO? = null,
 )
 
 @Serializable
@@ -39,6 +37,8 @@ data class CourseScreenDTO(
     val stats: CourseStatsDTO? = null,
     val author: AuthorDTO? = null,
     val places: List<CoursePlaceDTO>? = null,
+    /** 로그인 사용자 관점 상태(저장 여부 등). 서버는 course 안에 담아 준다. */
+    val viewer: CourseViewerDTO? = null,
 )
 
 @Serializable
@@ -110,8 +110,10 @@ data class ReviewAuthorDTO(
 
 /**
  * BFF 응답 → 화면 표시용 VO. raw 값을 화면 표시 문자열("4곳", "도보 20분" 등)로 포맷팅한다.
+ *
+ * [myUserId] 는 JWT 에서 얻은 내 id 로, "내 코스" 판정에만 쓴다(서버가 isMine 을 주지 않는다).
  */
-fun CourseScreenData.toVO(): CourseDetailVO {
+fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
     val course = requireNotNull(this.course) { "코스 상세 응답에 course 가 없습니다." }
     val stats = course.stats
     val summary = reviewSummary
@@ -138,8 +140,9 @@ fun CourseScreenData.toVO(): CourseDetailVO {
         rating = (summary?.averageRating ?: 0.0).toString(),
         reviewCountText = "${summary?.totalCount ?: 0}개",
         reviews = summary?.previews.orEmpty().map { it.toVO() },
-        isSaved = viewer?.hasSaved ?: false,
+        isSaved = course.viewer?.hasSaved ?: false,
         isFollowingAuthor = course.author?.isFollowing ?: false,
+        isMine = myUserId != null && myUserId == course.author?.id,
     )
 }
 
