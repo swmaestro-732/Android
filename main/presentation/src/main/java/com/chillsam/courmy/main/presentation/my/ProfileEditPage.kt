@@ -52,6 +52,7 @@ import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
+import com.chillsam.courmy.main.entity.auth.HandleCheckResult
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 import com.chillsam.courmy.main.presentation.login.HandleCheckIntent
 import com.chillsam.courmy.main.presentation.login.HandleCheckViewModel
@@ -60,11 +61,16 @@ import com.chillsam.courmy.main.presentation.login.message
 /** 닉네임 최대 길이(Figma FS-26 카운터 기준). 서버 한도(20)보다 엄격한 앱 규칙이다. */
 private const val NICKNAME_MAX_LENGTH = 12
 
+/** 소개 최대 길이. 서버 한도가 없어(로컬 저장) 마이 화면 2줄에 들어가는 선으로 앱이 정한다. */
+private const val BIO_MAX_LENGTH = 60
+
 /**
  * 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·관심 테마/지역을 편집한다.
  *
- * 소개(bio)는 서버 `UpdateProfileRequest` 에 필드가 없어 저장할 수 없으므로 렌더하지 않는다
- * ([ProfileEditViewModel] 주석 참고).
+ * TODO-API-SPEC: 소개(bio)는 서버 `UpdateProfileRequest`·`MyPageProfileResponse` 어디에도 필드가 없어
+ * **기기에만 저장한다**(마이 화면의 소개도 같은 로컬 값을 읽는다). 그래서 이 기기에서만 보이고
+ * 다른 사용자에게는 보이지 않으며 앱을 지우면 사라진다.
+ * 백엔드에 필드가 추가되면 로컬 저장(BioPreferencesDataStore)을 지우고 저장 요청에 합친다. [wiki-needed]
  */
 @Composable
 fun ProfileEditPage(
@@ -82,9 +88,11 @@ fun ProfileEditPage(
     val profile = myState.profile
     val originalNickname = profile?.nickname.orEmpty()
     val originalHandle = profile?.handle.orEmpty()
+    val originalBio = profile?.bio.orEmpty()
     // 프로필이 늦게 도착하면 그 값으로 입력칸을 다시 채운다.
     var nickname by remember(originalNickname) { mutableStateOf(originalNickname) }
     var handle by remember(originalHandle) { mutableStateOf(originalHandle) }
+    var bio by remember(originalBio) { mutableStateOf(originalBio) }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     val checkState by handleCheckViewModel.uiState.collectAsStateWithLifecycle()
     val editState by editViewModel.uiState.collectAsStateWithLifecycle()
@@ -96,7 +104,7 @@ fun ProfileEditPage(
     val handleSaveable = !handleChanged || idResult?.isAvailable == true
     val hasChanges =
         handleSaveable &&
-            (nickname != originalNickname || handleChanged || profileImageUri != null)
+            (nickname != originalNickname || handleChanged || profileImageUri != null || bio != originalBio)
 
     LaunchedEffect(editState.saved) {
         if (editState.saved) {
@@ -139,30 +147,24 @@ fun ProfileEditPage(
                 onValueChange = { if (it.length <= NICKNAME_MAX_LENGTH) nickname = it },
                 counter = "${nickname.length}/$NICKNAME_MAX_LENGTH",
             )
-            LabeledField(
-                label = "아이디",
+            HandleField(
                 value = handle,
+                changed = handleChanged,
+                isChecking = checkState.isChecking,
+                result = idResult,
                 onValueChange = {
                     handle = it
                     // 값이 바뀌면 이전 검증 결과 무효화.
                     handleCheckViewModel.onIntent(HandleCheckIntent.Reset)
                 },
-                inputTrailing = {
-                    CheckButton(
-                        enabled = handleChanged && !checkState.isChecking,
-                        onClick = { handleCheckViewModel.onIntent(HandleCheckIntent.Check(handle)) },
-                    )
-                },
-                belowField = {
-                    idResult?.let { result ->
-                        DsText(
-                            text = result.message(),
-                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                            color = if (result.isAvailable) color.contentSuccess else color.contentDanger,
-                            modifier = Modifier.padding(start = 16.dp, top = 6.dp),
-                        )
-                    }
-                },
+                onCheck = { handleCheckViewModel.onIntent(HandleCheckIntent.Check(handle)) },
+            )
+            LabeledField(
+                label = "소개",
+                value = bio,
+                onValueChange = { if (it.length <= BIO_MAX_LENGTH) bio = it },
+                counter = "${bio.length}/$BIO_MAX_LENGTH",
+                singleLine = false,
             )
             InterestSummary(
                 title = "관심 테마",
@@ -191,6 +193,7 @@ fun ProfileEditPage(
                             nickname = nickname.takeIf { it != originalNickname },
                             handle = handle.takeIf { it != originalHandle },
                             localImageUri = profileImageUri?.toString(),
+                            bio = bio.takeIf { it != originalBio },
                         ),
                     )
                 },
@@ -265,6 +268,42 @@ private fun AvatarEditor(
             }
         }
     }
+}
+
+/**
+ * 아이디 입력 필드. 중복 확인 버튼과 판정 문구까지 한 덩어리로 묶는다.
+ *
+ * [result] 는 "지금 입력값에 대한" 판정만 넘어온다(입력이 바뀌면 호출부가 null 로 준다).
+ */
+@Composable
+private fun HandleField(
+    value: String,
+    changed: Boolean,
+    isChecking: Boolean,
+    result: HandleCheckResult?,
+    onValueChange: (String) -> Unit,
+    onCheck: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    LabeledField(
+        label = "아이디",
+        value = value,
+        onValueChange = onValueChange,
+        inputTrailing = {
+            // 값을 바꾼 적이 없으면 확인할 것도 없다.
+            CheckButton(enabled = changed && !isChecking, onClick = onCheck)
+        },
+        belowField = {
+            result?.let {
+                DsText(
+                    text = it.message(),
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = if (it.isAvailable) color.contentSuccess else color.contentDanger,
+                    modifier = Modifier.padding(start = 16.dp, top = 6.dp),
+                )
+            }
+        },
+    )
 }
 
 @Composable

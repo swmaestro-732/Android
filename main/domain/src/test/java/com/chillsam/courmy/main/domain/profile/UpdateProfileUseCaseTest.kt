@@ -22,8 +22,14 @@ class UpdateProfileUseCaseTest {
             private set
         var updateCalled = false
             private set
+        var savedBio: String? = null
+            private set
 
         override suspend fun getMyProfile(): MyProfileVO = error("호출되지 않아야 한다")
+
+        override suspend fun saveBio(bio: String) {
+            savedBio = bio
+        }
 
         override suspend fun getUserProfile(handle: String): UserProfileVO = error("호출되지 않아야 한다")
 
@@ -104,5 +110,27 @@ class UpdateProfileUseCaseTest {
             }
 
             assertTrue("업로드 실패 시 수정 요청이 나가면 안 된다", !profile.updateCalled)
+        }
+
+    @Test
+    fun `소개를 바꾸면 로컬에 저장된다`() =
+        runTest {
+            val repository = FakeProfileRepository()
+            val useCase = UpdateProfileUseCase(repository, FakeMediaRepository())
+
+            useCase(nickname = "허나영임", bio = "성수 산책 좋아해요")
+
+            assertEquals("성수 산책 좋아해요", repository.savedBio)
+        }
+
+    @Test
+    fun `소개를 건드리지 않으면 저장하지 않는다`() =
+        runTest {
+            val repository = FakeProfileRepository()
+            val useCase = UpdateProfileUseCase(repository, FakeMediaRepository())
+
+            useCase(nickname = "허나영임")
+
+            assertNull(repository.savedBio)
         }
 }
