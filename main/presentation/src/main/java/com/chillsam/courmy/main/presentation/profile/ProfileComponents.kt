@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 
@@ -283,15 +284,7 @@ private fun ProfileCourseCard(
         modifier =
             modifier
                 .clickable(onClick = onClick)
-                .shadow(
-                    // 낮은 elevation은 blur 가 거의 없어 테두리 선처럼 보인다.
-                    // elevation 을 올리고 spot/ambient 를 옅게 줘 부드럽게 퍼지게 한다(API 28+ 반영).
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(16.dp),
-                    ambientColor = color.contentDefaultLevel0.copy(alpha = 0.12f),
-                    spotColor = color.contentDefaultLevel0.copy(alpha = 0.16f),
-                ).clip(RoundedCornerShape(16.dp))
-                .background(color.bgDefaultLevel1),
+                .cardShadow(RoundedCornerShape(16.dp)),
     ) {
         Box(
             modifier =
