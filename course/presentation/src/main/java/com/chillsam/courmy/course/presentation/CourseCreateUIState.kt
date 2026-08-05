@@ -18,6 +18,12 @@ data class CourseCreateUIState(
     val suggestedTags: ImmutableList<String> = persistentListOf(),
     val places: ImmutableList<CoursePlaceVO> = persistentListOf(),
     val visibility: CourseVisibility = CourseVisibility.PUBLIC,
+    val isSaving: Boolean = false,
+    /** 서버 저장이 끝나면 채워진다. 코스 상세로 넘어가는 신호. */
+    val savedCourseId: Long? = null,
+    /** 코스는 만들어졌지만 사진 업로드가 실패한 경우 true. 안내만 하고 저장은 성공으로 본다. */
+    val imagesMissing: Boolean = false,
+    val errorMessage: String? = null,
 ) : UiState {
     /**
      * 코스 저장 가능 최소 조건: 코스 이름 有 · 장소 [MIN_PLACES]곳 이상 · 각 장소마다 사진 1장 이상.

@@ -38,11 +38,19 @@ data class CourseDetailVO(
     val rating: String,
     val reviewCountText: String,
     val reviews: List<CourseReviewVO>,
+    /** 내가 이 코스를 저장했는지(서버 viewer.hasSaved). 하단 저장 버튼 상태에 쓴다. */
+    val isSaved: Boolean = false,
+    /**
+     * 내가 만든 코스인지. 서버가 내려주지 않아 작성자 id 와 세션 사용자 id 를 비교해 채운다.
+     * true 면 저장 대신 편집·삭제를 노출하고 작성자 팔로우 버튼을 숨긴다.
+     */
+    val isMine: Boolean = false,
 )
 
 /**
  * 코스 상세의 장소 1건("코스 속 장소").
  *
+ * - [placeId]        place 도메인 식별자. 장소 상세(`GET /service/v1/places/{placeId}`) 조회 키
  * - [order]          순번 (1부터)
  * - [name]           장소명
  * - [category]       카테고리 (예: "카페 · 베이커리")
@@ -55,6 +63,7 @@ data class CourseDetailVO(
  */
 @Serializable
 data class CourseDetailPlaceVO(
+    val placeId: Long = 0L,
     val order: Int,
     val name: String,
     val category: String,

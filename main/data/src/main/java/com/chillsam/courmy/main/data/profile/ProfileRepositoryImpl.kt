@@ -5,11 +5,9 @@ import com.chillsam.courmy.main.data.profile.dto.MyPageEnvelope
 import com.chillsam.courmy.main.data.profile.dto.MyPageScreenDTO
 import com.chillsam.courmy.main.data.profile.dto.UpdateProfileRequest
 import com.chillsam.courmy.main.data.profile.dto.formatCount
-import com.chillsam.courmy.main.data.profile.dto.toEditResultVO
 import com.chillsam.courmy.main.data.profile.dto.toMyProfileVO
 import com.chillsam.courmy.main.data.profile.dto.toUserProfileVO
 import com.chillsam.courmy.main.domain.profile.ProfileRepository
-import com.chillsam.courmy.main.entity.my.MyProfileEditResultVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.entity.user.FollowResultVO
 import com.chillsam.courmy.main.entity.user.UserProfileVO
@@ -20,7 +18,6 @@ import com.chillsam.courmy.main.entity.user.UserProfileVO
  */
 class ProfileRepositoryImpl(
     private val dataSource: ProfileDataSource,
-    private val imageUploadDataSource: ImageUploadDataSource,
     private val tokenStore: TokenStore,
 ) : ProfileRepository {
     override suspend fun getMyProfile(): MyProfileVO = dataSource.getMyPage().requireData().toMyProfileVO()
@@ -45,38 +42,20 @@ class ProfileRepositoryImpl(
 
     /**
      * 공백만 있는 값은 서버가 거부하므로(`@Size(min=1)`) null 로 바꿔 "변경 안 함"으로 보낸다.
-     * 덕분에 화면에서 빈 입력이 넘어와도 기존 값이 지워지지 않는다.
+     * 대상은 서버가 JWT 로 식별하므로 userId 를 싣지 않는다.
      */
     override suspend fun updateProfile(
         nickname: String?,
         handle: String?,
         profileImageUrl: String?,
-    ): MyProfileEditResultVO {
-        val envelope =
-            dataSource.updateProfile(
-                UpdateProfileRequest(
-                    nickname = nickname?.takeIf { it.isNotBlank() },
-                    handle = handle?.takeIf { it.isNotBlank() },
-                    profileImageUrl = profileImageUrl?.takeIf { it.isNotBlank() },
-                ),
-            )
-        val data =
-            requireNotNull(envelope.data) {
-                envelope.message ?: "프로필 수정 응답에 data 가 없습니다."
-            }
-        return data.toEditResultVO()
-    }
-
-    override suspend fun uploadProfileImage(localUri: String): String =
-        imageUploadDataSource.uploadProfileImage(localUri)
-
-    override suspend fun isHandleAvailable(handle: String): Boolean {
-        val envelope = dataSource.checkHandleAvailability(handle)
-        val data =
-            requireNotNull(envelope.data) {
-                envelope.message ?: "아이디 확인 응답에 data 가 없습니다."
-            }
-        return data.available
+    ) {
+        dataSource.updateProfile(
+            UpdateProfileRequest(
+                nickname = nickname?.takeIf { it.isNotBlank() },
+                handle = handle?.takeIf { it.isNotBlank() },
+                profileImageUrl = profileImageUrl?.takeIf { it.isNotBlank() },
+            ),
+        )
     }
 
     private fun MyPageEnvelope.requireData(): MyPageScreenDTO =

@@ -17,6 +17,8 @@ import javax.inject.Inject
 sealed interface SignupIntent : MviIntent {
     data class Submit(
         val profile: SignupProfile,
+        /** 사용자가 고른 로컬 이미지(content://). 가입 성공 후 업로드한다. */
+        val localImageUri: String? = null,
     ) : SignupIntent
 
     data object ConsumeDone : SignupIntent
@@ -59,7 +61,7 @@ class SignupViewModel
 
         override fun onIntent(intent: SignupIntent) {
             when (intent) {
-                is SignupIntent.Submit -> submit(intent.profile)
+                is SignupIntent.Submit -> submit(intent.profile, intent.localImageUri)
                 SignupIntent.ConsumeDone -> dispatch(SignupReducerEvent.DoneConsumed)
                 SignupIntent.ConsumeError -> dispatch(SignupReducerEvent.ErrorConsumed)
             }
@@ -70,20 +72,38 @@ class SignupViewModel
             event: SignupReducerEvent,
         ): SignupUiState =
             when (event) {
-                SignupReducerEvent.Started -> state.copy(isLoading = true, errorMessage = null)
-                SignupReducerEvent.Succeeded -> state.copy(isLoading = false, done = true)
-                is SignupReducerEvent.Failed -> state.copy(isLoading = false, errorMessage = event.message)
-                SignupReducerEvent.DoneConsumed -> state.copy(done = false)
-                SignupReducerEvent.ErrorConsumed -> state.copy(errorMessage = null)
+                SignupReducerEvent.Started -> {
+                    state.copy(isLoading = true, errorMessage = null)
+                }
+
+                SignupReducerEvent.Succeeded -> {
+                    state.copy(isLoading = false, done = true)
+                }
+
+                is SignupReducerEvent.Failed -> {
+                    state.copy(isLoading = false, errorMessage = event.message)
+                }
+
+                SignupReducerEvent.DoneConsumed -> {
+                    state.copy(done = false)
+                }
+
+                SignupReducerEvent.ErrorConsumed -> {
+                    state.copy(errorMessage = null)
+                }
             }
 
-        private fun submit(profile: SignupProfile) {
+        private fun submit(
+            profile: SignupProfile,
+            localImageUri: String?,
+        ) {
             if (currentState.isLoading) return
             dispatch(SignupReducerEvent.Started)
             job?.cancel()
             job =
                 viewModelScope.launch {
-                    runCatching { signupUseCase(profile) }
+                    runCatching { signupUseCase(profile, localImageUri) }
+                        // 이미지 업로드가 실패해도(false) 계정은 만들어졌으므로 가입은 성공으로 끝낸다.
                         .onSuccess { dispatch(SignupReducerEvent.Succeeded) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e

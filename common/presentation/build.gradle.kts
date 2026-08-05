@@ -65,6 +65,8 @@ dependencies {
 
     api(libs.androidx.core.ktx)
     api(libs.androidx.lifecycle.runtime.ktx)
+    // collectAsStateWithLifecycle / LifecycleResumeEffect. 전이 의존으로 딸려오던 것을 명시한다.
+    api(libs.androidx.lifecycle.runtime.compose)
     api(platform(libs.androidx.compose.bom))
     api(libs.androidx.compose.ui)
     api(libs.androidx.compose.ui.graphics)

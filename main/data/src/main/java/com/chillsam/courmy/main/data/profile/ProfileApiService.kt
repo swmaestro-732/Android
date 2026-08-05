@@ -1,9 +1,8 @@
 package com.chillsam.courmy.main.data.profile
 
-import com.chillsam.courmy.main.data.profile.dto.AccountProfileEnvelope
-import com.chillsam.courmy.main.data.profile.dto.AvailabilityEnvelope
 import com.chillsam.courmy.main.data.profile.dto.FollowEnvelope
 import com.chillsam.courmy.main.data.profile.dto.MyPageEnvelope
+import com.chillsam.courmy.main.data.profile.dto.UpdateProfileEnvelope
 import com.chillsam.courmy.main.data.profile.dto.UpdateProfileRequest
 import retrofit2.Response
 import retrofit2.http.Body
@@ -30,23 +29,6 @@ interface ProfileApiService {
         @Path("handle") handle: String,
     ): Response<MyPageEnvelope>
 
-    /**
-     * 내 프로필 수정 — 넘긴 필드만 반영된다(부분 수정). 대상은 JWT 로 식별하므로 경로에 id 가 없다.
-     *
-     * 경로가 `/api/v1/my/profile` 이 아니라 컬렉션 경로 `/api/v1/users` 인 점에 주의한다
-     * (서버 `UserController` 의 `@RequestMapping("/api/v1/users")` + `@PatchMapping`).
-     */
-    @PATCH("api/v1/users")
-    suspend fun updateProfile(
-        @Body body: UpdateProfileRequest,
-    ): Response<AccountProfileEnvelope>
-
-    /** 핸들(아이디) 사용 가능 여부. 공개 엔드포인트라 인증이 필요 없다. */
-    @GET("api/v1/users/availability")
-    suspend fun checkHandleAvailability(
-        @Query("handle") handle: String,
-    ): Response<AvailabilityEnvelope>
-
     /** 대상 사용자의 팔로워로 "나"를 추가(멱등이라 PUT). */
     @PUT("api/v1/users/followers/{userId}")
     suspend fun follow(
@@ -58,4 +40,15 @@ interface ProfileApiService {
     suspend fun unfollow(
         @Path("userId") userId: Long,
     ): Response<FollowEnvelope>
+
+    /**
+     * 내 프로필 수정(넘긴 필드만 반영). 대상은 JWT 로 식별하므로 경로·쿼리에 id 를 싣지 않는다.
+     *
+     * 경로가 `/api/v1/my/profile` 이 아니라 컬렉션 경로인 점에 주의한다 — 서버 `UserController` 는
+     * `@RequestMapping("/api/v1/users")` + `@PatchMapping` 이고, `/my/profile` 매핑은 없다.
+     */
+    @PATCH("api/v1/users")
+    suspend fun updateProfile(
+        @Body request: UpdateProfileRequest,
+    ): Response<UpdateProfileEnvelope>
 }

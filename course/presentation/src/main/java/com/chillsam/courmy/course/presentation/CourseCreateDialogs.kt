@@ -214,3 +214,58 @@ private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
     }
 
 private const val TOAST_DURATION_MILLIS = 2000L
+
+/** 코스 삭제 확인. 되돌릴 수 없는 동작이라 확인 버튼을 danger 로 둔다. */
+@Composable
+internal fun CourseDeleteConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+                .noRippleClickable(onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .padding(horizontal = 40.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(color.bgDefaultLevel0)
+                    .noRippleClickable {}
+                    .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            DsText(
+                text = "코스를 삭제할까요?",
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+            )
+            DsText(
+                text = "삭제한 코스는 되돌릴 수 없어요.",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+                textAlign = TextAlign.Center,
+                maxLines = Int.MAX_VALUE,
+            )
+            Spacer(Modifier.height(12.dp))
+            SheetActionButton(
+                text = "삭제하기",
+                textColor = color.contentDanger,
+                background = Color.Transparent,
+                onClick = onConfirm,
+            )
+            SheetActionButton(
+                text = "취소",
+                textColor = color.contentDefaultLevel2,
+                background = Color.Transparent,
+                onClick = onDismiss,
+            )
+        }
+    }
+}

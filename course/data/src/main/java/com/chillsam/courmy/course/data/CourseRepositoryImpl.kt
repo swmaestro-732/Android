@@ -1,5 +1,7 @@
 package com.chillsam.courmy.course.data
 
+import com.chillsam.courmy.course.data.courseCreate.CourseCreateDataSource
+import com.chillsam.courmy.course.data.courseCreate.dto.toCreateRequest
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
 import com.chillsam.courmy.course.data.courseDetail.dto.toVO
 import com.chillsam.courmy.course.domain.CourseRepository
@@ -25,6 +27,12 @@ import kotlinx.coroutines.flow.update
  */
 class CourseRepositoryImpl(
     private val courseDetailDataSource: CourseDetailDataSource,
+    private val courseCreateDataSource: CourseCreateDataSource,
+    /**
+     * 현재 사용자 id 제공자("내 코스" 판정용).
+     * TokenStore 를 직접 받으면 Android 암호화 저장에 묶여 단위 테스트에서 생성할 수 없어 함수로 받는다.
+     */
+    private val myUserId: () -> Long?,
 ) : CourseRepository {
     private val _savedCourses = MutableStateFlow<List<SavedCourseVO>>(emptyList())
     override val savedCourses: StateFlow<List<SavedCourseVO>> = _savedCourses.asStateFlow()
@@ -84,7 +92,7 @@ class CourseRepositoryImpl(
     override suspend fun getCourseDetail(courseId: Long): CourseDetailVO {
         val envelope = courseDetailDataSource.getCourseDetail(courseId)
         val data = requireNotNull(envelope.data) { "코스 상세 응답에 data 가 없습니다: courseId=$courseId" }
-        return data.toVO()
+        return data.toVO(myUserId = myUserId())
     }
 
     /** 임시저장 1건: id + 저장 시각 + 표시 제목 + 전체 초안 내용. */
@@ -108,5 +116,18 @@ class CourseRepositoryImpl(
                 places = emptyList(),
                 visibility = CourseVisibility.PUBLIC,
             )
+    }
+
+    override suspend fun createCourse(
+        draft: CourseDraftVO,
+        thumbnailUrl: String?,
+        published: Boolean,
+    ): Long {
+        val envelope = courseCreateDataSource.createCourse(draft.toCreateRequest(thumbnailUrl, published))
+        val data =
+            requireNotNull(envelope.data) {
+                envelope.message ?: "코스 생성 응답에 data 가 없습니다."
+            }
+        return requireNotNull(data.courseId) { "코스 생성 응답에 courseId 가 없습니다." }
     }
 }

@@ -73,3 +73,16 @@ data class SignupUserDTO(
     val handle: String? = null,
     val profileImageUrl: String? = null,
 )
+
+/** GET /api/v1/users/availability 응답. */
+@Serializable
+data class AvailabilityEnvelope(
+    val code: Int? = null,
+    val message: String? = null,
+    val data: AvailabilityDTO? = null,
+)
+
+@Serializable
+data class AvailabilityDTO(
+    val available: Boolean = false,
+)

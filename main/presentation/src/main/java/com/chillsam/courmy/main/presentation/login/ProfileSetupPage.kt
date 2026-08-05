@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -47,15 +49,20 @@ import com.chillsam.courmy.main.presentation.component.SignupProgressBar
 
 /** 프로필·아이디 설정 화면(FS-05). 아바타·닉네임·아이디를 정하고 다음(완료)으로 이어진다. */
 @Composable
-fun ProfileSetupPage(modifier: Modifier = Modifier) {
+fun ProfileSetupPage(
+    modifier: Modifier = Modifier,
+    handleCheckViewModel: HandleCheckViewModel = hiltViewModel(),
+) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     var nickname by remember { mutableStateOf("") }
     var handle by remember { mutableStateOf("") }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
-    var idResult by remember { mutableStateOf<IdCheckResult?>(null) }
+    val checkState by handleCheckViewModel.uiState.collectAsStateWithLifecycle()
+    // 확인 후 입력이 바뀌었으면 이전 판정을 쓰지 않는다.
+    val idResult = checkState.result?.takeIf { checkState.checkedHandle == handle }
     // 다음은 닉네임 입력 + 아이디 중복 확인에서 "사용 가능"을 받은 경우에만 활성.
-    val canContinue = nickname.isNotBlank() && idResult?.available == true
+    val canContinue = nickname.isNotBlank() && idResult?.isAvailable == true
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1).statusBarsPadding()) {
         SignupProgressBar(step = 1, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp))
@@ -100,11 +107,12 @@ fun ProfileSetupPage(modifier: Modifier = Modifier) {
                     value = handle,
                     onValueChange = {
                         handle = it
-                        idResult = null // 값이 바뀌면 이전 확인 결과 무효화.
+                        // 값이 바뀌면 이전 확인 결과 무효화.
+                        handleCheckViewModel.onIntent(HandleCheckIntent.Reset)
                     },
                     placeholder = "아이디",
                     // 중복 확인 실패 시 위험(빨간 테두리) 표시.
-                    isError = idResult?.available == false,
+                    isError = idResult != null && !idResult.isAvailable,
                     // "@"는 항상 붙는 기본값이라 입력창 앞 고정 프리픽스로 표시.
                     leadingIcon = {
                         DsText(
@@ -115,14 +123,16 @@ fun ProfileSetupPage(modifier: Modifier = Modifier) {
                     },
                     modifier = Modifier.weight(1f),
                 )
-                CheckButton(enabled = handle.isNotBlank(), onClick = { idResult = checkHandle(handle) })
+                CheckButton(
+                    enabled = handle.isNotBlank() && !checkState.isChecking,
+                    onClick = { handleCheckViewModel.onIntent(HandleCheckIntent.Check(handle)) },
+                )
             }
-            val result = idResult
-            if (result != null) {
+            if (idResult != null) {
                 DsText(
-                    text = result.message,
+                    text = idResult.message(),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = if (result.available) color.contentSuccess else color.contentDanger,
+                    color = if (idResult.isAvailable) color.contentSuccess else color.contentDanger,
                     modifier = Modifier.padding(start = 4.dp, top = 6.dp),
                 )
             } else {
@@ -235,24 +245,6 @@ private fun AvatarEditor(
         }
     }
 }
-
-private val TAKEN_HANDLES = setOf("admin", "test", "courmy", "jiho")
-private val HANDLE_REGEX = Regex("^[a-z0-9_]+$")
-
-/** 아이디 검증 결과(사유 포함). 실 판정은 아이디 API·검증 스펙 확정 후. */
-private data class IdCheckResult(
-    val message: String,
-    val available: Boolean,
-)
-
-/** 목 검증: 길이 → 형식 → 중복 순으로 첫 실패 사유 반환(실 API 전 시연용). */
-private fun checkHandle(handle: String): IdCheckResult =
-    when {
-        handle.length !in 3..12 -> IdCheckResult("3~12자 이내로 입력해 주세요", available = false)
-        !handle.matches(HANDLE_REGEX) -> IdCheckResult("영문 소문자, 숫자, 밑줄(_)만 사용할 수 있어요", available = false)
-        handle in TAKEN_HANDLES -> IdCheckResult("이미 사용 중인 아이디예요", available = false)
-        else -> IdCheckResult("사용할 수 있는 아이디예요", available = true)
-    }
 
 /** 아이디 중복 확인 버튼(컴팩트). 활성=강조 배경, 비활성=흰 배경+회색 테두리. */
 @Composable

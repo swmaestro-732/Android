@@ -86,4 +86,6 @@ class AuthRepositoryImpl(
         dataSource.withdraw(userId)
         tokenStore.clear()
     }
+
+    override suspend fun isHandleAvailable(handle: String): Boolean = dataSource.checkHandleAvailability(handle)
 }

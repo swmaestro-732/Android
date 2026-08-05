@@ -122,15 +122,19 @@ fun OnboardingCompletePage(
                     onClick = {
                         // 홀더에 담아둔 프로필로 회원가입 API 호출. 관심 태그·지역은 라벨→id 매핑이 아직
                         // 없어(백엔드 목록 API 필요) 이번엔 전송하지 않는다.
-                        // 프로필 이미지 업로드 미구현이라 http URL 일 때만 전송(로컬 uri 는 제외).
-                        val imageUrl = SignupSelectionStore.profileImageUrl?.takeIf { it.startsWith("http") }
+                        // 이미 http URL 이면 그대로 싣고, 로컬 uri 면 가입 성공 후 업로드하도록 넘긴다
+                        // (presign 은 액세스 토큰이 필요해 가입 전에는 호출할 수 없다).
+                        val picked = SignupSelectionStore.profileImageUrl
+                        val remoteUrl = picked?.takeIf { it.startsWith("http") }
                         viewModel.onIntent(
                             SignupIntent.Submit(
-                                SignupProfile(
-                                    nickname = SignupSelectionStore.nickname,
-                                    handle = SignupSelectionStore.handle,
-                                    profileImageUrl = imageUrl,
-                                ),
+                                profile =
+                                    SignupProfile(
+                                        nickname = SignupSelectionStore.nickname,
+                                        handle = SignupSelectionStore.handle,
+                                        profileImageUrl = remoteUrl,
+                                    ),
+                                localImageUri = picked?.takeIf { remoteUrl == null },
                             ),
                         )
                     },

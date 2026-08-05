@@ -29,6 +29,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,8 +52,9 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
 import com.chillsam.courmy.main.presentation.component.BackTopBar
-import com.chillsam.courmy.main.presentation.profile.ProfileError
-import com.chillsam.courmy.main.presentation.profile.ProfileLoading
+import com.chillsam.courmy.main.presentation.login.HandleCheckIntent
+import com.chillsam.courmy.main.presentation.login.HandleCheckViewModel
+import com.chillsam.courmy.main.presentation.login.message
 
 /** 닉네임 최대 길이(Figma FS-26 카운터 기준). 서버 한도(20)보다 엄격한 앱 규칙이다. */
 private const val NICKNAME_MAX_LENGTH = 12
@@ -58,48 +62,49 @@ private const val NICKNAME_MAX_LENGTH = 12
 /**
  * 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·관심 테마/지역을 편집한다.
  *
- * 저장은 [ProfileEditViewModel] 이 `PATCH /api/v1/users` 로 처리하며, 사진을 새로 골랐으면
- * 프리사인 업로드를 먼저 끝낸다.
- *
- * TODO-API-SPEC: Figma 의 "소개"(bio) 입력은 서버 `UpdateProfileRequest`·마이페이지 응답 어디에도
- * 필드가 없어 저장할 방법이 없다. 저장되지 않는 입력을 노출하지 않으려 지금은 렌더하지 않는다.
- * 서버에 bio 가 생기면 입력과 매핑을 함께 되살린다. [wiki-needed]
+ * 소개(bio)는 서버 `UpdateProfileRequest` 에 필드가 없어 저장할 수 없으므로 렌더하지 않는다
+ * ([ProfileEditViewModel] 주석 참고).
  */
 @Composable
 fun ProfileEditPage(
     modifier: Modifier = Modifier,
-    viewModel: ProfileEditViewModel = hiltViewModel(),
+    handleCheckViewModel: HandleCheckViewModel = hiltViewModel(),
+    myViewModel: MyViewModel = hiltViewModel(),
+    editViewModel: ProfileEditViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
+    // 편집 원본값은 실제 내 프로필(GET /service/v1/mypage)에서 가져온다.
+    val myState by myViewModel.uiState.collectAsStateWithLifecycle()
+    val profile = myState.profile
+    val originalNickname = profile?.nickname.orEmpty()
+    val originalHandle = profile?.handle.orEmpty()
+    // 프로필이 늦게 도착하면 그 값으로 입력칸을 다시 채운다.
+    var nickname by remember(originalNickname) { mutableStateOf(originalNickname) }
+    var handle by remember(originalHandle) { mutableStateOf(originalHandle) }
+    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    val checkState by handleCheckViewModel.uiState.collectAsStateWithLifecycle()
+    val editState by editViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // 확인 후 입력이 바뀌었으면 이전 판정을 쓰지 않는다.
+    val idResult = checkState.result?.takeIf { checkState.checkedHandle == handle }
+    val handleChanged = handle != originalHandle
+    // 아이디를 바꿨다면 중복 확인에서 '사용 가능'을 받은 경우에만 저장 가능(검증 실패·미확인 시 비활성).
+    val handleSaveable = !handleChanged || idResult?.isAvailable == true
+    val hasChanges =
+        handleSaveable &&
+            (nickname != originalNickname || handleChanged || profileImageUri != null)
 
-    // 저장이 끝나면 이전 화면으로. 마이 화면은 resume 시 프로필을 다시 불러 갱신된 값을 보여준다.
-    LaunchedEffect(uiState.isSaved) {
-        if (uiState.isSaved) navigationHelper.navigateToBack()
+    LaunchedEffect(editState.saved) {
+        if (editState.saved) {
+            editViewModel.onIntent(ProfileEditIntent.ConsumeSaved)
+            navigationHelper.navigateToBack()
+        }
     }
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let { message ->
+    LaunchedEffect(editState.errorMessage) {
+        editState.errorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            viewModel.onIntent(ProfileEditIntent.ConsumeError)
-        }
-    }
-
-    // 편집 원본을 못 불러온 상태에서 폼을 열면 빈 값이 원본처럼 보이므로, 로딩·에러를 먼저 처리한다.
-    when {
-        uiState.loadErrorMessage != null -> {
-            ProfileError(
-                message = uiState.loadErrorMessage,
-                onRetry = { viewModel.onIntent(ProfileEditIntent.Retry) },
-                modifier = modifier,
-            )
-            return
-        }
-
-        uiState.isLoading -> {
-            ProfileLoading(modifier = modifier)
-            return
+            editViewModel.onIntent(ProfileEditIntent.ConsumeError)
         }
     }
 
@@ -119,44 +124,43 @@ fun ProfileEditPage(
         ) {
             AvatarEditor(
                 // 새로 고른 게 없으면 현재 프로필 사진을 그대로 보여준다.
-                imageUri = uiState.displayImageUrl,
-                onImagePicked = { viewModel.onIntent(ProfileEditIntent.ImagePicked(it.toString())) },
+                imageUri = profileImageUri?.toString() ?: profile?.profileImageUrl.orEmpty(),
+                onImagePicked = { profileImageUri = it },
                 modifier = Modifier.padding(top = 28.dp, bottom = 12.dp),
             )
 
             LabeledField(
                 label = "닉네임",
-                value = uiState.nickname,
-                // 카운터가 광고하는 한도를 입력 단계에서 지킨다(넘겨 입력하면 저장이 서버에서 막힌다).
-                onValueChange = {
-                    if (it.length <= NICKNAME_MAX_LENGTH) {
-                        viewModel.onIntent(ProfileEditIntent.NicknameChanged(it))
-                    }
-                },
-                counter = "${uiState.nickname.length}/$NICKNAME_MAX_LENGTH",
+                value = nickname,
+                // 카운터가 광고하는 한도를 입력 단계에서 지킨다(넘겨 입력하면 서버가 저장을 거부한다).
+                onValueChange = { if (it.length <= NICKNAME_MAX_LENGTH) nickname = it },
+                counter = "${nickname.length}/$NICKNAME_MAX_LENGTH",
             )
             LabeledField(
                 label = "아이디",
-                value = uiState.handle,
-                onValueChange = { viewModel.onIntent(ProfileEditIntent.HandleChanged(it)) },
+                value = handle,
+                onValueChange = {
+                    handle = it
+                    // 값이 바뀌면 이전 검증 결과 무효화.
+                    handleCheckViewModel.onIntent(HandleCheckIntent.Reset)
+                },
                 inputTrailing = {
                     CheckButton(
-                        enabled = uiState.handleChanged && !uiState.isCheckingHandle,
-                        onClick = { viewModel.onIntent(ProfileEditIntent.CheckHandle) },
+                        enabled = handleChanged && !checkState.isChecking,
+                        onClick = { handleCheckViewModel.onIntent(HandleCheckIntent.Check(handle)) },
                     )
                 },
                 belowField = {
-                    uiState.handleCheck?.let { result ->
+                    idResult?.let { result ->
                         DsText(
-                            text = result.message,
+                            text = result.message(),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                            color = if (result.available) color.contentSuccess else color.contentDanger,
+                            color = if (result.isAvailable) color.contentSuccess else color.contentDanger,
                             modifier = Modifier.padding(start = 16.dp, top = 6.dp),
                         )
                     }
                 },
             )
-
             InterestSummary(
                 title = "관심 테마",
                 chips = listOf("감성 카페", "전시·갤러리", "동네 산책"),
@@ -174,9 +178,19 @@ fun ProfileEditPage(
         // 하단 저장 버튼 영역도 흰색(Figma FS-26).
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
-                text = if (uiState.isSaving) "저장 중…" else "변경 사항 저장",
-                enabled = uiState.hasChanges && !uiState.isSaving,
-                onClick = { viewModel.onIntent(ProfileEditIntent.Save) },
+                text = "변경 사항 저장",
+                enabled = hasChanges && !editState.isSaving,
+                loading = editState.isSaving,
+                onClick = {
+                    // 바뀐 항목만 넘긴다(아이디를 그대로 다시 보내면 중복으로 거부될 수 있다).
+                    editViewModel.onIntent(
+                        ProfileEditIntent.Save(
+                            nickname = nickname.takeIf { it != originalNickname },
+                            handle = handle.takeIf { it != originalHandle },
+                            localImageUri = profileImageUri?.toString(),
+                        ),
+                    )
+                },
                 modifier =
                     Modifier
                         .fillMaxWidth()

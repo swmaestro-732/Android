@@ -16,4 +16,26 @@ sealed interface CourseDetailReducerEvent : ReducerEvent {
     data class Failed(
         val message: String,
     ) : CourseDetailReducerEvent
+
+    data object SaveStarted : CourseDetailReducerEvent
+
+    /** 저장/취소가 서버에서 확정됨. 상세의 저장 상태를 [saved] 로 바꾼다. */
+    data class SaveFinished(
+        val saved: Boolean,
+    ) : CourseDetailReducerEvent
+
+    data class SaveFailed(
+        val message: String,
+    ) : CourseDetailReducerEvent
+
+    data object ErrorConsumed : CourseDetailReducerEvent
+
+    data object DeleteStarted : CourseDetailReducerEvent
+
+    /** 삭제 확정 — 화면이 이 값을 보고 이전 화면으로 돌아간다. */
+    data object Deleted : CourseDetailReducerEvent
+
+    data class DeleteFailed(
+        val message: String,
+    ) : CourseDetailReducerEvent
 }

@@ -3,7 +3,9 @@ package com.chillsam.courmy.course.presentation
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.course.domain.DeleteCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
+import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -11,31 +13,53 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * 코스 상세 화면 ViewModel(FS-11). 진입 시 BFF 코스 상세 API 를 호출해 상태로 노출한다.
+ * 코스 상세 화면 ViewModel(FS-11). [CourseDetailIntent.Load] 로 받은 코스를 BFF 상세 API 로 조회한다.
  *
- * 라우트가 아직 courseId 를 싣지 않아(제목/생성시각만 전달) 목 데이터가 제공하는 [DEFAULT_COURSE_ID] 를 조회한다.
- * 라우트에 courseId 인자가 추가되면 SavedStateHandle 로 받아 교체한다.
+ * 생성 시점에는 조회하지 않는다. 라우트 인자가 화면에서 넘어와야 코스가 정해지는데,
+ * init 에서 미리 부르면 아직 값이 없는 id(0)로 요청이 한 번 나가 404 가 뜬다.
  */
 @HiltViewModel
 class CourseDetailViewModel
     @Inject
     constructor(
         private val getCourseDetailUseCase: GetCourseDetailUseCase,
+        private val setCourseSavedUseCase: SetCourseSavedUseCase,
+        private val deleteCourseUseCase: DeleteCourseUseCase,
     ) : MviViewModel<CourseDetailIntent, CourseDetailUIState, CourseDetailReducerEvent>(
             CourseDetailUIState.empty,
         ) {
         /** 진행 중인 로드 코루틴. 재요청 시 이전 것을 취소해 중복 실행·stale 결과 반영을 막는다. */
         private var loadJob: Job? = null
+        private var saveJob: Job? = null
+        private var deleteJob: Job? = null
 
-        init {
-            onIntent(CourseDetailIntent.Load)
-        }
+        /** 조회 대상 코스. null 이면 아직 [CourseDetailIntent.Load] 를 받지 못한 상태다. */
+        private var courseId: Long? = null
 
         override fun onIntent(intent: CourseDetailIntent) {
             when (intent) {
-                CourseDetailIntent.Load,
-                CourseDetailIntent.Retry,
-                -> load()
+                is CourseDetailIntent.Load -> {
+                    // 같은 코스로 재구성되면 다시 부르지 않는다(화면 회전·재진입).
+                    if (courseId == intent.courseId) return
+                    courseId = intent.courseId
+                    load()
+                }
+
+                CourseDetailIntent.Retry -> {
+                    load()
+                }
+
+                CourseDetailIntent.ToggleSave -> {
+                    toggleSave()
+                }
+
+                CourseDetailIntent.Delete -> {
+                    delete()
+                }
+
+                CourseDetailIntent.ConsumeError -> {
+                    dispatch(CourseDetailReducerEvent.ErrorConsumed)
+                }
             }
         }
 
@@ -55,15 +79,95 @@ class CourseDetailViewModel
                 is CourseDetailReducerEvent.Failed -> {
                     state.copy(isLoading = false, errorMessage = event.message)
                 }
+
+                CourseDetailReducerEvent.SaveStarted -> {
+                    state.copy(isSaving = true, actionErrorMessage = null)
+                }
+
+                is CourseDetailReducerEvent.SaveFinished -> {
+                    state.copy(isSaving = false, detail = state.detail?.copy(isSaved = event.saved))
+                }
+
+                is CourseDetailReducerEvent.SaveFailed -> {
+                    state.copy(isSaving = false, actionErrorMessage = event.message)
+                }
+
+                CourseDetailReducerEvent.ErrorConsumed -> {
+                    state.copy(actionErrorMessage = null)
+                }
+
+                CourseDetailReducerEvent.DeleteStarted -> {
+                    state.copy(isDeleting = true, actionErrorMessage = null)
+                }
+
+                CourseDetailReducerEvent.Deleted -> {
+                    state.copy(isDeleting = false, isDeleted = true)
+                }
+
+                is CourseDetailReducerEvent.DeleteFailed -> {
+                    state.copy(isDeleting = false, actionErrorMessage = event.message)
+                }
             }
 
+        /** 되돌릴 수 없는 동작이라 중복 탭을 막고, 서버가 확정한 뒤에만 화면을 닫는다. */
+        private fun delete() {
+            val id = courseId
+            if (currentState.isDeleting || id == null) return
+            dispatch(CourseDetailReducerEvent.DeleteStarted)
+            deleteJob?.cancel()
+            deleteJob =
+                viewModelScope.launch {
+                    runCatching { deleteCourseUseCase(id) }
+                        .onSuccess { dispatch(CourseDetailReducerEvent.Deleted) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "코스 삭제 실패: courseId=$id", e)
+                            dispatch(CourseDetailReducerEvent.DeleteFailed("삭제하지 못했어요. 잠시 후 다시 시도해 주세요."))
+                        }
+                }
+        }
+
+        /**
+         * 서버가 확정한 뒤에 상태를 바꾼다(먼저 바꾸고 실패 시 되돌리면 버튼이 튀어 보인다).
+         * 진행 중 중복 탭은 무시한다.
+         */
+        private fun toggleSave() {
+            val state = currentState
+            val id = courseId
+            val detail = state.detail
+            if (state.isSaving || id == null || detail == null) return
+            val target = !detail.isSaved
+            dispatch(CourseDetailReducerEvent.SaveStarted)
+            saveJob?.cancel()
+            saveJob =
+                viewModelScope.launch {
+                    runCatching { setCourseSavedUseCase(courseId = id, saved = target) }
+                        .onSuccess {
+                            // 요청 중에 다른 코스로 이동했으면 그 코스의 상태를 바꾸면 안 된다.
+                            if (courseId == id) dispatch(CourseDetailReducerEvent.SaveFinished(target))
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "코스 저장 토글 실패: courseId=$id, target=$target", e)
+                            val message = if (target) "저장하지 못했어요." else "저장을 취소하지 못했어요."
+                            dispatch(CourseDetailReducerEvent.SaveFailed(message))
+                        }
+                }
+        }
+
         private fun load() {
+            // 라우트 인자가 없거나 숫자가 아니면 0 이 넘어온다. 서버에 물어볼 것도 없이 에러로 끝낸다.
+            val id = courseId
+            if (id == null || id <= 0L) {
+                Log.w(TAG, "잘못된 코스 id: $id")
+                dispatch(CourseDetailReducerEvent.Failed("코스를 찾을 수 없습니다."))
+                return
+            }
             dispatch(CourseDetailReducerEvent.LoadStarted)
             loadJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    Log.d(TAG, "코스 상세 로드 시작: courseId=$DEFAULT_COURSE_ID")
-                    runCatching { getCourseDetailUseCase(DEFAULT_COURSE_ID) }
+                    Log.d(TAG, "코스 상세 로드 시작: courseId=$id")
+                    runCatching { getCourseDetailUseCase(id) }
                         .onSuccess { detail ->
                             Log.d(
                                 TAG,
@@ -84,8 +188,5 @@ class CourseDetailViewModel
 
         private companion object {
             const val TAG = "CourseDetail"
-
-            /** 목 백엔드가 제공하는 유일한 코스 id. */
-            const val DEFAULT_COURSE_ID = 1L
         }
     }

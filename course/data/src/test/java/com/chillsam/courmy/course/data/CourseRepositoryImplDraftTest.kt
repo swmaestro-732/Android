@@ -1,5 +1,9 @@
 package com.chillsam.courmy.course.data
 
+import com.chillsam.courmy.course.data.courseCreate.CourseCreateApiService
+import com.chillsam.courmy.course.data.courseCreate.CourseCreateDataSource
+import com.chillsam.courmy.course.data.courseCreate.dto.CreateCourseEnvelope
+import com.chillsam.courmy.course.data.courseCreate.dto.CreateCourseRequest
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailApiService
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
 import com.chillsam.courmy.course.data.courseDetail.dto.CourseDetailEnvelope
@@ -11,10 +15,14 @@ import retrofit2.Response
 
 /**
  * 임시저장 초안의 저장/이어서 편집 동작 검증. 핵심은 "제목을 바꿔 저장해도 중복이 생기지 않는다".
- * 초안 로직은 network 를 쓰지 않으므로 [CourseDetailDataSource] 는 호출되지 않는 fake 로 채운다.
+ * 초안 로직은 network 를 쓰지 않으므로 원격 DataSource 는 호출되지 않는 fake 로 채운다.
  */
 class CourseRepositoryImplDraftTest {
-    private fun newRepository() = CourseRepositoryImpl(CourseDetailDataSource(UnusedApiService))
+    private fun newRepository() =
+        CourseRepositoryImpl(
+            CourseDetailDataSource(UnusedApiService),
+            CourseCreateDataSource(UnusedCreateApiService),
+        ) { null }
 
     @Test
     fun `새 코스를 임시저장하면 목록에 1건 생긴다`() =
@@ -111,9 +119,12 @@ class CourseRepositoryImplDraftTest {
         }
 
     private object UnusedApiService : CourseDetailApiService {
-        override suspend fun getCourseDetail(
-            courseId: Long,
-            mock: Boolean,
-        ): Response<CourseDetailEnvelope> = error("draft 테스트에서는 호출되지 않아야 한다")
+        override suspend fun getCourseDetail(courseId: Long): Response<CourseDetailEnvelope> =
+            error("draft 테스트에서는 호출되지 않아야 한다")
+    }
+
+    private object UnusedCreateApiService : CourseCreateApiService {
+        override suspend fun createCourse(request: CreateCourseRequest): Response<CreateCourseEnvelope> =
+            error("draft 테스트에서는 호출되지 않아야 한다")
     }
 }

@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,18 +27,22 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 
-/** 사진 썸네일 줄에 최대로 보여줄 칸 수(초과 시 마지막 칸을 "+N" 배지로 대체). */
-private const val MAX_THUMBS = 4
-
 /**
- * 홈(FS-09) 공개 코스 카드: 커버(카테고리 칩·북마크·제목) + 작성자 + 장소 사진 썸네일 + 장소명.
+ * 홈(FS-09) 공개 코스 카드: 커버(카테고리 칩·북마크·제목) + 저장 수.
+ *
+ * TODO-API-SPEC: Figma 는 커버 아래에 작성자(아바타·이름·따라감 수), 코스 속 장소 사진 썸네일,
+ * 장소명 요약을 보여주지만 `GET /service/v1/courses` 응답에는 `authorId` 만 있고 나머지 필드가 없다.
+ * 채울 값이 없는 영역을 빈 placeholder 로 렌더하지 않고 생략한다.
+ * 서버 `CourseFeedResponse.Item` 에 필드가 추가되면 이 영역을 되살린다. [wiki-needed]
  */
 @Composable
 fun HomeCourseCard(
     course: HomeCourseVO,
+    isSaved: Boolean,
     onClick: () -> Unit,
     onBookmarkClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -51,37 +52,25 @@ fun HomeCourseCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(18.dp),
-                    ambientColor = color.contentDefaultLevel0.copy(alpha = 0.12f),
-                    spotColor = color.contentDefaultLevel0.copy(alpha = 0.16f),
-                ).clip(RoundedCornerShape(18.dp))
-                .background(color.bgDefaultLevel1)
+                .cardShadow(RoundedCornerShape(18.dp))
                 .clickable(onClick = onClick),
     ) {
-        CourseCover(course = course, onBookmarkClick = onBookmarkClick)
-        Column(
+        CourseCover(course = course, isSaved = isSaved, onBookmarkClick = onBookmarkClick)
+        Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                HomeImage(url = course.authorImageUrl, modifier = Modifier.size(24.dp), shape = CircleShape)
-                DsText(
-                    text = "${course.authorName} · ${course.followText}",
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel2,
-                )
-            }
-            // 사진이 없어도 카드 높이가 일정하도록 항상 렌더한다(빈 경우 4칸 placeholder).
-            PlaceThumbRow(urls = course.placePhotoUrls)
+            Icon(
+                painter = painterResource(R.drawable.ic_tab_bookmark_24),
+                contentDescription = null,
+                tint = color.contentDefaultLevel3,
+                modifier = Modifier.size(16.dp),
+            )
             DsText(
-                text = course.placeNamesText,
+                text = course.saveCountText,
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel3,
+                color = color.contentDefaultLevel2,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -93,6 +82,7 @@ fun HomeCourseCard(
 @Composable
 private fun CourseCover(
     course: HomeCourseVO,
+    isSaved: Boolean,
     onBookmarkClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -125,20 +115,23 @@ private fun CourseCover(
                         ),
                     ),
         )
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.TopStart)
-                    .padding(12.dp)
-                    .clip(RoundedCornerShape(9999.dp))
-                    .background(color.bgDefaultLevel1)
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-        ) {
-            DsText(
-                text = course.categoryLabel,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel1,
-            )
+        // 카테고리가 없는 코스(theme 미선택)는 빈 알약이 뜨지 않도록 칩 자체를 생략한다.
+        if (course.categoryLabel.isNotBlank()) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
+                        .clip(RoundedCornerShape(9999.dp))
+                        .background(color.bgDefaultLevel1)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+            ) {
+                DsText(
+                    text = course.categoryLabel,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel1,
+                )
+            }
         }
         Box(
             modifier =
@@ -154,9 +147,9 @@ private fun CourseCover(
             Icon(
                 painter =
                     painterResource(
-                        if (course.isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
+                        if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
                     ),
-                contentDescription = if (course.isSaved) "저장 취소" else "저장",
+                contentDescription = if (isSaved) "저장 취소" else "저장",
                 tint = color.contentDefaultLevel0,
                 modifier = Modifier.size(18.dp),
             )
@@ -168,70 +161,6 @@ private fun CourseCover(
             color = color.contentOnAccent,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-/** 장소 사진 썸네일 줄. [MAX_THUMBS] 초과 시 마지막 칸을 "+N" 배지로 대체한다. */
-@Composable
-private fun PlaceThumbRow(urls: List<String>) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    // 사진이 없으면 4칸 placeholder 로 채워 카드 높이를 일정하게 유지한다.
-    val photos = urls.ifEmpty { List(MAX_THUMBS) { "" } }
-    val overflow = photos.size > MAX_THUMBS
-    val visibleCount = if (overflow) MAX_THUMBS - 1 else photos.size
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        photos.take(visibleCount).forEach { url ->
-            HomeImage(
-                url = url,
-                modifier = Modifier.weight(1f).aspectRatio(1f),
-                shape = RoundedCornerShape(10.dp),
-            )
-        }
-        if (overflow) {
-            Box(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(color.contentDefaultLevel1),
-                contentAlignment = Alignment.Center,
-            ) {
-                DsText(
-                    text = "+${photos.size - visibleCount}",
-                    style = DesignSystemThemeImpl.typeScale.textStrongS,
-                    color = color.contentOnAccent,
-                )
-            }
-        }
-        // 사진이 4개 미만이어도 카드마다 썸네일 크기가 같도록 남은 슬롯을 빈 칸으로 채운다.
-        val usedSlots = visibleCount + if (overflow) 1 else 0
-        repeat(MAX_THUMBS - usedSlots) {
-            Spacer(modifier = Modifier.weight(1f))
-        }
-    }
-}
-
-/** 홈 카드 공용 이미지. URL 이 있으면 Coil 로, 없으면 placeholder 배경만 그린다. */
-@Composable
-private fun HomeImage(
-    url: String,
-    modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(10.dp),
-) {
-    val placeholder = modifier.clip(shape).background(DesignSystemThemeImpl.designSystemColor.imagePlaceholder)
-    if (url.isBlank()) {
-        Box(modifier = placeholder)
-    } else {
-        AsyncImage(
-            model = url,
-            contentDescription = null,
-            modifier = placeholder,
-            contentScale = ContentScale.Crop,
         )
     }
 }

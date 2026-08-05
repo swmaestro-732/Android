@@ -70,4 +70,7 @@ sealed interface CourseCreateIntent : MviIntent {
     data class CompleteCourse(
         val course: CourseCompleteVO?,
     ) : CourseCreateIntent
+
+    /** 저장 실패 안내를 노출한 뒤 상태에서 지운다. */
+    data object ConsumeSaveError : CourseCreateIntent
 }

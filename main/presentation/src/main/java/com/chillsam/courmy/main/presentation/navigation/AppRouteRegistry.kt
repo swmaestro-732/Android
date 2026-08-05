@@ -158,9 +158,10 @@ val appRoutes: List<AppRoute> =
                         viewModel.onIntent(CourseCreateIntent.SaveDraft)
                         navigationHelper.navigateTo(HomeRoute)
                     },
-                    onSaveCourse = { completed ->
-                        viewModel.onIntent(CourseCreateIntent.CompleteCourse(completed))
-                        navigationHelper.navigateTo(CourseCompleteRoute)
+                    // 서버 저장 성공 후 CourseCreatePage 가 호출한다(저장 인텐트는 Page 내부에서 발행).
+                    // 방금 만든 코스가 서버에 실제로 생겼는지 바로 확인할 수 있게 상세로 보낸다.
+                    onSaveCourse = { courseId ->
+                        navigationHelper.navigateByRoute(CourseDetailRoute.route(courseId.toString()))
                     },
                 )
             },
@@ -228,20 +229,23 @@ val appRoutes: List<AppRoute> =
         ),
         AppRoute(
             path = CourseDetailRoute.PATH,
-            render = {
+            render = { args ->
                 val navigationHelper = LocalNavigationHelper.current
                 val context = LocalContext.current
                 // 팔로우·공유·저장 플로우는 아직 미구현이라, 무반응 대신 "준비 중" 안내를 띄운다.
                 val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
                 CourseDetailPage(
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
+                    courseId = args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
                     onBack = { navigationHelper.navigateToBack() },
                     onAuthorClick = { handle ->
                         navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
                     },
                     onFollowAuthor = { notReady() },
                     onShare = { notReady() },
-                    onSaveCourse = { notReady() },
+                    // TODO-API-SPEC: 편집은 PATCH /api/v1/courses/{courseId} 가 서버에 있으나
+                    // 기존 코스를 불러오는 편집 화면이 아직 없다. 화면이 생기면 그쪽으로 이동시킨다. [wiki-needed]
+                    onEditCourse = { notReady() },
                 )
             },
         ),

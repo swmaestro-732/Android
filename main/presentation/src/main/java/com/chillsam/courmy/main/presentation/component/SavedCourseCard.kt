@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 
@@ -43,13 +44,7 @@ fun SavedCourseCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(16.dp),
-                    ambientColor = color.contentDefaultLevel0.copy(alpha = 0.12f),
-                    spotColor = color.contentDefaultLevel0.copy(alpha = 0.16f),
-                ).clip(RoundedCornerShape(16.dp))
-                .background(color.bgDefaultLevel1)
+                .cardShadow(RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick),
     ) {
         Box(

@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,16 +40,21 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
+import com.chillsam.courmy.course.presentation.PlaceSearchIntent
+import com.chillsam.courmy.course.presentation.PlaceSearchViewModel
 
 /**
  * 장소 검색 · 담기 오버레이(Figma FS-34 "+ 장소 더 담기 → 장소 검색").
  * 검색어로 후보를 필터링해 다중 선택하고, "담기 완료" 로 [onConfirm] 에 선택 장소를 넘긴다.
  *
- * TODO-API-SPEC: 후보는 현재 정적 스텁이다. 실제 장소 검색 API 가 붙으면 UseCase 로 교체한다.
+ * 후보는 서버 장소 검색(`GET /api/v1/places`)에서 가져오며, 결과의 id 가 서버 place id 라
+ * 그대로 코스 생성 요청의 `placeId` 로 쓸 수 있다.
  */
 @Composable
 fun PlaceSearchOverlay(
@@ -57,25 +63,23 @@ fun PlaceSearchOverlay(
     maxPlaces: Int,
     existingCount: Int,
     modifier: Modifier = Modifier,
+    viewModel: PlaceSearchViewModel = hiltViewModel(),
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    var query by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val query = uiState.query
     val selectedIds = remember { mutableStateListOf<String>() }
+    // 담기 완료 시 후보 목록에서 다시 찾을 수 있도록, 탭한 장소를 따로 모아 둔다
+    // (검색어를 바꾸면 결과 목록이 갈리므로 결과에서 되찾을 수 없다).
+    val selectedPlaces = remember { mutableStateMapOf<String, CoursePlaceVO>() }
     // 이미 담긴 장소까지 합쳐 최대 [maxPlaces]곳. 이 오버레이에서 더 고를 수 있는 수.
     val remaining = (maxPlaces - existingCount).coerceAtLeast(0)
     val context = LocalContext.current
     val showLimitAlert = {
         Toast.makeText(context, "장소는 최대 ${maxPlaces}개만 담을 수 있습니다.", Toast.LENGTH_SHORT).show()
     }
-    // 기본은 결과 0(아무것도 안 보임). 키워드를 입력해야 후보를 필터링해 보여준다.
-    val results =
-        remember(query) {
-            if (query.isBlank()) {
-                emptyList()
-            } else {
-                PLACE_CANDIDATES.filter { it.name.contains(query.trim(), ignoreCase = true) }
-            }
-        }
+    // 기본은 결과 0(아무것도 안 보임). 키워드를 입력해야 서버에서 후보를 받아 온다.
+    val results = uiState.results
     // 오버레이가 열리면(장소 더 담기) 검색창에 자동 포커스 + 키보드.
     val searchFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { searchFocus.requestFocus() }
@@ -89,7 +93,7 @@ fun PlaceSearchOverlay(
     ) {
         SearchTopBar(
             query = query,
-            onQueryChange = { query = it },
+            onQueryChange = { viewModel.onIntent(PlaceSearchIntent.QueryChanged(it)) },
             onCancel = onDismiss,
             focusRequester = searchFocus,
         )
@@ -115,13 +119,21 @@ fun PlaceSearchOverlay(
                         orderNumber = if (order >= 0) order + 1 else null,
                         onToggle = {
                             when {
-                                candidate.id in selectedIds -> selectedIds.remove(candidate.id)
+                                candidate.id in selectedIds -> {
+                                    selectedIds.remove(candidate.id)
+                                    selectedPlaces.remove(candidate.id)
+                                }
 
                                 // 남은 자리가 있을 때만 선택 추가(합계 최대 maxPlaces곳).
-                                selectedIds.size < remaining -> selectedIds.add(candidate.id)
+                                selectedIds.size < remaining -> {
+                                    selectedIds.add(candidate.id)
+                                    selectedPlaces[candidate.id] = candidate
+                                }
 
                                 // 상한 도달 시 선택되지 않고 알림만 띄운다.
-                                else -> showLimitAlert()
+                                else -> {
+                                    showLimitAlert()
+                                }
                             }
                         },
                     )
@@ -131,7 +143,7 @@ fun PlaceSearchOverlay(
         ConfirmBar(
             selectedCount = selectedIds.size,
             // 후보 목록 순서가 아니라 사용자가 탭한 순서 그대로 담기 순서로 넘긴다.
-            onConfirm = { onConfirm(selectedIds.mapNotNull { id -> PLACE_CANDIDATES.find { it.id == id } }) },
+            onConfirm = { onConfirm(selectedIds.mapNotNull(selectedPlaces::get)) },
         )
     }
 }
@@ -340,21 +352,3 @@ private fun SearchEmptyState(
         )
     }
 }
-
-// 정적 장소 후보(스텁). id 는 담긴 장소 중복 판별에 쓰인다.
-private val PLACE_CANDIDATES: List<CoursePlaceVO> =
-    listOf(
-        CoursePlaceVO(id = "p_center_coffee", name = "센터커피 로스터리", category = "카페 · 성수동"),
-        CoursePlaceVO(id = "p_centerfield", name = "센터필드 베이커리", category = "베이커리 · 성수동"),
-        CoursePlaceVO(id = "p_center_lounge", name = "센터 라운지", category = "라운지바 · 성수동"),
-        CoursePlaceVO(id = "p_onion", name = "어니언 성수", category = "카페 · 베이커리"),
-        CoursePlaceVO(id = "p_daelim", name = "대림창고 갤러리", category = "전시 · 카페"),
-        CoursePlaceVO(id = "p_seoulforest", name = "서울숲 산책로", category = "공원 · 산책"),
-        CoursePlaceVO(id = "p_glow", name = "글로우 서울", category = "디저트 · 포토존"),
-        CoursePlaceVO(id = "p_sogeumjip", name = "소금집 델리", category = "와인 · 안주"),
-        CoursePlaceVO(id = "p_ldarchive", name = "엘디 아카이브", category = "편집숍 · 성수동"),
-        CoursePlaceVO(id = "p_daelim_food", name = "성수족발", category = "맛집 · 성수동"),
-        CoursePlaceVO(id = "p_mesh", name = "메쉬커피", category = "카페 · 로스터리"),
-        CoursePlaceVO(id = "p_ttukseom", name = "뚝섬한강공원", category = "공원 · 피크닉"),
-        CoursePlaceVO(id = "p_seongsu_yeonbang", name = "성수연방", category = "복합문화공간 · 성수동"),
-    )
