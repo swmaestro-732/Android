@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.my
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,21 +21,25 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
@@ -50,21 +55,50 @@ import com.chillsam.courmy.main.entity.my.FollowUserVO
 fun FollowListPage(
     initialTab: FollowTab,
     modifier: Modifier = Modifier,
+    viewModel: FollowListViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    var selectedTab by remember { mutableStateOf(initialTab) }
-    val followers = remember { FollowUserVO.sampleFollowers.toMutableStateList() }
-    val following = remember { FollowUserVO.sampleFollowing.toMutableStateList() }
-    val users = if (selectedTab == FollowTab.FOLLOWER) followers else following
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedTab = uiState.selectedTab
+    val users = uiState.users
     var pendingRemoval by remember { mutableStateOf<FollowUserVO?>(null) }
+
+    // 진입 탭을 알려 그 탭부터 불러온다(라우트 인자로 팔로워/팔로잉이 정해진다).
+    LaunchedEffect(initialTab) { viewModel.onIntent(FollowListIntent.SelectTab(initialTab)) }
+    // 해제 실패는 화면을 바꾸지 않고 토스트로만 알린다.
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.onIntent(FollowListIntent.ConsumeError)
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             FollowTopBar(onBack = { navigationHelper.navigateToBack() })
-            FollowTabs(selected = selectedTab, onSelect = { selectedTab = it })
+            FollowTabs(selected = selectedTab, onSelect = { viewModel.onIntent(FollowListIntent.SelectTab(it)) })
             LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                items(users) { user ->
+                if (users.isEmpty()) {
+                    item {
+                        FollowListMessage(
+                            isLoading = uiState.isLoading,
+                            message =
+                                uiState.loadErrorMessage
+                                    ?: if (selectedTab == FollowTab.FOLLOWER) {
+                                        "아직 팔로워가 없어요."
+                                    } else {
+                                        "아직 팔로우한 사람이 없어요."
+                                    },
+                            onRetry =
+                                uiState.loadErrorMessage?.let {
+                                    { viewModel.onIntent(FollowListIntent.Retry) }
+                                },
+                        )
+                    }
+                }
+                items(users, key = { it.id }) { user ->
                     // ✕ 는 바로 해제하지 않고 확인 다이얼로그를 띄운다.
                     FollowUserRow(
                         user = user,
@@ -81,7 +115,13 @@ fun FollowListPage(
                 user = user,
                 tab = selectedTab,
                 onConfirm = {
-                    users.remove(user)
+                    if (selectedTab == FollowTab.FOLLOWING) {
+                        viewModel.onIntent(FollowListIntent.Unfollow(user.id))
+                    } else {
+                        // 서버에 "내 팔로워 삭제" 동작이 없다. DELETE /followers/{userId} 는
+                        // "내가 그 사람을 언팔로우" 라 의미가 반대라 호출하지 않는다.
+                        Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show()
+                    }
                     pendingRemoval = null
                 },
                 onDismiss = { pendingRemoval = null },
@@ -220,6 +260,43 @@ private fun FollowUserRow(
                 tint = color.contentDefaultLevel2,
                 modifier = Modifier.size(14.dp),
             )
+        }
+    }
+}
+
+/** 목록이 비었을 때의 자리: 로딩 스피너 또는 안내(+재시도). */
+@Composable
+private fun FollowListMessage(
+    isLoading: Boolean,
+    message: String,
+    onRetry: (() -> Unit)?,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(color = color.contentAccent)
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                DsText(
+                    text = message,
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = color.contentDefaultLevel2,
+                )
+                if (onRetry != null) {
+                    DsText(
+                        text = "다시 시도",
+                        style = DesignSystemThemeImpl.typeScale.textRegularM,
+                        color = color.contentAccent,
+                        modifier = Modifier.clickable(onClick = onRetry),
+                    )
+                }
+            }
         }
     }
 }

@@ -4,32 +4,19 @@ import kotlinx.serialization.Serializable
 
 /**
  * 팔로우 목록(FS-15 O)의 사용자 1건.
+ * `GET /api/v1/users/{userId}/followers`·`/followings` 응답을 변환한 결과다.
  *
- * - [id]        사용자 식별자
- * - [name]      표시 이름(예: "User1")
- * - [handle]    핸들(@ 제외, 예: "happy")
- * - [avatarUrl] 프로필 이미지 URL(없으면 placeholder)
+ * - [id]          사용자 식별자(팔로우/언팔로우 요청 키)
+ * - [name]        표시 이름(닉네임)
+ * - [handle]      핸들(@ 제외). 미설정 사용자는 빈 문자열이라 프로필로 이동할 수 없다
+ * - [avatarUrl]   프로필 이미지 URL(없으면 placeholder)
+ * - [isFollowing] 내가 이 사용자를 팔로우 중인지. 팔로잉 탭에서 해제 대상 판단에 쓴다
  */
 @Serializable
 data class FollowUserVO(
-    val id: String,
+    val id: Long,
     val name: String,
     val handle: String,
     val avatarUrl: String = "",
-) {
-    companion object {
-        /** 개발/프리뷰용 더미 팔로워 목록(백엔드 미연동 시 사용). */
-        val sampleFollowers: List<FollowUserVO> =
-            listOf(
-                FollowUserVO(id = "u_happy", name = "User1", handle = "happy"),
-                FollowUserVO(id = "u_goodluck", name = "User3", handle = "good_luck"),
-            )
-
-        /** 개발/프리뷰용 더미 팔로잉 목록(백엔드 미연동 시 사용). */
-        val sampleFollowing: List<FollowUserVO> =
-            listOf(
-                FollowUserVO(id = "u_happy", name = "User1", handle = "happy"),
-                FollowUserVO(id = "u_newyear", name = "User2", handle = "new_year"),
-            )
-    }
-}
+    val isFollowing: Boolean = false,
+)
