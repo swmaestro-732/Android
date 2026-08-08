@@ -118,9 +118,10 @@ class UpdateProfileUseCaseTest {
             val repository = FakeProfileRepository()
             val useCase = UpdateProfileUseCase(repository, FakeMediaRepository())
 
-            useCase(nickname = "허나영임", bio = "성수 산책 좋아해요")
+            useCase(bio = "성수 산책 좋아해요")
 
             assertEquals("성수 산책 좋아해요", repository.savedBio)
+            assertTrue("소개만 바꿀 때 빈 서버 요청을 보내면 안 된다", !repository.updateCalled)
         }
 
     @Test

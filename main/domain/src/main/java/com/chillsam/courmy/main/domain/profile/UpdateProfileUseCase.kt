@@ -29,11 +29,13 @@ class UpdateProfileUseCase
                 localImageUri
                     ?.takeIf { it.isNotBlank() }
                     ?.let { mediaRepository.uploadImage(it) }
-            profileRepository.updateProfile(
-                nickname = nickname,
-                handle = handle,
-                profileImageUrl = imageUrl,
-            )
+            if (nickname != null || handle != null || imageUrl != null) {
+                profileRepository.updateProfile(
+                    nickname = nickname,
+                    handle = handle,
+                    profileImageUrl = imageUrl,
+                )
+            }
             // TODO-API-SPEC: 서버에 필드가 생기면 위 updateProfile 요청에 합친다. [wiki-needed]
             bio?.let { profileRepository.saveBio(it) }
         }

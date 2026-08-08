@@ -59,6 +59,7 @@ sealed interface PlaceSearchReducerEvent : ReducerEvent {
 
     data class Failed(
         val message: String,
+        val fromMapSearch: Boolean,
     ) : PlaceSearchReducerEvent
 }
 
@@ -115,7 +116,12 @@ class PlaceSearchViewModel
                 }
 
                 is PlaceSearchReducerEvent.Failed -> {
-                    state.copy(isSearching = false, results = emptyList(), errorMessage = event.message)
+                    state.copy(
+                        isSearching = false,
+                        results = emptyList(),
+                        errorMessage = event.message,
+                        fromMapSearch = event.fromMapSearch,
+                    )
                 }
             }
 
@@ -138,7 +144,12 @@ class PlaceSearchViewModel
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "지도 장소 검색 실패: query=$query", e)
-                            dispatch(PlaceSearchReducerEvent.Failed("장소를 찾지 못했어요. 잠시 후 다시 시도해 주세요."))
+                            dispatch(
+                                PlaceSearchReducerEvent.Failed(
+                                    message = "장소를 찾지 못했어요. 잠시 후 다시 시도해 주세요.",
+                                    fromMapSearch = true,
+                                ),
+                            )
                         }
                 }
         }
@@ -158,7 +169,12 @@ class PlaceSearchViewModel
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "장소 검색 실패: query=$query", e)
-                            dispatch(PlaceSearchReducerEvent.Failed("장소를 불러오지 못했어요."))
+                            dispatch(
+                                PlaceSearchReducerEvent.Failed(
+                                    message = "장소를 불러오지 못했어요.",
+                                    fromMapSearch = false,
+                                ),
+                            )
                         }
                 }
         }

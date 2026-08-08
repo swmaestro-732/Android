@@ -172,7 +172,7 @@ fun PlaceSearchOverlay(
     if (showAddPlace) {
         AddPlaceDialog(
             isSearching = uiState.isSearching,
-            errorMessage = uiState.errorMessage,
+            errorMessage = uiState.errorMessage.takeIf { uiState.fromMapSearch },
             onConfirm = { viewModel.onIntent(PlaceSearchIntent.SearchOnMap(it)) },
             onDismiss = { showAddPlace = false },
         )

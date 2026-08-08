@@ -32,9 +32,9 @@ class ProfileRepositoryImpl(
             .getMyPage()
             .requireData()
             .toMyProfileVO()
-            .copy(bio = bioStore.getBio())
+            .copy(bio = bioStore.getBio(requireUserId()))
 
-    override suspend fun saveBio(bio: String) = bioStore.setBio(bio)
+    override suspend fun saveBio(bio: String) = bioStore.setBio(requireUserId(), bio)
 
     override suspend fun getUserProfile(handle: String): UserProfileVO =
         dataSource.getUserPage(handle).requireData().toUserProfileVO(myUserId = tokenStore.userId)
@@ -74,4 +74,6 @@ class ProfileRepositoryImpl(
 
     private fun MyPageEnvelope.requireData(): MyPageScreenDTO =
         requireNotNull(data) { message ?: "마이페이지 응답에 data 가 없습니다." }
+
+    private fun requireUserId(): Long = requireNotNull(tokenStore.userId) { "로그인한 사용자 ID가 없습니다." }
 }

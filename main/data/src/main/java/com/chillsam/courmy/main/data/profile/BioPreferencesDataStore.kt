@@ -25,13 +25,22 @@ class BioPreferencesDataStore(
 ) {
     private val dataStore = context.bioDataStore
 
-    suspend fun getBio(): String = dataStore.data.map { it[KEY_BIO].orEmpty() }.first()
+    suspend fun getBio(userId: Long): String = dataStore.data.map { it[bioKey(userId)].orEmpty() }.first()
 
-    suspend fun setBio(bio: String) {
-        dataStore.edit { it[KEY_BIO] = bio }
+    suspend fun setBio(
+        userId: Long,
+        bio: String,
+    ) {
+        dataStore.edit { preferences ->
+            preferences[bioKey(userId)] = bio
+            // 계정 구분 없이 저장하던 구버전 값은 다른 사용자에게 노출되지 않도록 제거한다.
+            preferences.remove(LEGACY_KEY_BIO)
+        }
     }
 
     private companion object {
-        val KEY_BIO = stringPreferencesKey("bio")
+        val LEGACY_KEY_BIO = stringPreferencesKey("bio")
+
+        fun bioKey(userId: Long) = stringPreferencesKey("bio_$userId")
     }
 }
