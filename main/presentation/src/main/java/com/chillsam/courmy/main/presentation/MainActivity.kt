@@ -79,6 +79,7 @@ class MainActivity : FragmentActivity() {
             },
         )
 
+        // 상태바 영역의 색과 아이콘 밝기는 화면마다 달라 RootComposable 이 맡는다.
         enableEdgeToEdge()
         hideNavigationBar()
         setContent {
