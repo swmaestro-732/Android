@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.domain.follow
 
+import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.my.FollowUserVO
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -15,16 +16,27 @@ class GetFollowListUseCaseTest {
         var requestedSize: Int? = null
             private set
 
-        override suspend fun getMyFollowers(size: Int): List<FollowUserVO> {
+        var requestedCursor: String? = null
+            private set
+
+        override suspend fun getMyFollowers(
+            size: Int,
+            cursor: String?,
+        ): CursorPageVO<FollowUserVO> {
             followersCalled = true
             requestedSize = size
-            return emptyList()
+            requestedCursor = cursor
+            return CursorPageVO()
         }
 
-        override suspend fun getMyFollowings(size: Int): List<FollowUserVO> {
+        override suspend fun getMyFollowings(
+            size: Int,
+            cursor: String?,
+        ): CursorPageVO<FollowUserVO> {
             followingsCalled = true
             requestedSize = size
-            return emptyList()
+            requestedCursor = cursor
+            return CursorPageVO()
         }
     }
 

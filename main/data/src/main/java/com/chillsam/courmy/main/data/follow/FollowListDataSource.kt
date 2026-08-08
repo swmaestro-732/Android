@@ -9,10 +9,12 @@ class FollowListDataSource(
     suspend fun getFollowers(
         userId: Long,
         size: Int,
-    ): FollowListEnvelope = checkResponse(apiService.getFollowers(userId, size))
+        cursor: String?,
+    ): FollowListEnvelope = checkResponse(apiService.getFollowers(userId, size, cursor))
 
     suspend fun getFollowings(
         userId: Long,
         size: Int,
-    ): FollowListEnvelope = checkResponse(apiService.getFollowings(userId, size))
+        cursor: String?,
+    ): FollowListEnvelope = checkResponse(apiService.getFollowings(userId, size, cursor))
 }

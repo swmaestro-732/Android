@@ -14,6 +14,8 @@ interface SavedCourseApiService {
     @GET("service/v1/my/saved-courses")
     suspend fun getSavedCourses(
         @Query("size") size: Int,
+        /** 이전 응답의 `nextCursor`. null 이면 Retrofit 이 파라미터를 뺀다(첫 페이지). */
+        @Query("cursor") cursor: String? = null,
     ): Response<SavedCourseEnvelope>
 
     /**
@@ -25,5 +27,6 @@ interface SavedCourseApiService {
     @GET("api/v1/my/saved-courses")
     suspend fun getSavedCourseIds(
         @Query("size") size: Int,
+        @Query("cursor") cursor: String? = null,
     ): Response<SavedCourseIdsEnvelope>
 }

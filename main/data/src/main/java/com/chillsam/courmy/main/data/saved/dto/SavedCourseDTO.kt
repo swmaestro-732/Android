@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.saved.dto
 
+import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.data.course.toCourseCategoryLabel
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 import kotlinx.serialization.Serializable
@@ -9,7 +10,6 @@ import kotlinx.serialization.Serializable
  * 봉투는 공통 계약 `{ code, message, data }`.
  *
  * 응답에는 폴더별 개수(`folders`)·상태 필터 개수(`uncompletedCount`·`completedCount`)와
- * 커서 페이징(`nextCursor`·`hasNext`)도 오지만, 현재 화면에 해당 UI 가 없어 매핑하지 않는다.
  * 필터·페이징 UI 가 생기면 함께 되살린다. [wiki-needed]
  */
 @Serializable
@@ -23,6 +23,9 @@ data class SavedCourseEnvelope(
 data class SavedCourseScreenDTO(
     val totalCount: Int? = null,
     val savedCourses: List<SavedCourseItemDTO>? = null,
+    /** 다음 페이지 커서. 마지막 페이지면 null. */
+    val nextCursor: String? = null,
+    val hasNext: Boolean = false,
 )
 
 @Serializable
@@ -52,7 +55,15 @@ data class SavedCourseAuthorDTO(
     val nickname: String? = null,
 )
 
-fun SavedCourseScreenDTO.toVOList(): List<SavedCourseVO> =
+fun SavedCourseScreenDTO.toPageVO(): CursorPageVO<SavedCourseVO> =
+    CursorPageVO(
+        items = toVOList(),
+        nextCursor = nextCursor?.takeIf { it.isNotBlank() },
+        // 커서가 없으면 더 받을 수 없으므로, 서버가 hasNext=true 로 줘도 끝으로 본다.
+        hasNext = hasNext && !nextCursor.isNullOrBlank(),
+    )
+
+internal fun SavedCourseScreenDTO.toVOList(): List<SavedCourseVO> =
     savedCourses
         .orEmpty()
         // courseId 가 없으면 상세로 갈 수도, 저장을 취소할 수도 없어 카드로 쓸 수 없다.

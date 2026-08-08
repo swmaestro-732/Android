@@ -32,6 +32,7 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
@@ -54,7 +55,7 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                     .weight(1f)
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = ScreenHorizontalPadding),
         ) {
             DsText(
                 text = "마이",

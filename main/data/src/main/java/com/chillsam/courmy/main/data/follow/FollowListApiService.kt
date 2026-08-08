@@ -12,11 +12,14 @@ interface FollowListApiService {
     suspend fun getFollowers(
         @Path("userId") userId: Long,
         @Query("size") size: Int,
+        /** 이전 응답의 `nextCursor`. null 이면 Retrofit 이 파라미터를 뺀다(첫 페이지). */
+        @Query("cursor") cursor: String? = null,
     ): Response<FollowListEnvelope>
 
     @GET("api/v1/users/{userId}/followings")
     suspend fun getFollowings(
         @Path("userId") userId: Long,
         @Query("size") size: Int,
+        @Query("cursor") cursor: String? = null,
     ): Response<FollowListEnvelope>
 }

@@ -24,6 +24,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.MyPage
@@ -146,7 +147,7 @@ private fun UserProfileContent(
                     relation = profile.relation,
                     onClick = onToggleFollow,
                     inFlight = isFollowInFlight,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
                 )
             } else {
                 Spacer(Modifier.height(16.dp))
@@ -160,10 +161,9 @@ private fun UserProfileContent(
             Spacer(Modifier.height(20.dp))
         }
 
-        // Figma 는 타유저 프로필에서도 "마이" 를 선택 상태로 두지만, 실제로는 내 화면이 아니므로
-        // 탭을 누르면 내 마이로 이동시킨다(선택 표시만 디자인을 따르고 동작은 살려 둔다).
+        // 타유저 프로필은 어느 탭에도 속하지 않으므로 아무 탭도 강조하지 않는다.
         CourmyBottomBar(
-            selectedTab = MainTab.MY,
+            selectedTab = null,
             onTabSelected = { tab ->
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)

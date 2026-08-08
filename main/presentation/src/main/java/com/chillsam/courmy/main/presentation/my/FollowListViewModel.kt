@@ -30,6 +30,7 @@ class FollowListViewModel
             FollowListUIState.empty,
         ) {
         private var loadJob: Job? = null
+        private var moreJob: Job? = null
         private val unfollowJobs = mutableMapOf<Long, Job>()
 
         override fun onIntent(intent: FollowListIntent) {
@@ -42,6 +43,10 @@ class FollowListViewModel
 
                 FollowListIntent.Retry -> {
                     load(currentState.selectedTab)
+                }
+
+                FollowListIntent.LoadMore -> {
+                    loadMore()
                 }
 
                 is FollowListIntent.Unfollow -> {
@@ -68,14 +73,31 @@ class FollowListViewModel
                 }
 
                 is FollowListReducerEvent.Loaded -> {
-                    val users = event.users.toImmutableList()
-                    state.copy(
-                        isLoading = false,
-                        followers = if (event.tab == FollowTab.FOLLOWER) users else state.followers,
-                        followings = if (event.tab == FollowTab.FOLLOWING) users else state.followings,
-                        loadedTabs = state.loadedTabs + event.tab,
-                        loadErrorMessage = null,
-                    )
+                    state
+                        .withPage(event.tab, event.users.toImmutableList(), event.nextCursor, event.hasNext)
+                        .copy(
+                            isLoading = false,
+                            loadedTabs = state.loadedTabs + event.tab,
+                            loadErrorMessage = null,
+                            isLoadingMore = false,
+                        )
+                }
+
+                FollowListReducerEvent.LoadMoreStarted -> {
+                    state.copy(isLoadingMore = true)
+                }
+
+                is FollowListReducerEvent.MoreLoaded -> {
+                    val current = state.usersOf(event.tab)
+                    // 서버가 같은 사용자를 다시 줘도 두 번 그리지 않는다(LazyColumn key 중복 방지).
+                    val merged = (current + event.users).distinctBy { it.id }.toImmutableList()
+                    state
+                        .withPage(event.tab, merged, event.nextCursor, event.hasNext)
+                        .copy(isLoadingMore = false)
+                }
+
+                is FollowListReducerEvent.MoreFailed -> {
+                    state.copy(isLoadingMore = false, errorMessage = event.message)
                 }
 
                 is FollowListReducerEvent.LoadFailed -> {
@@ -105,16 +127,55 @@ class FollowListViewModel
         private fun load(tab: FollowTab) {
             dispatch(FollowListReducerEvent.LoadStarted)
             loadJob?.cancel()
+            // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
+            moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
                     runCatching { getFollowListUseCase(followers = tab == FollowTab.FOLLOWER) }
-                        .onSuccess { users -> dispatch(FollowListReducerEvent.Loaded(tab, users)) }
-                        .onFailure { e ->
+                        .onSuccess { page ->
+                            dispatch(
+                                FollowListReducerEvent.Loaded(
+                                    tab = tab,
+                                    users = page.items,
+                                    nextCursor = page.nextCursor,
+                                    hasNext = page.hasNext,
+                                ),
+                            )
+                        }.onFailure { e ->
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "팔로우 목록 로드 실패: tab=$tab", e)
                             dispatch(FollowListReducerEvent.LoadFailed("목록을 불러오지 못했습니다."))
                         }
+                }
+        }
+
+        /** 지금 탭의 다음 페이지를 이어 받는다. 첫 로드 전이거나 마지막 페이지면 아무것도 하지 않는다. */
+        private fun loadMore() {
+            val state = currentState
+            if (state.isLoading || state.isLoadingMore) return
+            val cursor = state.currentCursor ?: return
+            val tab = state.selectedTab
+            dispatch(FollowListReducerEvent.LoadMoreStarted)
+            moreJob?.cancel()
+            moreJob =
+                viewModelScope.launch {
+                    runCatching {
+                        getFollowListUseCase(followers = tab == FollowTab.FOLLOWER, cursor = cursor)
+                    }.onSuccess { page ->
+                        dispatch(
+                            FollowListReducerEvent.MoreLoaded(
+                                tab = tab,
+                                users = page.items,
+                                nextCursor = page.nextCursor,
+                                hasNext = page.hasNext,
+                            ),
+                        )
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        Log.w(TAG, "팔로우 목록 다음 페이지 로드 실패: tab=$tab", e)
+                        dispatch(FollowListReducerEvent.MoreFailed("더 불러오지 못했어요."))
+                    }
                 }
         }
 

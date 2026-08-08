@@ -9,6 +9,22 @@ sealed interface SavedCoursesReducerEvent : ReducerEvent {
 
     data class Loaded(
         val courses: List<SavedCourseVO>,
+        val nextCursor: String?,
+        val hasNext: Boolean,
+    ) : SavedCoursesReducerEvent
+
+    data object LoadMoreStarted : SavedCoursesReducerEvent
+
+    /** 다음 페이지 도착. 기존 목록 뒤에 이어 붙인다. */
+    data class MoreLoaded(
+        val courses: List<SavedCourseVO>,
+        val nextCursor: String?,
+        val hasNext: Boolean,
+    ) : SavedCoursesReducerEvent
+
+    /** 다음 페이지 실패. 보고 있는 목록은 그대로 두고 안내만 띄운다. */
+    data class MoreFailed(
+        val message: String,
     ) : SavedCoursesReducerEvent
 
     data class LoadFailed(

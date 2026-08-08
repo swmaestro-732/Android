@@ -31,6 +31,7 @@ class SavedCoursesViewModel
             SavedCoursesUIState.empty,
         ) {
         private var loadJob: Job? = null
+        private var moreJob: Job? = null
         private val unsaveJobs = mutableMapOf<String, Job>()
 
         override fun onIntent(intent: SavedCoursesIntent) {
@@ -39,6 +40,10 @@ class SavedCoursesViewModel
                 SavedCoursesIntent.Retry,
                 -> {
                     load()
+                }
+
+                SavedCoursesIntent.LoadMore -> {
+                    loadMore()
                 }
 
                 is SavedCoursesIntent.Unsave -> {
@@ -65,7 +70,28 @@ class SavedCoursesViewModel
                         isLoading = false,
                         courses = event.courses.toImmutableList(),
                         loadErrorMessage = null,
+                        nextCursor = event.nextCursor,
+                        hasNext = event.hasNext,
+                        isLoadingMore = false,
                     )
+                }
+
+                SavedCoursesReducerEvent.LoadMoreStarted -> {
+                    state.copy(isLoadingMore = true)
+                }
+
+                is SavedCoursesReducerEvent.MoreLoaded -> {
+                    state.copy(
+                        // 서버가 같은 코스를 다시 줘도 두 번 그리지 않는다(LazyColumn key 중복 방지).
+                        courses = (state.courses + event.courses).distinctBy { it.id }.toImmutableList(),
+                        nextCursor = event.nextCursor,
+                        hasNext = event.hasNext,
+                        isLoadingMore = false,
+                    )
+                }
+
+                is SavedCoursesReducerEvent.MoreFailed -> {
+                    state.copy(isLoadingMore = false, errorMessage = event.message)
                 }
 
                 is SavedCoursesReducerEvent.LoadFailed -> {
@@ -90,15 +116,50 @@ class SavedCoursesViewModel
         private fun load() {
             dispatch(SavedCoursesReducerEvent.LoadStarted)
             loadJob?.cancel()
+            // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
+            moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
                     runCatching { getSavedCoursesUseCase() }
-                        .onSuccess { courses -> dispatch(SavedCoursesReducerEvent.Loaded(courses)) }
-                        .onFailure { e ->
+                        .onSuccess { page ->
+                            dispatch(
+                                SavedCoursesReducerEvent.Loaded(
+                                    courses = page.items,
+                                    nextCursor = page.nextCursor,
+                                    hasNext = page.hasNext,
+                                ),
+                            )
+                        }.onFailure { e ->
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "저장 코스 로드 실패", e)
                             dispatch(SavedCoursesReducerEvent.LoadFailed("저장한 코스를 불러오지 못했습니다."))
+                        }
+                }
+        }
+
+        /** 다음 페이지를 이어 받는다. 첫 로드 전이거나 마지막 페이지면 아무것도 하지 않는다. */
+        private fun loadMore() {
+            val state = currentState
+            if (state.isLoading || state.isLoadingMore) return
+            val cursor = state.nextCursor?.takeIf { state.hasNext } ?: return
+            dispatch(SavedCoursesReducerEvent.LoadMoreStarted)
+            moreJob?.cancel()
+            moreJob =
+                viewModelScope.launch {
+                    runCatching { getSavedCoursesUseCase(cursor = cursor) }
+                        .onSuccess { page ->
+                            dispatch(
+                                SavedCoursesReducerEvent.MoreLoaded(
+                                    courses = page.items,
+                                    nextCursor = page.nextCursor,
+                                    hasNext = page.hasNext,
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "저장 코스 다음 페이지 로드 실패", e)
+                            dispatch(SavedCoursesReducerEvent.MoreFailed("더 불러오지 못했어요."))
                         }
                 }
         }

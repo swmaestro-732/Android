@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.follow.dto
 
+import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.my.FollowUserVO
 import kotlinx.serialization.Serializable
 
@@ -7,7 +8,6 @@ import kotlinx.serialization.Serializable
  * `GET /api/v1/users/{userId}/followers`·`/followings` 응답 DTO.
  * 봉투는 공통 계약 `{ code, message, data }`.
  *
- * 커서 페이징(`nextCursor`·`hasNext`)도 오지만 화면에 더보기 UI 가 없어 첫 페이지만 쓴다.
  * TODO-API-SPEC: 목록이 길어지면 커서 페이징을 붙인다. [wiki-needed]
  */
 @Serializable
@@ -20,6 +20,7 @@ data class FollowListEnvelope(
 @Serializable
 data class FollowListDTO(
     val totalCount: Int? = null,
+    val nextCursor: String? = null,
     val hasNext: Boolean = false,
     val users: List<FollowUserDTO>? = null,
 )
@@ -34,7 +35,15 @@ data class FollowUserDTO(
     val isFollower: Boolean = false,
 )
 
-fun FollowListDTO.toVOList(): List<FollowUserVO> =
+fun FollowListDTO.toPageVO(): CursorPageVO<FollowUserVO> =
+    CursorPageVO(
+        items = toVOList(),
+        nextCursor = nextCursor?.takeIf { it.isNotBlank() },
+        // 커서가 없으면 더 받을 수 없으므로, 서버가 hasNext=true 로 줘도 끝으로 본다.
+        hasNext = hasNext && !nextCursor.isNullOrBlank(),
+    )
+
+internal fun FollowListDTO.toVOList(): List<FollowUserVO> =
     users
         .orEmpty()
         // id 가 없으면 팔로우/언팔로우를 걸 수 없어 목록에 쓸 수 없다.

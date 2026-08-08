@@ -11,6 +11,9 @@ sealed interface FollowListIntent : MviIntent {
 
     data object Retry : FollowListIntent
 
+    /** 지금 탭의 목록 끝에 닿았을 때 다음 페이지 요청. */
+    data object LoadMore : FollowListIntent
+
     /** 팔로잉 해제. 팔로워 탭에는 대응하는 서버 동작이 없어 쓰지 않는다. */
     data class Unfollow(
         val userId: Long,
