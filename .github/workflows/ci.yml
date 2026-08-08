@@ -15,7 +15,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [develop, release, main]
   workflow_dispatch:
 
 # 최소 권한 (report 코멘트 작성을 위해 pull-requests: write 만 부여)

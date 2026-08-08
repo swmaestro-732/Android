@@ -91,6 +91,18 @@ courmy/
 
 요구사항: **JDK 17**, Android SDK(compileSdk 37)
 
+### 로컬 설정 — `app/google-services.json`
+
+Firebase Crashlytics 설정 파일이다. API key 를 담고 있어 저장소에 커밋하지 않으므로
+[Firebase 콘솔](https://console.firebase.google.com/project/courmy-qa732/settings/general)에서
+각자 받아 `app/` 아래에 둔다.
+
+- **없어도 debug 빌드는 된다** — 크래시 리포팅만 빠진다.
+- **release 빌드는 실패한다.** 크래시 리포팅 없이 출시하는 걸 막기 위한 의도적인 동작이다.
+  CI 는 `GOOGLE_SERVICES_JSON_BASE64` secret 으로 주입한다(`.github/workflows/cd.yml`).
+- debug 빌드는 수집이 꺼져 있다. 개발 중 낸 크래시가 운영 대시보드에 섞이지 않게 하기 위함이며,
+  로컬에서 리포팅을 확인해야 하면 `app/src/debug/AndroidManifest.xml` 의 값을 잠깐 `true` 로 바꾼다.
+
 ```bash
 # 디버그 APK 빌드
 ./gradlew assembleDebug
@@ -122,7 +134,7 @@ ktlint --relative        # 포맷 검사 (.editorconfig 기준)
 
 ## CI/CD · 컨벤션
 
-**GitHub Actions** — PR(→ `develop`/`main`) 마다 실행하고 결과를 단일 PR 코멘트로 통합합니다.
+**GitHub Actions** — PR(→ `develop`/`release`/`main`) 마다 실행하고 결과를 단일 PR 코멘트로 통합합니다.
 
 | 잡 | 내용 |
 |---|---|
@@ -135,7 +147,7 @@ ktlint --relative        # 포맷 검사 (.editorconfig 기준)
 
 | 단계 | 내용 | 트리거 | 상태 |
 |---|---|---|---|
-| 1. 아티팩트 빌드 | 서명 release AAB/APK 빌드·업로드 | 수동(`workflow_dispatch`) | ✅ 도입 |
+| 1. 내부 테스트 배포 | 서명 release AAB/APK를 GitHub Pre-release Assets로 업로드 | `release` push 또는 수동 | ✅ 도입 |
 | 2. QA 배포 | Firebase App Distribution | develop 자동 | MVP 이후 |
 | 3. 스토어 배포 | Google Play | release/tag | 출시 이후 |
 | 4. 릴리스 운영 | 버전 자동화 · Sentry | tag/main | 이후 |
@@ -144,5 +156,5 @@ ktlint --relative        # 포맷 검사 (.editorconfig 기준)
 
 - **pre-commit** — 커밋 전 로컬 검사: 포맷(ktlint, CI와 버전 일치) · 시크릿(gitleaks, staged diff) · 기본 파일/커밋 규칙
 - **Dependabot** — 의존성 버전 업데이트 자동 PR (gradle · github-actions)
-- **브랜치 전략** — gitflow (`develop` 기준)
+- **브랜치 전략** — 기능은 `develop`에 통합하고, 내부 테스트 대상은 `develop → release`, 검증을 마친 버전은 `release → main` PR로 승격합니다.
 - **커밋** — Conventional Commits, PR 제목에 SCRUM 이슈 키 표기
