@@ -84,7 +84,7 @@ private fun MyContent(
     // 공유할 프로필 URL(App Link)이 아직 없어 안내만 한다. 무반응 버튼으로 두지 않는다.
     val shareNotReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
 
-    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1)) {
+    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(
             modifier =
                 Modifier
