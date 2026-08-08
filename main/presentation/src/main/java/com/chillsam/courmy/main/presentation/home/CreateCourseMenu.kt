@@ -42,6 +42,12 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 
 private val FabSize = 56.dp
+
+/** FAB 그림자. 카드(cardShadow)와 같은 이유로 기본값보다 세게 준다. */
+private val FabElevation = 24.dp
+private const val FAB_AMBIENT_ALPHA = 0.50f
+private const val FAB_SPOT_ALPHA = 0.70f
+
 private val MenuButtonSize = 52.dp
 private val ClusterSpacing = 16.dp
 private val ClusterEndPadding = 20.dp
@@ -181,18 +187,25 @@ private fun CreateCourseFab(
         targetValue = if (expanded) 45f else 0f,
         label = "fabRotation",
     )
+    val color = DesignSystemThemeImpl.designSystemColor
     Box(
         modifier =
             Modifier
                 .size(FabSize)
-                .shadow(6.dp, CircleShape)
-                .clip(CircleShape)
-                .background(DesignSystemThemeImpl.designSystemColor.bgAccent)
+                // 기본 그림자 색은 너무 옅어 밝은 피드 위에서 FAB 가 배경에 붙어 보인다.
+                // 크기는 그대로 두고 elevation 과 ambient/spot 을 올려 떠 있는 느낌을 만든다(API 28+ 반영).
+                .shadow(
+                    elevation = FabElevation,
+                    shape = CircleShape,
+                    ambientColor = color.contentDefaultLevel0.copy(alpha = FAB_AMBIENT_ALPHA),
+                    spotColor = color.contentDefaultLevel0.copy(alpha = FAB_SPOT_ALPHA),
+                ).clip(CircleShape)
+                .background(color.bgAccent)
                 .noRippleClickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         PlusIcon(
-            color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
+            color = color.contentOnAccent,
             rotation = rotation,
             barLength = 20.dp,
         )
