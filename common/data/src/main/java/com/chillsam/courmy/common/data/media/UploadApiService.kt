@@ -11,8 +11,11 @@ import retrofit2.http.PUT
 import retrofit2.http.Url
 
 interface UploadApiService {
-    /** S3 업로드용 프리사인 URL 발급. 사용자는 JWT 로 식별되므로 요청에 userId 를 싣지 않는다. */
-    @POST("api/v1/uploads/presign")
+    /**
+     * S3 업로드용 프리사인 URL 발급. 한 번에 여러 장을 요청할 수 있다(최대 10장).
+     * 사용자는 JWT 로 식별되므로 요청에 userId 를 싣지 않는다.
+     */
+    @POST("api/v1/uploads/presigned-urls")
     suspend fun presign(
         @Body request: PresignRequest,
     ): Response<PresignEnvelope>

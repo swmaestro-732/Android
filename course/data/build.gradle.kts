@@ -54,6 +54,8 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+    // 임시저장 초안을 기기에 보관(콜드 스타트 후에도 남도록)
+    implementation(libs.androidx.datastore.preferences)
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

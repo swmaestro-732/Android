@@ -3,7 +3,9 @@ package com.chillsam.courmy.course.data.courseDetail.dto
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CourseReviewVO
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 /**
  * 코스 상세 화면 조합 응답(BFF) DTO. `GET /service/v1/courses/{courseId}`.
@@ -49,6 +51,12 @@ data class CourseStatsDTO(
     val tracingCount: Int? = null,
 )
 
+/**
+ * 서버가 Kotlin `val isFollowing` 으로 선언해도 Jackson 의 boolean getter 규칙상 `is` 가 떨어져
+ * `following` 으로 나갈 수 있다. `ignoreUnknownKeys = true` 라 키가 어긋나면 조용히 false 가 되고
+ * 팔로우 버튼이 늘 "팔로우"로 보이는 무증상 버그가 되므로, 두 표기를 모두 받는다.
+ */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class AuthorDTO(
     val id: Long? = null,
@@ -56,8 +64,10 @@ data class AuthorDTO(
     val handle: String? = null,
     val profileImageUrl: String? = null,
     /** 내가 이 작성자를 팔로우 중인지. 팔로우 버튼 노출 여부를 정한다. */
+    @JsonNames("following")
     val isFollowing: Boolean = false,
     /** 이 작성자가 나를 팔로우하는지. 지금은 쓰지 않지만 맞팔 표시에 필요하다. */
+    @JsonNames("follower")
     val isFollower: Boolean = false,
 )
 
@@ -120,7 +130,9 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
     return CourseDetailVO(
         title = course.title.orEmpty(),
         coverImageUrl = course.coverImageUrl.orEmpty(),
-        category = course.themes.orEmpty().joinToString(SEPARATOR),
+        // 화면에서 칩 하나씩 그리므로 합치지 않고 목록 그대로 넘긴다.
+        themes = course.themes.orEmpty(),
+        authorId = course.author?.id ?: 0L,
         authorName = course.author?.nickname.orEmpty(),
         authorHandle =
             course.author

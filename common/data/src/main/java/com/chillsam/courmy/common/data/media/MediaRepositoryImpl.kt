@@ -3,6 +3,7 @@ package com.chillsam.courmy.common.data.media
 import android.content.Context
 import android.net.Uri
 import com.chillsam.courmy.common.data.BaseRemoteDataSource
+import com.chillsam.courmy.common.data.media.dto.PresignImageRequest
 import com.chillsam.courmy.common.data.media.dto.PresignRequest
 import com.chillsam.courmy.common.domain.media.MediaRepository
 import com.chillsam.courmy.common.domain.media.UploadPurpose
@@ -11,7 +12,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 
 /**
- * 프로필 이미지 업로드. presign 발급 → S3 PUT → 서버가 알려준 공개 URL 반환의 3단계다.
+ * 이미지 업로드. presign 발급 → S3 PUT → 서버가 알려준 공개 URL 반환의 3단계다.
+ * 용도([UploadPurpose])는 S3 키 프리픽스를 정하므로 올리는 대상에 맞게 넘겨야 한다.
  *
  * presign 은 액세스 토큰이 필요하므로 **로그인/가입이 끝난 뒤에만** 호출할 수 있다
  * (가입 화면에서는 아직 registrationToken 뿐이라 불가 — [com.chillsam.courmy.main.domain.auth.SignupUseCase] 참고).
@@ -34,18 +36,24 @@ class MediaRepositoryImpl(
         }
         val bytes = readBytesUpTo(uri, MAX_UPLOAD_BYTES)
 
+        // 서버는 여러 장을 한 번에 받지만 여기서는 한 장만 올리므로 1개짜리 목록으로 요청하고 첫 항목을 쓴다.
         val presign =
             requireNotNull(
                 checkResponse(
                     apiService.presign(
                         PresignRequest(
                             purpose = purpose.name,
-                            contentType = contentType,
-                            contentLength = bytes.size.toLong(),
+                            images =
+                                listOf(
+                                    PresignImageRequest(
+                                        contentType = contentType,
+                                        contentLength = bytes.size.toLong(),
+                                    ),
+                                ),
                         ),
                     ),
-                ).data,
-            ) { "presign 응답에 data 가 없습니다." }
+                ).data?.items?.firstOrNull(),
+            ) { "presign 응답에 발급 결과가 없습니다." }
 
         val uploadUrl = requireNotNull(presign.uploadUrl) { "presign 응답에 uploadUrl 이 없습니다." }
         val imageUrl = requireNotNull(presign.imageUrl) { "presign 응답에 imageUrl 이 없습니다." }

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -32,11 +33,15 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.media.rememberAccentedImagePicker
+import com.chillsam.courmy.common.presentation.media.rememberAccentedImagesPicker
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -138,18 +143,32 @@ fun CourseTopBar(
     }
 }
 
-/** 장소 사이 경로 커넥터: "도보 9분 · 경로 자동". */
+/**
+ * 장소 사이 경로 커넥터: 도보 아이콘 + "도보 9분".
+ * 걸어서 갈 수 없는 구간이면 호출부가 그 문구를 그대로 넘긴다.
+ */
 @Composable
 fun CourseRouteConnector(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    DsText(
-        text = "＋ $text",
-        modifier = modifier.fillMaxWidth().padding(vertical = 2.dp),
-        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
-    )
+    Row(
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_walk_24),
+            contentDescription = null,
+            tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+            modifier = Modifier.size(14.dp),
+        )
+        DsText(
+            text = text,
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+        )
+    }
 }
 
 /** 카드 안 입력 항목 라벨(코스 이름·설명·썸네일·태그 등). */
@@ -240,9 +259,7 @@ private fun AddPhotoSlot(
     // 선택한 사진은 5MB 이하만 통과시킨다(용량 조회는 IO 에서, 초과·미상은 제외 후 토스트 안내).
     // PickMultipleVisualMedia 는 maxItems >= 2 를 요구하므로 남은 자리가 1 이면 단일 선택 피커를 쓴다.
     val multiLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.PickMultipleVisualMedia(remaining.coerceAtLeast(2)),
-        ) { uris ->
+        rememberAccentedImagesPicker(remaining.coerceAtLeast(2)) { uris ->
             if (uris.isNotEmpty()) {
                 scope.launch {
                     val within = filterWithinSizeLimit(context, uris)
@@ -251,9 +268,7 @@ private fun AddPhotoSlot(
             }
         }
     val singleLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.PickVisualMedia(),
-        ) { uri ->
+        rememberAccentedImagePicker { uri ->
             if (uri != null) {
                 scope.launch {
                     val within = filterWithinSizeLimit(context, listOf(uri))

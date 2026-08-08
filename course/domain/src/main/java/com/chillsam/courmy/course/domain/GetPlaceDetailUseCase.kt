@@ -9,8 +9,5 @@ class GetPlaceDetailUseCase
     constructor(
         private val repository: PlaceDetailRepository,
     ) {
-        suspend operator fun invoke(
-            placeId: Long,
-            walkText: String = "",
-        ): PlaceDetailVO = repository.getPlaceDetail(placeId, walkText)
+        suspend operator fun invoke(placeId: Long): PlaceDetailVO = repository.getPlaceDetail(placeId)
     }

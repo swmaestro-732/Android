@@ -26,7 +26,13 @@ import com.chillsam.courmy.course.entity.CoursePlaceVO
 /** 한마디 메모 최대 글자 수(Figma FS-34 인터랙션 "카드에서 바로 입력" 기준). */
 private const val NOTE_MAX_LENGTH = 40
 
-/** ② 장소 담기 — 장소 카드 1건. 한마디 메모는 카드에서 바로 편집한다. */
+/**
+ * 장소 카드 1건. 한마디 메모는 카드에서 바로 편집한다.
+ *
+ * 코스 만들기는 장소를 두 단계로 나눠 다룬다. Step 1(장소 고르기)은 헤더만 보여 목록을 짧게 유지하고,
+ * Step 2(장소별 기록)에서 [showRecord] 로 한마디·사진 입력을 편다.
+ * [showDragHandle] 은 순서 변경이 가능한 Step 1 에서만 켠다.
+ */
 @Composable
 fun CoursePlaceCard(
     place: CoursePlaceVO,
@@ -35,6 +41,8 @@ fun CoursePlaceCard(
     onPhotosChange: (List<String>) -> Unit,
     modifier: Modifier = Modifier,
     dragHandleModifier: Modifier = Modifier,
+    showRecord: Boolean = true,
+    showDragHandle: Boolean = true,
 ) {
     val shape = RoundedCornerShape(16.dp)
     val hasNote = place.note.isNotEmpty()
@@ -46,7 +54,13 @@ fun CoursePlaceCard(
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
                 .border(1.dp, DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, shape),
     ) {
-        PlaceHeader(place = place, onRemove = onRemove, dragHandleModifier = dragHandleModifier)
+        PlaceHeader(
+            place = place,
+            onRemove = onRemove,
+            dragHandleModifier = dragHandleModifier,
+            showDragHandle = showDragHandle,
+        )
+        if (!showRecord) return@Column
         // 메모 유무와 무관하게 동일한 컴포저블 트리를 유지하고 배경색만 토글해, 입력 중 포커스가 끊기지 않게 한다.
         Column(
             modifier =
@@ -76,18 +90,21 @@ private fun PlaceHeader(
     place: CoursePlaceVO,
     onRemove: () -> Unit,
     dragHandleModifier: Modifier = Modifier,
+    showDragHandle: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(11.dp),
     ) {
-        DsText(
-            text = "⋮",
-            modifier = dragHandleModifier.padding(4.dp),
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
-        )
+        if (showDragHandle) {
+            DsText(
+                text = "⋮",
+                modifier = dragHandleModifier.padding(4.dp),
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+            )
+        }
         Box(
             modifier =
                 Modifier

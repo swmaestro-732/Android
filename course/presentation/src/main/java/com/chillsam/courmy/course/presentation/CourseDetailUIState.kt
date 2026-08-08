@@ -12,6 +12,8 @@ data class CourseDetailUIState(
     val detail: CourseDetailVO? = null,
     val errorMessage: String? = null,
     val isSaving: Boolean = false,
+    /** 작성자 팔로우 요청 중. 중복 탭을 막는다. */
+    val isFollowing: Boolean = false,
     /** 저장 실패처럼 토스트로 한 번 알리고 지우는 일시 오류. */
     val actionErrorMessage: String? = null,
     val isDeleting: Boolean = false,

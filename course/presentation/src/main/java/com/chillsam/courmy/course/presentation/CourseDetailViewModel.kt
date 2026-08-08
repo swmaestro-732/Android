@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.DeleteCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
+import com.chillsam.courmy.course.domain.SetFollowAuthorUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -24,6 +25,7 @@ class CourseDetailViewModel
     constructor(
         private val getCourseDetailUseCase: GetCourseDetailUseCase,
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
+        private val setFollowAuthorUseCase: SetFollowAuthorUseCase,
         private val deleteCourseUseCase: DeleteCourseUseCase,
     ) : MviViewModel<CourseDetailIntent, CourseDetailUIState, CourseDetailReducerEvent>(
             CourseDetailUIState.empty,
@@ -31,6 +33,7 @@ class CourseDetailViewModel
         /** 진행 중인 로드 코루틴. 재요청 시 이전 것을 취소해 중복 실행·stale 결과 반영을 막는다. */
         private var loadJob: Job? = null
         private var saveJob: Job? = null
+        private var followJob: Job? = null
         private var deleteJob: Job? = null
 
         /** 조회 대상 코스. null 이면 아직 [CourseDetailIntent.Load] 를 받지 못한 상태다. */
@@ -51,6 +54,10 @@ class CourseDetailViewModel
 
                 CourseDetailIntent.ToggleSave -> {
                     toggleSave()
+                }
+
+                CourseDetailIntent.ToggleFollowAuthor -> {
+                    toggleFollowAuthor()
                 }
 
                 CourseDetailIntent.Delete -> {
@@ -92,6 +99,21 @@ class CourseDetailViewModel
                     state.copy(isSaving = false, actionErrorMessage = event.message)
                 }
 
+                is CourseDetailReducerEvent.FollowFinished -> {
+                    state.copy(
+                        isFollowing = false,
+                        detail = state.detail?.copy(isFollowingAuthor = event.following),
+                    )
+                }
+
+                CourseDetailReducerEvent.FollowStarted -> {
+                    state.copy(isFollowing = true, actionErrorMessage = null)
+                }
+
+                is CourseDetailReducerEvent.FollowFailed -> {
+                    state.copy(isFollowing = false, actionErrorMessage = event.message)
+                }
+
                 CourseDetailReducerEvent.ErrorConsumed -> {
                     state.copy(actionErrorMessage = null)
                 }
@@ -108,6 +130,31 @@ class CourseDetailViewModel
                     state.copy(isDeleting = false, actionErrorMessage = event.message)
                 }
             }
+
+        /**
+         * 작성자 팔로우 토글. 저장과 같은 이유로 서버가 확정한 뒤에 상태를 바꾼다.
+         * 작성자 id 가 없으면(서버가 주지 않은 경우) 요청 대상이 없으므로 조용히 무시한다.
+         */
+        private fun toggleFollowAuthor() {
+            val state = currentState
+            val detail = state.detail ?: return
+            val authorId = detail.authorId
+            if (state.isFollowing || authorId <= 0L) return
+            val target = !detail.isFollowingAuthor
+            dispatch(CourseDetailReducerEvent.FollowStarted)
+            followJob?.cancel()
+            followJob =
+                viewModelScope.launch {
+                    runCatching { setFollowAuthorUseCase(userId = authorId, follow = target) }
+                        .onSuccess { dispatch(CourseDetailReducerEvent.FollowFinished(it)) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "팔로우 토글 실패: userId=$authorId, target=$target", e)
+                            val message = if (target) "팔로우하지 못했어요." else "팔로우를 해제하지 못했어요."
+                            dispatch(CourseDetailReducerEvent.FollowFailed(message))
+                        }
+                }
+        }
 
         /** 되돌릴 수 없는 동작이라 중복 탭을 막고, 서버가 확정한 뒤에만 화면을 닫는다. */
         private fun delete() {
