@@ -23,9 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
@@ -37,6 +39,23 @@ private val BorderWidthDefault = 1.dp
 private val BorderWidthActive = 1.5.dp
 private val FocusRingWidth = 3.dp
 private const val FOCUS_RING_ALPHA = 0.12f
+
+/**
+ * 포커스 링이 만드는 안쪽 여백을 상쇄해, 입력창 **테두리**를 부모의 좌우 끝선에 맞춘다.
+ *
+ * [DsTextField] 는 링 자리로 좌우 [FocusRingWidth] 씩을 늘 비워 둔다(포커스 때 크기가 튀지 않게).
+ * 그래서 같은 컨테이너 안에서 라벨·칩과 나란히 두면 입력창만 양쪽으로 3dp 들어가 보인다.
+ * 이 modifier 는 자식을 그만큼 넓게 재고 왼쪽으로 당겨 놓되, 부모에게는 원래 폭으로 보고해
+ * 주변 요소의 자리는 건드리지 않는다.
+ */
+fun Modifier.alignTextFieldBorder(): Modifier =
+    layout { measurable, constraints ->
+        val bleed = FocusRingWidth.roundToPx()
+        val placeable = measurable.measure(constraints.offset(horizontal = bleed * 2))
+        layout(placeable.width - bleed * 2, placeable.height) {
+            placeable.place(-bleed, 0)
+        }
+    }
 
 /**
  * 단일 라인 입력 필드. Figma `design_system > TEXT INPUT` 의 3상태.
