@@ -7,6 +7,14 @@ import com.chillsam.courmy.course.data.courseCreate.dto.CreateCourseRequest
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailApiService
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
 import com.chillsam.courmy.course.data.courseDetail.dto.CourseDetailEnvelope
+import com.chillsam.courmy.course.data.draft.DraftLocalStore
+import com.chillsam.courmy.course.data.draft.StoredDraft
+import com.chillsam.courmy.course.data.follow.FollowApiService
+import com.chillsam.courmy.course.data.follow.FollowDataSource
+import com.chillsam.courmy.course.data.follow.FollowEnvelope
+import com.chillsam.courmy.course.data.recommendedTag.RecommendedTagApiService
+import com.chillsam.courmy.course.data.recommendedTag.RecommendedTagDataSource
+import com.chillsam.courmy.course.data.recommendedTag.dto.RecommendedTagsEnvelope
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -22,6 +30,9 @@ class CourseRepositoryImplDraftTest {
         CourseRepositoryImpl(
             CourseDetailDataSource(UnusedApiService),
             CourseCreateDataSource(UnusedCreateApiService),
+            RecommendedTagDataSource(UnusedRecommendedTagApiService),
+            InMemoryDraftStore(),
+            FollowDataSource(UnusedFollowApiService),
         ) { null }
 
     @Test
@@ -121,6 +132,30 @@ class CourseRepositoryImplDraftTest {
     private object UnusedApiService : CourseDetailApiService {
         override suspend fun getCourseDetail(courseId: Long): Response<CourseDetailEnvelope> =
             error("draft 테스트에서는 호출되지 않아야 한다")
+    }
+
+    /** 기기 저장 대신 메모리에 담아 두는 구현(DataStore 는 Context 가 필요해 순수 JVM 테스트에서 못 쓴다). */
+    private class InMemoryDraftStore : DraftLocalStore {
+        private var saved: List<StoredDraft> = emptyList()
+
+        override suspend fun load(): List<StoredDraft> = saved
+
+        override suspend fun save(drafts: List<StoredDraft>) {
+            saved = drafts
+        }
+    }
+
+    private object UnusedFollowApiService : FollowApiService {
+        override suspend fun follow(userId: Long): Response<FollowEnvelope> = error("draft 테스트에서는 호출되지 않아야 한다")
+
+        override suspend fun unfollow(userId: Long): Response<FollowEnvelope> = error("draft 테스트에서는 호출되지 않아야 한다")
+    }
+
+    private object UnusedRecommendedTagApiService : RecommendedTagApiService {
+        override suspend fun getRecommendedTags(
+            placeIds: List<Long>,
+            limit: Int,
+        ): Response<RecommendedTagsEnvelope> = error("draft 테스트에서는 호출되지 않아야 한다")
     }
 
     private object UnusedCreateApiService : CourseCreateApiService {
