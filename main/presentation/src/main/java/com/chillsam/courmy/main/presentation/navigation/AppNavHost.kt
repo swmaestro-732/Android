@@ -20,6 +20,7 @@ import com.chillsam.courmy.common.domain.navigation.NavRoute
 import com.chillsam.courmy.common.domain.navigation.NavSignal
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.jank.JankPageEffect
+import com.chillsam.courmy.common.presentation.telemetry.TelemetryScreenEffect
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.onboarding.SplashPage
 
@@ -74,6 +75,8 @@ fun AppNavHost(
                     }
                     // 페이지 식별자를 JankStats state 로 등록하고, 백스택 이탈 시 PAGE_EXIT flush.
                     JankPageEffect(navKey.path)
+                    // 크래시 리포트에 남길 현재 화면. 전진·뒤로·교체·딥링크가 모두 여기를 지난다.
+                    TelemetryScreenEffect(navKey.path)
                     route.render(navKey.args)
                 }
             },

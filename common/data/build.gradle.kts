@@ -78,4 +78,10 @@ dependencies {
 
     // 세션 토큰 암호화 영속화(Keystore 암호문 → DataStore).
     implementation(libs.androidx.datastore.preferences)
+
+    // Telemetry 구현 — 크래시(non-fatal 포함)와 핵심 플로우 이벤트.
+    // google-services.json 은 app 모듈에만 필요하고, 라이브러리는 SDK 만 있으면 된다.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
 }

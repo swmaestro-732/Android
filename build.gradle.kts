@@ -13,6 +13,9 @@ plugins {
     alias(libs.plugins.androidx.baselineprofile) apply false
     alias(libs.plugins.kover)
     alias(libs.plugins.detekt) apply false
+    // Firebase — app 모듈이 google-services.json 이 있을 때만 조건부로 적용한다.
+    alias(libs.plugins.google.services) apply false
+    alias(libs.plugins.firebase.crashlytics) apply false
 }
 
 // Kover — 도메인 모듈 유닛테스트 커버리지 집계.
