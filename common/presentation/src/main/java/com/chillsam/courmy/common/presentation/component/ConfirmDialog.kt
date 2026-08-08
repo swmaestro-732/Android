@@ -1,6 +1,5 @@
 package com.chillsam.courmy.common.presentation.component
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 /** 뒤 화면을 덮는 스크림 농도. */
@@ -96,44 +97,47 @@ fun DsDialogScaffold(
     actions: @Composable ColumnScope.() -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    // 커스텀 오버레이라 시스템 Back 이 화면을 이탈시키지 않고 다이얼로그만 닫도록 가로챈다.
-    BackHandler(onBack = onDismiss)
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = SCRIM_ALPHA))
-                .noRippleClickable(onDismiss),
-        contentAlignment = Alignment.Center,
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Column(
+        Box(
             modifier =
                 Modifier
-                    .padding(horizontal = DialogSideMargin)
-                    .clip(RoundedCornerShape(DialogCornerRadius))
-                    .background(color.bgDefaultLevel1)
-                    // 카드 안을 눌렀을 때 스크림까지 전달돼 닫히지 않게 여기서 소비한다.
-                    .noRippleClickable {}
-                    .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = SCRIM_ALPHA))
+                    .noRippleClickable(onDismiss),
+            contentAlignment = Alignment.Center,
         ) {
-            DsText(
-                text = title,
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-                textAlign = TextAlign.Center,
-                maxLines = Int.MAX_VALUE,
-            )
-            DsText(
-                text = description,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                textAlign = TextAlign.Center,
-                maxLines = Int.MAX_VALUE,
-            )
-            Spacer(Modifier.height(12.dp))
-            actions()
+            Column(
+                modifier =
+                    Modifier
+                        .padding(horizontal = DialogSideMargin)
+                        .clip(RoundedCornerShape(DialogCornerRadius))
+                        .background(color.bgDefaultLevel1)
+                        // 카드 안을 눌렀을 때 스크림까지 전달돼 닫히지 않게 여기서 소비한다.
+                        .noRippleClickable {}
+                        .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DsText(
+                    text = title,
+                    style = DesignSystemThemeImpl.typeScale.textStrongM,
+                    color = color.contentDefaultLevel0,
+                    textAlign = TextAlign.Center,
+                    maxLines = Int.MAX_VALUE,
+                )
+                DsText(
+                    text = description,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                    textAlign = TextAlign.Center,
+                    maxLines = Int.MAX_VALUE,
+                )
+                Spacer(Modifier.height(12.dp))
+                actions()
+            }
         }
     }
 }
