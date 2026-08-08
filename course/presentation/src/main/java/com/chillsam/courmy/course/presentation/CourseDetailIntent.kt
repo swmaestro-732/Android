@@ -23,4 +23,7 @@ sealed interface CourseDetailIntent : MviIntent {
     data object Delete : CourseDetailIntent
 
     data object ConsumeError : CourseDetailIntent
+
+    /** 로그인 안내를 닫음(로그인하러 가든, 그만두든). */
+    data object ConsumeLoginRequired : CourseDetailIntent
 }

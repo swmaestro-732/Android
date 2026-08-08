@@ -16,4 +16,7 @@ sealed interface UserProfileIntent : MviIntent {
 
     /** 팔로우 실패 안내를 노출한 뒤 상태에서 지운다. */
     data object ConsumeFollowError : UserProfileIntent
+
+    /** 로그인 안내를 닫음(로그인하러 가든, 그만두든). */
+    data object ConsumeLoginRequired : UserProfileIntent
 }

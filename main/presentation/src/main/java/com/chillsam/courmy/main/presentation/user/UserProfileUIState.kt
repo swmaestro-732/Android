@@ -14,6 +14,8 @@ data class UserProfileUIState(
     val errorMessage: String? = null,
     val isFollowInFlight: Boolean = false,
     val followErrorMessage: String? = null,
+    /** 비로그인 상태로 팔로우를 눌러 로그인 안내를 띄워야 하는 상태. */
+    val needsLogin: Boolean = false,
 ) : UiState {
     companion object {
         val empty: UserProfileUIState = UserProfileUIState()

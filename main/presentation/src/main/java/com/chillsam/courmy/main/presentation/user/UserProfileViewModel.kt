@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.presentation.user
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.user.GetUserProfileUseCase
 import com.chillsam.courmy.main.domain.user.ToggleFollowUseCase
@@ -26,6 +27,7 @@ class UserProfileViewModel
     constructor(
         private val getUserProfileUseCase: GetUserProfileUseCase,
         private val toggleFollowUseCase: ToggleFollowUseCase,
+        private val isLoggedInUseCase: IsLoggedInUseCase,
     ) : MviViewModel<UserProfileIntent, UserProfileUIState, UserProfileReducerEvent>(
             UserProfileUIState.empty,
         ) {
@@ -50,6 +52,10 @@ class UserProfileViewModel
 
                 UserProfileIntent.ConsumeFollowError -> {
                     dispatch(UserProfileReducerEvent.FollowErrorConsumed)
+                }
+
+                UserProfileIntent.ConsumeLoginRequired -> {
+                    dispatch(UserProfileReducerEvent.LoginRequiredConsumed)
                 }
             }
         }
@@ -94,6 +100,14 @@ class UserProfileViewModel
                 UserProfileReducerEvent.FollowErrorConsumed -> {
                     state.copy(followErrorMessage = null)
                 }
+
+                UserProfileReducerEvent.LoginRequired -> {
+                    state.copy(needsLogin = true)
+                }
+
+                UserProfileReducerEvent.LoginRequiredConsumed -> {
+                    state.copy(needsLogin = false)
+                }
             }
 
         private fun load() {
@@ -122,6 +136,11 @@ class UserProfileViewModel
             val profile = uiState.value.profile ?: return
             // 자기 자신에게는 버튼을 노출하지 않지만, 중복 탭·경합으로 들어오는 경우를 막는다.
             if (profile.isMe || uiState.value.isFollowInFlight) return
+            // 비로그인이면 요청을 보내지 않는다 — 401 을 "팔로우하지 못했어요"로 알리면 이유를 알 수 없다.
+            if (!isLoggedInUseCase()) {
+                dispatch(UserProfileReducerEvent.LoginRequired)
+                return
+            }
 
             requestFollow(profile)
         }

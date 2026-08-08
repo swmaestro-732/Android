@@ -40,6 +40,11 @@ sealed interface CourseDetailReducerEvent : ReducerEvent {
 
     data object ErrorConsumed : CourseDetailReducerEvent
 
+    /** 비로그인 상태로 로그인이 필요한 동작을 눌렀다. 화면이 안내 다이얼로그를 띄운다. */
+    data object LoginRequired : CourseDetailReducerEvent
+
+    data object LoginRequiredConsumed : CourseDetailReducerEvent
+
     data object DeleteStarted : CourseDetailReducerEvent
 
     /** 삭제 확정 — 화면이 이 값을 보고 이전 화면으로 돌아간다. */

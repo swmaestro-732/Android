@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
@@ -39,6 +40,7 @@ fun CourseDetailPage(
     onMyProfileClick: () -> Unit,
     onShare: () -> Unit,
     onEditCourse: () -> Unit,
+    onLogin: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // 첫 진입에 어느 코스인지 알려 준다. Load 는 같은 courseId 면 재호출을 건너뛴다.
@@ -99,6 +101,16 @@ fun CourseDetailPage(
                         viewModel.onIntent(CourseDetailIntent.Delete)
                     },
                     onDismiss = { showDeleteConfirm = false },
+                )
+            }
+            // 비로그인 상태로 팔로우를 누른 경우. 안내를 닫는 건 어느 쪽을 골라도 같다.
+            if (uiState.needsLogin) {
+                LoginRequiredDialog(
+                    onConfirm = {
+                        viewModel.onIntent(CourseDetailIntent.ConsumeLoginRequired)
+                        onLogin()
+                    },
+                    onDismiss = { viewModel.onIntent(CourseDetailIntent.ConsumeLoginRequired) },
                 )
             }
         }

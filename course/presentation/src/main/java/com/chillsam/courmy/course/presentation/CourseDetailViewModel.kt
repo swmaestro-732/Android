@@ -2,6 +2,7 @@ package com.chillsam.courmy.course.presentation
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.DeleteCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
@@ -27,6 +28,7 @@ class CourseDetailViewModel
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
         private val setFollowAuthorUseCase: SetFollowAuthorUseCase,
         private val deleteCourseUseCase: DeleteCourseUseCase,
+        private val isLoggedInUseCase: IsLoggedInUseCase,
     ) : MviViewModel<CourseDetailIntent, CourseDetailUIState, CourseDetailReducerEvent>(
             CourseDetailUIState.empty,
         ) {
@@ -66,6 +68,10 @@ class CourseDetailViewModel
 
                 CourseDetailIntent.ConsumeError -> {
                     dispatch(CourseDetailReducerEvent.ErrorConsumed)
+                }
+
+                CourseDetailIntent.ConsumeLoginRequired -> {
+                    dispatch(CourseDetailReducerEvent.LoginRequiredConsumed)
                 }
             }
         }
@@ -118,6 +124,14 @@ class CourseDetailViewModel
                     state.copy(actionErrorMessage = null)
                 }
 
+                CourseDetailReducerEvent.LoginRequired -> {
+                    state.copy(needsLogin = true)
+                }
+
+                CourseDetailReducerEvent.LoginRequiredConsumed -> {
+                    state.copy(needsLogin = false)
+                }
+
                 CourseDetailReducerEvent.DeleteStarted -> {
                     state.copy(isDeleting = true, actionErrorMessage = null)
                 }
@@ -134,12 +148,19 @@ class CourseDetailViewModel
         /**
          * 작성자 팔로우 토글. 저장과 같은 이유로 서버가 확정한 뒤에 상태를 바꾼다.
          * 작성자 id 가 없으면(서버가 주지 않은 경우) 요청 대상이 없으므로 조용히 무시한다.
+         *
+         * 비로그인이면 요청을 보내지 않는다 — 401 을 받고 "팔로우하지 못했어요"로 알리면
+         * 왜 실패했는지 알 수 없어서, 누르기 전에 로그인 안내를 띄운다.
          */
         private fun toggleFollowAuthor() {
             val state = currentState
             val detail = state.detail ?: return
             val authorId = detail.authorId
             if (state.isFollowing || authorId <= 0L) return
+            if (!isLoggedInUseCase()) {
+                dispatch(CourseDetailReducerEvent.LoginRequired)
+                return
+            }
             val target = !detail.isFollowingAuthor
             dispatch(CourseDetailReducerEvent.FollowStarted)
             followJob?.cancel()

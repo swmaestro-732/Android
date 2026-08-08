@@ -29,4 +29,9 @@ sealed interface UserProfileReducerEvent : ReducerEvent {
     ) : UserProfileReducerEvent
 
     data object FollowErrorConsumed : UserProfileReducerEvent
+
+    /** 비로그인 상태로 팔로우를 눌렀다. 화면이 로그인 안내를 띄운다. */
+    data object LoginRequired : UserProfileReducerEvent
+
+    data object LoginRequiredConsumed : UserProfileReducerEvent
 }

@@ -268,6 +268,7 @@ val appRoutes: List<AppRoute> =
                         val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
                         navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
                     },
+                    onLogin = { navigationHelper.navigateTo(LoginRoute) },
                 )
             },
         ),

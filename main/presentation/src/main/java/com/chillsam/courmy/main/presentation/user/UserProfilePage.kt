@@ -20,12 +20,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.entity.user.UserProfileVO
@@ -65,6 +67,18 @@ fun UserProfilePage(
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             viewModel.onIntent(UserProfileIntent.ConsumeFollowError)
         }
+    }
+
+    // 비로그인 상태로 팔로우를 누른 경우. 안내를 닫는 건 어느 쪽을 골라도 같다.
+    val navigationHelper = LocalNavigationHelper.current
+    if (uiState.needsLogin) {
+        LoginRequiredDialog(
+            onConfirm = {
+                viewModel.onIntent(UserProfileIntent.ConsumeLoginRequired)
+                navigationHelper.navigateTo(LoginPage)
+            },
+            onDismiss = { viewModel.onIntent(UserProfileIntent.ConsumeLoginRequired) },
+        )
     }
 
     val profile = uiState.profile
