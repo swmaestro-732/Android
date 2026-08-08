@@ -267,7 +267,7 @@ private val CourseCreateUIState.hasContent: Boolean
 
 /**
  * 입력값 → 코스 완성(FS-34-Done) 데이터 매핑. 이름/장소가 비어 있으면 null 을 반환해
- * 호출부가 예시 데이터로 폴백하게 한다. 장소 체류 시간은 작성 화면에 없어 비워 둔다.
+ * 호출부가 예시 데이터로 폴백하게 한다.
  */
 private fun CourseCreateUIState.toCompleteVO(): CourseCompleteVO? {
     if (name.isBlank() && places.isEmpty()) return null
@@ -283,8 +283,6 @@ private fun CourseCreateUIState.toCompleteVO(): CourseCompleteVO? {
                     order = index + 1,
                     name = place.name,
                     category = place.category,
-                    durationText = "",
-                    imageUrl = place.thumbnailUrl,
                 )
             },
     )
