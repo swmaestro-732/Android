@@ -14,11 +14,13 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.metrics.performance.JankStats
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.common.presentation.LocalTTIHelper
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.jank.JankReporter
 import com.chillsam.courmy.common.presentation.jank.LocalJankReporter
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.main.presentation.deeplink.resolveNewIntentRoute
 import com.chillsam.courmy.main.presentation.deeplink.resolveStartStack
 import com.chillsam.courmy.main.presentation.navigation.RootComposable
@@ -39,6 +41,9 @@ class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var ttiHelper: TTIHelper
+
+    @Inject
+    lateinit var telemetry: Telemetry
 
     private var jankStats: JankStats? = null
 
@@ -82,6 +87,7 @@ class MainActivity : FragmentActivity() {
                 LocalMessageHelper provides messageHelper,
                 LocalJankReporter provides jankReporter,
                 LocalTTIHelper provides ttiHelper,
+                LocalTelemetry provides telemetry,
             ) {
                 RootComposable(startStack = startStack)
             }

@@ -40,8 +40,9 @@ fastlane/README.md
 fastlane/test_output/
 vendor/bundle/
 
-# Google services (uncomment if used)
-# google-services.json
+# Google services — API key 를 담고 있어 커밋하지 않는다(AGENTS.md 보안 규칙).
+# 팀원은 Firebase 콘솔에서 각자 받아 app/ 에 두고, CD 는 시크릿으로 주입한다.
+google-services.json
 
 # OS files
 .DS_Store

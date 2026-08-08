@@ -39,6 +39,9 @@ kotlinxCollectionsImmutable = "0.4.0"
 fragment = "1.7.1"
 viewpager2 = "1.0.0"
 constraintlayout = "2.2.0"
+googleServices = "4.5.0"
+firebaseCrashlyticsPlugin = "3.0.7"
+firebaseBom = "34.17.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -101,6 +104,12 @@ androidx-metrics-performance = { group = "androidx.metrics", name = "metrics-per
 
 kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "kotlinxCollectionsImmutable" }
 
+# Firebase — 버전은 BOM 이 맞추므로 개별 라이브러리에 version 을 적지 않는다.
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
+# Analytics 는 Crashlytics 리포트에 breadcrumb(화면 전환·이벤트)를 자동으로 붙여 준다.
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
@@ -113,3 +122,5 @@ android-test = { id = "com.android.test", version.ref = "agp" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "benchmark" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }

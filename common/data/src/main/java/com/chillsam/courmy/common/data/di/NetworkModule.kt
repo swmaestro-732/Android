@@ -6,7 +6,9 @@ import com.chillsam.courmy.common.data.auth.TokenReissueApi
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.common.data.logging.ApiLogInterceptor
 import com.chillsam.courmy.common.data.session.SessionEventBusImpl
+import com.chillsam.courmy.common.data.telemetry.TelemetryInterceptor
 import com.chillsam.courmy.common.domain.session.SessionEventBus
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -43,6 +45,7 @@ object NetworkModule {
     fun provideOkHttpClient(
         tokenStore: TokenStore,
         tokenAuthenticator: TokenAuthenticator,
+        telemetry: Telemetry,
         json: Json,
     ): OkHttpClient {
         // request/response 를 'API' 태그로 남기는 debug 전용 로깅(토큰 자동 마스킹).
@@ -52,6 +55,8 @@ object NetworkModule {
             .Builder()
             .addInterceptor(authInterceptor(tokenStore))
             .addInterceptor(apiLogging)
+            // 릴리스에서도 동작 — 실패만 원격으로 남긴다(본문·헤더 미포함).
+            .addInterceptor(TelemetryInterceptor(telemetry))
             // 401 → refreshToken 으로 accessToken 재발급 후 원요청 1회 재시도.
             .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -95,11 +100,16 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named(BARE)
-    fun provideBareOkHttpClient(json: Json): OkHttpClient {
+    fun provideBareOkHttpClient(
+        telemetry: Telemetry,
+        json: Json,
+    ): OkHttpClient {
         val apiLogging = ApiLogInterceptor(json, enabled = BuildConfig.DEBUG)
         return OkHttpClient
             .Builder()
             .addInterceptor(apiLogging)
+            // 재발급 실패는 토큰 만료 시점에 강제 로그아웃으로 이어지므로 운영에서 반드시 보여야 한다.
+            .addInterceptor(TelemetryInterceptor(telemetry))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

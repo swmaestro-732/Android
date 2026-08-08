@@ -32,7 +32,7 @@ class ApiLogInterceptor(
         val path = request.url.encodedPath
         Log.d(TAG, "⇢ ${request.method} $path")
         request.body?.let { body ->
-            Log.d(TAG, "  req: ${pretty(readRequestBody(body))}")
+            logBody("req", pretty(readRequestBody(body)))
         }
 
         val startNs = System.nanoTime()
@@ -46,10 +46,45 @@ class ApiLogInterceptor(
         val tookMs = (System.nanoTime() - startNs) / 1_000_000
 
         // peekBody 는 응답 스트림을 소비하지 않고 복사본만 읽으므로, 이후 Retrofit 파싱에 영향이 없다.
-        val bodyText = runCatching { response.peekBody(MAX_BODY_BYTES).string() }.getOrNull()
+        // 실패 원인을 남긴다 — 조용히 넘기면 "본문 없음"과 구분되지 않아 원인 추적이 막힌다.
+        val body = runCatching { response.peekBody(MAX_BODY_BYTES).string() }
         Log.d(TAG, "⇠ ${response.code} $path (${tookMs}ms)")
-        if (!bodyText.isNullOrBlank()) Log.d(TAG, "  res: ${pretty(bodyText)}")
+        val bodyText = body.getOrNull()
+        when {
+            bodyText == null -> {
+                val cause = body.exceptionOrNull()
+                Log.w(TAG, "  res: <본문 읽기 실패: ${cause?.javaClass?.simpleName} - ${cause?.message}>")
+            }
+
+            bodyText.isBlank() -> {
+                Log.d(TAG, "  res: <본문 없음>")
+            }
+
+            else -> {
+                logBody("res", pretty(bodyText))
+            }
+        }
         return response
+    }
+
+    /**
+     * 본문을 [CHUNK_CHARS] 단위로 나눠 남긴다.
+     *
+     * logcat 은 항목 하나가 약 4KB 를 넘으면 잘라 버려서, 코스 상세처럼 큰 화면 조합(BFF) 응답은
+     * 통째로 사라진다. 여러 줄로 쪼개면 `n/총개수` 순번이 붙어 이어 붙여 읽을 수 있다.
+     */
+    private fun logBody(
+        label: String,
+        text: String,
+    ) {
+        if (text.length <= CHUNK_CHARS) {
+            Log.d(TAG, "  $label: $text")
+            return
+        }
+        val chunks = text.chunked(CHUNK_CHARS)
+        chunks.forEachIndexed { index, chunk ->
+            Log.d(TAG, "  $label[${index + 1}/${chunks.size}]: $chunk")
+        }
     }
 
     /**
@@ -107,7 +142,11 @@ class ApiLogInterceptor(
     private companion object {
         const val TAG = "API"
         const val MAX_BODY_BYTES = 256L * 1024 // 256KB 까지만 미리보기
-        const val MAX_LOG_CHARS = 8_000 // logcat 한 항목이 잘리지 않게 상한
+        const val MAX_LOG_CHARS = 40_000 // 본문 전체 상한(이 이상은 "…(생략)"). 실제 출력은 아래 단위로 쪼갠다.
+
+        // logcat 항목 하나의 한도는 문자 수가 아니라 약 4KB(바이트)다. 한글은 UTF-8 로 1자당 3바이트라
+        // 전부 한글이어도 3,600B 로 한도 안에 들어오는 값으로 잡는다.
+        const val CHUNK_CHARS = 1_200
 
         /** 로그에 평문으로 남기면 안 되는 필드(값을 `***` 로 대체). 키는 소문자로 대소문자 무시 비교한다. */
         val SENSITIVE =

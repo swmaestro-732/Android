@@ -40,12 +40,35 @@ val naverMapClientId: String =
 val kakaoNativeAppKey: String =
     (localProps.getProperty("KAKAO_NATIVE_APP_KEY") ?: System.getenv("KAKAO_NATIVE_APP_KEY")).orEmpty()
 
+// Firebase Crashlytics — google-services.json 이 있을 때만 플러그인을 붙인다.
+// 이 파일이 없는데 플러그인을 적용하면 빌드가 통째로 깨지므로, keystore·카카오 키와 같은 방식으로
+// "없으면 크래시 리포팅만 빠지고 빌드는 진행" 하게 둔다(릴리스에서는 아래에서 하드 실패).
+val hasFirebaseConfig = file("google-services.json").exists()
+if (hasFirebaseConfig) {
+    apply(
+        plugin =
+            libs.plugins.google.services
+                .get()
+                .pluginId,
+    )
+    apply(
+        plugin =
+            libs.plugins.firebase.crashlytics
+                .get()
+                .pluginId,
+    )
+}
+
 // 릴리스 빌드는 앱키가 비면 KakaoSdk.init 이 스킵되고 리다이렉트 scheme 가 깨지므로, 패키징 전에 즉시 실패시킨다.
 // (디버그/로컬 개발은 키 없이도 진행 가능하게 둔다.)
 gradle.taskGraph.whenReady {
     val buildingRelease = allTasks.any { it.name.contains("Release", ignoreCase = true) }
     if (buildingRelease && kakaoNativeAppKey.isBlank()) {
         throw GradleException("KAKAO_NATIVE_APP_KEY 가 설정되지 않았습니다. 릴리스 빌드에는 필수입니다(local.properties 또는 환경변수).")
+    }
+    // 크래시 리포팅 없이 출시하면 운영 중 장애를 볼 수단이 없으므로 릴리스에서는 필수로 둔다.
+    if (buildingRelease && !hasFirebaseConfig) {
+        throw GradleException("google-services.json 이 없습니다. 릴리스 빌드에는 필수입니다(Crashlytics).")
     }
 }
 
@@ -110,6 +133,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // R8 매핑을 올려야 Crashlytics 가 난독화된 스택을 원래 이름으로 되돌린다.
+            // 이게 빠지면 리포트가 a.b.c() 로 보여 사실상 쓸모가 없다. (기본값도 true 지만 명시해 둔다)
+            if (hasFirebaseConfig) {
+                configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                    mappingFileUploadEnabled = true
+                }
+            }
         }
         // Macrobenchmark / Baseline Profile 수집 시 사용되는 빌드 타입.
         // release 와 동일한 최적화 상태를 가지면서, ART 가 메서드 trace 를 dump 할 수 있도록
@@ -120,6 +150,13 @@ android {
             matchingFallbacks += listOf("release")
             isDebuggable = false
             isProfileable = true
+            // release 를 그대로 물려받아 minify 가 켜져 있어, 두지 않으면 프로필 수집 때마다
+            // 매핑 업로드가 따라붙는다. 배포되지 않는 빌드라 끈다.
+            if (hasFirebaseConfig) {
+                configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                    mappingFileUploadEnabled = false
+                }
+            }
         }
     }
     compileOptions {
@@ -175,6 +212,12 @@ dependencies {
 
     // 카카오 로그인 SDK — CourmyApplication 의 KakaoSdk.init 용
     implementation(libs.kakao.user)
+
+    // Firebase — 출시 후 크래시·ANR 리포팅. 개별 라이브러리 버전은 BOM 이 맞춘다.
+    // Crashlytics 는 코드 없이 크래시를 잡고, Analytics 는 리포트에 breadcrumb 를 붙여 준다.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
 
     // Baseline Profile: 설치 시점에 dump 된 프로필을 ART 에 등록해 주는 런타임 라이브러리.
     // minSdk 24 ~ 27 백포트를 위해 필수.
