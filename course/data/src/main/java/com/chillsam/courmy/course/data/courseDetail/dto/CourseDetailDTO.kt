@@ -1,5 +1,7 @@
 package com.chillsam.courmy.course.data.courseDetail.dto
 
+import com.chillsam.courmy.common.data.category.toCourseTagLabel
+import com.chillsam.courmy.common.data.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CourseReviewVO
@@ -131,7 +133,14 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
         title = course.title.orEmpty(),
         coverImageUrl = course.coverImageUrl.orEmpty(),
         // 화면에서 칩 하나씩 그리므로 합치지 않고 목록 그대로 넘긴다.
+        // 원본은 편집 시 그대로 서버로 돌려보내야 해 남기고, 표시용 라벨을 따로 만든다.
         themes = course.themes.orEmpty(),
+        themeLabels =
+            course.themes.orEmpty().map { theme ->
+                // 코스 태그는 마스터 코드(CULTURE 등)와 사용자가 붙인 자유 태그가 섞여 온다.
+                // 코드로 알아보지 못한 값은 지우지 말고 그대로 보여준다.
+                theme.toCourseTagLabel().ifBlank { theme }
+            },
         authorId = course.author?.id ?: 0L,
         authorName = course.author?.nickname.orEmpty(),
         authorHandle =
@@ -179,7 +188,7 @@ private fun CoursePlaceDTO.toVO(): CourseDetailPlaceVO {
         placeId = placeId ?: 0L,
         order = (orderNo ?: 0) + 1,
         name = name.orEmpty(),
-        category = categories.orEmpty().joinToString(SEPARATOR),
+        category = categories.toPlaceCategoryLabel(SEPARATOR),
         photoCountText = "1/${urls.size.coerceAtLeast(1)}",
         tip = caption.orEmpty(),
         imageUrls = urls,

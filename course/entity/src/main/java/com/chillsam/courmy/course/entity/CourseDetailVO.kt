@@ -7,7 +7,9 @@ import kotlinx.serialization.Serializable
  *
  * - [title]          코스 제목 (예: "비 오는 날 성수 감성 카페 코스")
  * - [coverImageUrl]  히어로 커버 이미지 URL (없으면 빈 문자열)
- * - [themes]         코스 태그 (예: ["성수", "데이트"]). 서버 `themes` 를 합치지 않고 그대로 담아
+ * - [themes]         코스 태그의 **서버 원본 값** (예: ["CULTURE", "성수"]). 코스 편집이 이 값을
+ *                    그대로 `tags` 로 돌려보내므로 라벨로 바꾸지 않는다. 표시에는 [themeLabels] 를 쓴다
+ * - [themeLabels]    화면에 그릴 태그 라벨 (예: ["문화·전시", "성수"]). 합치지 않고 목록 그대로 담아
  *                    화면에서 칩 하나씩 렌더한다. 비어 있으면 태그 줄을 그리지 않는다
  * - [authorId]       작성자 id. 팔로우 요청 대상이다(0 이면 서버가 주지 않은 것).
  * - [authorName]     작성자 이름 (예: "지호님")
@@ -28,6 +30,7 @@ data class CourseDetailVO(
     val title: String,
     val coverImageUrl: String = "",
     val themes: List<String> = emptyList(),
+    val themeLabels: List<String> = emptyList(),
     val authorId: Long = 0L,
     val authorName: String,
     val authorHandle: String,

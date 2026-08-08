@@ -174,7 +174,7 @@ fun CourseDetailScreen(
             course =
                 PlaceSheetCourse(
                     title = detail.title,
-                    category = detail.themes.joinToString(" · "),
+                    category = detail.themeLabels.joinToString(" · "),
                     summary = "${detail.placeCountText} · ${detail.walkText}",
                     authorName = detail.authorName,
                     places = detail.places,
@@ -254,7 +254,7 @@ private fun DetailHero(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // 카테고리 칩은 제목 위에 둔다. 서버 themes 를 한 줄로 이어 붙인 값이다.
-            val category = detail.themes.joinToString(" · ")
+            val category = detail.themeLabels.joinToString(" · ")
             if (category.isNotBlank()) {
                 Box(
                     modifier =

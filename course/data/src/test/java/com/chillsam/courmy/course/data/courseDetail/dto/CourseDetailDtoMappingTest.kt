@@ -205,6 +205,37 @@ class CourseDetailDtoMappingTest {
         assertEquals(emptyList<Any>(), vo.reviews)
     }
 
+    @Test
+    fun `코스 태그는 원본을 남기고 표시용 라벨을 따로 만든다`() {
+        // 편집 화면이 themes 를 그대로 tags 로 돌려보내므로 원본이 라벨로 덮이면 안 된다.
+        val vo =
+            fullData()
+                .copy(course = fullData().course!!.copy(themes = listOf("CULTURE", "성수")))
+                .toVO(myUserId = null)
+
+        assertEquals(listOf("CULTURE", "성수"), vo.themes)
+        // 마스터 코드는 한글 라벨로, 사용자가 붙인 자유 태그는 그대로 남는다.
+        assertEquals(listOf("문화·전시", "성수"), vo.themeLabels)
+    }
+
+    @Test
+    fun `장소 카테고리 코드는 한글 라벨로 바뀌고 UNKNOWN 은 빠진다`() {
+        val vo =
+            fullData()
+                .copy(
+                    course =
+                        fullData().course!!.copy(
+                            places =
+                                listOf(
+                                    place(orderNo = 0, name = "첫째", walkToNext = null)
+                                        .copy(categories = listOf("RESTAURANT", "UNKNOWN", "LANDMARK")),
+                                ),
+                        ),
+                ).toVO(myUserId = null)
+
+        assertEquals("음식점 · 역사·명소", vo.places.single().category)
+    }
+
     private fun place(
         orderNo: Int,
         name: String,

@@ -1,7 +1,7 @@
 package com.chillsam.courmy.main.data.saved.dto
 
+import com.chillsam.courmy.common.data.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
-import com.chillsam.courmy.main.data.course.toCourseCategoryLabel
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 import kotlinx.serialization.Serializable
 
@@ -88,5 +88,5 @@ private fun tagLabelOf(
 ): String =
     listOfNotNull(
         area?.takeIf { it.isNotBlank() },
-        theme.toCourseCategoryLabel().takeIf { it.isNotBlank() },
+        theme.toCourseTagLabel().takeIf { it.isNotBlank() },
     ).joinToString(" · ")

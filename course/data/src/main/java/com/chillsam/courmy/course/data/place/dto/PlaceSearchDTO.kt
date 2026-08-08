@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.place.dto
 
+import com.chillsam.courmy.common.data.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import kotlinx.serialization.Serializable
@@ -61,7 +62,7 @@ fun PlaceDTO.toVO(): CoursePlaceVO =
     CoursePlaceVO(
         id = (id ?: 0L).toString(),
         name = name.orEmpty(),
-        category = categories.orEmpty().joinToString(" · "),
+        category = categories.toPlaceCategoryLabel(),
         thumbnailUrl = imageUrl.orEmpty(),
         // 좌표는 한쪽만 있으면 쓸 수 없어 둘 다 있을 때만 채운다.
         latitude = location?.latitude?.takeIf { location.longitude != null },
