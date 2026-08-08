@@ -2,26 +2,39 @@ package com.chillsam.courmy.main.presentation.my
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.FollowListPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
@@ -69,6 +82,51 @@ fun MyPage(
                 modifier = modifier,
             )
         }
+    }
+}
+
+/** 빈 상태 카드 높이. 코스 카드 한 줄과 비슷하게 잡아 목록이 채워졌을 때와 자리가 크게 안 바뀌게 한다. */
+private val EmptyCourseCardHeight = 140.dp
+
+/**
+ * 코스가 하나도 없을 때 "내 코스" 자리에 놓는 만들기 진입점.
+ *
+ * 빈 화면에 "코스가 없어요" 만 두면 다음에 뭘 할지 알려주지 않는다. 점선 테두리로
+ * 아직 비어 있고 채울 수 있는 자리임을 드러내고, 누르면 바로 코스 생성으로 보낸다.
+ */
+@Composable
+private fun CreateFirstCourseCard(onClick: () -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp)
+                .height(EmptyCourseCardHeight)
+                .clip(RoundedCornerShape(16.dp))
+                .dashedBorder(color = color.borderDefaultLevel1, cornerRadius = 16.dp)
+                .clickable(onClick = onClick),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_add_24),
+            contentDescription = null,
+            tint = color.contentAccent,
+            modifier = Modifier.size(28.dp),
+        )
+        Spacer(Modifier.height(8.dp))
+        DsText(
+            text = "나만의 코스 만들기",
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentAccent,
+        )
+        Spacer(Modifier.height(4.dp))
+        DsText(
+            text = "가 본 곳을 이어 첫 코스를 남겨 보세요",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel2,
+        )
     }
 }
 
@@ -122,12 +180,19 @@ private fun MyContent(
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
             ProfileSectionLabel(text = "내 코스")
-            ProfileCoursesGrid(
-                courses = profile.myCourses,
-                onCourseClick = { courseId ->
-                    navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
-                },
-            )
+            if (profile.myCourses.isEmpty()) {
+                // 코스가 없으면 빈 그리드 대신 만들러 갈 자리를 둔다.
+                CreateFirstCourseCard(
+                    onClick = { navigationHelper.navigateTo(CourseCreatePage) },
+                )
+            } else {
+                ProfileCoursesGrid(
+                    courses = profile.myCourses,
+                    onCourseClick = { courseId ->
+                        navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                    },
+                )
+            }
             Spacer(Modifier.height(20.dp))
         }
 
