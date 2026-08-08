@@ -71,7 +71,7 @@ import com.chillsam.courmy.course.presentation.component.dashedBorder
 
 /**
  * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(커버·카테고리·제목) → 요약 스탯 → 소개 →
- * "코스 속 장소" 목록(접기/펼치기) → 작성자 카드 → 하단 "코스 저장하기" 액션바로 구성한다.
+ * "코스 속 장소" 목록(접기/펼치기) → 작성자 밴드 → 하단 "코스 저장하기" 액션바로 구성한다.
  * 표시 전용 화면으로 [detail] 데이터를 그대로 렌더링한다.
  *
  * 코스 경로 지도는 걷어냈다. 장소별 위치는 장소를 눌러 뜨는 [PlaceDetailSheet] 의 지도에서 본다.
@@ -140,16 +140,17 @@ fun CourseDetailScreen(
                         placeDetailViewModel.open(placeId = place.placeId)
                     },
                 )
-                if (LayoutVariants.AUTHOR_AT_BOTTOM) {
-                    // 작성자 소개는 코스를 다 훑어본 뒤 보는 정보라 맨 아래 카드로 둔다.
-                    AuthorCard(
-                        detail = detail,
-                        onAuthorClick = actions.onAuthorClick,
-                        onToggleFollow = actions.onFollowAuthor,
-                    )
-                }
-                Spacer(Modifier.height(14.dp))
             }
+            if (LayoutVariants.AUTHOR_AT_BOTTOM) {
+                // 작성자 소개는 코스를 다 훑어본 뒤 보는 정보라 맨 아래에 둔다.
+                // 밴드는 화면 가로 전체를 채우므로 본문 좌우 패딩 밖에 둔다.
+                AuthorBand(
+                    detail = detail,
+                    onAuthorClick = actions.onAuthorClick,
+                    onToggleFollow = actions.onFollowAuthor,
+                )
+            }
+            Spacer(Modifier.height(14.dp))
         }
         DetailBottomBar(
             isMine = detail.isMine,
@@ -336,39 +337,8 @@ private fun CourseImage(
 }
 
 /**
- * 작성자 카드(현재 배치): 코스 경로 지도 아래에 테두리 있는 카드로 놓인다.
- * 예전 배치는 [AuthorBand] 이며 [LayoutVariants.AUTHOR_AT_BOTTOM] 로 갈린다.
- */
-@Composable
-private fun AuthorCard(
-    detail: CourseDetailVO,
-    onAuthorClick: () -> Unit,
-    onToggleFollow: () -> Unit,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val shape = RoundedCornerShape(14.dp)
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .border(1.dp, color.borderDefaultLevel0, shape)
-                .background(color.bgDefaultLevel1)
-                .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        AuthorContent(
-            detail = detail,
-            onAuthorClick = onAuthorClick,
-            onToggleFollow = onToggleFollow,
-        )
-    }
-}
-
-/**
- * 작성자 밴드(예전 배치): 히어로 바로 밑에서 화면 가로를 꽉 채우는 흰색 밴드.
- * [LayoutVariants.AUTHOR_AT_BOTTOM] 를 false 로 되돌리면 이 배치가 쓰인다.
+ * 작성자 밴드: 화면 가로를 꽉 채우는 흰색 밴드. 페이지 배경(Gray200)과 대비로 구분된다.
+ * [LayoutVariants.AUTHOR_AT_BOTTOM] 에 따라 장소 목록 아래(현재) 또는 히어로 바로 밑에 놓인다.
  */
 @Composable
 private fun AuthorBand(
@@ -396,7 +366,7 @@ private fun AuthorBand(
 
 /**
  * 작성자 정보 본문: 아바타 · 이름/핸들 · 팔로우 버튼.
- * 두 배치([AuthorCard]·[AuthorBand])가 컨테이너만 다르고 내용은 같아 여기로 모았다.
+ * [AuthorBand] 컨테이너와 분리해 두어 배치가 바뀌어도 내용은 그대로 쓴다.
  */
 @Composable
 private fun RowScope.AuthorContent(
