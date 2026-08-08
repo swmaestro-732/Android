@@ -65,16 +65,19 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
+import com.chillsam.courmy.course.presentation.component.CourseRouteMap
 import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
 import com.chillsam.courmy.course.presentation.component.PlaceSheetCourse
 import com.chillsam.courmy.course.presentation.component.dashedBorder
+import com.chillsam.courmy.course.presentation.component.toRoutePoints
 
 /**
  * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(커버·카테고리·제목) → 요약 스탯 → 소개 →
- * "코스 속 장소" 목록(접기/펼치기) → 작성자 밴드 → 하단 "코스 저장하기" 액션바로 구성한다.
- * 표시 전용 화면으로 [detail] 데이터를 그대로 렌더링한다.
+ * "코스 속 장소" 목록(접기/펼치기) → "코스 한눈에 보기" 지도 → 작성자 밴드 →
+ * 하단 "코스 저장하기" 액션바로 구성한다. 표시 전용 화면으로 [detail] 데이터를 그대로 렌더링한다.
  *
- * 코스 경로 지도는 걷어냈다. 장소별 위치는 장소를 눌러 뜨는 [PlaceDetailSheet] 의 지도에서 본다.
+ * 지도는 전체 동선만 보여 주고 제스처를 막는다. 장소별 위치를 둘러보는 건 장소를 눌러 뜨는
+ * [PlaceDetailSheet] 의 지도 몫이다.
  *
  * 작성자 정보의 위치는 [LayoutVariants.AUTHOR_AT_BOTTOM] 로 갈린다.
  */
@@ -135,6 +138,14 @@ fun CourseDetailScreen(
                 PlacesSection(
                     places = detail.places,
                     authorName = detail.authorName,
+                    onPlaceClick = { place ->
+                        selectedPlace = place
+                        placeDetailViewModel.open(placeId = place.placeId)
+                    },
+                )
+                // 장소를 다 훑은 뒤 전체 동선을 확인하는 자리다.
+                CourseMapSection(
+                    places = detail.places,
                     onPlaceClick = { place ->
                         selectedPlace = place
                         placeDetailViewModel.open(placeId = place.placeId)
@@ -501,6 +512,54 @@ private const val COLLAPSED_VISIBLE_PLACES = 2
 
 /** 이 수를 초과(4곳 이상)할 때만 "나머지 N곳 더보기"로 접는다. 3곳까지는 전부 노출. */
 private const val COLLAPSE_THRESHOLD = 3
+
+/** 코스 지도 구역 높이. 스크롤 화면 안에 들어가므로 한 화면을 다 먹지 않을 만큼만 잡는다. */
+private val CourseMapHeight = 220.dp
+
+/**
+ * 코스 한눈에 보기: 장소 핀과 동선을 한 장의 지도로 보여 준다.
+ *
+ * 좌표가 있는 장소가 없으면 구역째 그리지 않는다 — 빈 지도는 알려 주는 게 없다.
+ * 지도 제스처는 막는다. 세로 스크롤 화면 안이라 지도가 스크롤을 가로채면 화면이 걸린다.
+ * 핀을 누르면 해당 장소 상세 시트가 열리고, 거기서 드래그·확대로 둘러볼 수 있다.
+ */
+@Composable
+private fun CourseMapSection(
+    places: List<CourseDetailPlaceVO>,
+    onPlaceClick: (CourseDetailPlaceVO) -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val points = remember(places) { places.toRoutePoints() }
+    val first = points.firstOrNull() ?: return
+    Column(
+        modifier = Modifier.padding(top = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        DsText(
+            text = "코스 한눈에 보기",
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(CourseMapHeight)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(color.imagePlaceholder),
+        ) {
+            CourseRouteMap(
+                focus = first.second,
+                // 특정 장소를 보는 게 아니라 전체 동선을 보는 자리라 핀을 모두 진하게 그린다.
+                focusOrder = 0,
+                points = points,
+                overview = true,
+                onMarkerClick = onPlaceClick,
+                scrollEnabled = false,
+            )
+        }
+    }
+}
 
 /** "코스 속 장소" 섹션: 헤더(접기/펼치기) + 펼침(사진·팁) / 접힘(콤팩트 타임라인) 목록. */
 @Composable

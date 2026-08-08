@@ -97,9 +97,6 @@ private val SHEET_TOP_GAP = 16.dp
 /** 예전 배치에서 상단 지도 히어로가 차지하는 높이. */
 private val MAP_HERO_HEIGHT = 200.dp
 
-/** 장소 1곳만 보여주므로 코스 경로 지도(14.0)보다 가깝게 당긴다. */
-private const val PLACE_MAP_ZOOM = 16.0
-
 /** 오버레이 카드 배경 불투명도. 지도가 비쳐 보이되 글자는 읽히는 선. */
 private const val OVERLAY_ALPHA = 0.95f
 
@@ -121,25 +118,14 @@ private const val DISMISS_DRAG_FRACTION = 0.2f
 /** 등장·퇴장·되돌림 모션 길이(ms). */
 private const val SHEET_ANIM_MS = 220
 
-/** 순번 마커 지름(dp). 그릴 때 화면 밀도를 곱해 px 로 쓴다. */
-private const val MARKER_SIZE_DP = 26
-
-/** 지금 보고 있는 장소의 마커 지름(dp). 나머지보다 확실히 크게 잡아 눈에 띄게 한다. */
-private const val FOCUSED_MARKER_SIZE_DP = 40
-
 /**
  * 전체 보기에서 핀이 오버레이 뒤로 숨지 않도록 두는 여백. 위쪽은 제목 카드 + 장소 칩,
  * 아래쪽은 코스 버튼 + 팁 카드가 가리는 높이를 어림한 값이다.
  */
-private val OVERVIEW_FIT_PADDING_TOP = 210.dp
-private val OVERVIEW_FIT_PADDING_BOTTOM = 190.dp
-private val OVERVIEW_FIT_PADDING_SIDE = 40.dp
+private val OVERVIEW_FIT_PADDING = RouteFitPadding(top = 210.dp, bottom = 190.dp, side = 40.dp)
 
 /** 장소 이동 칩의 이름 최대 폭. 이름이 길어도 칩 하나가 화면을 다 먹지 않게 한다. */
 private val JUMP_CHIP_NAME_MAX_WIDTH = 120.dp
-
-/** 장소를 잇는 점선 패턴(칠하는 길이, 비우는 길이). */
-private val ROUTE_DASH_PATTERN = arrayOf(8.dp, 6.dp)
 
 /**
  * 시트가 쓰는 코스 쪽 정보 묶음. 장소 하나가 아니라 코스 전체에 걸린 값이라 따로 모았다
@@ -291,6 +277,7 @@ private fun ColumnScope.FullMapLayout(
                 points = remember(places) { places.toRoutePoints() },
                 overview = overview,
                 onMarkerClick = onSelectPlace,
+                fitPadding = OVERVIEW_FIT_PADDING,
             )
         } else {
             NoLocationPlaceholder()
@@ -919,189 +906,6 @@ private fun StepIcon(
         tint = tint,
         modifier = Modifier.size(20.dp),
     )
-}
-
-/** 좌표가 있는 장소만 (장소, 좌표) 로 추린다. 좌표가 없으면 지도에 찍을 수 없다. */
-private fun List<CourseDetailPlaceVO>.toRoutePoints(): List<Pair<CourseDetailPlaceVO, LatLng>> =
-    mapNotNull { place -> place.latLngOrNull()?.let { place to it } }
-
-private fun CourseDetailPlaceVO.latLngOrNull(): LatLng? {
-    val latitude = this.latitude
-    val longitude = this.longitude
-    // 좌표는 한쪽만 있으면 쓸 수 없다(엉뚱한 지점에 핀이 찍힌다).
-    return if (latitude != null && longitude != null) LatLng(latitude, longitude) else null
-}
-
-/**
- * 코스 경로 지도: 장소마다 순번 마커를 찍고 순서대로 점선으로 잇는다.
- *
- * 드래그·확대로 둘러볼 수 있고, [focus] 가 바뀌면(이전/다음·핀 탭) 그 위치로 카메라가 따라간다.
- * [overview] 면 대신 모든 핀이 들어오도록 경계에 맞춘다.
- */
-@OptIn(ExperimentalNaverMapApi::class)
-@Composable
-private fun CourseRouteMap(
-    focus: LatLng,
-    focusOrder: Int,
-    points: List<Pair<CourseDetailPlaceVO, LatLng>>,
-    overview: Boolean,
-    onMarkerClick: (CourseDetailPlaceVO) -> Unit,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val density = LocalDensity.current
-    val cameraPositionState =
-        rememberCameraPositionState {
-            position = CameraPosition(focus, PLACE_MAP_ZOOM)
-        }
-    // 전체 보기면 모든 핀이 들어오게, 아니면 지금 장소로 확대해 맞춘다.
-    //
-    // 지도 위·아래를 오버레이(제목 카드 + 장소 칩 / 코스 버튼 + 팁)가 가리므로 그만큼 여백을 더 준다.
-    // 사방을 같은 값으로 주면 핀이 카드 뒤에 숨는다.
-    LaunchedEffect(focus, overview, points) {
-        val coords = points.map { it.second }
-        if (overview && coords.size >= 2) {
-            val bounds = LatLngBounds.Builder().apply { coords.forEach { include(it) } }.build()
-            with(density) {
-                cameraPositionState.animate(
-                    CameraUpdate.fitBounds(
-                        bounds,
-                        OVERVIEW_FIT_PADDING_SIDE.roundToPx(),
-                        OVERVIEW_FIT_PADDING_TOP.roundToPx(),
-                        OVERVIEW_FIT_PADDING_SIDE.roundToPx(),
-                        OVERVIEW_FIT_PADDING_BOTTOM.roundToPx(),
-                    ),
-                )
-            }
-        } else {
-            // 위치만 옮기면 전체 보기에서 넘어왔을 때 축소된 채라 장소가 안 보인다.
-            // 확대 수준까지 같이 맞춰 항상 같은 눈높이로 보여 준다.
-            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(focus, PLACE_MAP_ZOOM))
-        }
-    }
-    NaverMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState,
-        uiSettings =
-            MapUiSettings(
-                // 드래그·확대로 주변을 둘러볼 수 있게 연다. 기울이기·회전은 길 파악에 도움이 안 돼 막는다.
-                isScrollGesturesEnabled = true,
-                isZoomGesturesEnabled = true,
-                isTiltGesturesEnabled = false,
-                isRotateGesturesEnabled = false,
-                isStopGesturesEnabled = true,
-                isZoomControlEnabled = false,
-                isScaleBarEnabled = false,
-                isCompassEnabled = false,
-                isLogoClickEnabled = false,
-            ),
-    ) {
-        RouteOverlays(
-            points = points,
-            focusOrder = focusOrder,
-            allFocused = overview,
-            colors =
-                RouteMarkerColors(
-                    // 지도 배경과 겹쳐도 또렷하도록 경로선은 검정으로 둔다.
-                    line = color.contentDefaultLevel0,
-                    focusFillArgb = color.bgAccent.toArgb(),
-                    restFillArgb = color.contentDefaultLevel2.toArgb(),
-                    textArgb = color.contentOnAccent.toArgb(),
-                ),
-            onMarkerClick = onMarkerClick,
-        )
-    }
-}
-
-/** 순번 마커·경로선에 쓰는 색 묶음. 파라미터 수를 줄이려 홀더로 전달한다. */
-@Immutable
-private data class RouteMarkerColors(
-    val line: Color,
-    val focusFillArgb: Int,
-    val restFillArgb: Int,
-    val textArgb: Int,
-)
-
-/** 지도 위 오버레이: 순번 마커 + 장소를 잇는 점선. */
-@OptIn(ExperimentalNaverMapApi::class)
-@Composable
-@NaverMapComposable
-private fun RouteOverlays(
-    points: List<Pair<CourseDetailPlaceVO, LatLng>>,
-    focusOrder: Int,
-    allFocused: Boolean,
-    colors: RouteMarkerColors,
-    onMarkerClick: (CourseDetailPlaceVO) -> Unit,
-) {
-    val density = LocalDensity.current.density
-    if (points.size >= 2) {
-        PolylineOverlay(
-            coords = points.map { it.second },
-            width = 3.dp,
-            color = colors.line,
-            pattern = ROUTE_DASH_PATTERN,
-        )
-    }
-    points.forEach { (place, position) ->
-        // 지금 보고 있는 장소는 크고 진한 핀, 나머지는 작고 흐린 핀으로 찍어 어디를 보는지 알 수 있게 한다.
-        // 코스 전체 보기에서는 특정 장소를 보는 게 아니므로 전부 진한 핀으로 그린다.
-        val focused = allFocused || place.order == focusOrder
-        val fillArgb = if (focused) colors.focusFillArgb else colors.restFillArgb
-        val sizeDp = if (focused) FOCUSED_MARKER_SIZE_DP else MARKER_SIZE_DP
-        val icon =
-            remember(place.order, fillArgb, colors.textArgb, sizeDp, density) {
-                numberedMarkerIcon(
-                    number = place.order,
-                    fillArgb = fillArgb,
-                    textArgb = colors.textArgb,
-                    sizePx = (sizeDp * density).toInt(),
-                )
-            }
-        Marker(
-            state = rememberUpdatedMarkerState(position = position),
-            icon = icon,
-            anchor = Offset(0.5f, 0.5f),
-            // 겹칠 때 지금 보고 있는 핀이 위로 오게 한다.
-            zIndex = if (focused) 1 else 0,
-            // 흐린 핀을 누르면 그 장소가 활성화된다. true 를 돌려 지도 기본 동작을 막는다.
-            onClick = {
-                onMarkerClick(place)
-                true
-            },
-        )
-    }
-}
-
-/** 순번 숫자가 들어간 원형 마커 아이콘을 그린다(채운 원 + 흰 숫자 + 흰 테두리). */
-private fun numberedMarkerIcon(
-    number: Int,
-    fillArgb: Int,
-    textArgb: Int,
-    sizePx: Int,
-): OverlayImage {
-    val bitmap = createBitmap(sizePx, sizePx)
-    val canvas = Canvas(bitmap)
-    val center = sizePx / 2f
-    val strokeWidth = sizePx * 0.08f
-    val radius = center - strokeWidth
-    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fillArgb }
-    val stroke =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = textArgb
-            style = Paint.Style.STROKE
-            this.strokeWidth = strokeWidth
-        }
-    canvas.drawCircle(center, center, radius, fill)
-    canvas.drawCircle(center, center, radius, stroke)
-    val text =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = textArgb
-            textAlign = Paint.Align.CENTER
-            textSize = sizePx * 0.5f
-            typeface = Typeface.DEFAULT_BOLD
-        }
-    val metrics = text.fontMetrics
-    canvas.drawText(number.toString(), center, center - (metrics.ascent + metrics.descent) / 2f, text)
-    return OverlayImage.fromBitmap(bitmap)
 }
 
 /** 좌표가 없는 장소의 지도 자리. 빈 화면 대신 이유를 알려 준다. */
