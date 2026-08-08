@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.domain.profile
 
 import com.chillsam.courmy.common.domain.media.MediaRepository
 import com.chillsam.courmy.common.domain.media.UploadPurpose
+import com.chillsam.courmy.main.entity.area.AreaVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.entity.user.FollowResultVO
 import com.chillsam.courmy.main.entity.user.UserProfileVO
@@ -30,6 +31,10 @@ class UpdateProfileUseCaseTest {
         override suspend fun saveBio(bio: String) {
             savedBio = bio
         }
+
+        override suspend fun saveInterestThemes(themes: List<String>) = error("호출되지 않아야 한다")
+
+        override suspend fun saveInterestRegions(regions: List<AreaVO>) = error("호출되지 않아야 한다")
 
         override suspend fun getUserProfile(handle: String): UserProfileVO = error("호출되지 않아야 한다")
 
