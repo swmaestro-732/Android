@@ -36,6 +36,7 @@ fun CourseDetailPage(
     courseId: Long,
     onBack: () -> Unit,
     onAuthorClick: (String) -> Unit,
+    onMyProfileClick: () -> Unit,
     onShare: () -> Unit,
     onEditCourse: () -> Unit,
     modifier: Modifier = Modifier,
@@ -72,10 +73,16 @@ fun CourseDetailPage(
                     CourseDetailActions(
                         onBack = onBack,
                         onAuthorClick = {
-                            detail.authorHandle
-                                .removePrefix("@")
-                                .takeIf(String::isNotBlank)
-                                ?.let(onAuthorClick)
+                            // 내 코스면 작성자가 나다. 타유저 프로필로 보내면 내 화면을 남의 것처럼
+                            // (설정·내 코스 없이 팔로우 관점으로) 보게 되므로 마이로 보낸다.
+                            if (detail.isMine) {
+                                onMyProfileClick()
+                            } else {
+                                detail.authorHandle
+                                    .removePrefix("@")
+                                    .takeIf(String::isNotBlank)
+                                    ?.let(onAuthorClick)
+                            }
                         },
                         onFollowAuthor = { viewModel.onIntent(CourseDetailIntent.ToggleFollowAuthor) },
                         onShare = onShare,
