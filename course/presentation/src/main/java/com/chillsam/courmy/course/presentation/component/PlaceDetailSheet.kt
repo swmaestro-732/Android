@@ -166,12 +166,14 @@ fun PlaceDetailSheet(
     onDismiss: () -> Unit,
     onSelectPlace: (CourseDetailPlaceVO) -> Unit,
     modifier: Modifier = Modifier,
+    startInOverview: Boolean = false,
 ) {
     val places = course.places
     val color = DesignSystemThemeImpl.designSystemColor
     val scope = rememberCoroutineScope()
     // 코스 전체 보기 모드. 켜면 카메라가 모든 핀을 담고, 몇 번째 장소로 갈지 고르는 줄이 나온다.
-    var overview by remember { mutableStateOf(false) }
+    // 코스 상세의 "자세히" 로 들어오면 처음부터 전체 보기로 연다.
+    var overview by remember { mutableStateOf(startInOverview) }
     // 다른 장소로 옮길 때는 전체 보기를 풀어 그 장소에 카메라를 맞춘다.
     val selectPlace = { place: CourseDetailPlaceVO ->
         overview = false

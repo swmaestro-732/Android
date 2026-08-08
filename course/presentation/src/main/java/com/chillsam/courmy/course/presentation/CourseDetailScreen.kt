@@ -93,6 +93,8 @@ fun CourseDetailScreen(
     val context = LocalContext.current
     // 장소 행 화살표를 누르면 해당 장소 상세 시트를 띄운다(null 이면 시트 닫힘).
     var selectedPlace by remember { mutableStateOf<CourseDetailPlaceVO?>(null) }
+    // 지도의 "자세히" 로 열면 시트를 코스 전체 보기 상태로 시작한다.
+    var openSheetInOverview by remember { mutableStateOf(false) }
     val placeDetailViewModel: PlaceDetailViewModel = hiltViewModel()
     val placeDetailState by placeDetailViewModel.uiState.collectAsStateWithLifecycle()
     Column(
@@ -139,6 +141,7 @@ fun CourseDetailScreen(
                     places = detail.places,
                     authorName = detail.authorName,
                     onPlaceClick = { place ->
+                        openSheetInOverview = false
                         selectedPlace = place
                         placeDetailViewModel.open(placeId = place.placeId)
                     },
@@ -147,6 +150,12 @@ fun CourseDetailScreen(
                 CourseMapSection(
                     places = detail.places,
                     onPlaceClick = { place ->
+                        openSheetInOverview = false
+                        selectedPlace = place
+                        placeDetailViewModel.open(placeId = place.placeId)
+                    },
+                    onOpenDetail = { place ->
+                        openSheetInOverview = true
                         selectedPlace = place
                         placeDetailViewModel.open(placeId = place.placeId)
                     },
@@ -175,6 +184,7 @@ fun CourseDetailScreen(
     if (currentPlace != null) {
         val dismiss = {
             selectedPlace = null
+            openSheetInOverview = false
             placeDetailViewModel.clear()
         }
         // 시트 내용은 코스 데이터로 즉시 그리고, API 로 받는 주소만 도착하는 대로 채운다.
@@ -196,6 +206,7 @@ fun CourseDetailScreen(
                 selectedPlace = target
                 placeDetailViewModel.open(placeId = target.placeId)
             },
+            startInOverview = openSheetInOverview,
         )
         // 주소를 못 받아도 나머지는 멀쩡하므로 알리기만 하고 시트는 닫지 않는다.
         LaunchedEffect(placeDetailState.errorMessage) {
@@ -536,12 +547,14 @@ private val CourseMapHeight = 220.dp
  *
  * 좌표가 있는 장소가 없으면 구역째 그리지 않는다 — 빈 지도는 알려 주는 게 없다.
  * 지도 제스처는 막는다. 세로 스크롤 화면 안이라 지도가 스크롤을 가로채면 화면이 걸린다.
- * 핀을 누르면 해당 장소 상세 시트가 열리고, 거기서 드래그·확대로 둘러볼 수 있다.
+ * 대신 둘러보는 길을 둘 둔다 — 핀을 누르면 그 장소로([onPlaceClick]), "자세히" 를 누르면
+ * 코스 전체 보기 상태로([onOpenDetail]) 장소 상세 시트가 열린다.
  */
 @Composable
 private fun CourseMapSection(
     places: List<CourseDetailPlaceVO>,
     onPlaceClick: (CourseDetailPlaceVO) -> Unit,
+    onOpenDetail: (CourseDetailPlaceVO) -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val points = remember(places) { places.toRoutePoints() }
@@ -550,11 +563,24 @@ private fun CourseMapSection(
         modifier = Modifier.padding(top = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        DsText(
-            text = "코스 한눈에 보기",
-            style = DesignSystemThemeImpl.typeScale.textStrongM,
-            color = color.contentDefaultLevel0,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DsText(
+                text = "코스 한눈에 보기",
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+                modifier = Modifier.weight(1f),
+            )
+            // 전체 보기로 열 때도 시트는 장소 하나를 기준으로 뜨므로 첫 장소를 넘긴다.
+            DsText(
+                text = "자세히",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentAccent,
+                modifier = Modifier.clickable { onOpenDetail(first.first) },
+            )
+        }
         Box(
             modifier =
                 Modifier
