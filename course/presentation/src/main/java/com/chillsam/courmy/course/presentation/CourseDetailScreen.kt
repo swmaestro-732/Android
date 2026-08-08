@@ -348,7 +348,10 @@ private fun CourseImage(
 }
 
 /**
- * 작성자 밴드: 화면 가로를 꽉 채우는 흰색 밴드. 페이지 배경(Gray200)과 대비로 구분된다.
+ * 작성자 밴드: 화면 가로를 꽉 채우고 위아래 구분선으로 구역을 끊는다.
+ *
+ * 배경은 페이지와 같은 색이라 색 대비 대신 선이 경계를 만든다. 선은 화면 끝까지 그어
+ * 밴드가 본문과 다른 층임을 드러낸다.
  * [LayoutVariants.AUTHOR_AT_BOTTOM] 에 따라 장소 목록 아래(현재) 또는 히어로 바로 밑에 놓인다.
  */
 @Composable
@@ -358,21 +361,33 @@ private fun AuthorBand(
     onToggleFollow: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Row(
+    Column(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel0)) {
+        BandDivider()
+        Row(
+            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AuthorContent(
+                detail = detail,
+                onAuthorClick = onAuthorClick,
+                onToggleFollow = onToggleFollow,
+            )
+        }
+        BandDivider()
+    }
+}
+
+/** 작성자 밴드를 위아래로 끊는 선. 좌우 여백 없이 화면 끝까지 긋는다. */
+@Composable
+private fun BandDivider() {
+    Box(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(color.bgDefaultLevel1)
-                .padding(horizontal = ScreenHorizontalPadding, vertical = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        AuthorContent(
-            detail = detail,
-            onAuthorClick = onAuthorClick,
-            onToggleFollow = onToggleFollow,
-        )
-    }
+                .height(1.dp)
+                .background(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0),
+    )
 }
 
 /**
