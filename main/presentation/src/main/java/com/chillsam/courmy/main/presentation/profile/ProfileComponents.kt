@@ -13,22 +13,19 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
@@ -44,90 +42,222 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 
 // 마이(FS-15)·타유저(FS-15 OtherUserPage) 프로필이 공유하는 구성요소.
-// 두 화면은 커버·아바타·통계·코스 그리드가 동일하고, 상단 액션 버튼과 통계 라벨,
-// 팔로우 버튼 유무만 다르므로 그 부분만 파라미터로 뺀다.
+// 두 화면은 상단 프로필·코스 그리드가 같고, 상단 좌우 버튼(뒤로 가기·공유·설정)과 소개 유무,
+// 팔로우 버튼 유무만 다르므로 그 부분만 파라미터·슬롯으로 뺀다.
 
-/** 초록 커버 + 우상단 액션 슬롯 + 커버 하단에 걸친 원형 아바타. */
+/** 아바타 사진 지름. 오른쪽 3줄(닉네임·아이디·팔로우 수) 높이와 맞물리는 크기. */
+private val AVATAR_SIZE = 92.dp
+
+/** 아바타를 두르는 흰 테두리 두께. */
+private val AVATAR_RING = 6.dp
+
+/** 아바타 그림자 높이. 흰 배경 위에서 원의 경계를 만드는 유일한 장치라 넉넉히 준다. */
+private val AVATAR_SHADOW_ELEVATION = 14.dp
+
+/**
+ * 프로필 상단 헤더(마이·타유저 공용).
+ *
+ * 커버 이미지 없이 아바타를 왼쪽에 두고 오른쪽에 닉네임·아이디·팔로우 수를 쌓는다.
+ * 소개는 그 아래 전체 폭으로 흐른다. 전부 왼쪽 정렬이며 화면 좌우 여백을 따른다.
+ *
+ * @param onBack null 이면 뒤로 가기 버튼을 그리지 않는다(탭으로 진입하는 마이 화면).
+ * @param bio null 이면 소개 줄 자체를 두지 않고(서버가 소개를 주지 않는 타유저 프로필),
+ *   빈 문자열이면 "아직 소개가 없어요" 안내를 옅게 표시한다.
+ * @param actions 우상단 버튼 슬롯([ProfileHeaderIconButton] 을 넣는다).
+ */
 @Composable
-fun ProfileCoverHeader(
+fun ProfileHeader(
     imageUrl: String,
+    nickname: String,
+    handle: String,
+    followerCount: String,
+    followingCount: String,
+    onFollowerClick: () -> Unit,
+    onFollowingClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
+    bio: String? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Box(modifier = modifier.fillMaxWidth()) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .background(
-                        // 세로 그라디언트: 상단 bgAccent(Forest600) → 하단 bgAccentPressed(Forest700).
-                        Brush.verticalGradient(
-                            listOf(color.bgAccent, color.bgAccentPressed),
-                        ),
-                    ).clipToBounds(),
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = ScreenHorizontalPadding),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 데코 원(커버 밖으로 넘치는 부분은 clip). Figma 원본은 좌하단 민트·우상단 흰색이며,
-            // 팔레트에 없는 민트 원색 대신 저투명도 흰색 오버레이로 근사한다.
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomStart)
-                        .offset(x = (-36).dp, y = 40.dp)
-                        .size(150.dp)
-                        .clip(CircleShape)
-                        .background(color.contentOnAccent.copy(alpha = 0.08f)),
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-56).dp, y = 24.dp)
-                        .size(90.dp)
-                        .clip(CircleShape)
-                        .background(color.contentOnAccent.copy(alpha = 0.10f)),
-            )
-            Row(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .statusBarsPadding()
-                        .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                content = actions,
-            )
+            if (onBack != null) {
+                ProfileHeaderIconButton(
+                    iconRes = R.drawable.ic_chevron_left_24,
+                    contentDescription = "뒤로 가기",
+                    onClick = onBack,
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), content = actions)
         }
-        // 커버 하단에 걸친 아바타(하단 절반이 아래로 넘침).
-        // 흰색 링 + 소프트 드롭 섀도우로 커버·배경 위에서 떠 보이게 한다(Figma FS-15).
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = 48.dp)
-                    .size(96.dp)
-                    .shadow(
-                        elevation = 6.dp,
-                        shape = CircleShape,
-                        ambientColor = color.contentDefaultLevel0.copy(alpha = 0.5f),
-                        spotColor = color.contentDefaultLevel0.copy(alpha = 0.5f),
-                    ).clip(CircleShape)
-                    .background(color.bgDefaultLevel1)
-                    .padding(5.dp)
-                    .clip(CircleShape)
-                    .background(color.imagePlaceholder),
+
+        Row(
+            // 아이콘 버튼 줄과 바짝 붙인다. 아바타 그림자가 여백처럼 보여서 넉넉히 주면 멀어 보인다.
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // URL 이 있으면 실제 프로필 사진, 없으면 placeholder 배경만 노출.
-            if (imageUrl.isNotBlank()) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = "프로필 이미지",
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                    contentScale = ContentScale.Crop,
+            RingedAvatar(imageUrl = imageUrl)
+            Spacer(Modifier.width(20.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                DsText(
+                    text = nickname,
+                    style = DesignSystemThemeImpl.typeScale.titleExtraL,
+                    color = color.contentDefaultLevel0,
+                )
+                Spacer(Modifier.height(2.dp))
+                DsText(
+                    text = "@$handle",
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = color.contentDefaultLevel2,
+                )
+                Spacer(Modifier.height(10.dp))
+                FollowCounts(
+                    followerCount = followerCount,
+                    followingCount = followingCount,
+                    onFollowerClick = onFollowerClick,
+                    onFollowingClick = onFollowingClick,
                 )
             }
         }
+
+        if (bio == null) {
+            Spacer(Modifier.height(20.dp))
+        } else {
+            // 소개가 없으면 빈 줄 대신 안내 문구를 옅게 표시해, 편집으로 채울 수 있음을 알린다.
+            val hasBio = bio.isNotBlank()
+            DsText(
+                text = if (hasBio) bio else "아직 소개가 없어요",
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = if (hasBio) color.contentDefaultLevel1 else color.contentDefaultLevel3,
+                maxLines = 2,
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 20.dp),
+            )
+        }
     }
+}
+
+/**
+ * 흰 테두리 + 그림자를 두른 아바타.
+ *
+ * 화면 배경도 흰색이라 테두리 자체로는 경계가 생기지 않는다 — 원이 떠 보이게 하는 건 전적으로
+ * 그림자 몫이라 짙고 넓게 잡는다.
+ */
+@Composable
+private fun RingedAvatar(imageUrl: String) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            Modifier
+                .shadow(
+                    elevation = AVATAR_SHADOW_ELEVATION,
+                    shape = CircleShape,
+                    ambientColor = color.contentDefaultLevel0.copy(alpha = 0.32f),
+                    spotColor = color.contentDefaultLevel0.copy(alpha = 0.40f),
+                ).clip(CircleShape)
+                .background(color.bgDefaultLevel1)
+                .padding(AVATAR_RING),
+    ) {
+        ProfileAvatar(imageUrl = imageUrl, size = AVATAR_SIZE)
+    }
+}
+
+/** "팔로워 1.4k | 팔로잉 312". 라벨은 옅게, 숫자는 진하게 두어 숫자가 먼저 읽히게 한다. */
+@Composable
+private fun FollowCounts(
+    followerCount: String,
+    followingCount: String,
+    onFollowerClick: () -> Unit,
+    onFollowingClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        FollowCountItem(label = "팔로워", value = followerCount, onClick = onFollowerClick)
+        Box(
+            modifier =
+                Modifier
+                    .padding(horizontal = 14.dp)
+                    .width(1.dp)
+                    .height(12.dp)
+                    .background(color.borderDefaultLevel1),
+        )
+        FollowCountItem(label = "팔로잉", value = followingCount, onClick = onFollowingClick)
+    }
+}
+
+@Composable
+private fun FollowCountItem(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(
+        modifier = Modifier.clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        DsText(
+            text = label,
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = color.contentDefaultLevel2,
+        )
+        Spacer(Modifier.width(6.dp))
+        DsText(
+            text = value,
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel0,
+        )
+    }
+}
+
+/** 프로필 헤더 상단의 원형 아이콘 버튼(뒤로 가기·공유·설정). 강조 배경 + 흰 아이콘. */
+@Composable
+fun ProfileHeaderIconButton(
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(color.bgAccent)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = contentDescription,
+            tint = color.contentOnAccent,
+            modifier = Modifier.size(18.dp),
+        )
+    }
+}
+
+/** 코스 그리드 위 구역 제목("내 코스" 등). */
+@Composable
+fun ProfileSectionLabel(text: String) {
+    DsText(
+        text = text,
+        style = DesignSystemThemeImpl.typeScale.textStrongS,
+        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = ScreenHorizontalPadding, end = ScreenHorizontalPadding, top = 20.dp),
+    )
 }
 
 /**
@@ -156,89 +286,6 @@ fun ProfileAvatar(
                 contentScale = ContentScale.Crop,
             )
         }
-    }
-}
-
-/** 커버 위 원형 아이콘 버튼(공유·설정). */
-@Composable
-fun ProfileCoverIconButton(
-    @DrawableRes iconRes: Int,
-    contentDescription: String,
-    onClick: () -> Unit,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier =
-            Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(color.bgDefaultLevel0)
-                .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = contentDescription,
-            tint = color.contentDefaultLevel0,
-            modifier = Modifier.size(18.dp),
-        )
-    }
-}
-
-/**
- * 코스 · 팔로워 · 팔로잉 3열 통계(항목 사이 세로 구분선).
- * [courseLabel] 은 마이가 "내 코스", 타유저가 "코스"로 다르다.
- */
-@Composable
-fun ProfileStatsRow(
-    courseCount: Int,
-    followerCount: String,
-    followingCount: String,
-    courseLabel: String,
-    onFollowerClick: (() -> Unit)? = null,
-    onFollowingClick: (() -> Unit)? = null,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ProfileStatItem(value = courseCount.toString(), label = courseLabel)
-        ProfileStatDivider(color = color.borderDefaultLevel1)
-        ProfileStatItem(value = followerCount, label = "팔로워", onClick = onFollowerClick)
-        ProfileStatDivider(color = color.borderDefaultLevel1)
-        ProfileStatItem(value = followingCount, label = "팔로잉", onClick = onFollowingClick)
-    }
-}
-
-@Composable
-private fun ProfileStatDivider(color: androidx.compose.ui.graphics.Color) {
-    VerticalDivider(thickness = 1.dp, color = color, modifier = Modifier.height(28.dp))
-}
-
-@Composable
-private fun ProfileStatItem(
-    value: String,
-    label: String,
-    onClick: (() -> Unit)? = null,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Column(
-        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        DsText(
-            text = value,
-            style = DesignSystemThemeImpl.typeScale.textStrongM,
-            color = color.contentDefaultLevel0,
-        )
-        Spacer(Modifier.height(2.dp))
-        DsText(
-            text = label,
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = color.contentDefaultLevel2,
-        )
     }
 }
 
