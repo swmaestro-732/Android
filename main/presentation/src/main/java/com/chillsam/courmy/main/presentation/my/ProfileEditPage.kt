@@ -47,13 +47,17 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
+import com.chillsam.courmy.common.presentation.component.alignTextFieldBorder
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.media.rememberAccentedImagePicker
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
 import com.chillsam.courmy.main.entity.auth.HandleCheckResult
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.login.HANDLE_RULES
 import com.chillsam.courmy.main.presentation.login.HandleCheckIntent
 import com.chillsam.courmy.main.presentation.login.HandleCheckViewModel
 import com.chillsam.courmy.main.presentation.login.message
@@ -109,7 +113,16 @@ fun ProfileEditPage(
     LaunchedEffect(editState.saved) {
         if (editState.saved) {
             editViewModel.onIntent(ProfileEditIntent.ConsumeSaved)
-            navigationHelper.navigateToBack()
+            Toast.makeText(context, "저장했어요", Toast.LENGTH_SHORT).show()
+            // 고른 로컬 이미지를 비워야 한다. 안 그러면 업로드가 끝난 뒤에도 "바뀐 게 있다"로 남아
+            // 저장 버튼이 계속 활성이다(아래 hasChanges 의 profileImageUri != null 조건).
+            profileImageUri = null
+            // 방금 저장한 아이디가 원본이 되므로 이전 중복 확인 판정도 함께 지운다
+            // (안 지우면 "사용할 수 있는 아이디예요" 가 계속 붙어 있다).
+            handleCheckViewModel.onIntent(HandleCheckIntent.Reset)
+            // 화면을 닫지 않고 머무르므로 원본값을 다시 읽는다. 그래야 방금 저장한 값이 새 기준이 되어
+            // "변경 사항 저장" 버튼이 다시 비활성으로 돌아간다.
+            myViewModel.onIntent(MyProfileIntent.Retry)
         }
     }
     LaunchedEffect(editState.errorMessage) {
@@ -131,7 +144,7 @@ fun ProfileEditPage(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = ScreenHorizontalPadding),
         ) {
             AvatarEditor(
                 // 새로 고른 게 없으면 현재 프로필 사진을 그대로 보여준다.
@@ -168,12 +181,12 @@ fun ProfileEditPage(
             )
             InterestSummary(
                 title = "관심 테마",
-                chips = listOf("감성 카페", "전시·갤러리", "동네 산책"),
+                chips = profile?.interestThemes.orEmpty(),
                 onEdit = { navigationHelper.navigateTo(InterestThemePage) },
             )
             InterestSummary(
                 title = "관심 지역",
-                chips = listOf("성수", "연남", "한남"),
+                chips = profile?.interestRegions.orEmpty().map { it.shortName },
                 onEdit = { navigationHelper.navigateTo(InterestRegionPage) },
                 region = true,
             )
@@ -201,7 +214,7 @@ fun ProfileEditPage(
                     Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             )
         }
     }
@@ -215,10 +228,11 @@ private fun AvatarEditor(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val pickImage =
-        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        rememberAccentedImagePicker { uri ->
             if (uri != null) onImagePicked(uri)
         }
-    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    // 가운데 정렬하지 않는다. 아래 라벨·입력창과 같은 왼쪽 선에 맞춘다.
+    Box(modifier = modifier) {
         Box(modifier = Modifier.size(100.dp)) {
             // 아바타 원(흰 링 + 그림자). 배지는 형제로 분리해 clip 잘림 방지.
             Box(
@@ -289,18 +303,42 @@ private fun HandleField(
         label = "아이디",
         value = value,
         onValueChange = onValueChange,
+        // "@"는 항상 붙는 기본값이라 입력창 앞 고정 프리픽스로 표시(회원가입 FS-05 와 동일).
+        leadingIcon = {
+            DsText(
+                text = "@",
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = color.contentDefaultLevel2,
+            )
+        },
+        // 중복 확인 실패 시 위험(빨간 테두리) 표시.
+        isError = result != null && !result.isAvailable,
         inputTrailing = {
             // 값을 바꾼 적이 없으면 확인할 것도 없다.
             CheckButton(enabled = changed && !isChecking, onClick = onCheck)
         },
         belowField = {
-            result?.let {
+            if (result != null) {
                 DsText(
-                    text = it.message(),
+                    text = result.message(),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = if (it.isAvailable) color.contentSuccess else color.contentDanger,
-                    modifier = Modifier.padding(start = 16.dp, top = 6.dp),
+                    color = if (result.isAvailable) color.contentSuccess else color.contentDanger,
+                    modifier = Modifier.padding(top = 6.dp),
                 )
+            } else {
+                // 확인 전엔 아이디 조건을 줄마다 캡션으로 안내(회원가입 FS-05 와 동일).
+                Column(
+                    modifier = Modifier.padding(top = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    HANDLE_RULES.forEach { rule ->
+                        DsText(
+                            text = rule,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel3,
+                        )
+                    }
+                }
             }
         },
     )
@@ -314,15 +352,17 @@ private fun LabeledField(
     modifier: Modifier = Modifier,
     counter: String? = null,
     singleLine: Boolean = true,
+    isError: Boolean = false,
+    leadingIcon: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     inputTrailing: (@Composable () -> Unit)? = null,
     belowField: (@Composable () -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = modifier.fillMaxWidth().padding(top = 20.dp)) {
-        // 라벨·카운터를 필드 텍스트 들여쓰기(DsTextField 링3+좌우14≈16)에 맞춰 정렬.
+        // 라벨·카운터는 화면 좌우 여백(20dp)에 맞춘다. 아래 "관심 테마/지역" 제목과 같은 선이다.
         Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DsText(
@@ -349,8 +389,10 @@ private fun LabeledField(
                 DsTextField(
                     value = value,
                     onValueChange = onValueChange,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).alignTextFieldBorder(),
+                    isError = isError,
                     singleLine = singleLine,
+                    leadingIcon = leadingIcon,
                 )
                 inputTrailing()
             }
@@ -358,8 +400,10 @@ private fun LabeledField(
             DsTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().alignTextFieldBorder(),
+                isError = isError,
                 singleLine = singleLine,
+                leadingIcon = leadingIcon,
             )
         }
         belowField?.invoke()
@@ -425,12 +469,25 @@ private fun InterestSummary(
                 modifier = Modifier.clickable(onClick = onEdit),
             )
         }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            chips.forEach { chip ->
-                OutlinedTagChip(
-                    text = chip,
-                    iconRes = if (region) R.drawable.ic_location_24 else null,
-                )
+        if (chips.isEmpty()) {
+            // 아직 고른 적이 없으면 빈 줄 대신 무엇을 하면 되는지 알려 준다.
+            DsText(
+                text = "아직 고른 $title 가 없어요. 편집에서 골라 보세요.",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel3,
+                maxLines = Int.MAX_VALUE,
+            )
+        } else {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                chips.forEach { chip ->
+                    OutlinedTagChip(
+                        text = chip,
+                        iconRes = if (region) R.drawable.ic_location_24 else null,
+                    )
+                }
             }
         }
     }

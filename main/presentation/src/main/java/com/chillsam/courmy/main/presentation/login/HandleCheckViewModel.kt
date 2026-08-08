@@ -105,6 +105,13 @@ class HandleCheckViewModel
         }
     }
 
+/** 확인 전 보여 주는 아이디 입력 조건. [message] 와 마찬가지로 회원가입·프로필 편집이 같은 문구를 쓴다. */
+val HANDLE_RULES =
+    listOf(
+        "영문 소문자, 숫자, 밑줄(_)만 사용 가능",
+        "3~12자 이내로 입력 가능",
+    )
+
 /** 판정 결과별 안내 문구. 화면 두 곳이 같은 문구를 쓴다. */
 fun HandleCheckResult.message(): String =
     when (this) {

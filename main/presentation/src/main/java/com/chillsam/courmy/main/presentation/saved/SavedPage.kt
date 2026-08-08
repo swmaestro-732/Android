@@ -40,11 +40,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
+import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
@@ -92,15 +96,18 @@ private fun SavedCourseList(
         }
     }
 
+    val scrollState = rememberScrollState()
+    LoadMoreOnScrollEnd(scrollState) { viewModel.onIntent(SavedCoursesIntent.LoadMore) }
+
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(
             modifier =
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .statusBarsPadding()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = ScreenHorizontalPadding),
         ) {
             DsText(
                 text = "저장한 코스",
@@ -117,6 +124,9 @@ private fun SavedCourseList(
                             onBookmarkClick = { pendingRemoval = course },
                             modifier = Modifier.padding(bottom = 16.dp),
                         )
+                    }
+                    if (uiState.isLoadingMore) {
+                        LoadingMoreFooter()
                     }
                 }
 
@@ -149,7 +159,10 @@ private fun SavedCourseList(
     }
 
     pendingRemoval?.let { course ->
-        UnsaveConfirmDialog(
+        DsConfirmDialog(
+            title = "저장을 취소할까요?",
+            description = "저장을 취소하면 이 코스가 저장함에서 사라져요.",
+            destructive = true,
             onConfirm = {
                 viewModel.onIntent(SavedCoursesIntent.Unsave(course.id))
                 pendingRemoval = null
@@ -198,124 +211,6 @@ private fun SavedListMessage(
     }
 }
 
-/**
- * 저장 취소 확인 다이얼로그. 코스 작성 나가기 다이얼로그(ExitConfirmDialog)와 동일한 톤
- * (스크림 + 중앙 라운드 카드 + 초록 기본/하위 텍스트 버튼). 확인 시 저장함에서 제거한다.
- */
-@Composable
-private fun UnsaveConfirmDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    // 커스텀 오버레이라 시스템 Back 이 화면을 이탈시키지 않고 다이얼로그만 닫도록 가로챈다.
-    BackHandler(onBack = onDismiss)
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.4f))
-                .noRippleClickable(onDismiss),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .padding(horizontal = 40.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(color.bgDefaultLevel0)
-                    .noRippleClickable {}
-                    .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            DsText(
-                text = "저장을 취소할까요?",
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-            )
-            DsText(
-                text = "저장을 취소하면 이 코스가\n저장함에서 사라져요.",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                textAlign = TextAlign.Center,
-                maxLines = Int.MAX_VALUE,
-            )
-            Spacer(Modifier.height(12.dp))
-            DialogFilledButton(
-                text = "저장 취소",
-                background = color.contentDanger,
-                textColor = color.contentOnAccent,
-                onClick = onConfirm,
-            )
-            DialogTextButton(
-                text = "저장 유지",
-                textColor = color.contentDefaultLevel1,
-                onClick = onDismiss,
-            )
-        }
-    }
-}
-
-/** 다이얼로그용 채움 버튼(예: danger 배경의 파괴적 액션). */
-@Composable
-private fun DialogFilledButton(
-    text: String,
-    background: Color,
-    textColor: Color,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(background)
-                .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        DsText(
-            text = text,
-            style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = textColor,
-        )
-    }
-}
-
-@Composable
-private fun DialogTextButton(
-    text: String,
-    textColor: Color,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onClick)
-                .padding(vertical = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        DsText(
-            text = text,
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = textColor,
-        )
-    }
-}
-
-/** 리플 없는 클릭(스크림/카드 배경 소비용). */
-private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
-    this.composed {
-        clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = onClick,
-        )
-    }
-
 /** 비로그인 상태: 저장 잠금 안내 + 로그인 유도. */
 @Composable
 private fun GuestSaved(modifier: Modifier = Modifier) {
@@ -329,7 +224,7 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                     .weight(1f)
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = ScreenHorizontalPadding),
         ) {
             DsText(
                 text = "저장",

@@ -40,6 +40,7 @@ import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 
 // 마이(FS-15)·타유저(FS-15 OtherUserPage) 프로필이 공유하는 구성요소.
@@ -247,7 +248,7 @@ fun ProfileCoursesGrid(
     courses: List<ProfileCourseVO>,
     onCourseClick: (String) -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp)) {
         courses.chunked(2).forEach { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),

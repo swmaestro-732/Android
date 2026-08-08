@@ -11,6 +11,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":common:entity"))
+    // 커서 페이징 VO(CursorPageVO)를 공개 시그니처에 쓰므로 api 로 노출한다.
+    api(project(":common:entity"))
     api(libs.kotlinx.serialization.json)
 }

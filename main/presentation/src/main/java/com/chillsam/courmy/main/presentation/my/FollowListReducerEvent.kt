@@ -14,6 +14,22 @@ sealed interface FollowListReducerEvent : ReducerEvent {
     data class Loaded(
         val tab: FollowTab,
         val users: List<FollowUserVO>,
+        val nextCursor: String?,
+        val hasNext: Boolean,
+    ) : FollowListReducerEvent
+
+    data object LoadMoreStarted : FollowListReducerEvent
+
+    /** 다음 페이지 도착. 해당 탭 목록 뒤에 이어 붙인다. */
+    data class MoreLoaded(
+        val tab: FollowTab,
+        val users: List<FollowUserVO>,
+        val nextCursor: String?,
+        val hasNext: Boolean,
+    ) : FollowListReducerEvent
+
+    data class MoreFailed(
+        val message: String,
     ) : FollowListReducerEvent
 
     data class LoadFailed(

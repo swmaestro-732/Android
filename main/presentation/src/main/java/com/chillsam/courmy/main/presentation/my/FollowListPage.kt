@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,9 +42,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
+import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.user.UserProfilePage
 import com.chillsam.courmy.main.entity.my.FollowUserVO
 
@@ -75,11 +80,14 @@ fun FollowListPage(
         }
     }
 
+    val listState = rememberLazyListState()
+    LoadMoreOnScrollEnd(listState) { viewModel.onIntent(FollowListIntent.LoadMore) }
+
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             FollowTopBar(onBack = { navigationHelper.navigateToBack() })
             FollowTabs(selected = selectedTab, onSelect = { viewModel.onIntent(FollowListIntent.SelectTab(it)) })
-            LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxWidth().weight(1f)) {
                 if (users.isEmpty()) {
                     item {
                         FollowListMessage(
@@ -108,12 +116,22 @@ fun FollowListPage(
                         onRemove = { pendingRemoval = user },
                     )
                 }
+                if (uiState.isLoadingMore) {
+                    item { LoadingMoreFooter() }
+                }
             }
         }
         pendingRemoval?.let { user ->
-            FollowRemoveConfirmDialog(
-                user = user,
-                tab = selectedTab,
+            val following = selectedTab == FollowTab.FOLLOWING
+            DsConfirmDialog(
+                title = if (following) "팔로잉을 해제할까요?" else "이 팔로워를 삭제할까요?",
+                description =
+                    if (following) {
+                        "${user.name} 님 팔로잉을 해제해요."
+                    } else {
+                        "${user.name} 님을 팔로워 목록에서 삭제해요."
+                    },
+                destructive = true,
                 onConfirm = {
                     if (selectedTab == FollowTab.FOLLOWING) {
                         viewModel.onIntent(FollowListIntent.Unfollow(user.id))
@@ -222,7 +240,7 @@ private fun FollowUserRow(
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -300,126 +318,3 @@ private fun FollowListMessage(
         }
     }
 }
-
-/**
- * 팔로잉 해제 / 팔로워 삭제 확인 다이얼로그. 앱 공용 다이얼로그 톤(스크림 + 라운드 카드 + danger 버튼).
- * 탭에 따라 문구·확인 버튼 라벨이 달라진다.
- */
-@Composable
-private fun FollowRemoveConfirmDialog(
-    user: FollowUserVO,
-    tab: FollowTab,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val following = tab == FollowTab.FOLLOWING
-    val title = if (following) "팔로잉을 해제할까요?" else "이 팔로워를 삭제할까요?"
-    val desc =
-        if (following) {
-            "${user.name} 님 팔로잉을 해제해요."
-        } else {
-            "${user.name} 님을 팔로워 목록에서 삭제해요."
-        }
-    // 커스텀 오버레이라 시스템 Back 이 화면을 이탈시키지 않고 다이얼로그만 닫도록 가로챈다.
-    BackHandler(onBack = onDismiss)
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.4f))
-                .noRippleClickable(onDismiss),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .padding(horizontal = 40.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(color.bgDefaultLevel0)
-                    .noRippleClickable {}
-                    .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            DsText(
-                text = title,
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-            )
-            DsText(
-                text = desc,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                textAlign = TextAlign.Center,
-                maxLines = Int.MAX_VALUE,
-            )
-            Spacer(Modifier.height(12.dp))
-            DialogFilledButton(
-                text = if (following) "해제" else "삭제",
-                background = color.contentDanger,
-                textColor = color.contentOnAccent,
-                onClick = onConfirm,
-            )
-            DialogTextButton(text = "취소", textColor = color.contentDefaultLevel1, onClick = onDismiss)
-        }
-    }
-}
-
-@Composable
-private fun DialogFilledButton(
-    text: String,
-    background: Color,
-    textColor: Color,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(background)
-                .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        DsText(
-            text = text,
-            style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = textColor,
-        )
-    }
-}
-
-@Composable
-private fun DialogTextButton(
-    text: String,
-    textColor: Color,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onClick)
-                .padding(vertical = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        DsText(
-            text = text,
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = textColor,
-        )
-    }
-}
-
-/** 리플 없는 클릭(스크림/카드 배경 소비용). */
-private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
-    this.composed {
-        clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = onClick,
-        )
-    }

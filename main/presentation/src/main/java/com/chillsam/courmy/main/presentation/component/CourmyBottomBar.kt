@@ -42,9 +42,12 @@ enum class MainTab(
     MY(R.drawable.ic_tab_person_24, R.string.home_nav_my),
 }
 
+/**
+ * [selectedTab]이 null이면 어떤 탭도 강조하지 않는다(타 유저 프로필처럼 탭 소속이 아닌 화면).
+ */
 @Composable
 fun CourmyBottomBar(
-    selectedTab: MainTab,
+    selectedTab: MainTab?,
     onTabSelected: (MainTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {

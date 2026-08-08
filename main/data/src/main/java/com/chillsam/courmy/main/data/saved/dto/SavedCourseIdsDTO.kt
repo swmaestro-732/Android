@@ -18,6 +18,7 @@ data class SavedCourseIdsEnvelope(
 @Serializable
 data class SavedCourseIdsDTO(
     val totalCount: Int? = null,
+    val nextCursor: String? = null,
     val hasNext: Boolean = false,
     val savedCourses: List<SavedCourseIdItemDTO>? = null,
 )

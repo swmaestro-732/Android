@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.domain.follow
 
+import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.my.FollowUserVO
 import javax.inject.Inject
 
@@ -12,9 +13,14 @@ class GetFollowListUseCase
         suspend operator fun invoke(
             followers: Boolean,
             size: Int = DEFAULT_SIZE,
-        ): List<FollowUserVO> {
+            cursor: String? = null,
+        ): CursorPageVO<FollowUserVO> {
             val bounded = size.coerceIn(MIN_SIZE, MAX_SIZE)
-            return if (followers) repository.getMyFollowers(bounded) else repository.getMyFollowings(bounded)
+            return if (followers) {
+                repository.getMyFollowers(bounded, cursor)
+            } else {
+                repository.getMyFollowings(bounded, cursor)
+            }
         }
 
         companion object {

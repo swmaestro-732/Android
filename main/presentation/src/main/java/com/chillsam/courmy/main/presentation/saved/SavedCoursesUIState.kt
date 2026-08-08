@@ -15,6 +15,10 @@ data class SavedCoursesUIState(
     val courses: ImmutableList<SavedCourseVO> = persistentListOf(),
     val loadErrorMessage: String? = null,
     val errorMessage: String? = null,
+    /** 다음 페이지 커서. [hasNext] 가 false 면 의미가 없다. */
+    val nextCursor: String? = null,
+    val hasNext: Boolean = false,
+    val isLoadingMore: Boolean = false,
 ) : UiState {
     companion object {
         val empty: SavedCoursesUIState = SavedCoursesUIState()

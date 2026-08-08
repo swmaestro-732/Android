@@ -31,8 +31,7 @@ private const val IN_FLIGHT_ALPHA = 0.6f
  * - 아직 팔로우 안 함 → 채운 강조 버튼(bgAccent #30623C · contentOnAccent)
  * - 이미 팔로우 중 → 외곽선 버튼(bgDefaultLevel0 #F5F5F3 · borderAccent · contentAccent)
  *
- * 라벨은 Figma 원문을 그대로 쓴다. [FollowRelation.MUTUAL] 의 "나도 팔로잉하기" 는
- * 이미 팔로우 중인 상태인데 행동 유도형 문구라 어색하지만, 임의로 바꾸지 않고 디자인을 따른다.
+ * 라벨은 아직 팔로우하지 않은 상태만 행동 유도형("…하기")이고, 이미 팔로우 중이면 상태 서술형("…중")이다.
  */
 @Composable
 fun FollowButton(
@@ -93,6 +92,6 @@ private fun FollowRelation.followButtonLabel(): String =
     when (this) {
         FollowRelation.NONE -> "팔로우하기"
         FollowRelation.FOLLOWS_ME -> "나도 팔로우하기"
-        FollowRelation.ONLY_I_FOLLOW -> "나만 팔로잉 중"
-        FollowRelation.MUTUAL -> "나도 팔로잉하기"
+        FollowRelation.ONLY_I_FOLLOW -> "나만 팔로우 중"
+        FollowRelation.MUTUAL -> "서로 팔로우 중"
     }
