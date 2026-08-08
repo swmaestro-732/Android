@@ -73,6 +73,8 @@ dependencies {
     api(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     api(libs.androidx.compose.material3)
+    // BackHandler. 공용 다이얼로그가 시스템 뒤로가기를 스스로 닫도록 처리한다.
+    api(libs.androidx.activity.compose)
 
     // Hilt
     implementation(libs.hilt.android)

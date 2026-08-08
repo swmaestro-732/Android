@@ -30,9 +30,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
+import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import kotlinx.coroutines.delay
 
 // 코스 만들기 화면의 확인 오버레이(장소 빼기·나가기)와 임시저장 토스트.
@@ -92,7 +95,12 @@ internal fun RemovePlaceConfirmSheet(
     }
 }
 
-/** 나가기 확인 다이얼로그(Figma FS-34 "✕ 닫기 → 나가기 확인"). */
+/**
+ * 나가기 확인 다이얼로그(Figma FS-34 "✕ 닫기 → 나가기 확인").
+ *
+ * 여기만 선택지가 셋(임시저장·저장 안 함·취소)이라 네/아니요로 줄일 수 없다. 껍데기와 문구 형식은
+ * [DsConfirmDialog] 와 같게 맞추고 버튼만 직접 채운다.
+ */
 @Composable
 internal fun ExitConfirmDialog(
     onSaveAndExit: () -> Unit,
@@ -100,52 +108,24 @@ internal fun ExitConfirmDialog(
     onCancel: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.4f))
-                .noRippleClickable(onCancel),
-        contentAlignment = Alignment.Center,
+    DsDialogScaffold(
+        title = "작성 중인 코스를 임시저장할까요?",
+        description = "지금 그냥 나가면 변경사항이 사라져요.",
+        onDismiss = onCancel,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .padding(horizontal = 40.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(color.bgDefaultLevel0)
-                    .noRippleClickable {}
-                    .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            DsText(
-                text = "작성 중인 코스가 있어요",
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-            )
-            DsText(
-                text = "지금 나가면 변경사항이 사라져요.\n임시저장하고 나갈까요?",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                textAlign = TextAlign.Center,
-                maxLines = Int.MAX_VALUE,
-            )
-            Spacer(Modifier.height(12.dp))
-            DsButton(text = "임시저장하고 나가기", onClick = onSaveAndExit)
-            SheetActionButton(
-                text = "저장 안 함",
-                textColor = color.contentDanger,
-                background = Color.Transparent,
-                onClick = onDiscard,
-            )
-            SheetActionButton(
-                text = "취소",
-                textColor = color.contentDefaultLevel2,
-                background = Color.Transparent,
-                onClick = onCancel,
-            )
-        }
+        DsButton(text = "임시저장하고 나가기", onClick = onSaveAndExit)
+        SheetActionButton(
+            text = "저장 안 함",
+            textColor = color.contentDanger,
+            background = Color.Transparent,
+            onClick = onDiscard,
+        )
+        SheetActionButton(
+            text = "취소",
+            textColor = color.contentDefaultLevel2,
+            background = Color.Transparent,
+            onClick = onCancel,
+        )
     }
 }
 
@@ -166,7 +146,7 @@ internal fun SavedDraftToast(
             modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, bottom = 96.dp),
+                .padding(start = ScreenHorizontalPadding, end = ScreenHorizontalPadding, bottom = 96.dp),
         contentAlignment = Alignment.Center,
     ) {
         Box(
@@ -222,59 +202,19 @@ private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
 
 private const val TOAST_DURATION_MILLIS = 2000L
 
-/** 코스 삭제 확인. 되돌릴 수 없는 동작이라 확인 버튼을 danger 로 둔다. */
+/** 코스 삭제 확인. 되돌릴 수 없는 동작이라 "네" 를 danger 로 둔다. */
 @Composable
 internal fun CourseDeleteConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.4f))
-                .noRippleClickable(onDismiss),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .padding(horizontal = 40.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(color.bgDefaultLevel0)
-                    .noRippleClickable {}
-                    .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            DsText(
-                text = "코스를 삭제할까요?",
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-            )
-            DsText(
-                text = "삭제한 코스는 되돌릴 수 없어요.",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                textAlign = TextAlign.Center,
-                maxLines = Int.MAX_VALUE,
-            )
-            Spacer(Modifier.height(12.dp))
-            SheetActionButton(
-                text = "삭제하기",
-                textColor = color.contentDanger,
-                background = Color.Transparent,
-                onClick = onConfirm,
-            )
-            SheetActionButton(
-                text = "취소",
-                textColor = color.contentDefaultLevel2,
-                background = Color.Transparent,
-                onClick = onDismiss,
-            )
-        }
-    }
+    DsConfirmDialog(
+        title = "코스를 삭제할까요?",
+        description = "삭제한 코스는 되돌릴 수 없어요.",
+        destructive = true,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+    )
 }
 
 /**
