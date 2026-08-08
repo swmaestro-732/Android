@@ -1,5 +1,8 @@
 package com.chillsam.courmy.main.domain.auth
 
+import com.chillsam.courmy.common.domain.telemetry.AppFlow
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.telemetry.track
 import com.chillsam.courmy.main.entity.auth.SocialLoginResult
 import com.chillsam.courmy.main.entity.auth.SocialProvider
 import javax.inject.Inject
@@ -9,9 +12,13 @@ class SocialLoginUseCase
     @Inject
     constructor(
         private val repository: AuthRepository,
+        private val telemetry: Telemetry,
     ) {
         suspend operator fun invoke(
             provider: SocialProvider,
             idToken: String,
-        ): SocialLoginResult = repository.socialLogin(provider, idToken)
+        ): SocialLoginResult =
+            telemetry.track(AppFlow.Login) {
+                repository.socialLogin(provider, idToken)
+            }
     }

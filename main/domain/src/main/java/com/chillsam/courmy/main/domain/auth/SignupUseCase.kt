@@ -1,7 +1,12 @@
 package com.chillsam.courmy.main.domain.auth
 
 import com.chillsam.courmy.common.domain.media.MediaRepository
+import com.chillsam.courmy.common.domain.telemetry.AppFailure
+import com.chillsam.courmy.common.domain.telemetry.AppFlow
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.telemetry.track
 import com.chillsam.courmy.main.domain.profile.ProfileRepository
+import com.chillsam.courmy.main.entity.area.AreaVO
 import com.chillsam.courmy.main.entity.auth.SignupProfile
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
@@ -22,22 +27,47 @@ class SignupUseCase
         private val repository: AuthRepository,
         private val mediaRepository: MediaRepository,
         private val profileRepository: ProfileRepository,
+        private val telemetry: Telemetry,
     ) {
         /**
          * @param localImageUri 사용자가 고른 로컬 이미지(content://). 없으면 null.
+         * @param interestThemes 가입 중 고른 관심 테마 이름.
+         * @param interestRegions 가입 중 고른 관심 지역. 코드는 [profile] 로 서버에 실려 가고,
+         *   이름까지 필요한 화면 표시용으로 기기에도 남긴다.
          * @return 이미지까지 정상 반영됐으면 true. 가입만 성공하고 이미지가 실패했으면 false.
          */
         suspend operator fun invoke(
             profile: SignupProfile,
             localImageUri: String? = null,
+            interestThemes: List<String> = emptyList(),
+            interestRegions: List<AreaVO> = emptyList(),
+        ): Boolean =
+            telemetry.track(AppFlow.Signup) {
+                signup(profile, localImageUri, interestThemes, interestRegions)
+            }
+
+        private suspend fun signup(
+            profile: SignupProfile,
+            localImageUri: String?,
+            interestThemes: List<String>,
+            interestRegions: List<AreaVO>,
         ): Boolean {
             repository.signup(profile)
+            // TODO-API-SPEC: 서버는 관심사를 받아 저장하지만 마이페이지 응답으로 돌려주지 않는다.
+            //  화면이 되읽을 수 있게 기기에도 남긴다. 응답에 실리면 이 두 줄을 지운다. [wiki-needed]
+            profileRepository.saveInterestThemes(interestThemes)
+            profileRepository.saveInterestRegions(interestRegions)
             if (localImageUri.isNullOrBlank()) return true
 
             return runCatching {
                 val imageUrl = mediaRepository.uploadImage(localImageUri)
                 profileRepository.updateProfile(profileImageUrl = imageUrl)
-            }.onFailure { if (it is CancellationException) throw it }
-                .isSuccess
+            }.onFailure {
+                if (it is CancellationException) throw it
+                // 가입은 성공했지만 프로필 사진이 빠진 상태. 여기서 삼키면 운영에서는 흔적이 남지 않는다.
+                telemetry.recordFailure(
+                    AppFailure(area = AppFlow.Signup.eventName, kind = "profile_image_upload", cause = it),
+                )
+            }.isSuccess
         }
     }

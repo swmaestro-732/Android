@@ -33,12 +33,15 @@ class HomeFeedViewModel
             HomeFeedUIState.empty,
         ) {
         private var loadJob: Job? = null
+        private var moreJob: Job? = null
 
         override fun onIntent(intent: HomeFeedIntent) {
             when (intent) {
                 HomeFeedIntent.Load,
                 HomeFeedIntent.Retry,
                 -> load()
+
+                HomeFeedIntent.LoadMore -> loadMore()
 
                 is HomeFeedIntent.ToggleSave -> toggleSave(intent.courseId)
 
@@ -61,7 +64,28 @@ class HomeFeedViewModel
                         courses = event.courses.toImmutableList(),
                         savedCourseIds = event.savedCourseIds.toImmutableSet(),
                         errorMessage = null,
+                        nextCursor = event.nextCursor,
+                        hasNext = event.hasNext,
+                        isLoadingMore = false,
                     )
+                }
+
+                HomeFeedReducerEvent.LoadMoreStarted -> {
+                    state.copy(isLoadingMore = true)
+                }
+
+                is HomeFeedReducerEvent.MoreLoaded -> {
+                    state.copy(
+                        // 서버가 같은 코스를 다시 줘도 화면에 두 번 그리지 않는다(LazyColumn key 중복 크래시 방지).
+                        courses = (state.courses + event.courses).distinctBy { it.id }.toImmutableList(),
+                        nextCursor = event.nextCursor,
+                        hasNext = event.hasNext,
+                        isLoadingMore = false,
+                    )
+                }
+
+                is HomeFeedReducerEvent.MoreFailed -> {
+                    state.copy(isLoadingMore = false, actionErrorMessage = event.message)
                 }
 
                 is HomeFeedReducerEvent.Failed -> {
@@ -123,16 +147,58 @@ class HomeFeedViewModel
         private fun load() {
             dispatch(HomeFeedReducerEvent.LoadStarted)
             loadJob?.cancel()
+            // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
+            moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
                     runCatching { getHomeFeedUseCase() }
-                        .onSuccess { courses ->
-                            dispatch(HomeFeedReducerEvent.Loaded(courses, loadSavedCourseIds()))
+                        .onSuccess { page ->
+                            dispatch(
+                                HomeFeedReducerEvent.Loaded(
+                                    courses = page.items,
+                                    savedCourseIds = loadSavedCourseIds(),
+                                    nextCursor = page.nextCursor,
+                                    hasNext = page.hasNext,
+                                ),
+                            )
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "코스 피드 로드 실패", e)
                             dispatch(HomeFeedReducerEvent.Failed("코스를 불러오지 못했습니다."))
+                        }
+                }
+        }
+
+        /**
+         * 다음 페이지를 이어 받는다.
+         *
+         * 첫 로드가 끝나기 전이거나(커서 없음) 마지막 페이지면 아무것도 하지 않는다.
+         * 스크롤 위치가 조금만 흔들려도 호출되므로 중복 요청을 여기서 막는다 — [loadJob] 을 취소하지 않는 이유는
+         * 첫 로드 중에는 애초에 진입하지 않기 때문이다.
+         */
+        private fun loadMore() {
+            val state = currentState
+            if (state.isLoading || state.isLoadingMore) return
+            // 마지막 페이지면 커서가 없다. 둘 중 하나만 봐도 되지만 서버가 어긋나게 줄 때를 대비해 함께 본다.
+            val cursor = state.nextCursor?.takeIf { state.hasNext } ?: return
+            dispatch(HomeFeedReducerEvent.LoadMoreStarted)
+            moreJob?.cancel()
+            moreJob =
+                viewModelScope.launch {
+                    runCatching { getHomeFeedUseCase(cursor = cursor) }
+                        .onSuccess { page ->
+                            dispatch(
+                                HomeFeedReducerEvent.MoreLoaded(
+                                    courses = page.items,
+                                    nextCursor = page.nextCursor,
+                                    hasNext = page.hasNext,
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "코스 피드 다음 페이지 로드 실패", e)
+                            dispatch(HomeFeedReducerEvent.MoreFailed("더 불러오지 못했어요."))
                         }
                 }
         }

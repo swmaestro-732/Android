@@ -29,6 +29,9 @@ sealed interface PlaceSearchIntent : MviIntent {
     data class SearchOnMap(
         val name: String,
     ) : PlaceSearchIntent
+
+    /** 결과 목록 끝에 닿았을 때 다음 페이지 요청. */
+    data object LoadMore : PlaceSearchIntent
 }
 
 /** [query] 는 화면 입력값, [results] 는 마지막으로 조회에 성공한 결과다. */
@@ -39,6 +42,10 @@ data class PlaceSearchUiState(
     val errorMessage: String? = null,
     /** 현재 결과가 외부 지도 검색에서 온 것인지. 화면이 출처를 알려 주는 데 쓴다. */
     val fromMapSearch: Boolean = false,
+    /** 다음 페이지 커서. 지도 검색 결과에는 페이징이 없어 항상 null 이다. */
+    val nextCursor: String? = null,
+    val hasNext: Boolean = false,
+    val isLoadingMore: Boolean = false,
 ) : UiState {
     companion object {
         val empty = PlaceSearchUiState()
@@ -55,7 +62,20 @@ sealed interface PlaceSearchReducerEvent : ReducerEvent {
     data class Loaded(
         val results: List<CoursePlaceVO>,
         val fromMapSearch: Boolean = false,
+        val nextCursor: String? = null,
+        val hasNext: Boolean = false,
     ) : PlaceSearchReducerEvent
+
+    data object LoadMoreStarted : PlaceSearchReducerEvent
+
+    /** 다음 페이지 도착. 기존 결과 뒤에 이어 붙인다. */
+    data class MoreLoaded(
+        val results: List<CoursePlaceVO>,
+        val nextCursor: String?,
+        val hasNext: Boolean,
+    ) : PlaceSearchReducerEvent
+
+    data object MoreFailed : PlaceSearchReducerEvent
 
     data class Failed(
         val message: String,
@@ -79,11 +99,13 @@ class PlaceSearchViewModel
             PlaceSearchUiState.empty,
         ) {
         private var searchJob: Job? = null
+        private var moreJob: Job? = null
 
         override fun onIntent(intent: PlaceSearchIntent) {
             when (intent) {
                 is PlaceSearchIntent.QueryChanged -> search(intent.query)
                 is PlaceSearchIntent.SearchOnMap -> searchOnMap(intent.name)
+                PlaceSearchIntent.LoadMore -> loadMore()
             }
         }
 
@@ -99,6 +121,9 @@ class PlaceSearchViewModel
                         results = emptyList(),
                         errorMessage = null,
                         fromMapSearch = false,
+                        nextCursor = null,
+                        hasNext = false,
+                        isLoadingMore = false,
                     )
                 }
 
@@ -112,7 +137,29 @@ class PlaceSearchViewModel
                         results = event.results,
                         errorMessage = null,
                         fromMapSearch = event.fromMapSearch,
+                        nextCursor = event.nextCursor,
+                        hasNext = event.hasNext,
+                        isLoadingMore = false,
                     )
+                }
+
+                PlaceSearchReducerEvent.LoadMoreStarted -> {
+                    state.copy(isLoadingMore = true)
+                }
+
+                is PlaceSearchReducerEvent.MoreLoaded -> {
+                    state.copy(
+                        // 서버가 같은 장소를 다시 줘도 두 번 그리지 않는다(목록 key 중복 방지).
+                        results = (state.results + event.results).distinctBy { it.id },
+                        nextCursor = event.nextCursor,
+                        hasNext = event.hasNext,
+                        isLoadingMore = false,
+                    )
+                }
+
+                // 이어 받기 실패는 이미 보고 있는 결과를 건드리지 않는다. 끝까지 스크롤하면 다시 시도된다.
+                PlaceSearchReducerEvent.MoreFailed -> {
+                    state.copy(isLoadingMore = false)
                 }
 
                 is PlaceSearchReducerEvent.Failed -> {
@@ -157,6 +204,8 @@ class PlaceSearchViewModel
         private fun search(query: String) {
             dispatch(PlaceSearchReducerEvent.QueryUpdated(query))
             searchJob?.cancel()
+            // 검색어가 바뀌었으므로 이전 키워드의 이어받기는 버린다(섞이면 엉뚱한 결과가 붙는다).
+            moreJob?.cancel()
             if (query.isBlank()) return
 
             searchJob =
@@ -164,8 +213,15 @@ class PlaceSearchViewModel
                     delay(DEBOUNCE_MS)
                     dispatch(PlaceSearchReducerEvent.Started)
                     runCatching { searchPlacesUseCase(query) }
-                        .onSuccess { dispatch(PlaceSearchReducerEvent.Loaded(it)) }
-                        .onFailure { e ->
+                        .onSuccess { page ->
+                            dispatch(
+                                PlaceSearchReducerEvent.Loaded(
+                                    results = page.items,
+                                    nextCursor = page.nextCursor,
+                                    hasNext = page.hasNext,
+                                ),
+                            )
+                        }.onFailure { e ->
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "장소 검색 실패: query=$query", e)
@@ -175,6 +231,38 @@ class PlaceSearchViewModel
                                     fromMapSearch = false,
                                 ),
                             )
+                        }
+                }
+        }
+
+        /**
+         * 다음 페이지를 이어 받는다.
+         *
+         * 지도 검색 결과([PlaceSearchUiState.fromMapSearch])는 페이징이 없어 커서가 null 이라 자연히 걸러진다.
+         * 검색 job 과 분리해, 이어 받는 중에 새 검색어가 들어와도 서로 취소하지 않게 한다.
+         */
+        private fun loadMore() {
+            val state = currentState
+            val query = state.query.trim()
+            if (state.isSearching || state.isLoadingMore || query.isBlank()) return
+            val cursor = state.nextCursor?.takeIf { state.hasNext } ?: return
+            dispatch(PlaceSearchReducerEvent.LoadMoreStarted)
+            moreJob?.cancel()
+            moreJob =
+                viewModelScope.launch {
+                    runCatching { searchPlacesUseCase(query, cursor) }
+                        .onSuccess { page ->
+                            dispatch(
+                                PlaceSearchReducerEvent.MoreLoaded(
+                                    results = page.items,
+                                    nextCursor = page.nextCursor,
+                                    hasNext = page.hasNext,
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "장소 검색 다음 페이지 로드 실패: query=$query", e)
+                            dispatch(PlaceSearchReducerEvent.MoreFailed)
                         }
                 }
         }

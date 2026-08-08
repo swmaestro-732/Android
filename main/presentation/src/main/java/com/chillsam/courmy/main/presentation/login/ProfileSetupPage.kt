@@ -42,10 +42,13 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
+import com.chillsam.courmy.common.presentation.component.StepProgressBar
+import com.chillsam.courmy.common.presentation.component.alignTextFieldBorder
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.media.rememberAccentedImagePicker
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.login.SignupThemePage
-import com.chillsam.courmy.main.presentation.component.SignupProgressBar
 
 /** 프로필·아이디 설정 화면(FS-05). 아바타·닉네임·아이디를 정하고 다음(완료)으로 이어진다. */
 @Composable
@@ -65,14 +68,22 @@ fun ProfileSetupPage(
     val canContinue = nickname.isNotBlank() && idResult?.isAvailable == true
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1).statusBarsPadding()) {
-        SignupProgressBar(step = 1, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp))
+        StepProgressBar(
+            step = 1,
+            modifier =
+                Modifier.padding(
+                    start = ScreenHorizontalPadding,
+                    end = ScreenHorizontalPadding,
+                    top = 12.dp,
+                ),
+        )
         Column(
             modifier =
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = ScreenHorizontalPadding),
         ) {
             DsText(
                 text = "프로필을\n만들어 주세요",
@@ -81,10 +92,10 @@ fun ProfileSetupPage(
                 maxLines = 2,
                 modifier = Modifier.padding(top = 24.dp, bottom = 24.dp),
             )
+            // 제목·라벨·입력창과 같은 왼쪽 선에 맞춘다(가운데 정렬하지 않는다).
             AvatarEditor(
                 imageUri = profileImageUri,
                 onImagePicked = { profileImageUri = it },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
             Spacer(Modifier.height(28.dp))
 
@@ -93,7 +104,7 @@ fun ProfileSetupPage(
                 value = nickname,
                 onValueChange = { nickname = it },
                 placeholder = "닉네임을 입력해 주세요",
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).alignTextFieldBorder(),
             )
 
             Spacer(Modifier.height(20.dp))
@@ -121,7 +132,7 @@ fun ProfileSetupPage(
                             color = color.contentDefaultLevel2,
                         )
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).alignTextFieldBorder(),
                 )
                 CheckButton(
                     enabled = handle.isNotBlank() && !checkState.isChecking,
@@ -133,24 +144,21 @@ fun ProfileSetupPage(
                     text = idResult.message(),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = if (idResult.isAvailable) color.contentSuccess else color.contentDanger,
-                    modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+                    modifier = Modifier.padding(top = 6.dp),
                 )
             } else {
                 // 확인 전엔 아이디 조건을 줄마다 캡션으로 안내.
                 Column(
-                    modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+                    modifier = Modifier.padding(top = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    DsText(
-                        text = "영문 소문자, 숫자, 밑줄(_)만 사용 가능",
-                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                        color = color.contentDefaultLevel3,
-                    )
-                    DsText(
-                        text = "3~12자 이내로 입력 가능",
-                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                        color = color.contentDefaultLevel3,
-                    )
+                    HANDLE_RULES.forEach { rule ->
+                        DsText(
+                            text = rule,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel3,
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(20.dp))
@@ -170,7 +178,7 @@ fun ProfileSetupPage(
                     Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             )
         }
     }
@@ -194,7 +202,7 @@ private fun AvatarEditor(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val pickImage =
-        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        rememberAccentedImagePicker { uri ->
             if (uri != null) onImagePicked(uri)
         }
     Box(modifier = modifier.size(100.dp)) {

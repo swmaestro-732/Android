@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import javax.inject.Inject
 
@@ -12,8 +13,11 @@ class SearchPlacesUseCase
     constructor(
         private val repository: PlaceRepository,
     ) {
-        suspend operator fun invoke(query: String): List<CoursePlaceVO> {
+        suspend operator fun invoke(
+            query: String,
+            cursor: String? = null,
+        ): CursorPageVO<CoursePlaceVO> {
             val keyword = query.trim()
-            return if (keyword.isBlank()) emptyList() else repository.searchPlaces(keyword)
+            return if (keyword.isBlank()) CursorPageVO() else repository.searchPlaces(keyword, cursor)
         }
     }

@@ -17,6 +17,8 @@ interface PlaceApiService {
     suspend fun searchPlaces(
         @Query("q") query: String,
         @Query("size") size: Int = DEFAULT_SIZE,
+        /** 이전 응답의 `nextCursor`. null 이면 Retrofit 이 파라미터를 뺀다(첫 페이지). */
+        @Query("cursor") cursor: String? = null,
     ): Response<PlaceSearchEnvelope>
 
     /**
