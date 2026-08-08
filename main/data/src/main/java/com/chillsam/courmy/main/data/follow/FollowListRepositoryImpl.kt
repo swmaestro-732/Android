@@ -31,5 +31,5 @@ class FollowListRepositoryImpl(
         }
 
     private fun FollowListEnvelope.requireData(): CursorPageVO<FollowUserVO> =
-        requireNotNull(data) { message ?: "팔로우 목록 응답에 data 가 없습니다." }.toPageVO()
+        requireNotNull(data) { message ?: "팔로우 목록 응답에 data 가 없습니다." }.toPageVO(tokenStore.userId)
 }

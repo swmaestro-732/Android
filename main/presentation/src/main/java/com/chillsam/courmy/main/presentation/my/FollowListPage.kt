@@ -51,6 +51,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.user.UserProfilePage
 import com.chillsam.courmy.main.entity.my.FollowUserVO
+import com.chillsam.courmy.main.domain.my.MyPage as MyRoute
 
 /**
  * 팔로우 목록 화면(FS-15 O). 팔로워/팔로잉 탭 전환 + 사용자 목록(제거 ✕).
@@ -111,7 +112,12 @@ fun FollowListPage(
                     FollowUserRow(
                         user = user,
                         onClick = {
-                            navigationHelper.navigateByRoute(UserProfilePage.route(user.handle))
+                            // 나를 누르면 타유저 프로필이 아니라 마이 화면으로 간다.
+                            if (user.isMe) {
+                                navigationHelper.navigateTo(MyRoute)
+                            } else {
+                                navigationHelper.navigateByRoute(UserProfilePage.route(user.handle))
+                            }
                         },
                         onRemove = { pendingRemoval = user },
                     )

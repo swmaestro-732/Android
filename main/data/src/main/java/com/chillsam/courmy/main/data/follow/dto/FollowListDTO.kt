@@ -35,15 +35,16 @@ data class FollowUserDTO(
     val isFollower: Boolean = false,
 )
 
-fun FollowListDTO.toPageVO(): CursorPageVO<FollowUserVO> =
+/** [myUserId] 는 세션에서 꺼낸 내 id 로, 자기 자신 판정([FollowUserVO.isMe])에만 쓴다. */
+fun FollowListDTO.toPageVO(myUserId: Long?): CursorPageVO<FollowUserVO> =
     CursorPageVO(
-        items = toVOList(),
+        items = toVOList(myUserId),
         nextCursor = nextCursor?.takeIf { it.isNotBlank() },
         // 커서가 없으면 더 받을 수 없으므로, 서버가 hasNext=true 로 줘도 끝으로 본다.
         hasNext = hasNext && !nextCursor.isNullOrBlank(),
     )
 
-internal fun FollowListDTO.toVOList(): List<FollowUserVO> =
+internal fun FollowListDTO.toVOList(myUserId: Long? = null): List<FollowUserVO> =
     users
         .orEmpty()
         // id 가 없으면 팔로우/언팔로우를 걸 수 없어 목록에 쓸 수 없다.
@@ -55,5 +56,6 @@ internal fun FollowListDTO.toVOList(): List<FollowUserVO> =
                 handle = user.handle.orEmpty(),
                 avatarUrl = user.profileImageUrl.orEmpty(),
                 isFollowing = user.isFollowing,
+                isMe = myUserId != null && user.id == myUserId,
             )
         }
