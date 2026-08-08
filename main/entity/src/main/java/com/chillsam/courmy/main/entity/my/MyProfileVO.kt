@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.entity.my
 
+import com.chillsam.courmy.main.entity.area.AreaVO
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import kotlinx.serialization.Serializable
 
@@ -11,6 +12,11 @@ import kotlinx.serialization.Serializable
  * **기기에 저장된 값**(BioPreferencesDataStore)을 ProfileRepositoryImpl 에서 합쳐 채운다.
  * 그래서 소개는 이 기기에서만 보이고 다른 사용자에게는 보이지 않는다.
  * 서버에 bio 가 추가되면 그 병합과 로컬 저장을 지우고 응답 값을 그대로 매핑한다. [wiki-needed]
+ *
+ * TODO-API-SPEC: [interestThemes]·[interestRegions] 도 같은 사정이다. 회원가입 요청
+ * (`SignupRequest.areaCodes`·`likeTagIds`)으로 **보낼 수는 있지만** 마이페이지 응답에는 내려오지 않아,
+ * 조회는 기기 저장값(InterestPreferencesDataStore)으로 대신한다.
+ * 응답에 관심 지역·테마가 실리면 병합과 로컬 저장을 함께 지운다. [wiki-needed]
  */
 @Serializable
 data class MyProfileVO(
@@ -23,4 +29,6 @@ data class MyProfileVO(
     val followerCount: String,
     val followingCount: String,
     val myCourses: List<ProfileCourseVO>,
+    val interestThemes: List<String> = emptyList(),
+    val interestRegions: List<AreaVO> = emptyList(),
 )
