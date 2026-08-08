@@ -13,7 +13,7 @@ class CourseDetailDtoMappingTest {
         val vo = fullData().toVO(myUserId = null)
 
         assertEquals("비 오는 날 성수 감성 카페 코스", vo.title)
-        assertEquals("성수 · 데이트", vo.category)
+        assertEquals(listOf("성수", "데이트"), vo.themes)
         assertEquals("지호님", vo.authorName)
         assertEquals("@jiho_routes", vo.authorHandle)
         assertEquals("4곳", vo.placeCountText)
@@ -195,7 +195,7 @@ class CourseDetailDtoMappingTest {
         val vo = CourseScreenData(course = CourseScreenDTO(), reviewSummary = null).toVO(myUserId = null)
 
         assertEquals("", vo.title)
-        assertEquals("", vo.category)
+        assertEquals(emptyList<String>(), vo.themes)
         assertEquals("0곳", vo.placeCountText)
         assertEquals("도보 0분", vo.walkText)
         assertEquals("0 따라감", vo.followerText)

@@ -28,6 +28,16 @@ sealed interface CourseDetailReducerEvent : ReducerEvent {
         val message: String,
     ) : CourseDetailReducerEvent
 
+    data object FollowStarted : CourseDetailReducerEvent
+
+    data class FollowFinished(
+        val following: Boolean,
+    ) : CourseDetailReducerEvent
+
+    data class FollowFailed(
+        val message: String,
+    ) : CourseDetailReducerEvent
+
     data object ErrorConsumed : CourseDetailReducerEvent
 
     data object DeleteStarted : CourseDetailReducerEvent

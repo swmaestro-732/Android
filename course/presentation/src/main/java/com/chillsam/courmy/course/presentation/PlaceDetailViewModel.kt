@@ -42,30 +42,24 @@ class PlaceDetailViewModel
 
         private var loadJob: Job? = null
 
-        fun open(
-            placeId: Long,
-            walkText: String,
-        ) {
+        fun open(placeId: Long) {
             loadJob?.cancel()
             // 장소 id 가 없으면(응답에 placeId 가 빠진 경우) 서버에 물어볼 것이 없다.
             if (placeId <= 0L) {
-                _uiState.value = PlaceDetailUiState(errorMessage = "장소 정보를 찾을 수 없습니다.")
+                _uiState.value = PlaceDetailUiState(errorMessage = "주소를 불러오지 못했어요.")
                 return
             }
-            // TODO-API-SPEC: 백엔드 PlaceDetailScreenController 가 아직 목이라 placeId=101 만 200 이고
-            // 나머지는 404 다. 실제 코스의 장소를 눌러도 시트를 볼 수 있도록 임시로 목 id 로 고정한다.
-            // 실제 조회로 교체되면 이 상수와 아래 치환을 지우고 placeId 를 그대로 넘긴다. [wiki-needed]
-            val requestedId = MOCK_PLACE_ID
             _uiState.value = PlaceDetailUiState(isLoading = true)
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getPlaceDetailUseCase(requestedId, walkText) }
+                    runCatching { getPlaceDetailUseCase(placeId) }
                         .onSuccess { place ->
                             _uiState.value = PlaceDetailUiState(place = place)
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
-                            Log.w(TAG, "장소 상세 로드 실패: placeId=$requestedId(요청) / $placeId(실제)", e)
-                            _uiState.value = PlaceDetailUiState(errorMessage = "장소를 불러오지 못했습니다.")
+                            Log.w(TAG, "장소 상세 로드 실패: placeId=$placeId", e)
+                            // 시트는 코스 데이터로 이미 그려져 있고 이 응답에서 쓰는 건 주소뿐이다.
+                            _uiState.value = PlaceDetailUiState(errorMessage = "주소를 불러오지 못했어요.")
                         }
                 }
         }
@@ -77,8 +71,5 @@ class PlaceDetailViewModel
 
         private companion object {
             const val TAG = "PlaceDetail"
-
-            /** 백엔드 목이 유일하게 200 을 주는 장소 id. 실제 조회 구현 시 제거한다. */
-            const val MOCK_PLACE_ID = 101L
         }
     }

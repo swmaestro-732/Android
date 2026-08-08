@@ -13,12 +13,16 @@ interface MediaRepository {
 }
 
 /**
- * 업로드 용도. 서버 `UploadPurpose` enum 과 문자열이 일치해야 한다.
- *
- * TODO-API-SPEC: 서버에는 아직 PROFILE 하나뿐이라 코스 썸네일·장소 사진도 PROFILE 로 올린다
- * (S3 키가 `profile/` 프리픽스 아래 쌓인다). 서버에 COURSE 가 추가되면 여기에 케이스를 넣고
- * 코스 업로드의 용도만 바꾸면 된다. [wiki-needed]
+ * 업로드 용도. 서버 `UploadPurpose` enum 과 **이름이 그대로** 요청에 실리므로 문자열이 일치해야 한다.
+ * 서버는 이 값으로 S3 키 프리픽스(`profile/`·`course/`·`place/`)를 정한다.
  */
 enum class UploadPurpose {
+    /** 프로필 사진. */
     PROFILE,
+
+    /** 코스 대표 이미지(썸네일). */
+    COURSE,
+
+    /** 코스에 담긴 장소별 사진. */
+    PLACE,
 }

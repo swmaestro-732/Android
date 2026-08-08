@@ -4,6 +4,11 @@ import com.chillsam.courmy.course.data.courseCreate.CourseCreateDataSource
 import com.chillsam.courmy.course.data.courseCreate.dto.toCreateRequest
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
 import com.chillsam.courmy.course.data.courseDetail.dto.toVO
+import com.chillsam.courmy.course.data.draft.DraftLocalStore
+import com.chillsam.courmy.course.data.draft.DraftManager
+import com.chillsam.courmy.course.data.follow.FollowDataSource
+import com.chillsam.courmy.course.data.recommendedTag.RecommendedTagDataSource
+import com.chillsam.courmy.course.data.recommendedTag.dto.toTagList
 import com.chillsam.courmy.course.domain.CourseRepository
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
@@ -11,10 +16,16 @@ import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CourseVisibility
 import com.chillsam.courmy.course.entity.DraftSummaryVO
 import com.chillsam.courmy.course.entity.SavedCourseVO
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * 코스 작성·보관 Repository 구현.
@@ -28,6 +39,9 @@ import kotlinx.coroutines.flow.update
 class CourseRepositoryImpl(
     private val courseDetailDataSource: CourseDetailDataSource,
     private val courseCreateDataSource: CourseCreateDataSource,
+    private val recommendedTagDataSource: RecommendedTagDataSource,
+    private val draftLocalStore: DraftLocalStore,
+    private val followDataSource: FollowDataSource,
     /**
      * 현재 사용자 id 제공자("내 코스" 판정용).
      * TokenStore 를 직접 받으면 Android 암호화 저장에 묶여 단위 테스트에서 생성할 수 없어 함수로 받는다.
@@ -37,50 +51,22 @@ class CourseRepositoryImpl(
     private val _savedCourses = MutableStateFlow<List<SavedCourseVO>>(emptyList())
     override val savedCourses: StateFlow<List<SavedCourseVO>> = _savedCourses.asStateFlow()
 
-    private val _drafts = MutableStateFlow<List<DraftSummaryVO>>(emptyList())
-    override val drafts: StateFlow<List<DraftSummaryVO>> = _drafts.asStateFlow()
+    private val draftManager = DraftManager(draftLocalStore)
+
+    override val drafts: StateFlow<List<DraftSummaryVO>> = draftManager.drafts
 
     private val _lastCompleted = MutableStateFlow<CourseCompleteVO?>(null)
     override val lastCompleted: StateFlow<CourseCompleteVO?> = _lastCompleted.asStateFlow()
 
-    /** id → 저장 시각·전체 초안. 편집 세션 id 를 키로 upsert 하므로 제목을 바꿔도 중복이 생기지 않는다. */
-    private val draftsById = LinkedHashMap<String, StoredDraft>()
+    override suspend fun loadDrafts() = draftManager.load()
 
-    /** 다음 [getCourseDraft] 가 이어서 편집할 초안 id. 한 번 소비하면 비운다. */
-    private var pendingEditId: String? = null
+    override suspend fun getCourseDraft(): CourseDraftVO = draftManager.beginSession()
 
-    /** 현재 편집 세션의 초안 id. 저장 시 이 id 로 upsert 한다(제목 무관). */
-    private var editingId: String? = null
+    override fun beginEditDraft(draftId: String) = draftManager.beginEdit(draftId)
 
-    /** 새 초안 세션 id 발급용 카운터(랜덤/UUID 없이 안정적으로). */
-    private var draftSeq = 0
+    override fun saveDraft(draft: CourseDraftVO) = draftManager.save(draft)
 
-    override suspend fun getCourseDraft(): CourseDraftVO {
-        val id = pendingEditId
-        pendingEditId = null
-        // 이어서 편집이면 그 초안 id 로, 새 코스면 새 세션 id 로 편집 세션을 연다.
-        editingId = id ?: newDraftId()
-        return id?.let { draftsById[it]?.content } ?: EMPTY_DRAFT
-    }
-
-    override fun beginEditDraft(draftId: String) {
-        pendingEditId = draftId
-    }
-
-    override fun saveDraft(draft: CourseDraftVO) {
-        // 현재 편집 세션 id 로 upsert. 같은 세션에서 제목을 바꿔 다시 저장해도 같은 초안을 덮어쓴다.
-        // 세션 id 는 새 코스/이어서 편집 진입 때 getCourseDraft 가 새로 발급하므로, 다른 코스와 섞이지 않는다.
-        val id = editingId ?: newDraftId()
-        editingId = id
-        val title = draft.name.ifBlank { DEFAULT_DRAFT_TITLE }
-        draftsById[id] = StoredDraft(id, System.currentTimeMillis(), title, draft)
-        _drafts.value = draftsById.values.map { DraftSummaryVO(it.id, it.title, it.savedAtMillis) }
-    }
-
-    private fun newDraftId(): String {
-        draftSeq += 1
-        return "draft-$draftSeq"
-    }
+    override fun deleteDraft(draftId: String) = draftManager.delete(draftId)
 
     override fun completeCourse(course: CourseCompleteVO?) {
         _lastCompleted.value = course
@@ -89,33 +75,27 @@ class CourseRepositoryImpl(
         }
     }
 
+    override suspend fun getRecommendedTags(
+        placeIds: List<Long>,
+        limit: Int,
+    ): List<String> {
+        val envelope = recommendedTagDataSource.getRecommendedTags(placeIds, limit)
+        return envelope.data?.toTagList().orEmpty()
+    }
+
+    override suspend fun setFollowAuthor(
+        userId: Long,
+        follow: Boolean,
+    ): Boolean {
+        val envelope = followDataSource.setFollow(userId, follow)
+        // 응답에 data 가 없으면 요청한 상태가 반영된 것으로 본다(2xx 를 받았으므로).
+        return envelope.data?.isFollowing ?: follow
+    }
+
     override suspend fun getCourseDetail(courseId: Long): CourseDetailVO {
         val envelope = courseDetailDataSource.getCourseDetail(courseId)
         val data = requireNotNull(envelope.data) { "코스 상세 응답에 data 가 없습니다: courseId=$courseId" }
         return data.toVO(myUserId = myUserId())
-    }
-
-    /** 임시저장 1건: id + 저장 시각 + 표시 제목 + 전체 초안 내용. */
-    private data class StoredDraft(
-        val id: String,
-        val savedAtMillis: Long,
-        val title: String,
-        val content: CourseDraftVO,
-    )
-
-    private companion object {
-        /** 이름 없이 저장한 초안의 목록 표시용 기본 제목. */
-        const val DEFAULT_DRAFT_TITLE = "제목 없는 코스"
-
-        val EMPTY_DRAFT =
-            CourseDraftVO(
-                name = "",
-                description = "",
-                tags = emptyList(),
-                suggestedTags = listOf("감성카페", "통창뷰", "조용한", "데이트"),
-                places = emptyList(),
-                visibility = CourseVisibility.PUBLIC,
-            )
     }
 
     override suspend fun createCourse(

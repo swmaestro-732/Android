@@ -16,6 +16,9 @@ sealed interface CourseDetailIntent : MviIntent {
     /** 하단 "코스 저장하기" 탭 — 현재 상태의 반대로 요청한다. */
     data object ToggleSave : CourseDetailIntent
 
+    /** 작성자 팔로우/언팔로우. */
+    data object ToggleFollowAuthor : CourseDetailIntent
+
     /** 내 코스 삭제(확인 다이얼로그를 거친 뒤). */
     data object Delete : CourseDetailIntent
 

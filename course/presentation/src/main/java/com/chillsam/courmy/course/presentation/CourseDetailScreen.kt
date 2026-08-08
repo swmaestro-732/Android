@@ -1,20 +1,19 @@
 package com.chillsam.courmy.course.presentation
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Typeface
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,13 +43,12 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -64,30 +62,21 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
-import com.chillsam.courmy.course.presentation.component.PlaceDetailSheetActions
+import com.chillsam.courmy.course.presentation.component.PlaceSheetCourse
 import com.chillsam.courmy.course.presentation.component.dashedBorder
-import com.naver.maps.geometry.LatLng
-import com.naver.maps.geometry.LatLngBounds
-import com.naver.maps.map.CameraPosition
-import com.naver.maps.map.CameraUpdate
-import com.naver.maps.map.compose.CameraPositionState
-import com.naver.maps.map.compose.ExperimentalNaverMapApi
-import com.naver.maps.map.compose.MapUiSettings
-import com.naver.maps.map.compose.Marker
-import com.naver.maps.map.compose.NaverMap
-import com.naver.maps.map.compose.NaverMapComposable
-import com.naver.maps.map.compose.PathOverlay
-import com.naver.maps.map.compose.rememberCameraPositionState
-import com.naver.maps.map.compose.rememberUpdatedMarkerState
-import com.naver.maps.map.overlay.OverlayImage
 
 /**
- * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(제목·작성자) → 요약 스탯 → 소개 →
- * "코스 속 장소" 목록(접기/펼치기) → "코스 경로" 지도 → 하단 "코스 저장하기" 액션바로 구성한다.
+ * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(커버·카테고리·제목) → 요약 스탯 → 소개 →
+ * "코스 속 장소" 목록(접기/펼치기) → 작성자 카드 → 하단 "코스 저장하기" 액션바로 구성한다.
  * 표시 전용 화면으로 [detail] 데이터를 그대로 렌더링한다.
+ *
+ * 코스 경로 지도는 걷어냈다. 장소별 위치는 장소를 눌러 뜨는 [PlaceDetailSheet] 의 지도에서 본다.
+ *
+ * 작성자 정보의 위치는 [LayoutVariants.AUTHOR_AT_BOTTOM] 로 갈린다.
  */
 @Composable
 fun CourseDetailScreen(
@@ -103,8 +92,6 @@ fun CourseDetailScreen(
     var selectedPlace by remember { mutableStateOf<CourseDetailPlaceVO?>(null) }
     val placeDetailViewModel: PlaceDetailViewModel = hiltViewModel()
     val placeDetailState by placeDetailViewModel.uiState.collectAsStateWithLifecycle()
-    // 시트 내부 액션(저장·길찾기·코스 추가 등)은 아직 미연동이라 안내만 한다. [wiki-needed]
-    val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
     Column(
         modifier =
             modifier
@@ -118,14 +105,16 @@ fun CourseDetailScreen(
                     .verticalScroll(rememberScrollState()),
         ) {
             DetailHero(detail = detail, onBack = actions.onBack)
-            // 작성자 라인은 화면 가로 전체를 채우는 흰색 밴드라 좌우 패딩 밖에 둔다.
-            AuthorRow(
-                detail = detail,
-                onAuthorClick = actions.onAuthorClick,
-                onFollow = actions.onFollowAuthor,
-            )
+            if (!LayoutVariants.AUTHOR_AT_BOTTOM) {
+                // 작성자 밴드는 화면 가로 전체를 채우는 흰색 밴드라 좌우 패딩 밖에 둔다.
+                AuthorBand(
+                    detail = detail,
+                    onAuthorClick = actions.onAuthorClick,
+                    onToggleFollow = actions.onFollowAuthor,
+                )
+            }
             Column(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 StatsRow(detail = detail)
@@ -135,19 +124,30 @@ fun CourseDetailScreen(
                     color = color.contentDefaultLevel1,
                     maxLines = Int.MAX_VALUE,
                 )
+                // 코스 소개(제목·스탯·설명)와 장소 목록을 가르는 선.
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(color.borderDefaultLevel0),
+                )
                 PlacesSection(
                     places = detail.places,
                     authorName = detail.authorName,
                     onPlaceClick = { place ->
                         selectedPlace = place
-                        // 도보 안내는 장소가 아니라 이 코스의 다음 장소까지 값이라 여기서 넘긴다.
-                        placeDetailViewModel.open(
-                            placeId = place.placeId,
-                            walkText = place.walkToNextText.orEmpty(),
-                        )
+                        placeDetailViewModel.open(placeId = place.placeId)
                     },
                 )
-                CourseRouteSection(places = detail.places)
+                if (LayoutVariants.AUTHOR_AT_BOTTOM) {
+                    // 작성자 소개는 코스를 다 훑어본 뒤 보는 정보라 맨 아래 카드로 둔다.
+                    AuthorCard(
+                        detail = detail,
+                        onAuthorClick = actions.onAuthorClick,
+                        onToggleFollow = actions.onFollowAuthor,
+                    )
+                }
                 Spacer(Modifier.height(14.dp))
             }
         }
@@ -159,30 +159,36 @@ fun CourseDetailScreen(
             actions = actions,
         )
     }
-    if (selectedPlace != null) {
+    val currentPlace = selectedPlace
+    if (currentPlace != null) {
         val dismiss = {
             selectedPlace = null
             placeDetailViewModel.clear()
         }
-        // 로드가 끝나기 전에는 시트를 띄우지 않는다(빈 값으로 잠깐 그려졌다 바뀌는 깜빡임 방지).
-        placeDetailState.place?.let { place ->
-            PlaceDetailSheet(
-                place = place,
-                onDismiss = dismiss,
-                actions =
-                    PlaceDetailSheetActions(
-                        onSave = notReady,
-                        onShare = notReady,
-                        onDirections = notReady,
-                        onAddToCourse = notReady,
-                    ),
-            )
-        }
-        // 실패하면 토스트로 알리고 시트를 닫는다(빈 시트를 남겨 두지 않는다).
+        // 시트 내용은 코스 데이터로 즉시 그리고, API 로 받는 주소만 도착하는 대로 채운다.
+        // 응답을 기다렸다 띄우면 다른 장소로 옮길 때마다 시트가 닫혔다 다시 열린다.
+        // 어느 장소로 옮길지(이동 바·핀 탭·장소 이동 줄)는 시트가 정하고, 여기서는 받아서 다시 조회한다.
+        PlaceDetailSheet(
+            coursePlace = currentPlace,
+            course =
+                PlaceSheetCourse(
+                    title = detail.title,
+                    category = detail.themes.joinToString(" · "),
+                    summary = "${detail.placeCountText} · ${detail.walkText}",
+                    authorName = detail.authorName,
+                    places = detail.places,
+                ),
+            address = placeDetailState.place?.address.orEmpty(),
+            onDismiss = dismiss,
+            onSelectPlace = { target ->
+                selectedPlace = target
+                placeDetailViewModel.open(placeId = target.placeId)
+            },
+        )
+        // 주소를 못 받아도 나머지는 멀쩡하므로 알리기만 하고 시트는 닫지 않는다.
         LaunchedEffect(placeDetailState.errorMessage) {
             placeDetailState.errorMessage?.let { message ->
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                dismiss()
             }
         }
     }
@@ -246,18 +252,22 @@ private fun DetailHero(
                     .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(9999.dp))
-                        .background(color.bgDefaultLevel1)
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-            ) {
-                DsText(
-                    text = detail.category,
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel1,
-                )
+            // 카테고리 칩은 제목 위에 둔다. 서버 themes 를 한 줄로 이어 붙인 값이다.
+            val category = detail.themes.joinToString(" · ")
+            if (category.isNotBlank()) {
+                Box(
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(9999.dp))
+                            .background(color.bgDefaultLevel1)
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                ) {
+                    DsText(
+                        text = category,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel1,
+                    )
+                }
             }
             DsText(
                 text = detail.title,
@@ -304,11 +314,13 @@ private fun CourseImage(
     url: String,
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(14.dp),
+    contentScale: ContentScale = ContentScale.Crop,
+    background: Color = DesignSystemThemeImpl.designSystemColor.imagePlaceholder,
 ) {
     val placeholder =
         modifier
             .clip(shape)
-            .background(DesignSystemThemeImpl.designSystemColor.imagePlaceholder)
+            .background(background)
     if (url.isBlank()) {
         Box(modifier = placeholder)
     } else {
@@ -316,19 +328,53 @@ private fun CourseImage(
             model = url,
             contentDescription = null,
             modifier = placeholder,
-            contentScale = ContentScale.Crop,
+            contentScale = contentScale,
             // 어떤 이미지 URL 이 왜 안 떴는지(404/타임아웃 등)를 로그로 남긴다.
             onError = { Log.w("CourseDetail", "이미지 로드 실패: $url", it.result.throwable) },
         )
     }
 }
 
-/** 작성자 행: 아바타 · 이름/핸들 · 팔로우 버튼. */
+/**
+ * 작성자 카드(현재 배치): 코스 경로 지도 아래에 테두리 있는 카드로 놓인다.
+ * 예전 배치는 [AuthorBand] 이며 [LayoutVariants.AUTHOR_AT_BOTTOM] 로 갈린다.
+ */
 @Composable
-private fun AuthorRow(
+private fun AuthorCard(
     detail: CourseDetailVO,
     onAuthorClick: () -> Unit,
-    onFollow: () -> Unit,
+    onToggleFollow: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .border(1.dp, color.borderDefaultLevel0, shape)
+                .background(color.bgDefaultLevel1)
+                .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        AuthorContent(
+            detail = detail,
+            onAuthorClick = onAuthorClick,
+            onToggleFollow = onToggleFollow,
+        )
+    }
+}
+
+/**
+ * 작성자 밴드(예전 배치): 히어로 바로 밑에서 화면 가로를 꽉 채우는 흰색 밴드.
+ * [LayoutVariants.AUTHOR_AT_BOTTOM] 를 false 로 되돌리면 이 배치가 쓰인다.
+ */
+@Composable
+private fun AuthorBand(
+    detail: CourseDetailVO,
+    onAuthorClick: () -> Unit,
+    onToggleFollow: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
@@ -336,85 +382,149 @@ private fun AuthorRow(
             Modifier
                 .fillMaxWidth()
                 .background(color.bgDefaultLevel1)
-                .padding(horizontal = 20.dp, vertical = 20.dp),
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .clickable(onClick = onAuthorClick),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            CourseImage(
-                url = detail.authorImageUrl,
-                modifier = Modifier.size(40.dp),
-                shape = CircleShape,
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                DsText(
-                    text = detail.authorName,
-                    style = DesignSystemThemeImpl.typeScale.textStrongM,
-                    color = color.contentDefaultLevel0,
-                )
-                DsText(
-                    text = detail.authorHandle,
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel2,
-                )
-            }
-        }
-        // 내 코스면 나를 팔로우할 수 없고, 이미 팔로우 중이면 다시 노출할 이유가 없다.
-        if (!detail.isMine && !detail.isFollowingAuthor) {
-            Box(
-                modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(9999.dp))
-                        .background(color.bgAccent)
-                        .clickable(onClick = onFollow)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                DsText(
-                    text = "팔로우",
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentOnAccent,
-                )
-            }
-        }
-    }
-}
-
-/** 요약 스탯 칩 3개: 장소 수 · 도보 · 따라감. 흰 배경 + 옅은 테두리 pill. */
-@Composable
-private fun StatsRow(detail: CourseDetailVO) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        StatChip(text = detail.placeCountText)
-        StatChip(text = detail.walkText)
-        StatChip(text = detail.followerText)
-    }
-}
-
-@Composable
-private fun StatChip(text: String) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val shape = RoundedCornerShape(9999.dp)
-    Box(
-        modifier =
-            Modifier
-                .clip(shape)
-                .background(color.bgDefaultLevel1)
-                .border(1.dp, color.borderDefaultLevel0, shape)
-                .padding(horizontal = 13.dp, vertical = 6.dp),
-    ) {
-        DsText(
-            text = text,
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = color.contentDefaultLevel1,
+        AuthorContent(
+            detail = detail,
+            onAuthorClick = onAuthorClick,
+            onToggleFollow = onToggleFollow,
         )
     }
 }
+
+/**
+ * 작성자 정보 본문: 아바타 · 이름/핸들 · 팔로우 버튼.
+ * 두 배치([AuthorCard]·[AuthorBand])가 컨테이너만 다르고 내용은 같아 여기로 모았다.
+ */
+@Composable
+private fun RowScope.AuthorContent(
+    detail: CourseDetailVO,
+    onAuthorClick: () -> Unit,
+    onToggleFollow: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(
+        modifier =
+            Modifier
+                .weight(1f)
+                .clickable(onClick = onAuthorClick),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        CourseImage(
+            url = detail.authorImageUrl,
+            modifier = Modifier.size(40.dp),
+            shape = CircleShape,
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            DsText(
+                text = detail.authorName,
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+            )
+            DsText(
+                text = detail.authorHandle,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+        }
+    }
+    // 내 코스에는 나를 팔로우할 대상이 없으므로 버튼 자체를 그리지 않는다.
+    if (!detail.isMine) {
+        AuthorFollowButton(
+            isFollowing = detail.isFollowingAuthor,
+            onClick = onToggleFollow,
+        )
+    }
+}
+
+/**
+ * 작성자 팔로우 버튼.
+ *
+ * 팔로우 전에는 채운 강조 버튼("팔로우"), 팔로우 중에는 흐린 버튼("팔로잉")으로 바뀐다.
+ * 예전에는 팔로우하면 버튼이 사라져 이 화면에서 팔로우를 풀 방법이 없었는데,
+ * "팔로잉" 상태에서도 누르면 [CourseDetailIntent.ToggleFollowAuthor] 가 언팔로우로 동작한다.
+ */
+@Composable
+private fun AuthorFollowButton(
+    isFollowing: Boolean,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val background = if (isFollowing) color.bgDefaultLevel0 else color.bgAccent
+    val contentColor = if (isFollowing) color.contentDefaultLevel3 else color.contentOnAccent
+    Box(
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(9999.dp))
+                .background(background)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        DsText(
+            text = if (isFollowing) "팔로잉" else "팔로우",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = contentColor,
+        )
+    }
+}
+
+/** 요약 스탯 한 칸: 앞에 붙는 아이콘 + 문구. */
+private data class CourseStat(
+    @param:DrawableRes val iconRes: Int,
+    val text: String,
+)
+
+/**
+ * 요약 스탯 한 줄: "📍3곳 · 🚶도보 20분 · 👣1.2k 따라감".
+ *
+ * 칩 3개로 그리면 히어로의 카테고리 pill 과 칩이 위아래로 겹쳐 보여, 사실값인 스탯은
+ * 아이콘 + 가운뎃점으로 이은 한 줄로 낮춰 둔다. 빈 값은 칸째 빼고 이어 붙인다.
+ */
+@Composable
+private fun StatsRow(detail: CourseDetailVO) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val stats =
+        listOf(
+            CourseStat(R.drawable.ic_location_24, detail.placeCountText),
+            CourseStat(R.drawable.ic_walk_24, detail.walkText),
+            CourseStat(R.drawable.ic_footprint_24, detail.followerText),
+        ).filter { it.text.isNotBlank() }
+    if (stats.isEmpty()) return
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(STAT_ICON_GAP),
+    ) {
+        stats.forEachIndexed { index, stat ->
+            if (index > 0) {
+                DsText(
+                    text = "·",
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = color.contentDefaultLevel3,
+                )
+            }
+            Icon(
+                painter = painterResource(stat.iconRes),
+                contentDescription = null,
+                tint = color.contentDefaultLevel2,
+                modifier = Modifier.size(STAT_ICON_SIZE),
+            )
+            DsText(
+                text = stat.text,
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = color.contentDefaultLevel2,
+            )
+        }
+    }
+}
+
+/** 스탯 아이콘 크기. 본문 글자(textRegularS)와 눈높이를 맞춘 값. */
+private val STAT_ICON_SIZE = 16.dp
+
+/** 아이콘·문구·가운뎃점 사이 간격. */
+private val STAT_ICON_GAP = 4.dp
 
 /** 접힘 상태에서 콤팩트하게 보여줄 장소 수. 초과분은 "더보기"로 접는다. */
 private const val COLLAPSED_VISIBLE_PLACES = 2
@@ -431,7 +541,7 @@ private fun PlacesSection(
 ) {
     var expanded by remember { mutableStateOf(true) }
     val color = DesignSystemThemeImpl.designSystemColor
-    // 소개 문단과의 간격을 조금 더 준다.
+    // 위쪽 소개·태그 묶음과 장소 목록 사이를 한 단 더 벌려 섹션이 나뉘어 보이게 한다.
     Column(
         modifier = Modifier.padding(top = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -566,7 +676,8 @@ private fun CompactPlaceRow(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        // 펼침 상태와 마찬가지로 행 전체를 탭 영역으로 쓴다.
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -596,22 +707,18 @@ private fun CompactPlaceRow(
                 color = color.contentDefaultLevel2,
             )
         }
-        PlaceDetailChevron(onClick = onClick)
+        PlaceDetailChevron()
     }
 }
 
 /**
- * 장소 상세로 이동하는 화살표. 아이콘(20dp)은 그대로 두되 접근성을 위해 터치 영역을 48dp 로 넓힌다.
- * 아이콘은 오른쪽 끝에 정렬해 기존 레이아웃(행 우측 끝)과 위치를 맞춘다.
+ * 장소 상세로 이동한다는 표시. 탭은 헤더 행 전체가 받으므로 여기서는 클릭을 걸지 않고
+ * 화살표 모양만 그린다(중복 클릭 영역을 만들지 않는다).
  */
 @Composable
-private fun PlaceDetailChevron(onClick: () -> Unit) {
+private fun PlaceDetailChevron() {
     Box(
-        modifier =
-            Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .clickable(onClick = onClick),
+        modifier = Modifier.size(48.dp),
         contentAlignment = Alignment.CenterEnd,
     ) {
         Icon(
@@ -664,7 +771,16 @@ private fun MorePlacesRow(
     }
 }
 
-/** 장소 1건: 순번·이름·카테고리 헤더 + 사진 + "Tip.{작성자}". 헤더 화살표로 장소 상세 시트를 연다. */
+/**
+ * 장소 사진 영역 비율(가로:세로 = 4:5). 사진은 이 틀을 꽉 채우고 넘치는 부분을 자르므로
+ * 장소마다 카드 높이가 같다. 비율을 바꾸면 잘리는 방향이 바뀐다(가로로 늘리면 세로 사진이 더 잘린다).
+ */
+private const val PLACE_PHOTO_RATIO = 4f / 5f
+
+/**
+ * 장소 1건: 순번·이름·카테고리 헤더 + 사진 + "Tip.{작성자}". 헤더 화살표로 장소 상세 시트를 연다.
+ * 팁이 비어 있으면 팁 영역은 렌더하지 않는다.
+ */
 @Composable
 private fun DetailPlaceItem(
     place: CourseDetailPlaceVO,
@@ -674,7 +790,8 @@ private fun DetailPlaceItem(
     val color = DesignSystemThemeImpl.designSystemColor
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            // 화살표만 누를 수 있으면 조준하기 어려워 놓치기 쉽다. 헤더 행 전체를 탭 영역으로 쓴다.
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -704,26 +821,50 @@ private fun DetailPlaceItem(
                     color = color.contentDefaultLevel2,
                 )
             }
-            PlaceDetailChevron(onClick = onClick)
+            PlaceDetailChevron()
         }
         Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
+                    .aspectRatio(PLACE_PHOTO_RATIO)
+                    .clip(RoundedCornerShape(14.dp))
+                    // 사진이 프레임을 꽉 채우므로 이 배경은 로딩 전·실패 시에만 보인다.
+                    .background(color.imagePlaceholder),
             contentAlignment = Alignment.TopEnd,
         ) {
             val urls = place.imageUrls
+            // 바깥 흰 프레임이 이미 모서리를 깎으므로 안쪽 이미지는 각지게 둔다
+            // (둘 다 깎으면 모서리가 이중으로 패여 보인다).
             if (urls.isEmpty()) {
-                CourseImage(url = "", modifier = Modifier.fillMaxSize())
+                CourseImage(url = "", modifier = Modifier.fillMaxSize(), shape = RectangleShape)
             } else {
                 // 사진이 2장 이상이면 가로로 스와이프해 넘긴다.
                 val pagerState = rememberPagerState(pageCount = { urls.size })
+                // 목록에서는 잘린 사진만 보이므로, 누르면 전체화면으로 원본 비율을 보여 준다.
+                var viewerPage by remember { mutableStateOf<Int?>(null) }
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
                 ) { page ->
-                    CourseImage(url = urls[page], modifier = Modifier.fillMaxSize())
+                    // 폭에만 맞추면 가로 사진에서 위아래가 크게 비어 프레임이 깨져 보인다.
+                    // 프레임을 꽉 채우고 넘치는 부분을 자른다(카드 높이도 장소마다 같아진다).
+                    CourseImage(
+                        url = urls[page],
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .clickable { viewerPage = page },
+                        shape = RectangleShape,
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+                viewerPage?.let { start ->
+                    PhotoViewerDialog(
+                        urls = urls,
+                        startPage = start,
+                        onDismiss = { viewerPage = null },
+                    )
                 }
                 // 현재 페이지를 반영하는 사진 인덱스 배지 (예: "2/2").
                 Box(
@@ -742,27 +883,110 @@ private fun DetailPlaceItem(
                 }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // 팁을 남기지 않은 장소에는 제목만 덩그러니 남으므로 섹션째 감춘다.
+        if (place.tip.isNotBlank()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier =
+                        Modifier
+                            .width(3.dp)
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(9999.dp))
+                            .background(color.bgAccent),
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    DsText(
+                        text = "Tip.$authorName",
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentAccent,
+                    )
+                    DsText(
+                        text = place.tip,
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel1,
+                        maxLines = Int.MAX_VALUE,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 사진 전체화면 뷰어. 목록에서는 프레임에 맞춰 잘린 사진만 보이므로 여기서는 원본 비율을 다 보여 준다
+ * ([ContentScale.Fit]). 좌우로 끌어 같은 장소의 다른 사진으로 넘기고, 배경을 누르거나 X 로 닫는다.
+ */
+@Composable
+private fun PhotoViewerDialog(
+    urls: List<String>,
+    startPage: Int,
+    onDismiss: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        val pagerState = rememberPagerState(initialPage = startPage, pageCount = { urls.size })
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(color.contentDefaultLevel0)
+                    // 사진 바깥 어디를 눌러도 닫힌다. 물결 효과는 전체화면에서 어색해 끈다.
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismiss,
+                    ),
+        ) {
+            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                // 전체화면에서는 사진 노드가 화면을 다 차지하므로, 여기에 placeholder 회색을 칠하면
+                // Fit 으로 남는 위아래 여백까지 회색이 된다. 배경은 뒤의 어두운 판이 맡는다.
+                CourseImage(
+                    url = urls[page],
+                    modifier = Modifier.fillMaxSize(),
+                    shape = RectangleShape,
+                    contentScale = ContentScale.Fit,
+                    background = Color.Transparent,
+                )
+            }
             Box(
                 modifier =
                     Modifier
-                        .width(3.dp)
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(9999.dp))
-                        .background(color.bgAccent),
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                DsText(
-                    text = "Tip.$authorName",
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentAccent,
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(12.dp)
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(color.bgDefaultLevel1)
+                        .clickable(onClick = onDismiss),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.close_small_24),
+                    contentDescription = "닫기",
+                    tint = color.contentDefaultLevel0,
+                    modifier = Modifier.size(20.dp),
                 )
-                DsText(
-                    text = place.tip,
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel1,
-                    maxLines = Int.MAX_VALUE,
-                )
+            }
+            if (urls.size > 1) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .padding(20.dp)
+                            .clip(RoundedCornerShape(9999.dp))
+                            .background(color.bgDefaultLevel1)
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                ) {
+                    DsText(
+                        text = "${pagerState.currentPage + 1}/${urls.size}",
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel0,
+                    )
+                }
             }
         }
     }
@@ -800,292 +1024,6 @@ private fun RouteConnector(text: String) {
 }
 
 /**
- * "코스 경로" 섹션: 헤더 + 네이버 지도. 좌표가 있는 장소에 순번 핀을 찍고 경로선으로 잇는다.
- * 좌표가 하나도 없으면(예: API 미연동) 지도 대신 placeholder 를 보여준다.
- */
-@Composable
-private fun CourseRouteSection(places: List<CourseDetailPlaceVO>) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val points =
-        places.mapNotNull { place ->
-            val lat = place.latitude
-            val lng = place.longitude
-            if (lat != null && lng != null) place.order to LatLng(lat, lng) else null
-        }
-    var showFullMap by remember { mutableStateOf(false) }
-    // "코스 경로" 헤더 위에 장소 목록과의 간격을 조금 더 준다.
-    Column(
-        modifier = Modifier.padding(top = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DsText(
-                text = "코스 경로",
-                modifier = Modifier.weight(1f),
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-            )
-            // 인라인 지도는 조작 불가라, 확대·이동해서 보려면 전체화면 지도로 연다.
-            if (points.isNotEmpty()) {
-                DsText(
-                    text = "자세히 보기",
-                    modifier = Modifier.clickable { showFullMap = true },
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentAccent,
-                )
-            }
-        }
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(color.imagePlaceholder)
-                    .then(if (points.isNotEmpty()) Modifier.clickable { showFullMap = true } else Modifier),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (points.isEmpty()) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_tab_map_24),
-                    contentDescription = "코스 경로 지도",
-                    tint = color.contentDefaultLevel3,
-                    modifier = Modifier.size(40.dp),
-                )
-            } else {
-                CourseRouteMap(points = points, lineColor = color.bgAccent)
-            }
-            // 지도가 덮지 않도록 테두리를 맨 위에 덧그린다.
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(14.dp)),
-            )
-        }
-    }
-    if (showFullMap && points.isNotEmpty()) {
-        CourseRouteFullMapDialog(
-            points = points,
-            lineColor = color.bgAccent,
-            onDismiss = { showFullMap = false },
-        )
-    }
-}
-
-/** 좌표들의 중심에 두고, 2개 이상이면 모든 핀이 들어오도록 경계(fitBounds)에 맞춘 카메라 상태. */
-@OptIn(ExperimentalNaverMapApi::class)
-@Composable
-private fun rememberRouteCameraState(coords: List<LatLng>): CameraPositionState {
-    val center =
-        LatLng(
-            coords.map { it.latitude }.average(),
-            coords.map { it.longitude }.average(),
-        )
-    val cameraPositionState =
-        rememberCameraPositionState {
-            position = CameraPosition(center, 14.0)
-        }
-    LaunchedEffect(coords) {
-        if (coords.size >= 2) {
-            val bounds = LatLngBounds.Builder().apply { coords.forEach { include(it) } }.build()
-            cameraPositionState.move(CameraUpdate.fitBounds(bounds, ROUTE_MAP_FIT_PADDING))
-        }
-    }
-    return cameraPositionState
-}
-
-/** 지도 위 오버레이: 장소 순번 핀 + 경로선. 인라인/전체 지도 공통. */
-@OptIn(ExperimentalNaverMapApi::class)
-@Composable
-@NaverMapComposable
-private fun RouteOverlays(
-    points: List<Pair<Int, LatLng>>,
-    lineColor: Color,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val density = LocalDensity.current.density
-    val fillArgb = lineColor.toArgb()
-    val textArgb = color.contentOnAccent.toArgb()
-    val coords = points.map { it.second }
-    if (coords.size >= 2) {
-        PathOverlay(
-            coords = coords,
-            width = 3.dp,
-            outlineWidth = 1.dp,
-            color = lineColor,
-            outlineColor = lineColor,
-        )
-    }
-    points.forEach { (order, position) ->
-        // 기본 삼각형 핀 대신 순번 숫자를 넣은 원형 마커(앱 장소 번호 배지와 동일 톤).
-        val icon =
-            remember(order, fillArgb, textArgb, density) {
-                numberedMarkerIcon(
-                    number = order,
-                    fillArgb = fillArgb,
-                    textArgb = textArgb,
-                    sizePx = (28 * density).toInt(),
-                )
-            }
-        Marker(
-            state = rememberUpdatedMarkerState(position = position),
-            icon = icon,
-            anchor = Offset(0.5f, 0.5f),
-        )
-    }
-}
-
-/** 순번 숫자가 들어간 원형 마커 아이콘을 그린다(초록 원 + 흰 숫자 + 흰 테두리). */
-private fun numberedMarkerIcon(
-    number: Int,
-    fillArgb: Int,
-    textArgb: Int,
-    sizePx: Int,
-): OverlayImage {
-    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val c = sizePx / 2f
-    val strokeWidth = sizePx * 0.08f
-    val radius = c - strokeWidth
-    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fillArgb }
-    val stroke =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = textArgb
-            style = Paint.Style.STROKE
-            this.strokeWidth = strokeWidth
-        }
-    canvas.drawCircle(c, c, radius, fill)
-    canvas.drawCircle(c, c, radius, stroke)
-    val text =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = textArgb
-            textAlign = Paint.Align.CENTER
-            textSize = sizePx * 0.5f
-            typeface = Typeface.DEFAULT_BOLD
-        }
-    val fm = text.fontMetrics
-    canvas.drawText(number.toString(), c, c - (fm.ascent + fm.descent) / 2f, text)
-    return OverlayImage.fromBitmap(bitmap)
-}
-
-/** 인라인 코스 경로 지도: 모든 핀을 보여주되 조작(제스처·컨트롤)은 막는다. */
-@OptIn(ExperimentalNaverMapApi::class)
-@Composable
-private fun CourseRouteMap(
-    points: List<Pair<Int, LatLng>>,
-    lineColor: Color,
-) {
-    NaverMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraPositionState = rememberRouteCameraState(points.map { it.second }),
-        uiSettings =
-            MapUiSettings(
-                isScrollGesturesEnabled = false,
-                isZoomGesturesEnabled = false,
-                isTiltGesturesEnabled = false,
-                isRotateGesturesEnabled = false,
-                isStopGesturesEnabled = false,
-                isZoomControlEnabled = false,
-                isScaleBarEnabled = false,
-                isCompassEnabled = false,
-                isLogoClickEnabled = false,
-            ),
-    ) {
-        RouteOverlays(points = points, lineColor = lineColor)
-    }
-}
-
-/** "자세히 보기" 전체화면 지도: 확대·이동 가능한 인터랙티브 지도 + 닫기 버튼. */
-@OptIn(ExperimentalNaverMapApi::class)
-@Composable
-private fun CourseRouteFullMapDialog(
-    points: List<Pair<Int, LatLng>>,
-    lineColor: Color,
-    onDismiss: () -> Unit,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val cameraPositionState = rememberRouteCameraState(points.map { it.second })
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(color.bgDefaultLevel1),
-        ) {
-            NaverMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                // 네이티브 줌 컨트롤은 끄고 아래에서 커스텀 버튼(우하단)으로 대체한다.
-                uiSettings = MapUiSettings(isZoomControlEnabled = false),
-            ) {
-                RouteOverlays(points = points, lineColor = lineColor)
-            }
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .statusBarsPadding()
-                        .padding(16.dp),
-            ) {
-                HeroCircleButton(
-                    iconRes = R.drawable.close_small_24,
-                    contentDescription = "닫기",
-                    onClick = onDismiss,
-                )
-            }
-            // 확대/축소 버튼 — 우하단.
-            Column(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .navigationBarsPadding()
-                        .padding(16.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(color.bgDefaultLevel1),
-            ) {
-                MapZoomButton(symbol = "+", onClick = { cameraPositionState.move(CameraUpdate.zoomIn()) })
-                Box(
-                    modifier =
-                        Modifier
-                            .width(40.dp)
-                            .height(1.dp)
-                            .background(color.borderDefaultLevel0),
-                )
-                MapZoomButton(symbol = "−", onClick = { cameraPositionState.move(CameraUpdate.zoomOut()) })
-            }
-        }
-    }
-}
-
-/** 전체 지도용 확대/축소 버튼 1개. */
-@Composable
-private fun MapZoomButton(
-    symbol: String,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier.size(40.dp).clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        DsText(
-            text = symbol,
-            style = DesignSystemThemeImpl.typeScale.textRegularM,
-            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
-        )
-    }
-}
-
-/** fitBounds 여백(px). 핀 아이콘·캡션이 지도 가장자리에 잘리지 않게 넉넉히 둔다. */
-private const val ROUTE_MAP_FIT_PADDING = 96
-
-/**
  * 하단 고정 액션바: 공유 버튼 + 코스 저장 버튼. 상단에 옅은 구분선.
  * [isSaved] 면 "저장됨"으로 바뀌고, 누르면 저장이 취소된다.
  */
@@ -1111,7 +1049,7 @@ private fun DetailBottomBar(
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -1158,7 +1096,8 @@ private fun DetailBottomBar(
                     text = if (isSaved) "저장됨" else "코스 저장하기",
                     shape = buttonShape,
                     background = if (isSaved) color.bgAccentSubtle else color.bgAccent,
-                    contentColor = if (isSaved) color.contentDefaultLevel1 else color.contentOnAccent,
+                    // 저장됨은 옅은 강조 배경 위라, 글자도 강조색이어야 상태가 읽힌다.
+                    contentColor = if (isSaved) color.contentAccent else color.contentOnAccent,
                     enabled = !isSaving,
                     iconRes = if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
                     onClick = actions.onSaveCourse,
@@ -1238,7 +1177,7 @@ internal val courseDetailSample: CourseDetailVO =
     CourseDetailVO(
         title = "비 오는 날 성수 감성 카페 코스",
         coverImageUrl = "",
-        category = "성수 · 데이트",
+        themes = listOf("성수", "데이트", "감성카페"),
         authorName = "지호님",
         authorHandle = "@jiho_routes",
         authorImageUrl = "",

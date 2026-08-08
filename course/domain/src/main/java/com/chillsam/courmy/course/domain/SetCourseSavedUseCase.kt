@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.telemetry.AppFlow
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.telemetry.track
 import javax.inject.Inject
 
 /**
@@ -12,9 +15,10 @@ class SetCourseSavedUseCase
     @Inject
     constructor(
         private val repository: CourseSaveRepository,
+        private val telemetry: Telemetry,
     ) {
         suspend operator fun invoke(
             courseId: Long,
             saved: Boolean,
-        ) = repository.setSaved(courseId, saved)
+        ) = telemetry.track(AppFlow.CourseSave) { repository.setSaved(courseId, saved) }
     }

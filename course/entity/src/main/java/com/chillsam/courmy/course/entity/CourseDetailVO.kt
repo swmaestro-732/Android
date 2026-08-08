@@ -7,11 +7,13 @@ import kotlinx.serialization.Serializable
  *
  * - [title]          코스 제목 (예: "비 오는 날 성수 감성 카페 코스")
  * - [coverImageUrl]  히어로 커버 이미지 URL (없으면 빈 문자열)
- * - [category]       상단 카테고리 (예: "성수 · 데이트")
+ * - [themes]         코스 태그 (예: ["성수", "데이트"]). 서버 `themes` 를 합치지 않고 그대로 담아
+ *                    화면에서 칩 하나씩 렌더한다. 비어 있으면 태그 줄을 그리지 않는다
+ * - [authorId]       작성자 id. 팔로우 요청 대상이다(0 이면 서버가 주지 않은 것).
  * - [authorName]     작성자 이름 (예: "지호님")
  * - [authorHandle]   작성자 핸들 (예: "@jiho_routes")
  * - [authorImageUrl] 작성자 프로필 이미지 URL
- * - [isFollowingAuthor] 내가 이 작성자를 팔로우 중인지. true 면 팔로우 버튼을 숨긴다.
+ * - [isFollowingAuthor] 내가 이 작성자를 팔로우 중인지. true 면 버튼이 "팔로잉"(흐린 상태)으로 바뀐다.
  * - [placeCountText] 장소 수 요약 (예: "4곳")
  * - [walkText]       총 도보 요약 (예: "도보 20분")
  * - [followerText]   따라간 사람 수 (예: "1.2k 따라감")
@@ -25,7 +27,8 @@ import kotlinx.serialization.Serializable
 data class CourseDetailVO(
     val title: String,
     val coverImageUrl: String = "",
-    val category: String,
+    val themes: List<String> = emptyList(),
+    val authorId: Long = 0L,
     val authorName: String,
     val authorHandle: String,
     val authorImageUrl: String = "",

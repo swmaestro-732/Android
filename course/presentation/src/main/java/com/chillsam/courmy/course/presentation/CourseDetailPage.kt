@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 /**
@@ -35,12 +36,15 @@ fun CourseDetailPage(
     courseId: Long,
     onBack: () -> Unit,
     onAuthorClick: (String) -> Unit,
-    onFollowAuthor: () -> Unit,
     onShare: () -> Unit,
     onEditCourse: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 첫 진입에 어느 코스인지 알려 준다. Load 는 같은 courseId 면 재호출을 건너뛴다.
     LaunchedEffect(courseId) { viewModel.onIntent(CourseDetailIntent.Load(courseId)) }
+    // 편집하고 돌아오면 제목·소개·한마디가 바뀌어 있어 다시 보일 때마다 새로 불러온다.
+    // Load 로는 위 가드에 걸려 서버를 안 치므로, 가드 없는 Retry 로 강제로 다시 읽는다.
+    RefreshOnResume { viewModel.onIntent(CourseDetailIntent.Retry) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val detail = uiState.detail
@@ -73,7 +77,7 @@ fun CourseDetailPage(
                                 .takeIf(String::isNotBlank)
                                 ?.let(onAuthorClick)
                         },
-                        onFollowAuthor = onFollowAuthor,
+                        onFollowAuthor = { viewModel.onIntent(CourseDetailIntent.ToggleFollowAuthor) },
                         onShare = onShare,
                         onSaveCourse = { viewModel.onIntent(CourseDetailIntent.ToggleSave) },
                         onEditCourse = onEditCourse,
