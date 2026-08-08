@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.domain.profile
 
+import com.chillsam.courmy.main.entity.area.AreaVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.entity.user.FollowResultVO
 import com.chillsam.courmy.main.entity.user.UserProfileVO
@@ -28,6 +29,16 @@ interface ProfileRepository {
      * `UpdateProfileRequest` 가 소개를 받게 되면 이 함수를 없애고 [updateProfile] 로 합친다. [wiki-needed]
      */
     suspend fun saveBio(bio: String)
+
+    /**
+     * 관심 테마·지역 저장.
+     *
+     * TODO-API-SPEC: **마이페이지 응답에 관심 테마·지역이 없어 기기에만 저장한다.**
+     * 서버가 내려주기 시작하면 이 두 함수를 없애고 [updateProfile] 로 합친다. [wiki-needed]
+     */
+    suspend fun saveInterestThemes(themes: List<String>)
+
+    suspend fun saveInterestRegions(regions: List<AreaVO>)
 
     /** 내 프로필 부분 수정. null 인 항목은 건드리지 않는다. */
     suspend fun updateProfile(

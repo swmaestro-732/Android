@@ -15,19 +15,23 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
-import com.chillsam.courmy.main.presentation.component.SignupProgressBar
 
 private val THEME_OPTIONS =
     listOf(
@@ -55,20 +59,31 @@ fun InterestThemePage(
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    // 기본은 아무것도 선택하지 않은 상태로 시작.
-    var selected by remember { mutableStateOf(emptySet<String>()) }
+    // 편집 모드에서만 저장된 관심사를 읽고 되쓴다. 회원가입은 완료 화면까지 홀더로 나른다.
+    val editing = onNext == null
+    val viewModel: InterestEditViewModel = hiltViewModel()
+    val editState by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(editing) { if (editing) viewModel.onIntent(InterestEditIntent.Load) }
+    // 회원가입은 빈 선택으로 시작하고, 편집은 불러온 값이 도착하면 그 값으로 다시 채운다.
+    var selected by remember(editState.loaded) { mutableStateOf(editState.themes.toSet()) }
+    LaunchedEffect(editState.saved) { if (editState.saved) navigationHelper.navigateToBack() }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 회원가입 플로우면 상단 진행 바, 편집이면 뒤로가기 바.
         if (progressStep != null) {
-            SignupProgressBar(
+            StepProgressBar(
                 step = progressStep,
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .background(color.bgDefaultLevel1)
                         .statusBarsPadding()
-                        .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp),
+                        .padding(
+                            start = ScreenHorizontalPadding,
+                            end = ScreenHorizontalPadding,
+                            top = 12.dp,
+                            bottom = 4.dp,
+                        ),
             )
         } else {
             Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
@@ -82,7 +97,7 @@ fun InterestThemePage(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = ScreenHorizontalPadding),
         ) {
             DsText(
                 text = "어떤 곳을\n좋아하세요?",
@@ -116,12 +131,16 @@ fun InterestThemePage(
             // 회원가입 플로우면 "다음 · N개 선택됨", 편집이면 "저장".
             text = if (onNext != null) "다음 · ${selected.size}개 선택됨" else "저장",
             enabled = selected.size >= MIN_THEME_COUNT,
-            onClick = { onNext?.invoke(selected.toList()) ?: navigationHelper.navigateToBack() },
+            onClick = {
+                val themes = selected.toList()
+                // 편집은 기기에 저장한 뒤 저장 완료 신호를 받아 닫는다(위 LaunchedEffect).
+                onNext?.invoke(themes) ?: viewModel.onIntent(InterestEditIntent.SaveThemes(themes))
+            },
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
         )
     }
 }

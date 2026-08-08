@@ -30,11 +30,19 @@ object ProfileDataModule {
         @ApplicationContext context: Context,
     ): BioPreferencesDataStore = BioPreferencesDataStore(context)
 
+    /** TODO-API-SPEC: 마이페이지 응답에 관심 테마·지역이 실리면 이 provider 를 제거한다. [wiki-needed] */
+    @Provides
+    @Singleton
+    fun provideInterestDataStore(
+        @ApplicationContext context: Context,
+    ): InterestPreferencesDataStore = InterestPreferencesDataStore(context)
+
     @Provides
     @Singleton
     fun provideProfileRepository(
         dataSource: ProfileDataSource,
         tokenStore: TokenStore,
         bioStore: BioPreferencesDataStore,
-    ): ProfileRepository = ProfileRepositoryImpl(dataSource, tokenStore, bioStore)
+        interestStore: InterestPreferencesDataStore,
+    ): ProfileRepository = ProfileRepositoryImpl(dataSource, tokenStore, bioStore, interestStore)
 }

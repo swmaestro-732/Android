@@ -12,6 +12,8 @@ import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
 import com.chillsam.courmy.course.presentation.CourseDetailPage
 import com.chillsam.courmy.course.presentation.CourseDetailViewModel
+import com.chillsam.courmy.course.presentation.CourseEditPage
+import com.chillsam.courmy.course.presentation.CourseEditViewModel
 import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
@@ -32,11 +34,13 @@ import com.chillsam.courmy.main.presentation.onboarding.OnboardingPage
 import com.chillsam.courmy.main.presentation.onboarding.OnboardingViewModel
 import com.chillsam.courmy.main.presentation.onboarding.SplashPage
 import com.chillsam.courmy.main.presentation.saved.SavedPage
+import com.chillsam.courmy.main.presentation.settings.AccountManagePage
 import com.chillsam.courmy.main.presentation.settings.SettingsPage
 import com.chillsam.courmy.main.presentation.user.UserProfilePage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
+import com.chillsam.courmy.course.domain.CourseEditPage as CourseEditRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
@@ -54,6 +58,7 @@ import com.chillsam.courmy.main.domain.my.ProfileEditPage as ProfileEditRoute
 import com.chillsam.courmy.main.domain.onboarding.OnboardingPage as OnboardingRoute
 import com.chillsam.courmy.main.domain.onboarding.SplashPage as SplashRoute
 import com.chillsam.courmy.main.domain.saved.SavedPage as SavedRoute
+import com.chillsam.courmy.main.domain.settings.AccountManagePage as AccountManageRoute
 import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
@@ -133,10 +138,7 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = CompleteRoute.PATH,
             render = {
-                OnboardingCompletePage(
-                    themes = SignupSelectionStore.themes,
-                    regions = SignupSelectionStore.regions,
-                )
+                OnboardingCompletePage()
             },
         ),
         AppRoute(
@@ -154,14 +156,22 @@ val appRoutes: List<AppRoute> =
                     viewModel = viewModel,
                     onClose = { navigationHelper.navigateToBack() },
                     onSaveDraft = {
-                        // 임시저장하면 세션에 저장하고 홈으로 나간다.
+                        // 임시저장하고 작성 화면을 빠져나온다(들어온 곳으로 되돌아간다).
                         viewModel.onIntent(CourseCreateIntent.SaveDraft)
-                        navigationHelper.navigateTo(HomeRoute)
+                        navigationHelper.navigateToBack()
                     },
                     // 서버 저장 성공 후 CourseCreatePage 가 호출한다(저장 인텐트는 Page 내부에서 발행).
-                    // 완성 화면(FS-34-Done)으로 보낸다. 완성 화면이 보여줄 요약은 저장 성공 시
-                    // CompleteCourseUseCase 로 이미 보관해 둔 값이라 courseId 는 쓰지 않는다.
-                    onSaveCourse = { navigationHelper.navigateTo(CourseCompleteRoute) },
+                    //
+                    // **작성 화면 엔트리를 먼저 걷어내고** 완성 화면으로 간다. 백스택에 남겨 두면
+                    // 그 엔트리의 ViewModel(=이번 코스 입력값·저장 결과)이 계속 살아 있어서,
+                    // 다음에 "코스 만들기"를 눌렀을 때 새 화면이 아니라 이전 입력이 채워진 화면이
+                    // 되살아나고 저장 신호까지 남아 곧장 완성 화면으로 튄다.
+                    // 완성 화면이 보여줄 요약은 저장 성공 시 CompleteCourseUseCase 로 이미 보관해
+                    // 둔 값이라 작성 화면이 사라져도 문제없고, courseId 도 쓰지 않는다.
+                    onSaveCourse = {
+                        navigationHelper.navigateToBack()
+                        navigationHelper.navigateTo(CourseCompleteRoute)
+                    },
                 )
             },
         ),
@@ -169,10 +179,18 @@ val appRoutes: List<AppRoute> =
             path = CourseCompleteRoute.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current
+                // 완성 화면은 한 번 보고 끝나는 화면이라, 나갈 때 자기 엔트리를 먼저 걷어낸다.
+                // 남겨 두면 홈에서 뒤로가기를 눌렀을 때 다 끝난 완성 화면이 다시 튀어나온다.
                 CourseCompletePage(
                     viewModel = hiltViewModel<CourseCompleteViewModel>(),
-                    onClose = { navigationHelper.navigateTo(HomeRoute) },
-                    onViewMyCourses = { navigationHelper.navigateTo(MyRoute) },
+                    onClose = {
+                        navigationHelper.navigateToBack()
+                        navigationHelper.navigateTo(HomeRoute)
+                    },
+                    onViewMyCourses = {
+                        navigationHelper.navigateToBack()
+                        navigationHelper.navigateTo(MyRoute)
+                    },
                 )
             },
         ),
@@ -223,6 +241,10 @@ val appRoutes: List<AppRoute> =
             render = { SettingsPage() },
         ),
         AppRoute(
+            path = AccountManageRoute.PATH,
+            render = { AccountManagePage() },
+        ),
+        AppRoute(
             path = SavedRoute.PATH,
             render = { SavedPage() },
         ),
@@ -241,9 +263,21 @@ val appRoutes: List<AppRoute> =
                         navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
                     },
                     onShare = { notReady() },
-                    // TODO-API-SPEC: 편집은 PATCH /api/v1/courses/{courseId} 가 서버에 있으나
-                    // 기존 코스를 불러오는 편집 화면이 아직 없다. 화면이 생기면 그쪽으로 이동시킨다. [wiki-needed]
-                    onEditCourse = { notReady() },
+                    onEditCourse = {
+                        val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
+                        navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
+                    },
+                )
+            },
+        ),
+        AppRoute(
+            path = CourseEditRoute.PATH,
+            render = { args ->
+                val navigationHelper = LocalNavigationHelper.current
+                CourseEditPage(
+                    viewModel = hiltViewModel<CourseEditViewModel>(),
+                    courseId = args[CourseEditRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
+                    onClose = { navigationHelper.navigateToBack() },
                 )
             },
         ),

@@ -8,6 +8,7 @@ import com.chillsam.courmy.main.data.profile.dto.formatCount
 import com.chillsam.courmy.main.data.profile.dto.toMyProfileVO
 import com.chillsam.courmy.main.data.profile.dto.toUserProfileVO
 import com.chillsam.courmy.main.domain.profile.ProfileRepository
+import com.chillsam.courmy.main.entity.area.AreaVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.entity.user.FollowResultVO
 import com.chillsam.courmy.main.entity.user.UserProfileVO
@@ -20,21 +21,31 @@ class ProfileRepositoryImpl(
     private val dataSource: ProfileDataSource,
     private val tokenStore: TokenStore,
     private val bioStore: BioPreferencesDataStore,
+    private val interestStore: InterestPreferencesDataStore,
 ) : ProfileRepository {
     /**
-     * 소개(bio)만 로컬 저장소에서 덮어쓴다.
+     * 소개(bio)와 관심 테마·지역만 로컬 저장소에서 덮어쓴다.
      *
-     * TODO-API-SPEC: 응답(`MyPageProfileResponse`)에 소개 필드가 없어 여기서 합친다.
-     * 서버가 내려주기 시작하면 이 병합과 [bioStore] 를 지우고 응답 값을 그대로 쓴다. [wiki-needed]
+     * TODO-API-SPEC: 응답(`MyPageProfileResponse`)에 세 필드가 모두 없어 여기서 합친다.
+     * 서버가 내려주기 시작하면 이 병합과 [bioStore]·[interestStore] 를 지우고 응답 값을 그대로 쓴다.
+     * [wiki-needed]
      */
     override suspend fun getMyProfile(): MyProfileVO =
         dataSource
             .getMyPage()
             .requireData()
             .toMyProfileVO()
-            .copy(bio = bioStore.getBio(requireUserId()))
+            .copy(
+                bio = bioStore.getBio(requireUserId()),
+                interestThemes = interestStore.getThemes(),
+                interestRegions = interestStore.getRegions(),
+            )
 
     override suspend fun saveBio(bio: String) = bioStore.setBio(requireUserId(), bio)
+
+    override suspend fun saveInterestThemes(themes: List<String>) = interestStore.setThemes(themes)
+
+    override suspend fun saveInterestRegions(regions: List<AreaVO>) = interestStore.setRegions(regions)
 
     override suspend fun getUserProfile(handle: String): UserProfileVO =
         dataSource.getUserPage(handle).requireData().toUserProfileVO(myUserId = tokenStore.userId)
