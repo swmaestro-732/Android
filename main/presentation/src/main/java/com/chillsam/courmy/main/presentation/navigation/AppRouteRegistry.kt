@@ -159,10 +159,9 @@ val appRoutes: List<AppRoute> =
                         navigationHelper.navigateTo(HomeRoute)
                     },
                     // 서버 저장 성공 후 CourseCreatePage 가 호출한다(저장 인텐트는 Page 내부에서 발행).
-                    // 방금 만든 코스가 서버에 실제로 생겼는지 바로 확인할 수 있게 상세로 보낸다.
-                    onSaveCourse = { courseId ->
-                        navigationHelper.navigateByRoute(CourseDetailRoute.route(courseId.toString()))
-                    },
+                    // 완성 화면(FS-34-Done)으로 보낸다. 완성 화면이 보여줄 요약은 저장 성공 시
+                    // CompleteCourseUseCase 로 이미 보관해 둔 값이라 courseId 는 쓰지 않는다.
+                    onSaveCourse = { navigationHelper.navigateTo(CourseCompleteRoute) },
                 )
             },
         ),

@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -46,6 +47,7 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
+import com.chillsam.courmy.course.presentation.AddPlaceDialog
 import com.chillsam.courmy.course.presentation.PlaceSearchIntent
 import com.chillsam.courmy.course.presentation.PlaceSearchViewModel
 
@@ -83,6 +85,15 @@ fun PlaceSearchOverlay(
     // 오버레이가 열리면(장소 더 담기) 검색창에 자동 포커스 + 키보드.
     val searchFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { searchFocus.requestFocus() }
+    var showAddPlace by remember { mutableStateOf(false) }
+
+    // 검색이 **성공했을 때만** 다이얼로그를 닫아 후보 목록을 보여 준다.
+    // 실패했는데 닫으면 사용자가 입력을 잃고 처음부터 다시 쳐야 한다.
+    LaunchedEffect(uiState.fromMapSearch, uiState.isSearching, uiState.errorMessage) {
+        if (uiState.fromMapSearch && !uiState.isSearching && uiState.errorMessage == null) {
+            showAddPlace = false
+        }
+    }
 
     Column(
         modifier =
@@ -97,19 +108,92 @@ fun PlaceSearchOverlay(
             onCancel = onDismiss,
             focusRequester = searchFocus,
         )
-        if (query.isNotBlank()) {
+        // 결과 수는 검색했을 때만, "새로운 위치 추가" 는 항상 보인다 —
+        // 검색으로 못 찾았을 때 쓰는 기능이라 검색어 입력을 전제로 두면 앞뒤가 맞지 않는다.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             DsText(
-                text = "검색 결과 ${results.size}",
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                text =
+                    when {
+                        // 실패를 "결과 0" 으로 보여 주면 못 찾은 것과 구분되지 않는다.
+                        uiState.errorMessage != null -> ""
+
+                        query.isBlank() && !uiState.fromMapSearch -> ""
+
+                        uiState.fromMapSearch -> "지도 검색 결과 ${results.size}"
+
+                        else -> "검색 결과 ${results.size}"
+                    },
+                modifier = Modifier.weight(1f),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
+            AddPlaceButton(
+                enabled = !uiState.isSearching,
+                onClick = { showAddPlace = true },
+            )
         }
-        if (results.isEmpty()) {
-            SearchEmptyState(hasQuery = query.isNotBlank(), modifier = Modifier.weight(1f))
-        } else {
+        // 결과 목록/빈 상태/에러 분기는 별도 컴포저블로 뺀다(오버레이 본문 복잡도 관리).
+        PlaceCandidateList(
+            results = results,
+            errorMessage = uiState.errorMessage,
+            hasQuery = query.isNotBlank(),
+            selectedIds = selectedIds,
+            onToggle = { candidate ->
+                when {
+                    candidate.id in selectedIds -> {
+                        selectedIds.remove(candidate.id)
+                        selectedPlaces.remove(candidate.id)
+                    }
+
+                    // 남은 자리가 있을 때만 선택 추가(합계 최대 maxPlaces곳).
+                    selectedIds.size < remaining -> {
+                        selectedIds.add(candidate.id)
+                        selectedPlaces[candidate.id] = candidate
+                    }
+
+                    // 상한 도달 시 선택되지 않고 알림만 띄운다.
+                    else -> {
+                        showLimitAlert()
+                    }
+                }
+            },
+            modifier = Modifier.weight(1f),
+        )
+        ConfirmBar(
+            selectedCount = selectedIds.size,
+            // 후보 목록 순서가 아니라 사용자가 탭한 순서 그대로 담기 순서로 넘긴다.
+            onConfirm = { onConfirm(selectedIds.mapNotNull(selectedPlaces::get)) },
+        )
+    }
+
+    if (showAddPlace) {
+        AddPlaceDialog(
+            isSearching = uiState.isSearching,
+            errorMessage = uiState.errorMessage.takeIf { uiState.fromMapSearch },
+            onConfirm = { viewModel.onIntent(PlaceSearchIntent.SearchOnMap(it)) },
+            onDismiss = { showAddPlace = false },
+        )
+    }
+}
+
+/** 후보 목록 · 빈 상태 · 에러를 분기해 렌더한다. */
+@Composable
+private fun ColumnScope.PlaceCandidateList(
+    results: List<CoursePlaceVO>,
+    errorMessage: String?,
+    hasQuery: Boolean,
+    selectedIds: List<String>,
+    onToggle: (CoursePlaceVO) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    when {
+        results.isNotEmpty() -> {
             LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
+                modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 items(results) { candidate ->
@@ -117,33 +201,49 @@ fun PlaceSearchOverlay(
                     SearchResultRow(
                         candidate = candidate,
                         orderNumber = if (order >= 0) order + 1 else null,
-                        onToggle = {
-                            when {
-                                candidate.id in selectedIds -> {
-                                    selectedIds.remove(candidate.id)
-                                    selectedPlaces.remove(candidate.id)
-                                }
-
-                                // 남은 자리가 있을 때만 선택 추가(합계 최대 maxPlaces곳).
-                                selectedIds.size < remaining -> {
-                                    selectedIds.add(candidate.id)
-                                    selectedPlaces[candidate.id] = candidate
-                                }
-
-                                // 상한 도달 시 선택되지 않고 알림만 띄운다.
-                                else -> {
-                                    showLimitAlert()
-                                }
-                            }
-                        },
+                        onToggle = { onToggle(candidate) },
                     )
                 }
             }
         }
-        ConfirmBar(
-            selectedCount = selectedIds.size,
-            // 후보 목록 순서가 아니라 사용자가 탭한 순서 그대로 담기 순서로 넘긴다.
-            onConfirm = { onConfirm(selectedIds.mapNotNull(selectedPlaces::get)) },
+
+        // 실패를 빈 목록으로 보여 주면 "못 찾음" 과 구분되지 않는다.
+        errorMessage != null -> {
+            Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                DsText(
+                    text = errorMessage,
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = color.contentDefaultLevel2,
+                )
+            }
+        }
+
+        else -> {
+            SearchEmptyState(hasQuery = hasQuery, modifier = modifier)
+        }
+    }
+}
+
+/** "새로운 위치 추가" 액션. 등록된 장소 검색으로 못 찾은 곳을 이름으로 직접 찾아 담을 때 쓴다. */
+@Composable
+private fun AddPlaceButton(
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val shape = RoundedCornerShape(9999.dp)
+    Box(
+        modifier =
+            Modifier
+                .clip(shape)
+                .border(1.dp, color.borderDefaultLevel1, shape)
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        DsText(
+            text = "새로운 위치 추가",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = if (enabled) color.contentAccent else color.contentDefaultLevel3,
         )
     }
 }

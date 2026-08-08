@@ -21,6 +21,14 @@ interface ProfileRepository {
         follow: Boolean,
     ): FollowResultVO
 
+    /**
+     * 한 줄 소개 저장.
+     *
+     * TODO-API-SPEC: **서버에 bio 필드가 없어 기기에만 저장한다.**
+     * `UpdateProfileRequest` 가 소개를 받게 되면 이 함수를 없애고 [updateProfile] 로 합친다. [wiki-needed]
+     */
+    suspend fun saveBio(bio: String)
+
     /** 내 프로필 부분 수정. null 인 항목은 건드리지 않는다. */
     suspend fun updateProfile(
         nickname: String? = null,

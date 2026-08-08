@@ -19,8 +19,22 @@ import com.chillsam.courmy.main.entity.user.UserProfileVO
 class ProfileRepositoryImpl(
     private val dataSource: ProfileDataSource,
     private val tokenStore: TokenStore,
+    private val bioStore: BioPreferencesDataStore,
 ) : ProfileRepository {
-    override suspend fun getMyProfile(): MyProfileVO = dataSource.getMyPage().requireData().toMyProfileVO()
+    /**
+     * 소개(bio)만 로컬 저장소에서 덮어쓴다.
+     *
+     * TODO-API-SPEC: 응답(`MyPageProfileResponse`)에 소개 필드가 없어 여기서 합친다.
+     * 서버가 내려주기 시작하면 이 병합과 [bioStore] 를 지우고 응답 값을 그대로 쓴다. [wiki-needed]
+     */
+    override suspend fun getMyProfile(): MyProfileVO =
+        dataSource
+            .getMyPage()
+            .requireData()
+            .toMyProfileVO()
+            .copy(bio = bioStore.getBio(requireUserId()))
+
+    override suspend fun saveBio(bio: String) = bioStore.setBio(requireUserId(), bio)
 
     override suspend fun getUserProfile(handle: String): UserProfileVO =
         dataSource.getUserPage(handle).requireData().toUserProfileVO(myUserId = tokenStore.userId)
@@ -60,4 +74,6 @@ class ProfileRepositoryImpl(
 
     private fun MyPageEnvelope.requireData(): MyPageScreenDTO =
         requireNotNull(data) { message ?: "마이페이지 응답에 data 가 없습니다." }
+
+    private fun requireUserId(): Long = requireNotNull(tokenStore.userId) { "로그인한 사용자 ID가 없습니다." }
 }

@@ -42,11 +42,13 @@ import com.chillsam.courmy.common.presentation.component.DsSwitch
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
+import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.ProfileEditPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 
@@ -60,6 +62,8 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     val accountState by accountViewModel.uiState.collectAsStateWithLifecycle()
     val myViewModel: MyViewModel = hiltViewModel()
     val myState by myViewModel.uiState.collectAsStateWithLifecycle()
+    // MyViewModel 은 init 에서 로드하지 않는다. 화면마다 호출해야 프로필 행이 채워진다.
+    RefreshOnResume { myViewModel.onIntent(MyProfileIntent.Retry) }
     val context = LocalContext.current
     var pushOn by remember { mutableStateOf(true) }
     var recommendOn by remember { mutableStateOf(false) }

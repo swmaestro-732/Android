@@ -19,6 +19,7 @@ sealed interface ProfileEditIntent : MviIntent {
         val nickname: String?,
         val handle: String?,
         val localImageUri: String?,
+        val bio: String?,
     ) : ProfileEditIntent
 
     data object ConsumeSaved : ProfileEditIntent
@@ -55,8 +56,10 @@ sealed interface ProfileEditReducerEvent : ReducerEvent {
  *
  * 실 저장은 [UpdateProfileUseCase](이미지가 있으면 presign 업로드 → `PATCH /api/v1/users`)가 담당한다.
  *
- * TODO-API-SPEC: 서버 `UpdateProfileRequest` 에 한 줄 소개(bio) 필드가 없어 소개는 저장할 수 없다.
- * 저장되지 않는 입력을 노출하지 않으려 편집 화면에서도 렌더하지 않는다. [wiki-needed]
+ * TODO-API-SPEC: 서버 `UpdateProfileRequest` 에 한 줄 소개(bio) 필드가 없어, 소개는 서버가 아니라
+ * **기기에만 저장된다**(마이 화면의 소개도 같은 로컬 값을 읽는다). 이 기기에서만 보이고 다른
+ * 사용자에게는 보이지 않으며, 앱을 지우면 사라진다.
+ * 백엔드에 필드가 추가되면 로컬 저장(BioPreferencesDataStore)을 지우고 저장 요청에 합친다. [wiki-needed]
  */
 @HiltViewModel
 class ProfileEditViewModel
@@ -99,6 +102,7 @@ class ProfileEditViewModel
                             nickname = intent.nickname,
                             handle = intent.handle,
                             localImageUri = intent.localImageUri,
+                            bio = intent.bio,
                         )
                     }.onSuccess { dispatch(ProfileEditReducerEvent.Succeeded) }
                         .onFailure { e ->
