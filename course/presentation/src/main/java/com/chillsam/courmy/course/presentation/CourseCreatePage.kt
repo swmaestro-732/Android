@@ -1,6 +1,8 @@
 package com.chillsam.courmy.course.presentation
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -34,18 +37,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseStopVO
@@ -77,6 +87,13 @@ fun CourseCreatePage(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
+    // 화면에 들어올 때마다 초안을 새로 읽는다(ViewModel 의 init 이 아니라 여기서 부른다).
+    // 나갈 때 이 화면의 백스택 엔트리를 걷어내므로 보통은 ViewModel 자체가 새로 생기지만,
+    // 어떤 경로로 엔트리가 살아남더라도 "새로 만들기"가 이전 입력을 되살리지 않도록 보장한다.
+    // 이 화면에는 하단 탭바가 없고 화면도 세로 고정이라, 편집 도중 컴포지션만 다시 만들어져
+    // 입력이 날아갈 경로는 없다.
+    LaunchedEffect(Unit) { viewModel.onIntent(CourseCreateIntent.Load) }
+
     // 서버 저장이 끝난 뒤에만 완성 화면으로 넘어간다(실패했는데 성공처럼 보이지 않게).
     LaunchedEffect(uiState.savedCourseId) {
         uiState.savedCourseId?.let { courseId ->
@@ -85,6 +102,8 @@ fun CourseCreatePage(
                 Toast.makeText(context, "사진은 저장되지 않았어요. 편집에서 다시 올려 주세요.", Toast.LENGTH_LONG).show()
             }
             onSaveCourse(courseId)
+            // 이동을 끝냈으면 신호를 지운다. 남겨 두면 이 화면이 다시 보일 때 곧바로 또 이동한다.
+            viewModel.onIntent(CourseCreateIntent.ConsumeSaved)
         }
     }
     LaunchedEffect(uiState.errorMessage) {
@@ -134,51 +153,73 @@ private fun CourseCreateContent(
             return@Box
         }
 
-        // 전반적인 화면
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .onGloballyPositioned {
-                        viewportTopPx = it.positionInWindow().y
-                        viewportHeightPx = it.size.height
-                    }.verticalScroll(scrollState)
-                    .padding(horizontal = 20.dp)
-                    .padding(top = 12.dp, bottom = 116.dp),
-        ) {
+        // 단계가 바뀌면 새 내용을 위에서부터 보여준다(이전 단계의 스크롤 위치가 남지 않도록).
+        LaunchedEffect(uiState.step) { scrollState.scrollTo(0) }
+
+        // 첫 단계가 아니면 시스템 뒤로가기는 화면을 닫지 않고 이전 단계로 돌아간다.
+        BackHandler(enabled = uiState.step > CourseCreateUIState.FIRST_STEP) {
+            onIntent(CourseCreateIntent.PrevStep)
+        }
+
+        // 전반적인 화면: 상단바·진행바와 하단 버튼은 고정하고 가운데 단계 내용만 스크롤한다.
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             CourseTopBar(
                 onClose = { if (uiState.hasContent) showExitConfirm = true else onClose() },
                 onSaveDraft = onSaveDraft,
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+            )
+            StepProgressBar(
+                step = uiState.step,
+                total = CourseCreateUIState.LAST_STEP,
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
             )
 
-            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .onGloballyPositioned {
+                            viewportTopPx = it.positionInWindow().y
+                            viewportHeightPx = it.size.height
+                        }.verticalScroll(scrollState)
+                        .padding(horizontal = ScreenHorizontalPadding)
+                        .padding(top = 20.dp, bottom = 24.dp),
+            ) {
+                when (uiState.step) {
+                    CourseCreateUIState.STEP_PLACES -> {
+                        PlaceSection(
+                            uiState = uiState,
+                            onIntent = onIntent,
+                            onAddPlace = { showPlaceSearch = true },
+                            onRequestRemove = { placeToRemove = it },
+                            scrollState = scrollState,
+                            viewportTopPx = viewportTopPx,
+                            viewportHeightPx = viewportHeightPx,
+                        )
+                    }
 
-            InfoSection(uiState = uiState, onIntent = onIntent)
+                    CourseCreateUIState.STEP_PLACE_RECORDS -> {
+                        PlaceRecordSection(uiState = uiState, onIntent = onIntent)
+                    }
 
-            Spacer(Modifier.height(22.dp))
+                    CourseCreateUIState.STEP_COURSE_INFO -> {
+                        InfoSection(uiState = uiState, onIntent = onIntent)
+                    }
 
-            PlaceSection(
+                    else -> {
+                        VisibilitySection(uiState = uiState, onIntent = onIntent)
+                    }
+                }
+            }
+
+            StepBottomBar(
                 uiState = uiState,
-                onIntent = onIntent,
-                onAddPlace = { showPlaceSearch = true },
-                onRequestRemove = { placeToRemove = it },
-                scrollState = scrollState,
-                viewportTopPx = viewportTopPx,
-                viewportHeightPx = viewportHeightPx,
+                onPrev = { onIntent(CourseCreateIntent.PrevStep) },
+                onNext = { onIntent(CourseCreateIntent.NextStep) },
+                onSave = { onRequestSave(uiState.toCompleteVO()) },
             )
-
-            Spacer(Modifier.height(22.dp))
-
-            VisibilitySection(uiState = uiState, onIntent = onIntent)
         }
-
-        SaveBar(
-            // 저장 중에는 중복 탭을 막는다(업로드 + 생성이라 왕복이 길다).
-            enabled = uiState.canSave && !uiState.isSaving,
-            modifier = Modifier.align(Alignment.BottomCenter),
-            onSave = { onRequestSave(uiState.toCompleteVO()) },
-        )
 
         if (showPlaceSearch) {
             PlaceSearchOverlay(
@@ -234,6 +275,8 @@ private fun CourseCreateUIState.toCompleteVO(): CourseCompleteVO? {
         category = tags.take(2).joinToString(" · ").ifBlank { "코스" },
         title = name.ifBlank { "새 코스" },
         summaryText = "${places.size} 스팟",
+        // 작성 중 고른 대표 사진(로컬 content URI). 업로드된 공개 URL 은 아직 손에 없다.
+        thumbnailUrl = thumbnailPhotos.firstOrNull().orEmpty(),
         stops =
             places.mapIndexed { index, place ->
                 CourseStopVO(
@@ -241,6 +284,7 @@ private fun CourseCreateUIState.toCompleteVO(): CourseCompleteVO? {
                     name = place.name,
                     category = place.category,
                     durationText = "",
+                    imageUrl = place.thumbnailUrl,
                 )
             },
     )
@@ -251,7 +295,7 @@ private fun InfoSection(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
 ) {
-    CourseSectionHeader(number = 1, title = "코스 정보")
+    CourseSectionHeader(number = CourseCreateUIState.STEP_COURSE_INFO, title = "코스 정보")
     Spacer(Modifier.height(10.dp))
     CourseInfoCard(
         name = uiState.name,
@@ -267,6 +311,44 @@ private fun InfoSection(
     )
 }
 
+/**
+ * Step 2 — 장소별 기록. Step 1 에서 담은 순서 그대로 각 장소에 한마디와 사진을 남긴다.
+ *
+ * 사진은 코스 저장의 필수 조건이라(장소마다 1장 이상) 여기서 다 채워야 다음으로 넘어간다.
+ * 순서 변경·삭제는 Step 1 의 일이므로 드래그 손잡이를 감춘다.
+ */
+@Composable
+private fun PlaceRecordSection(
+    uiState: CourseCreateUIState,
+    onIntent: (CourseCreateIntent) -> Unit,
+) {
+    CourseSectionHeader(number = CourseCreateUIState.STEP_PLACE_RECORDS, title = "장소별 기록")
+    Spacer(Modifier.height(6.dp))
+    DsText(
+        text = "장소마다 사진 1장은 꼭 필요해요. 한마디는 남기지 않아도 괜찮아요.",
+        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+    )
+    Spacer(Modifier.height(12.dp))
+    uiState.places.forEach { place ->
+        CoursePlaceCard(
+            place = place,
+            onRemove = { },
+            onNoteChange = { onIntent(CourseCreateIntent.ChangePlaceNote(place.id, it)) },
+            onPhotosChange = { onIntent(CourseCreateIntent.ChangePlacePhotos(place.id, it)) },
+            showDragHandle = false,
+        )
+        // 다음 장소로의 도보 시간. 마지막 장소이거나 계산이 안 된 구간은 빈 문자열이라 자리만 띄운다.
+        if (place.walkText.isNotEmpty()) {
+            Spacer(Modifier.height(6.dp))
+            CourseRouteConnector(text = place.walkText)
+            Spacer(Modifier.height(6.dp))
+        } else {
+            Spacer(Modifier.height(10.dp))
+        }
+    }
+}
+
 // 드래그 재정렬(제스처 콜백 + 자동 스크롤 + make-room) 핸들러라 분기가 많다. UI 이벤트 처리 복잡도.
 @Suppress("CyclomaticComplexMethod")
 @Composable
@@ -279,8 +361,10 @@ private fun PlaceSection(
     viewportTopPx: Float,
     viewportHeightPx: Int,
 ) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val haptics = LocalHapticFeedback.current
     Row(verticalAlignment = Alignment.CenterVertically) {
-        CourseSectionHeader(number = 2, title = "장소 담기", modifier = Modifier.weight(1f))
+        CourseSectionHeader(number = CourseCreateUIState.STEP_PLACES, title = "장소 고르기", modifier = Modifier.weight(1f))
         DsText(
             text = "${uiState.places.size}곳 · 드래그로 순서 변경",
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -336,8 +420,12 @@ private fun PlaceSection(
             label = "makeRoom",
         )
         val translationYValue = if (isDragged) dragOffset else animMakeRoom
-        // 집어 올린 느낌: 살짝 확대. 놓으면 스프링으로 원래 크기로 정착.
-        val liftScale by animateFloatAsState(targetValue = if (isDragged) 1.03f else 1f, label = "lift")
+        // 집어 올린 느낌: 살짝 확대 + 그림자. 놓으면 스프링으로 원래 크기·높이로 정착.
+        val liftScale by animateFloatAsState(targetValue = if (isDragged) DRAG_LIFT_SCALE else 1f, label = "lift")
+        val liftElevation by animateDpAsState(
+            targetValue = if (isDragged) DRAG_LIFT_ELEVATION else 0.dp,
+            label = "liftElevation",
+        )
 
         Column(
             modifier =
@@ -354,13 +442,25 @@ private fun PlaceSection(
         ) {
             CoursePlaceCard(
                 place = place,
+                // 카드에만 그림자를 준다(아래 경로 커넥터까지 들리면 어색하다).
+                modifier =
+                    Modifier.shadow(
+                        elevation = liftElevation,
+                        shape = RoundedCornerShape(16.dp),
+                        ambientColor = color.contentDefaultLevel0.copy(alpha = DRAG_AMBIENT_ALPHA),
+                        spotColor = color.contentDefaultLevel0.copy(alpha = DRAG_SPOT_ALPHA),
+                    ),
                 onRemove = { onRequestRemove(place) },
                 onNoteChange = { onIntent(CourseCreateIntent.ChangePlaceNote(place.id, it)) },
                 onPhotosChange = { onIntent(CourseCreateIntent.ChangePlacePhotos(place.id, it)) },
+                // 이 단계는 "무엇을 담고 어떤 순서로 갈지"만 정한다. 기록은 다음 단계에서.
+                showRecord = false,
                 dragHandleModifier =
                     Modifier.pointerInput(place.id) {
                         detectDragGestures(
                             onDragStart = {
+                                // 집었다는 걸 손끝으로도 알린다(목록 재정렬의 관례).
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 val cur = placesState.value.indexOfFirst { it.id == place.id }
                                 draggedIndex = cur
                                 dragOffset = 0f
@@ -393,6 +493,7 @@ private fun PlaceSection(
                             onDragEnd = {
                                 val from = draggedIndex
                                 if (from != null && dragTarget >= 0 && dragTarget != from) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onIntent(CourseCreateIntent.MovePlace(from, dragTarget))
                                 }
                                 draggedIndex = null
@@ -409,11 +510,8 @@ private fun PlaceSection(
                         )
                     },
             )
-            if (place.walkText.isNotEmpty()) {
-                CourseRouteConnector(text = place.walkText)
-            } else {
-                Spacer(Modifier.height(8.dp))
-            }
+            // 도보 시간은 장소를 확정하고 넘어간 "장소별 기록" 단계에서 보여 준다.
+            Spacer(Modifier.height(8.dp))
         }
     }
     Spacer(Modifier.height(2.dp))
@@ -445,6 +543,12 @@ private fun computeDragTarget(
 private const val DRAG_EDGE_PX = 120f
 private const val DRAG_SCROLL_PX = 18f
 
+/** 집어 올린 카드가 목록 위로 떠 보이도록. 너무 크면 아래 카드를 가린다. */
+private val DRAG_LIFT_ELEVATION = 16.dp
+private const val DRAG_LIFT_SCALE = 1.03f
+private const val DRAG_AMBIENT_ALPHA = 0.24f
+private const val DRAG_SPOT_ALPHA = 0.34f
+
 @Composable
 private fun AddPlaceButton(
     onClick: () -> Unit,
@@ -457,7 +561,8 @@ private fun AddPlaceButton(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .dashedBorder(color.borderDefaultLevel0, cornerRadius = 16.dp)
+                // Level1(Gray300)이 Level0(Gray400)보다 진하다 — 팔레트 번호가 명도 순이 아니다.
+                .dashedBorder(color.borderDefaultLevel1, cornerRadius = 16.dp)
                 .clickable(enabled = !atMax, onClick = onClick)
                 .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterHorizontally),
@@ -476,7 +581,7 @@ private fun VisibilitySection(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
 ) {
-    CourseSectionHeader(number = 3, title = "코스 설정")
+    CourseSectionHeader(number = CourseCreateUIState.STEP_SETTINGS, title = "코스 설정")
     Spacer(Modifier.height(10.dp))
     CourseTagCard(
         tags = uiState.tags,
@@ -492,19 +597,42 @@ private fun VisibilitySection(
 }
 
 @Composable
-private fun SaveBar(
-    enabled: Boolean,
+private fun StepBottomBar(
+    uiState: CourseCreateUIState,
+    onPrev: () -> Unit,
+    onNext: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    val color = DesignSystemThemeImpl.designSystemColor
+    val isLast = uiState.step == CourseCreateUIState.LAST_STEP
+    Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
+                .background(color.bgDefaultLevel1)
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
     ) {
-        DsButton(text = "코스 저장하기", enabled = enabled, onClick = onSave)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (uiState.step > CourseCreateUIState.FIRST_STEP) {
+                Box(modifier = Modifier.weight(1f)) {
+                    DsButton(text = "이전", variant = DsButtonVariant.Secondary, onClick = onPrev)
+                }
+            }
+            Box(modifier = Modifier.weight(NEXT_BUTTON_WEIGHT)) {
+                DsButton(
+                    // 못 넘어가는 상태면 버튼 자리에 그 이유를 띄운다(별도 안내 문구 없이).
+                    text = uiState.stepBlockedReason ?: if (isLast) "코스 저장하기" else "다음",
+                    // 저장 중에는 중복 탭을 막는다(업로드 + 생성이라 왕복이 길다).
+                    enabled = uiState.canGoNext && !uiState.isSaving,
+                    loading = isLast && uiState.isSaving,
+                    onClick = if (isLast) onSave else onNext,
+                )
+            }
+        }
     }
 }
+
+/** "다음"이 "이전"보다 넓어야 진행 방향이 읽힌다. */
+private const val NEXT_BUTTON_WEIGHT = 2f

@@ -57,4 +57,14 @@ sealed interface CourseCreateReducerEvent : ReducerEvent {
     ) : CourseCreateReducerEvent
 
     data object SaveErrorConsumed : CourseCreateReducerEvent
+
+    data class StepChanged(
+        val step: Int,
+    ) : CourseCreateReducerEvent
+
+    data class SuggestedTagsLoaded(
+        val tags: List<String>,
+    ) : CourseCreateReducerEvent
+
+    data object SavedConsumed : CourseCreateReducerEvent
 }

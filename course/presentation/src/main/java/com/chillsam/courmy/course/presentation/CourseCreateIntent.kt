@@ -73,4 +73,13 @@ sealed interface CourseCreateIntent : MviIntent {
 
     /** 저장 실패 안내를 노출한 뒤 상태에서 지운다. */
     data object ConsumeSaveError : CourseCreateIntent
+
+    /** 다음 단계로. 마지막 단계에서는 쓰지 않는다(저장은 [CompleteCourse]). */
+    data object NextStep : CourseCreateIntent
+
+    /** 이전 단계로. 첫 단계에서는 아무 일도 하지 않는다. */
+    data object PrevStep : CourseCreateIntent
+
+    /** 저장 성공 신호를 소비한다(화면 이동을 끝낸 뒤 호출). 남겨 두면 재진입 때 다시 이동한다. */
+    data object ConsumeSaved : CourseCreateIntent
 }

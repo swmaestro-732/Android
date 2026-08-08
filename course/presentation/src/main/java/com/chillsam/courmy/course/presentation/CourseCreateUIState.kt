@@ -11,6 +11,8 @@ import kotlinx.collections.immutable.persistentListOf
  */
 data class CourseCreateUIState(
     val isLoading: Boolean = true,
+    /** 현재 단계(1..[LAST_STEP]). 1 장소 고르기 · 2 장소별 기록 · 3 코스 정보 · 4 설정. */
+    val step: Int = FIRST_STEP,
     val name: String = "",
     val description: String = "",
     val thumbnailPhotos: ImmutableList<String> = persistentListOf(),
@@ -35,6 +37,37 @@ data class CourseCreateUIState(
                 places.size >= MIN_PLACES &&
                 places.all { it.photoUrls.isNotEmpty() }
 
+    /**
+     * 현재 단계를 넘어가지 못하게 막는 이유. 통과 상태면 null. 버튼 문구로 그대로 쓴다.
+     *
+     * 단계를 나눈 가장 큰 이유가 이것이다. 한 화면일 때는 저장 버튼이 왜 비활성인지 알 수 없어
+     * (조건이 화면 곳곳에 흩어져 있다) 사용자가 직접 찾아내야 했다. 이제는 막힌 지점에서 바로 말해 준다.
+     *
+     * 마지막 단계에서는 앞선 단계의 조건을 모두 다시 본다. 앞 단계를 통과해야 넘어올 수 있으니
+     * 보통은 걸리지 않지만, 뒤로 가서 값을 지운 경우까지 저장 직전에 걸러 낸다.
+     */
+    val stepBlockedReason: String?
+        get() =
+            when (step) {
+                STEP_PLACES -> placesReason
+                STEP_PLACE_RECORDS -> recordsReason
+                STEP_COURSE_INFO -> infoReason
+                else -> placesReason ?: recordsReason ?: infoReason
+            }
+
+    /** 다음 단계로 갈 수 있는지. 마지막 단계에서는 저장 가능 여부와 같다. */
+    val canGoNext: Boolean
+        get() = stepBlockedReason == null
+
+    private val placesReason: String?
+        get() = if (places.size < MIN_PLACES) "장소를 ${MIN_PLACES}곳 이상 담아 주세요." else null
+
+    private val recordsReason: String?
+        get() = if (places.any { it.photoUrls.isEmpty() }) "사진을 추가해주세요" else null
+
+    private val infoReason: String?
+        get() = if (name.isBlank()) "코스 이름을 입력해 주세요." else null
+
     companion object {
         val empty: CourseCreateUIState = CourseCreateUIState()
 
@@ -46,5 +79,13 @@ data class CourseCreateUIState(
 
         /** 코스에 담을 수 있는 최대 장소 수. */
         const val MAX_PLACES = 10
+
+        const val STEP_PLACES = 1
+        const val STEP_PLACE_RECORDS = 2
+        const val STEP_COURSE_INFO = 3
+        const val STEP_SETTINGS = 4
+
+        const val FIRST_STEP = STEP_PLACES
+        const val LAST_STEP = STEP_SETTINGS
     }
 }

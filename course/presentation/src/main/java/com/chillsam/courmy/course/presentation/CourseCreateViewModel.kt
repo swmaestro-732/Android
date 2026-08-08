@@ -6,9 +6,12 @@ import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CompleteCourseUseCase
 import com.chillsam.courmy.course.domain.CreateCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDraftUseCase
+import com.chillsam.courmy.course.domain.GetRecommendedTagsUseCase
+import com.chillsam.courmy.course.domain.GetWalkingMinutesUseCase
 import com.chillsam.courmy.course.domain.SaveDraftUseCase
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseDraftVO
+import com.chillsam.courmy.course.entity.CoursePlaceCoordinate
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
@@ -25,14 +28,14 @@ class CourseCreateViewModel
         private val saveDraftUseCase: SaveDraftUseCase,
         private val completeCourseUseCase: CompleteCourseUseCase,
         private val createCourseUseCase: CreateCourseUseCase,
+        private val getRecommendedTagsUseCase: GetRecommendedTagsUseCase,
+        private val getWalkingMinutesUseCase: GetWalkingMinutesUseCase,
     ) : MviViewModel<CourseCreateIntent, CourseCreateUIState, CourseCreateReducerEvent>(
             CourseCreateUIState.empty,
         ) {
         private var saveJob: Job? = null
-
-        init {
-            onIntent(CourseCreateIntent.Load)
-        }
+        private var tagsJob: Job? = null
+        private var walkJob: Job? = null
 
         // 플랫한 MVI 인텐트 디스패치라 분기 수만큼 길이·복잡도가 늘지만 로직 복잡도는 아니다.
         @Suppress("LongMethod", "CyclomaticComplexMethod")
@@ -95,11 +98,13 @@ class CourseCreateViewModel
                 }
 
                 is CourseCreateIntent.RemovePlace -> {
+                    // 장소가 빠지면 앞뒤 구간이 새로 이어지므로 도보 시간을 다시 구한다.
                     dispatch(
                         CourseCreateReducerEvent.PlacesChanged(
                             currentState.places.filterNot { it.id == intent.placeId },
                         ),
                     )
+                    refreshWalkingMinutes()
                 }
 
                 is CourseCreateIntent.MovePlace -> {
@@ -121,9 +126,34 @@ class CourseCreateViewModel
                 CourseCreateIntent.ConsumeSaveError -> {
                     dispatch(CourseCreateReducerEvent.SaveErrorConsumed)
                 }
+
+                CourseCreateIntent.ConsumeSaved -> {
+                    dispatch(CourseCreateReducerEvent.SavedConsumed)
+                }
+
+                CourseCreateIntent.NextStep -> {
+                    // 조건을 못 채웠으면 넘어가지 않는다(버튼도 비활성이지만 상태 쪽에서도 막는다).
+                    if (currentState.canGoNext && currentState.step < CourseCreateUIState.LAST_STEP) {
+                        val next = currentState.step + 1
+                        dispatch(CourseCreateReducerEvent.StepChanged(next))
+                        // 장소를 다 담고 넘어가는 시점에 한 번만 구간 도보 시간을 구한다
+                        // (장소를 담을 때마다 부르면 같은 계산을 여러 번 하게 된다).
+                        if (next == CourseCreateUIState.STEP_PLACE_RECORDS) refreshWalkingMinutes()
+                        // 태그 단계에 들어설 때, 확정된 장소들로 추천을 받는다.
+                        if (next == CourseCreateUIState.LAST_STEP) loadRecommendedTags()
+                    }
+                }
+
+                CourseCreateIntent.PrevStep -> {
+                    if (currentState.step > CourseCreateUIState.FIRST_STEP) {
+                        dispatch(CourseCreateReducerEvent.StepChanged(currentState.step - 1))
+                    }
+                }
             }
         }
 
+        // onIntent 와 같은 이유: 이벤트 종류만큼 갈래가 늘 뿐, 각 갈래는 copy 한 줄이다.
+        @Suppress("CyclomaticComplexMethod", "LongMethod")
         override fun reduce(
             state: CourseCreateUIState,
             event: CourseCreateReducerEvent,
@@ -138,7 +168,11 @@ class CourseCreateViewModel
                 }
 
                 is CourseCreateReducerEvent.DraftLoaded -> {
-                    state.copy(
+                    // state.copy 가 아니라 **빈 상태에서 새로 만든다**. 이 화면의 엔트리가 백스택에
+                    // 남아 ViewModel 이 재사용되더라도, 진입할 때마다 이전 코스의 입력(대표 사진,
+                    // 저장 결과 등)이 남지 않도록 하기 위해서다. 이어서 쓸 값은 임시저장 목록에서
+                    // 불러오는 것이 이 화면의 계약이다.
+                    CourseCreateUIState.empty.copy(
                         isLoading = false,
                         name = event.draft.name,
                         description = event.draft.description,
@@ -192,6 +226,18 @@ class CourseCreateViewModel
                 CourseCreateReducerEvent.SaveErrorConsumed -> {
                     state.copy(errorMessage = null)
                 }
+
+                CourseCreateReducerEvent.SavedConsumed -> {
+                    state.copy(savedCourseId = null, imagesMissing = false)
+                }
+
+                is CourseCreateReducerEvent.StepChanged -> {
+                    state.copy(step = event.step)
+                }
+
+                is CourseCreateReducerEvent.SuggestedTagsLoaded -> {
+                    state.copy(suggestedTags = event.tags.toImmutableList())
+                }
             }
 
         private fun addTag(tag: String) {
@@ -211,6 +257,42 @@ class CourseCreateViewModel
                     add(toIndex, removeAt(fromIndex))
                 }
             dispatch(CourseCreateReducerEvent.PlacesChanged(reordered))
+            refreshWalkingMinutes()
+        }
+
+        /**
+         * 장소 사이 도보 시간을 다시 구해 [CoursePlaceVO.walkText] 에 채운다.
+         *
+         * 좌표가 빠진 장소가 섞이면 구간을 짝지을 수 없어 아예 표시하지 않는다. 응답이 와도 구간 수가
+         * 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없으므로 같은 이유로 걷어낸다.
+         * 실패해도 코스 만들기 자체는 계속돼야 하므로 화면을 막거나 에러를 띄우지 않는다.
+         */
+        private fun refreshWalkingMinutes() {
+            walkJob?.cancel()
+            val places = currentState.places
+            if (places.size < MIN_WALK_POINTS || places.any { !it.hasLocation }) {
+                places.clearedWalkTexts()?.let { dispatch(CourseCreateReducerEvent.PlacesChanged(it)) }
+                return
+            }
+            val points =
+                places.map { CoursePlaceCoordinate(latitude = it.latitude!!, longitude = it.longitude!!) }
+            walkJob =
+                viewModelScope.launch {
+                    runCatching { getWalkingMinutesUseCase(points) }
+                        .onSuccess { segments ->
+                            val applied = places.withWalkTexts(segments)
+                            if (applied == null) {
+                                Log.w(TAG, "도보 구간 수 불일치: 장소 ${places.size}곳 / 구간 ${segments.size}개")
+                                places.clearedWalkTexts()?.let { dispatch(CourseCreateReducerEvent.PlacesChanged(it)) }
+                            } else {
+                                dispatch(CourseCreateReducerEvent.PlacesChanged(applied))
+                            }
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "도보 시간 조회 실패: 장소 ${places.size}곳", e)
+                            places.clearedWalkTexts()?.let { dispatch(CourseCreateReducerEvent.PlacesChanged(it)) }
+                        }
+                }
         }
 
         private fun addPlaces(places: List<CoursePlaceVO>) {
@@ -256,12 +338,35 @@ class CourseCreateViewModel
                 }
         }
 
+        /**
+         * 추천 태그를 받아 채운다.
+         *
+         * 태그는 저장의 필수 조건이 아니라서 실패해도 화면을 막지 않는다(추천 칩만 안 보인다).
+         * 장소 id 는 서버 place id 문자열이라 Long 으로 되돌린다.
+         */
+        private fun loadRecommendedTags() {
+            tagsJob?.cancel()
+            tagsJob =
+                viewModelScope.launch {
+                    val placeIds = currentState.places.mapNotNull { it.id.toLongOrNull() }
+                    runCatching { getRecommendedTagsUseCase(placeIds) }
+                        .onSuccess { dispatch(CourseCreateReducerEvent.SuggestedTagsLoaded(it)) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "추천 태그 로드 실패", e)
+                        }
+                }
+        }
+
         private fun load() {
             dispatch(CourseCreateReducerEvent.LoadStarted)
             viewModelScope.launch {
                 runCatching { getCourseDraftUseCase() }
-                    .onSuccess { dispatch(CourseCreateReducerEvent.DraftLoaded(it)) }
-                    .onFailure { e ->
+                    .onSuccess {
+                        dispatch(CourseCreateReducerEvent.DraftLoaded(it))
+                        // 이어 쓰는 초안에도 장소가 들어 있어 도보 시간을 채워야 한다.
+                        refreshWalkingMinutes()
+                    }.onFailure { e ->
                         if (e is CancellationException) throw e
                         // 스피너를 걷지 않으면 화면이 영구 정지한다(초안 없이도 작성은 가능하다).
                         Log.w(TAG, "임시저장 초안 로드 실패", e)
@@ -282,6 +387,35 @@ class CourseCreateViewModel
             )
 
         private companion object {
+            /** 도보 시간은 구간이 있어야 의미가 있다(장소 2곳부터). */
+            const val MIN_WALK_POINTS = 2
+
             const val TAG = "CourseCreate"
         }
     }
+
+/** 걸어서 갈 수 없는 구간(서버가 음수로 알려 준다). */
+private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
+
+/**
+ * 구간 도보 분을 장소별 문구로 채운다. 구간 수가 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없어
+ * null 을 돌려 호출부가 표시를 걷어내게 한다. 마지막 장소는 갈 곳이 없어 빈 문자열이다.
+ */
+private fun List<CoursePlaceVO>.withWalkTexts(segments: List<Int>): List<CoursePlaceVO>? {
+    if (segments.size != size - 1) return null
+    return mapIndexed { index, place ->
+        place.copy(walkText = segments.getOrNull(index)?.toWalkText().orEmpty())
+    }
+}
+
+/** 이미 비어 있으면 null 을 돌려 불필요한 상태 갱신을 막는다. */
+private fun List<CoursePlaceVO>.clearedWalkTexts(): List<CoursePlaceVO>? =
+    if (none { it.walkText.isNotEmpty() }) null else map { it.copy(walkText = "") }
+
+/**
+ * 구간 도보 분 → 화면 문구.
+ *
+ * 서버는 걸어서 갈 수 없는 구간(너무 멀거나 경로가 없음)을 **음수(-1)** 로 준다.
+ * 이때는 분으로 환산하지 않고 그렇게 알린다.
+ */
+private fun Int.toWalkText(): String = if (this < 0) UNREACHABLE_TEXT else "도보 ${this}분"

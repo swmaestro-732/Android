@@ -1,6 +1,11 @@
 package com.chillsam.courmy.course.domain
 
 import com.chillsam.courmy.common.domain.media.MediaRepository
+import com.chillsam.courmy.common.domain.media.UploadPurpose
+import com.chillsam.courmy.common.domain.telemetry.AppFailure
+import com.chillsam.courmy.common.domain.telemetry.AppFlow
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.telemetry.track
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CreateCourseResultVO
@@ -22,26 +27,35 @@ class CreateCourseUseCase
     constructor(
         private val repository: CourseRepository,
         private val mediaRepository: MediaRepository,
+        private val telemetry: Telemetry,
     ) {
         suspend operator fun invoke(
             draft: CourseDraftVO,
             thumbnailUris: List<String> = emptyList(),
             published: Boolean = true,
-        ): CreateCourseResultVO {
-            val uploader = ImageUploader()
-            val places = draft.places.map { place -> place.uploadPhotos(uploader) }
-            val thumbnailUrl = thumbnailUris.firstOrNull()?.let { uploader.upload(it) }
-            val courseId =
-                repository.createCourse(
-                    draft = draft.copy(places = places),
-                    thumbnailUrl = thumbnailUrl,
-                    published = published,
-                )
-            return CreateCourseResultVO(courseId = courseId, imagesUploaded = uploader.allSucceeded)
-        }
+        ): CreateCourseResultVO =
+            telemetry.track(AppFlow.CourseCreate) {
+                val uploader = ImageUploader()
+                val places = draft.places.map { place -> place.uploadPhotos(uploader) }
+                val thumbnailUrl = thumbnailUris.firstOrNull()?.let { uploader.upload(it, UploadPurpose.COURSE) }
+                val courseId =
+                    repository.createCourse(
+                        draft = draft.copy(places = places),
+                        thumbnailUrl = thumbnailUrl,
+                        published = published,
+                    )
+                // 코스는 만들어졌지만 사진이 빠진 상태. 화면에는 안내가 나가도 운영에서는 성공으로만 보이므로
+                // 따로 남긴다 — 업로드가 통째로 막힌 상황을 이걸로 알아챌 수 있다.
+                if (!uploader.allSucceeded) {
+                    telemetry.recordFailure(
+                        AppFailure(area = AppFlow.CourseCreate.eventName, kind = "image_upload"),
+                    )
+                }
+                CreateCourseResultVO(courseId = courseId, imagesUploaded = uploader.allSucceeded)
+            }
 
         private suspend fun CoursePlaceVO.uploadPhotos(uploader: ImageUploader) =
-            copy(photoUrls = photoUrls.mapNotNull { uploader.upload(it) })
+            copy(photoUrls = photoUrls.mapNotNull { uploader.upload(it, UploadPurpose.PLACE) })
 
         /** 업로드 결과를 모아 두는 헬퍼. 하나라도 실패하면 [allSucceeded] 가 false 가 된다. */
         private inner class ImageUploader {
@@ -54,11 +68,14 @@ class CreateCourseUseCase
              * 실패 원인을 여기서 따로 남기지 않는 이유: 요청/응답은 data 레이어의 API 로깅에 이미
              * 남고(`API` 태그), domain 은 순수 Kotlin 이라 안드로이드 로거를 쓸 수 없다.
              */
-            suspend fun upload(uri: String): String? =
+            suspend fun upload(
+                uri: String,
+                purpose: UploadPurpose,
+            ): String? =
                 if (uri.startsWith("http")) {
                     uri
                 } else {
-                    runCatching { mediaRepository.uploadImage(uri) }
+                    runCatching { mediaRepository.uploadImage(uri, purpose) }
                         .getOrElse { e ->
                             if (e is CancellationException) throw e
                             allSucceeded = false

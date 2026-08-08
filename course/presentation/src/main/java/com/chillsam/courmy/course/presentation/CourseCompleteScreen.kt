@@ -26,26 +26,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseStopVO
 
 /**
  * 코스 완성(저장 성공) 화면(Figma FS-34-Done). 완료 체크·안내 → 코스 요약 카드 →
  * "코스 동선" 타임라인 → 하단 "내 코스에서 보기" 액션으로 구성한다. 표시 전용 화면.
+ *
+ * 상단 닫기(✕)는 두지 않는다 — 저장이 이미 끝난 화면이라 "취소"처럼 읽힐 여지를 없앤다.
+ * 나가는 길은 하단 액션과 시스템 뒤로가기다.
  */
 @Composable
 fun CourseCompleteScreen(
     course: CourseCompleteVO,
-    onClose: () -> Unit,
     onViewMyCourses: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -57,37 +62,13 @@ fun CourseCompleteScreen(
                 .background(color.bgDefaultLevel0)
                 .statusBarsPadding(),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(color.bgDefaultLevel1)
-                        .clickable(onClick = onClose)
-                        .clearAndSetSemantics {
-                            contentDescription = "닫기"
-                            role = Role.Button
-                        },
-                contentAlignment = Alignment.Center,
-            ) {
-                DsText(
-                    text = "✕",
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel0,
-                )
-            }
-        }
-
         Column(
             modifier =
                 Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = ScreenHorizontalPadding)
+                    .padding(top = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             CompleteHeader()
@@ -116,7 +97,7 @@ fun CourseCompleteScreen(
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
         ) {
             DsButton(text = "내 코스에서 보기", onClick = onViewMyCourses)
         }
@@ -169,18 +150,23 @@ private fun SummaryCard(course: CourseCompleteVO) {
                 .clip(shape)
                 .border(1.dp, color.borderDefaultLevel0, shape),
     ) {
-        Box(
+        // 이미지가 없거나 로드에 실패해도 플레이스홀더 색이 그대로 보이도록 배경 위에 겹쳐 그린다.
+        AsyncImage(
+            model = course.thumbnailUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .height(150.dp)
                     .background(color.imagePlaceholder),
         )
+        // 카드 본문은 흰색. 화면 배경이 bgDefaultLevel0(Gray200)이라 같은 색을 쓰면 카드가 배경에 묻힌다.
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .background(color.bgDefaultLevel0)
+                    .background(color.bgDefaultLevel1)
                     .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -221,7 +207,10 @@ private fun StopRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(
+            AsyncImage(
+                model = stop.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
                 modifier =
                     Modifier
                         .size(48.dp)
