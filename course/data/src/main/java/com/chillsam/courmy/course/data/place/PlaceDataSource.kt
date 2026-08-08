@@ -7,7 +7,10 @@ import com.chillsam.courmy.course.data.place.dto.PlaceSearchEnvelope
 class PlaceDataSource(
     private val apiService: PlaceApiService,
 ) : BaseRemoteDataSource() {
-    suspend fun searchPlaces(query: String): PlaceSearchEnvelope = checkResponse(apiService.searchPlaces(query))
+    suspend fun searchPlaces(
+        query: String,
+        cursor: String?,
+    ): PlaceSearchEnvelope = checkResponse(apiService.searchPlaces(query, cursor = cursor))
 
     suspend fun searchExternalPlaces(query: String): ExternalPlaceSearchEnvelope =
         checkResponse(apiService.searchExternalPlaces(query))

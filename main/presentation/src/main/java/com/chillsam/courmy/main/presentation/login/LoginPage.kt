@@ -40,6 +40,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.TermsAgreementPage
 import kotlinx.coroutines.launch
@@ -91,7 +92,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                 Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = ScreenHorizontalPadding),
         ) {
             Spacer(Modifier.height(40.dp))
             DsText(

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -31,10 +32,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
+import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.domain.DraftListPage
@@ -54,7 +58,8 @@ import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
  * 앱의 기본 시작 화면(FS-09). 헤더(위치·날씨·인사) + 공개 코스 피드로 구성한다.
  *
  * 피드는 `GET /service/v1/courses`(공개 엔드포인트)라 로그인 여부와 무관하게 노출한다.
- * 헤더의 위치·날씨는 아직 고정값이다. [wiki-needed]
+ * 헤더는 위치·날씨를 쓰지 않는다(고정값 "성수동 · 흐림 18°"·"코스 42" 를 걷어냈다).
+ * 코스 수는 실제 피드 건수를 그대로 쓴다. [wiki-needed]
  */
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
@@ -71,6 +76,9 @@ fun HomePage(modifier: Modifier = Modifier) {
     // 코스를 만들거나 저장한 뒤 탭을 옮겼다 오면 목록이 바뀌어 있을 수 있어 다시 불러온다.
     RefreshOnResume { feedViewModel.onIntent(HomeFeedIntent.Retry) }
 
+    val listState = rememberLazyListState()
+    LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
+
     // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
     LaunchedEffect(feedState.actionErrorMessage) {
         feedState.actionErrorMessage?.let { message ->
@@ -86,12 +94,20 @@ fun HomePage(modifier: Modifier = Modifier) {
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize().statusBarsPadding(),
             contentPadding =
-                PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = BottomBarHeight + 40.dp),
+                PaddingValues(
+                    start = ScreenHorizontalPadding,
+                    end = ScreenHorizontalPadding,
+                    top = 12.dp,
+                    bottom = BottomBarHeight + 40.dp,
+                ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item { HomeHeader(nickname = profile?.nickname.orEmpty(), imageUrl = profile?.profileImageUrl.orEmpty()) }
+            item {
+                HomeHeader(imageUrl = profile?.profileImageUrl.orEmpty())
+            }
             // 헤더·하단 탭은 늘 보여야 하므로, 로딩·에러는 화면 전체가 아니라 피드 자리에서만 분기한다.
             when {
                 feedState.courses.isNotEmpty() -> {
@@ -102,6 +118,9 @@ fun HomePage(modifier: Modifier = Modifier) {
                             onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
                             onBookmarkClick = { feedViewModel.onIntent(HomeFeedIntent.ToggleSave(course.id)) },
                         )
+                    }
+                    if (feedState.isLoadingMore) {
+                        item { LoadingMoreFooter() }
                     }
                 }
 
@@ -208,26 +227,20 @@ private fun myProfileForHeader(): MyProfileVO? {
     return myState.profile
 }
 
-/** 헤더 코스 개수 안내(더미 고정값). */
-private const val NEARBY_COURSE_COUNT = 42
-
 /** 홈 헤더: 위치·날씨 → 인사 타이틀 + 우상단 아바타 → 코스 개수 안내(더미 고정값). */
 @Composable
-private fun HomeHeader(
-    nickname: String,
-    imageUrl: String,
-) {
+private fun HomeHeader(imageUrl: String) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column {
         Row(verticalAlignment = Alignment.Top) {
             Column(modifier = Modifier.weight(1f)) {
                 DsText(
-                    text = "성수동 · 흐림 18°",
+                    text = "오늘의 코스 추천",
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )
                 DsText(
-                    text = "${nickname.ifBlank { "회원" }}님, 오늘은\n어디로 떠나볼까요?",
+                    text = "어디로 떠나볼까요?",
                     modifier = Modifier.padding(top = 6.dp),
                     style = DesignSystemThemeImpl.typeScale.titleExtraL,
                     color = color.contentDefaultLevel0,
@@ -238,18 +251,6 @@ private fun HomeHeader(
                 imageUrl = imageUrl,
                 size = 44.dp,
                 modifier = Modifier.padding(start = 12.dp),
-            )
-        }
-        Row(modifier = Modifier.padding(top = 16.dp)) {
-            DsText(
-                text = "성수동 주변 · 오늘 날씨에 맞는 코스 ",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-            )
-            DsText(
-                text = NEARBY_COURSE_COUNT.toString(),
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel0,
             )
         }
     }

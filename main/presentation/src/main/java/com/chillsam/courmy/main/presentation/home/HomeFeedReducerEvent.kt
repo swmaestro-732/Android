@@ -11,6 +11,22 @@ sealed interface HomeFeedReducerEvent : ReducerEvent {
         val courses: List<HomeCourseVO>,
         /** 저장 여부 표시용. 피드 응답에 저장 여부가 없어 따로 조회해 함께 싣는다. */
         val savedCourseIds: Set<String>,
+        val nextCursor: String?,
+        val hasNext: Boolean,
+    ) : HomeFeedReducerEvent
+
+    data object LoadMoreStarted : HomeFeedReducerEvent
+
+    /** 다음 페이지 도착. 기존 목록 뒤에 이어 붙인다. */
+    data class MoreLoaded(
+        val courses: List<HomeCourseVO>,
+        val nextCursor: String?,
+        val hasNext: Boolean,
+    ) : HomeFeedReducerEvent
+
+    /** 다음 페이지 실패. 이미 보고 있는 목록은 그대로 두고 안내만 띄운다. */
+    data class MoreFailed(
+        val message: String,
     ) : HomeFeedReducerEvent
 
     data class Failed(

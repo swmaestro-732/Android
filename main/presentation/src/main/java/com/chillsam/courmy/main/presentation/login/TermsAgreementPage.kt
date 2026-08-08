@@ -34,6 +34,7 @@ import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.login.ProfileSetupPage
 
 /**
@@ -54,7 +55,7 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1).statusBarsPadding()) {
         Column(
-            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
         ) {
             Spacer(Modifier.height(16.dp))
             LoggedInBadge()
@@ -116,7 +117,7 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
                     Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             )
         }
     }

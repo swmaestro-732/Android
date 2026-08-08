@@ -81,9 +81,8 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun withdraw() {
-        val userId =
-            requireNotNull(tokenStore.userId) { "회원 탈퇴에 필요한 사용자 id 가 없습니다(세션 없음/토큰 파싱 실패)." }
-        dataSource.withdraw(userId)
+        // 탈퇴 대상은 서버가 accessToken(JWT) 으로 식별하므로 userId 를 보내지 않는다.
+        dataSource.withdraw()
         tokenStore.clear()
     }
 

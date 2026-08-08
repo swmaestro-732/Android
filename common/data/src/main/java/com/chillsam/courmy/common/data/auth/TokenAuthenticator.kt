@@ -50,7 +50,7 @@ class TokenAuthenticator
         private fun refreshTokenIfRetryable(response: Response): String? {
             val path = response.request.url.encodedPath
             val retryable =
-                REISSUE_PATHS.none { path.endsWith(it) } &&
+                !path.endsWith(REISSUE_PATH) &&
                     priorResponseCount(response) < 1
             if (!retryable) return null
             return tokenStore.refreshToken?.takeIf { it.isNotBlank() }
@@ -73,40 +73,18 @@ class TokenAuthenticator
             }
         }
 
-        /**
-         * 재발급 성공 시 새 accessToken 을 저장하고 돌려준다. 실패면 null.
-         *
-         * 기본 경로가 "경로 없음"으로 실패하면 폴백 경로로 한 번 더 시도한다
-         * (백엔드가 재발급 경로를 옮기는 중 — [TokenReissueApi.reissueFallback] 참고).
-         * 401/400 은 refreshToken 자체가 무효라는 뜻이므로 폴백하지 않는다.
-         */
+        /** 재발급 성공 시 새 accessToken 을 저장하고 돌려준다. 실패면 null. */
         private fun reissue(refreshToken: String): String? {
-            val request = TokenReissueRequest(refreshToken)
-            val primary = call { reissueApi.reissue(request) }
-            val data =
-                primary.data
-                    ?: if (primary.pathMissing) call { reissueApi.reissueFallback(request) }.data else null
+            val data = call { reissueApi.reissue(TokenReissueRequest(refreshToken)) }
             val access = data?.accessToken ?: return null
             tokenStore.updateSession(access, data.refreshToken ?: refreshToken)
             return access
         }
 
-        private fun call(request: () -> Call<TokenReissueEnvelope>): ReissueAttempt {
-            val response = runCatching { request().execute() }.getOrNull()
-            return when {
-                response == null -> ReissueAttempt()
-
-                response.isSuccessful -> ReissueAttempt(data = response.body()?.data)
-
-                // 이 서버는 매핑되지 않은 경로에도 500 을 돌려주므로 404/405 와 함께 "경로 없음" 후보로 본다.
-                else -> ReissueAttempt(pathMissing = response.code() in PATH_MISSING_CODES)
-            }
+        private fun call(request: () -> Call<TokenReissueEnvelope>): TokenResponseDTO? {
+            val response = runCatching { request().execute() }.getOrNull() ?: return null
+            return if (response.isSuccessful) response.body()?.data else null
         }
-
-        private data class ReissueAttempt(
-            val data: TokenResponseDTO? = null,
-            val pathMissing: Boolean = false,
-        )
 
         private fun priorResponseCount(response: Response): Int {
             var count = 0
@@ -119,10 +97,7 @@ class TokenAuthenticator
         }
 
         private companion object {
-            /** 재발급 호출 자체가 다시 재발급을 유발하지 않도록 제외할 경로(폴백 포함). */
-            val REISSUE_PATHS = listOf("api/v1/auth/token-reissue", "api/v1/auth/refresh")
-
-            /** 경로가 없다고 판단할 상태 코드. 404/405 외에 미매핑 경로에 500 을 주는 서버 동작을 포함. */
-            val PATH_MISSING_CODES = setOf(404, 405, 500)
+            /** 재발급 호출 자체가 다시 재발급을 유발하지 않도록 제외할 경로. */
+            const val REISSUE_PATH = "api/v1/auth/refresh"
         }
     }

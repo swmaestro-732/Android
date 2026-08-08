@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.login
 
 import android.widget.Toast
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,28 +34,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.entity.auth.SignupProfile
-import com.chillsam.courmy.main.presentation.component.SignupProgressBar
 
-/** 온보딩 완료 화면(FS-08). 추천 코스를 보여주고 "Courmy 시작하기"로 로그인 완료 후 홈으로 진입. */
+/** 온보딩 완료 화면(FS-08). 가입을 마쳤음을 알리고 "Courmy 시작하기"로 로그인 완료 후 홈으로 진입. */
 @Composable
-fun OnboardingCompletePage(
-    modifier: Modifier = Modifier,
-    themes: List<String> = emptyList(),
-    regions: List<String> = emptyList(),
-) {
+fun OnboardingCompletePage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor
     val viewModel: SignupViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    // 앞서 고른 관심 테마·지역을 반영한 안내 문구(각각 최대 3개, 초과 시 "등").
-    val subtitle = buildRecommendationSubtitle(themes = themes, regions = regions)
     // 사용자가 입력한 닉네임으로 인사(비어 있으면 기본 호칭).
     val displayName = SignupSelectionStore.nickname.ifBlank { "회원" }
 
@@ -76,12 +72,22 @@ fun OnboardingCompletePage(
 
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1)) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            SignupProgressBar(step = 4, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp))
-            Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp)) {
+            StepProgressBar(
+                step = 4,
+                modifier =
+                    Modifier.padding(
+                        start = ScreenHorizontalPadding,
+                        end = ScreenHorizontalPadding,
+                        top = 12.dp,
+                    ),
+            )
+            Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = ScreenHorizontalPadding)) {
+                // 위아래 여백을 1:3 으로 나눠 콘텐츠를 위쪽 1/4 지점에 둔다.
+                // 위로 바짝 붙이면 아래만 뻥 뚫려 보이고, 가운데로 내리면 진행바와 너무 떨어진다.
+                Spacer(Modifier.weight(CONTENT_TOP_WEIGHT))
                 Box(
                     modifier =
                         Modifier
-                            .padding(top = 28.dp)
                             .size(56.dp)
                             .shadow(6.dp, CircleShape, spotColor = color.contentDefaultLevel0.copy(alpha = 0.3f))
                             .clip(CircleShape)
@@ -96,33 +102,46 @@ fun OnboardingCompletePage(
                     )
                 }
                 DsText(
-                    text = "준비 완료!\n${displayName}님 추천 코스를 찾았어요",
+                    text = "가입 완료!\n${displayName}님, 환영합니다!",
                     style = DesignSystemThemeImpl.typeScale.titleExtraL,
                     color = color.contentDefaultLevel0,
                     maxLines = 2,
                     modifier = Modifier.padding(top = 20.dp),
                 )
+                Spacer(Modifier.height(36.dp))
                 DsText(
-                    text = subtitle,
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel2,
-                    maxLines = 2,
-                    modifier = Modifier.padding(top = 12.dp),
+                    text = "이제 이런 걸 할 수 있어요",
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentDefaultLevel0,
                 )
-                Spacer(Modifier.height(32.dp))
-                RecommendedCourseCard(
-                    title = "비 오는 날 성수 카페 코스",
-                    meta = "4 스팟",
+                Spacer(Modifier.height(12.dp))
+                StartGuideRow(
+                    iconRes = R.drawable.ic_add_24,
+                    title = "나만의 코스 만들기",
+                    description = "가 본 장소를 순서대로 엮어 코스로 남겨요.",
                 )
+                StartGuideRow(
+                    iconRes = R.drawable.ic_bookmark_filled_24,
+                    title = "마음에 든 코스 저장",
+                    description = "저장한 코스는 저장 탭에서 다시 볼 수 있어요.",
+                )
+                StartGuideRow(
+                    iconRes = R.drawable.ic_heart_24,
+                    title = "취향 맞는 유저 팔로우",
+                    description = "관심 있는 사람의 새 코스를 놓치지 않아요.",
+                )
+                Spacer(Modifier.weight(CONTENT_BOTTOM_WEIGHT))
             }
             Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
                 DsButton(
                     text = "Courmy 시작하기",
                     enabled = !uiState.isLoading,
                     onClick = {
-                        // 홀더에 담아둔 프로필로 회원가입 API 호출. 관심 태그·지역은 라벨→id 매핑이 아직
-                        // 없어(백엔드 목록 API 필요) 이번엔 전송하지 않는다.
-                        // 이미 http URL 이면 그대로 싣고, 로컬 uri 면 가입 성공 후 업로드하도록 넘긴다
+                        // 홀더에 담아둔 프로필로 회원가입 API 호출.
+                        // 관심 지역은 검색 API 가 주는 법정동코드를 그대로 areaCodes 로 보낸다.
+                        // TODO-API-SPEC: 관심 테마는 아직 라벨→tagId 매핑이 없어(태그 목록 API 필요)
+                        //  likeTagIds 를 채우지 못한다. 기기에는 이름으로 남겨 화면 표시에만 쓴다. [wiki-needed]
+                        // 이미지가 이미 http URL 이면 그대로 싣고, 로컬 uri 면 가입 성공 후 업로드하도록 넘긴다
                         // (presign 은 액세스 토큰이 필요해 가입 전에는 호출할 수 없다).
                         val picked = SignupSelectionStore.profileImageUrl
                         val remoteUrl = picked?.takeIf { it.startsWith("http") }
@@ -133,8 +152,11 @@ fun OnboardingCompletePage(
                                         nickname = SignupSelectionStore.nickname,
                                         handle = SignupSelectionStore.handle,
                                         profileImageUrl = remoteUrl,
+                                        areaCodes = SignupSelectionStore.regionCodes,
                                     ),
                                 localImageUri = picked?.takeIf { remoteUrl == null },
+                                interestThemes = SignupSelectionStore.themes,
+                                interestRegions = SignupSelectionStore.regions,
                             ),
                         )
                     },
@@ -142,7 +164,7 @@ fun OnboardingCompletePage(
                         Modifier
                             .fillMaxWidth()
                             .navigationBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                            .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
                 )
             }
         }
@@ -160,81 +182,57 @@ fun OnboardingCompletePage(
     }
 }
 
-/** 안내 문구에 한 번에 나열할 최대 항목 수. 초과분은 "등"으로 줄인다. */
-private const val MAX_SUMMARY_ITEMS = 3
-
 /**
- * 관심 테마·지역을 반영한 완료 안내 문구를 만든다.
- * 예) "감성 카페·전시 취향과 성수동을 바탕으로 첫 코스를 골라뒀어요."
- * 항목이 [MAX_SUMMARY_ITEMS]개를 넘으면 앞의 3개만 "·"로 잇고 "등"을 붙인다.
+ * 가입 직후 "이제 이런 걸 할 수 있어요" 안내 한 줄.
+ *
+ * 아이콘은 각 기능을 실제로 쓸 때 만나는 것과 같은 것을 쓴다(만들기=홈 FAB 의 `+`,
+ * 저장=북마크, 팔로우=하트). 처음 보는 화면에서 익힌 모양이 그대로 이어지도록.
  */
-private fun buildRecommendationSubtitle(
-    themes: List<String>,
-    regions: List<String>,
-): String {
-    if (themes.isEmpty() || regions.isEmpty()) {
-        return "취향에 맞는 첫 코스를 골라뒀어요."
-    }
-    val themeText = summarize(themes)
-    val regionText = summarize(regions)
-    return "$themeText 취향과 $regionText${objectJosa(regionText)} 바탕으로 첫 코스를 골라뒀어요."
-}
-
-/** 최대 [MAX_SUMMARY_ITEMS]개까지 "·"로 잇고, 더 많으면 뒤에 "등"을 붙인다. */
-private fun summarize(items: List<String>): String {
-    val head = items.take(MAX_SUMMARY_ITEMS).joinToString("·")
-    return if (items.size > MAX_SUMMARY_ITEMS) "$head 등" else head
-}
-
-/** 목적격 조사(을/를)를 마지막 글자의 받침 유무로 고른다. 한글이 아니면 "를". */
-private fun objectJosa(word: String): String {
-    val last = word.lastOrNull() ?: return "를"
-    val hasFinalConsonant = last.code in 0xAC00..0xD7A3 && (last.code - 0xAC00) % 28 != 0
-    return if (hasFinalConsonant) "을" else "를"
-}
-
 @Composable
-private fun RecommendedCourseCard(
+private fun StartGuideRow(
+    @DrawableRes iconRes: Int,
     title: String,
-    meta: String,
+    description: String,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(color.bgAccent)
-                .padding(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(
             modifier =
                 Modifier
-                    .size(48.dp)
+                    .size(40.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(color.contentOnAccent.copy(alpha = 0.18f)),
+                    .background(color.bgAccent.copy(alpha = GUIDE_ICON_BG_ALPHA)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_bookmark_filled_24),
+                painter = painterResource(iconRes),
                 contentDescription = null,
-                tint = color.contentOnAccent,
-                modifier = Modifier.size(24.dp),
+                tint = color.contentAccent,
+                modifier = Modifier.size(22.dp),
             )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             DsText(
                 text = title,
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentOnAccent,
+                color = color.contentDefaultLevel0,
             )
             DsText(
-                text = meta,
+                text = description,
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentOnAccent.copy(alpha = 0.75f),
+                color = color.contentDefaultLevel2,
             )
         }
     }
 }
+
+/** 안내 아이콘 배경. 강조색을 옅게 깔아 아이콘만 도드라지게 한다. */
+private const val GUIDE_ICON_BG_ALPHA = 0.12f
+
+/** 남는 세로 공간을 위:아래 = 1:3 으로 나눈다. */
+private const val CONTENT_TOP_WEIGHT = 1f
+private const val CONTENT_BOTTOM_WEIGHT = 3f

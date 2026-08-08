@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -45,7 +46,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
+import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.presentation.AddPlaceDialog
 import com.chillsam.courmy.course.presentation.PlaceSearchIntent
@@ -111,7 +115,7 @@ fun PlaceSearchOverlay(
         // 결과 수는 검색했을 때만, "새로운 위치 추가" 는 항상 보인다 —
         // 검색으로 못 찾았을 때 쓰는 기능이라 검색어 입력을 전제로 두면 앞뒤가 맞지 않는다.
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DsText(
@@ -141,6 +145,8 @@ fun PlaceSearchOverlay(
             errorMessage = uiState.errorMessage,
             hasQuery = query.isNotBlank(),
             selectedIds = selectedIds,
+            isLoadingMore = uiState.isLoadingMore,
+            onLoadMore = { viewModel.onIntent(PlaceSearchIntent.LoadMore) },
             onToggle = { candidate ->
                 when {
                     candidate.id in selectedIds -> {
@@ -187,22 +193,30 @@ private fun ColumnScope.PlaceCandidateList(
     hasQuery: Boolean,
     selectedIds: List<String>,
     onToggle: (CoursePlaceVO) -> Unit,
+    isLoadingMore: Boolean,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     when {
         results.isNotEmpty() -> {
+            val listState = rememberLazyListState()
+            LoadMoreOnScrollEnd(listState, onLoadMore)
             LazyColumn(
-                modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                state = listState,
+                modifier = modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(results) { candidate ->
+                items(results, key = { it.id }) { candidate ->
                     val order = selectedIds.indexOf(candidate.id)
                     SearchResultRow(
                         candidate = candidate,
                         orderNumber = if (order >= 0) order + 1 else null,
                         onToggle = { onToggle(candidate) },
                     )
+                }
+                if (isLoadingMore) {
+                    item { LoadingMoreFooter() }
                 }
             }
         }
@@ -408,7 +422,7 @@ private fun ConfirmBar(
             Modifier
                 .fillMaxWidth()
                 .background(color.bgDefaultLevel1)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         DsText(
@@ -442,7 +456,7 @@ private fun SearchEmptyState(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
         contentAlignment = Alignment.Center,
     ) {
         DsText(

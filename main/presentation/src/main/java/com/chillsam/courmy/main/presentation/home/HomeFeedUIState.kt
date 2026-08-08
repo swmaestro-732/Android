@@ -27,6 +27,11 @@ data class HomeFeedUIState(
     /** 저장 요청이 진행 중인 코스 id(중복 탭 방지). */
     val savingCourseIds: ImmutableSet<String> = persistentSetOf(),
     val actionErrorMessage: String? = null,
+    /** 다음 페이지 커서. null 이면 첫 페이지를 아직 안 받았거나 마지막 페이지다([hasNext] 로 가른다). */
+    val nextCursor: String? = null,
+    val hasNext: Boolean = false,
+    /** 다음 페이지를 받는 중. 목록 아래 로딩 표시에 쓴다. */
+    val isLoadingMore: Boolean = false,
 ) : UiState {
     companion object {
         val empty: HomeFeedUIState = HomeFeedUIState()
