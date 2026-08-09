@@ -37,14 +37,12 @@ import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.entity.user.UserProfileVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
-import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.profile.ProfileCoursesGrid
 import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
 import com.chillsam.courmy.main.presentation.profile.ProfileSectionLabel
-import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
  * 타유저 프로필 화면(FS-15 OtherUserPageActivity).
@@ -127,7 +125,7 @@ private fun UserProfileContent(
     val context = LocalContext.current
     // 타유저 팔로우 목록 조회가 아직 없어 그쪽만 안내로 둔다. 무반응 버튼으로 두지 않는다.
     val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
-    val shareProfile = { context.copyShareLink(UserProfileRoute.route(profile.handle)) }
+    val shareProfile = notReady
     val scrollState = rememberScrollState()
     // Lazy 목록이 아니라 스크롤 값으로 끝을 판단한다(홈 피드와 같은 헬퍼의 ScrollState 오버로드).
     LoadMoreOnScrollEnd(scrollState, onLoadMore)
