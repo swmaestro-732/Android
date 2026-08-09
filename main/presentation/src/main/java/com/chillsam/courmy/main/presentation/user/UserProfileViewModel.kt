@@ -112,6 +112,16 @@ class UserProfileViewModel
                     state.copy(isLoadingMore = false)
                 }
 
+                else -> {
+                    reduceFollow(state, event)
+                }
+            }
+
+        private fun reduceFollow(
+            state: UserProfileUIState,
+            event: UserProfileReducerEvent,
+        ): UserProfileUIState =
+            when (event) {
                 UserProfileReducerEvent.FollowStarted -> {
                     state.copy(isFollowInFlight = true, followErrorMessage = null)
                 }
@@ -141,6 +151,10 @@ class UserProfileViewModel
 
                 UserProfileReducerEvent.LoginRequiredConsumed -> {
                     state.copy(needsLogin = false)
+                }
+
+                else -> {
+                    state
                 }
             }
 
@@ -198,16 +212,16 @@ class UserProfileViewModel
         }
 
         private fun toggleFollow() {
-            val profile = uiState.value.profile ?: return
+            val state = currentState
+            val profile = state.profile
             // 자기 자신에게는 버튼을 노출하지 않지만, 중복 탭·경합으로 들어오는 경우를 막는다.
-            if (profile.isMe || uiState.value.isFollowInFlight) return
+            if (profile == null || profile.isMe || state.isFollowInFlight) return
             // 비로그인이면 요청을 보내지 않는다 — 401 을 "팔로우하지 못했어요"로 알리면 이유를 알 수 없다.
-            if (!isLoggedInUseCase()) {
+            if (isLoggedInUseCase()) {
+                requestFollow(profile)
+            } else {
                 dispatch(UserProfileReducerEvent.LoginRequired)
-                return
             }
-
-            requestFollow(profile)
         }
 
         private fun requestFollow(profile: UserProfileVO) {
