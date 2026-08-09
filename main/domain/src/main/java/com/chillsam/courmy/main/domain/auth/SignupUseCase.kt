@@ -31,7 +31,8 @@ class SignupUseCase
     ) {
         /**
          * @param localImageUri 사용자가 고른 로컬 이미지(content://). 없으면 null.
-         * @param interestThemes 가입 중 고른 관심 테마 이름.
+         * @param interestThemes 가입 중 고른 관심 테마 코드. 서버 전송은 [profile] 이 담당하고,
+         *   여기서는 화면이 되읽을 캐시만 채운다.
          * @param interestRegions 가입 중 고른 관심 지역. 코드는 [profile] 로 서버에 실려 가고,
          *   이름까지 필요한 화면 표시용으로 기기에도 남긴다.
          * @return 이미지까지 정상 반영됐으면 true. 가입만 성공하고 이미지가 실패했으면 false.
@@ -53,10 +54,10 @@ class SignupUseCase
             interestRegions: List<AreaVO>,
         ): Boolean {
             repository.signup(profile)
-            // TODO-API-SPEC: 서버는 관심사를 받아 저장하지만 마이페이지 응답으로 돌려주지 않는다.
-            //  화면이 되읽을 수 있게 기기에도 남긴다. 응답에 실리면 이 두 줄을 지운다. [wiki-needed]
-            profileRepository.saveInterestThemes(interestThemes)
-            profileRepository.saveInterestRegions(interestRegions)
+            // TODO-API-SPEC: 관심사는 가입 요청에 이미 실려 서버에 저장됐다. 그런데 마이페이지 응답으로
+            //  돌려주지 않아 화면이 되읽을 수 없어, 캐시에만 따로 남긴다(서버 재전송 아님).
+            //  조회 경로가 생기면 이 줄을 지운다. [wiki-needed]
+            profileRepository.cacheInterests(interestThemes, interestRegions)
             if (localImageUri.isNullOrBlank()) return true
 
             return runCatching {

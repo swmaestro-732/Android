@@ -115,12 +115,15 @@ fun ProfileHeader(
                     style = DesignSystemThemeImpl.typeScale.titleExtraL,
                     color = color.contentDefaultLevel0,
                 )
-                Spacer(Modifier.height(2.dp))
-                DsText(
-                    text = "@$handle",
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel2,
-                )
+                // 핸들이 없으면(가입 전 프로필 등) "@" 한 글자만 남으므로 줄째 그리지 않는다.
+                if (handle.isNotBlank()) {
+                    Spacer(Modifier.height(2.dp))
+                    DsText(
+                        text = "@$handle",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel2,
+                    )
+                }
                 Spacer(Modifier.height(10.dp))
                 FollowCounts(
                     followerCount = followerCount,
@@ -277,6 +280,7 @@ fun ProfileAvatar(
                 .size(size)
                 .clip(CircleShape)
                 .background(color.imagePlaceholder),
+        contentAlignment = Alignment.Center,
     ) {
         if (imageUrl.isNotBlank()) {
             AsyncImage(
@@ -285,9 +289,20 @@ fun ProfileAvatar(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
+        } else {
+            // 사진을 아직 안 올린 사용자. 빈 회색 원만 두면 로딩이 덜 끝난 것처럼 보인다.
+            Icon(
+                painter = painterResource(R.drawable.ic_tab_person_24),
+                contentDescription = "프로필 이미지 없음",
+                tint = color.contentDefaultLevel3,
+                modifier = Modifier.size(size * AVATAR_ICON_RATIO),
+            )
         }
     }
 }
+
+/** 아바타 지름 대비 기본 아이콘 크기. 원 안에 여백을 남겨 아이콘이 갇혀 보이지 않게 한다. */
+private const val AVATAR_ICON_RATIO = 0.55f
 
 /** 코스 2열 카드 그리드. */
 @Composable

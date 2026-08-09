@@ -2,12 +2,14 @@ package com.chillsam.courmy.main.presentation.user
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.user.GetUserProfileUseCase
 import com.chillsam.courmy.main.domain.user.ToggleFollowUseCase
 import com.chillsam.courmy.main.entity.user.FollowRelation
 import com.chillsam.courmy.main.entity.user.UserProfileVO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -26,10 +28,12 @@ class UserProfileViewModel
     constructor(
         private val getUserProfileUseCase: GetUserProfileUseCase,
         private val toggleFollowUseCase: ToggleFollowUseCase,
+        private val isLoggedInUseCase: IsLoggedInUseCase,
     ) : MviViewModel<UserProfileIntent, UserProfileUIState, UserProfileReducerEvent>(
             UserProfileUIState.empty,
         ) {
         private var loadJob: Job? = null
+        private var moreJob: Job? = null
         private var followJob: Job? = null
         private var handle: String = ""
 
@@ -44,12 +48,20 @@ class UserProfileViewModel
                     load()
                 }
 
+                UserProfileIntent.LoadMore -> {
+                    loadMore()
+                }
+
                 UserProfileIntent.ToggleFollow -> {
                     toggleFollow()
                 }
 
                 UserProfileIntent.ConsumeFollowError -> {
                     dispatch(UserProfileReducerEvent.FollowErrorConsumed)
+                }
+
+                UserProfileIntent.ConsumeLoginRequired -> {
+                    dispatch(UserProfileReducerEvent.LoginRequiredConsumed)
                 }
             }
         }
@@ -64,7 +76,17 @@ class UserProfileViewModel
                 }
 
                 is UserProfileReducerEvent.Loaded -> {
-                    state.copy(isLoading = false, profile = event.profile, errorMessage = null)
+                    state.copy(
+                        isLoading = false,
+                        profile = event.profile,
+                        errorMessage = null,
+                        courses =
+                            event.profile.courses.items
+                                .toImmutableList(),
+                        nextCursor = event.profile.courses.nextCursor,
+                        hasNext = event.profile.courses.hasNext,
+                        isLoadingMore = false,
+                    )
                 }
 
                 is UserProfileReducerEvent.Failed -> {
@@ -72,6 +94,34 @@ class UserProfileViewModel
                     state.copy(isLoading = false, profile = null, errorMessage = event.message)
                 }
 
+                UserProfileReducerEvent.LoadMoreStarted -> {
+                    state.copy(isLoadingMore = true)
+                }
+
+                is UserProfileReducerEvent.MoreLoaded -> {
+                    state.copy(
+                        // 서버가 같은 코스를 다시 줘도 두 번 그리지 않는다.
+                        courses = (state.courses + event.courses).distinctBy { it.id }.toImmutableList(),
+                        nextCursor = event.nextCursor,
+                        hasNext = event.hasNext,
+                        isLoadingMore = false,
+                    )
+                }
+
+                UserProfileReducerEvent.MoreFailed -> {
+                    state.copy(isLoadingMore = false)
+                }
+
+                else -> {
+                    reduceFollow(state, event)
+                }
+            }
+
+        private fun reduceFollow(
+            state: UserProfileUIState,
+            event: UserProfileReducerEvent,
+        ): UserProfileUIState =
+            when (event) {
                 UserProfileReducerEvent.FollowStarted -> {
                     state.copy(isFollowInFlight = true, followErrorMessage = null)
                 }
@@ -94,6 +144,18 @@ class UserProfileViewModel
                 UserProfileReducerEvent.FollowErrorConsumed -> {
                     state.copy(followErrorMessage = null)
                 }
+
+                UserProfileReducerEvent.LoginRequired -> {
+                    state.copy(needsLogin = true)
+                }
+
+                UserProfileReducerEvent.LoginRequiredConsumed -> {
+                    state.copy(needsLogin = false)
+                }
+
+                else -> {
+                    state
+                }
             }
 
         private fun load() {
@@ -105,6 +167,8 @@ class UserProfileViewModel
             }
             dispatch(UserProfileReducerEvent.LoadStarted)
             loadJob?.cancel()
+            // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
+            moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
                     runCatching { getUserProfileUseCase(handle) }
@@ -118,12 +182,46 @@ class UserProfileViewModel
                 }
         }
 
-        private fun toggleFollow() {
-            val profile = uiState.value.profile ?: return
-            // 자기 자신에게는 버튼을 노출하지 않지만, 중복 탭·경합으로 들어오는 경우를 막는다.
-            if (profile.isMe || uiState.value.isFollowInFlight) return
+        /**
+         * 다음 페이지를 이어 받는다. 첫 로드 중이거나 마지막 페이지면 아무것도 하지 않는다.
+         * 스크롤이 조금만 흔들려도 호출되므로 중복 요청을 여기서 막는다.
+         */
+        private fun loadMore() {
+            val state = currentState
+            if (state.isLoading || state.isLoadingMore) return
+            val cursor = state.nextCursor?.takeIf { state.hasNext } ?: return
+            dispatch(UserProfileReducerEvent.LoadMoreStarted)
+            moreJob?.cancel()
+            moreJob =
+                viewModelScope.launch {
+                    runCatching { getUserProfileUseCase(handle = handle, cursor = cursor) }
+                        .onSuccess { profile ->
+                            dispatch(
+                                UserProfileReducerEvent.MoreLoaded(
+                                    courses = profile.courses.items,
+                                    nextCursor = profile.courses.nextCursor,
+                                    hasNext = profile.courses.hasNext,
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "타유저 코스 다음 페이지 로드 실패: handle=$handle", e)
+                            dispatch(UserProfileReducerEvent.MoreFailed)
+                        }
+                }
+        }
 
-            requestFollow(profile)
+        private fun toggleFollow() {
+            val state = currentState
+            val profile = state.profile
+            // 자기 자신에게는 버튼을 노출하지 않지만, 중복 탭·경합으로 들어오는 경우를 막는다.
+            if (profile == null || profile.isMe || state.isFollowInFlight) return
+            // 비로그인이면 요청을 보내지 않는다 — 401 을 "팔로우하지 못했어요"로 알리면 이유를 알 수 없다.
+            if (isLoggedInUseCase()) {
+                requestFollow(profile)
+            } else {
+                dispatch(UserProfileReducerEvent.LoginRequired)
+            }
         }
 
         private fun requestFollow(profile: UserProfileVO) {

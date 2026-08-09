@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.user
 
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
+import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.entity.user.FollowRelation
 import com.chillsam.courmy.main.entity.user.UserProfileVO
 
@@ -14,6 +15,17 @@ sealed interface UserProfileReducerEvent : ReducerEvent {
     data class Failed(
         val message: String,
     ) : UserProfileReducerEvent
+
+    data object LoadMoreStarted : UserProfileReducerEvent
+
+    data class MoreLoaded(
+        val courses: List<ProfileCourseVO>,
+        val nextCursor: String?,
+        val hasNext: Boolean,
+    ) : UserProfileReducerEvent
+
+    /** 이어받기 실패는 보고 있는 목록을 되돌리지 않는다 — 안내만 하고 상태는 유지한다. */
+    data object MoreFailed : UserProfileReducerEvent
 
     /** 팔로우 요청 진행 중(버튼 중복 탭 방지). */
     data object FollowStarted : UserProfileReducerEvent
@@ -29,4 +41,9 @@ sealed interface UserProfileReducerEvent : ReducerEvent {
     ) : UserProfileReducerEvent
 
     data object FollowErrorConsumed : UserProfileReducerEvent
+
+    /** 비로그인 상태로 팔로우를 눌렀다. 화면이 로그인 안내를 띄운다. */
+    data object LoginRequired : UserProfileReducerEvent
+
+    data object LoginRequiredConsumed : UserProfileReducerEvent
 }

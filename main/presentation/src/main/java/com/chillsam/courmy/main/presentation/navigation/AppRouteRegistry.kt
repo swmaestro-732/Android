@@ -11,6 +11,7 @@ import com.chillsam.courmy.course.presentation.CourseCreateIntent
 import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
 import com.chillsam.courmy.course.presentation.CourseDetailPage
+import com.chillsam.courmy.course.presentation.CourseDetailPageActions
 import com.chillsam.courmy.course.presentation.CourseDetailViewModel
 import com.chillsam.courmy.course.presentation.CourseEditPage
 import com.chillsam.courmy.course.presentation.CourseEditViewModel
@@ -211,7 +212,10 @@ val appRoutes: List<AppRoute> =
                     } else {
                         FollowTab.FOLLOWER
                     }
-                FollowListPage(initialTab = tab)
+                FollowListPage(
+                    initialTab = tab,
+                    targetUserId = args[FollowListRoute.ARG_USER_ID]?.toLongOrNull(),
+                )
             },
         ),
         AppRoute(
@@ -258,16 +262,20 @@ val appRoutes: List<AppRoute> =
                 CourseDetailPage(
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
                     courseId = args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
-                    onBack = { navigationHelper.navigateToBack() },
-                    onAuthorClick = { handle ->
-                        navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
-                    },
-                    onMyProfileClick = { navigationHelper.navigateTo(MyRoute) },
-                    onShare = { notReady() },
-                    onEditCourse = {
-                        val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
-                        navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
-                    },
+                    actions =
+                        CourseDetailPageActions(
+                            onBack = { navigationHelper.navigateToBack() },
+                            onAuthorClick = { handle ->
+                                navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
+                            },
+                            onMyProfileClick = { navigationHelper.navigateTo(MyRoute) },
+                            onShare = { notReady() },
+                            onEditCourse = {
+                                val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
+                                navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
+                            },
+                            onLogin = { navigationHelper.navigateTo(LoginRoute) },
+                        ),
                 )
             },
         ),

@@ -51,14 +51,18 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.user.UserProfilePage
 import com.chillsam.courmy.main.entity.my.FollowUserVO
+import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
+import com.chillsam.courmy.main.domain.my.MyPage as MyRoute
 
 /**
  * 팔로우 목록 화면(FS-15 O). 팔로워/팔로잉 탭 전환 + 사용자 목록(제거 ✕).
- * 마이의 팔로워/팔로잉을 눌러 [initialTab] 으로 진입한다. 목록은 백엔드 연동 전 더미다.
+ * 프로필의 팔로워/팔로잉을 눌러 [initialTab] 으로 진입한다.
+ * [targetUserId] 가 null 이면 내 목록, 값이 있으면 그 사용자의 목록이다.
  */
 @Composable
 fun FollowListPage(
     initialTab: FollowTab,
+    targetUserId: Long? = null,
     modifier: Modifier = Modifier,
     viewModel: FollowListViewModel = hiltViewModel(),
 ) {
@@ -69,9 +73,17 @@ fun FollowListPage(
     val selectedTab = uiState.selectedTab
     val users = uiState.users
     var pendingRemoval by remember { mutableStateOf<FollowUserVO?>(null) }
+    // 대상이 지정되지 않았으면 내 목록이다(라우트 인자 없이 마이에서 진입).
+    val isMyList = targetUserId == null
+    // 해제할 수 있는 건 "내가 팔로우한 사람"뿐이다. 나를 팔로우한 사람을 떼어내는 API 가 서버에 없어
+    // 팔로워 탭에서는 ✕ 를 두지 않는다(눌러도 "준비 중" 만 뜨던 자리).
+    val canUnfollow = isMyList && selectedTab == FollowTab.FOLLOWING
 
-    // 진입 탭을 알려 그 탭부터 불러온다(라우트 인자로 팔로워/팔로잉이 정해진다).
-    LaunchedEffect(initialTab) { viewModel.onIntent(FollowListIntent.SelectTab(initialTab)) }
+    // 조회 대상을 먼저 알린 뒤 진입 탭을 부른다. 순서가 반대면 대상이 정해지기 전에 내 목록을 불러온다.
+    LaunchedEffect(targetUserId, initialTab) {
+        viewModel.onIntent(FollowListIntent.SetTarget(targetUserId))
+        viewModel.onIntent(FollowListIntent.SelectTab(initialTab))
+    }
     // 해제 실패는 화면을 바꾸지 않고 토스트로만 알린다.
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
@@ -111,9 +123,14 @@ fun FollowListPage(
                     FollowUserRow(
                         user = user,
                         onClick = {
-                            navigationHelper.navigateByRoute(UserProfilePage.route(user.handle))
+                            // 나를 누르면 타유저 프로필이 아니라 마이 화면으로 간다.
+                            if (user.isMe) {
+                                navigationHelper.navigateTo(MyRoute)
+                            } else {
+                                navigationHelper.navigateByRoute(UserProfilePage.route(user.handle))
+                            }
                         },
-                        onRemove = { pendingRemoval = user },
+                        onRemove = if (canUnfollow) ({ pendingRemoval = user }) else null,
                     )
                 }
                 if (uiState.isLoadingMore) {
@@ -122,24 +139,13 @@ fun FollowListPage(
             }
         }
         pendingRemoval?.let { user ->
-            val following = selectedTab == FollowTab.FOLLOWING
+            // 팔로잉 탭에서만 열리므로 해제 한 가지만 묻는다.
             DsConfirmDialog(
-                title = if (following) "팔로잉을 해제할까요?" else "이 팔로워를 삭제할까요?",
-                description =
-                    if (following) {
-                        "${user.name} 님 팔로잉을 해제해요."
-                    } else {
-                        "${user.name} 님을 팔로워 목록에서 삭제해요."
-                    },
+                title = "팔로잉을 해제할까요?",
+                description = "${user.name} 님 팔로잉을 해제해요.",
                 destructive = true,
                 onConfirm = {
-                    if (selectedTab == FollowTab.FOLLOWING) {
-                        viewModel.onIntent(FollowListIntent.Unfollow(user.id))
-                    } else {
-                        // 서버에 "내 팔로워 삭제" 동작이 없다. DELETE /followers/{userId} 는
-                        // "내가 그 사람을 언팔로우" 라 의미가 반대라 호출하지 않는다.
-                        Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show()
-                    }
+                    viewModel.onIntent(FollowListIntent.Unfollow(user.id))
                     pendingRemoval = null
                 },
                 onDismiss = { pendingRemoval = null },
@@ -232,7 +238,7 @@ private fun FollowTabItem(
 private fun FollowUserRow(
     user: FollowUserVO,
     onClick: () -> Unit,
-    onRemove: () -> Unit,
+    onRemove: (() -> Unit)?,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
@@ -244,40 +250,41 @@ private fun FollowUserRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(color.imagePlaceholder),
-        )
+        // 서버가 주는 프로필 이미지를 그린다(URL 이 비면 기본 사람 아이콘).
+        ProfileAvatar(imageUrl = user.avatarUrl, size = 44.dp)
         Column(modifier = Modifier.weight(1f)) {
             DsText(
                 text = user.name,
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = color.contentDefaultLevel0,
             )
-            DsText(
-                text = "@${user.handle}",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-            )
+            // 핸들이 없으면 "@" 한 글자만 남으므로 줄째 그리지 않는다.
+            if (user.handle.isNotBlank()) {
+                DsText(
+                    text = "@${user.handle}",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                )
+            }
         }
-        Box(
-            modifier =
-                Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, color.borderDefaultLevel0, CircleShape)
-                    .clickable(onClick = onRemove),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.close_small_24),
-                contentDescription = "${user.name} 제거",
-                tint = color.contentDefaultLevel2,
-                modifier = Modifier.size(14.dp),
-            )
+        // 남의 목록에서는 해제할 권한이 없어 버튼째 그리지 않는다.
+        if (onRemove != null) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .border(1.dp, color.borderDefaultLevel0, CircleShape)
+                        .clickable(onClick = onRemove),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.close_small_24),
+                    contentDescription = "${user.name} 제거",
+                    tint = color.contentDefaultLevel2,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.chillsam.courmy.common.entity.paging
 
+import kotlinx.serialization.Serializable
+
 /**
  * 커서 페이징 응답 한 페이지.
  *
@@ -11,7 +13,12 @@ package com.chillsam.courmy.common.entity.paging
  *
  * [hasNext] 가 false 면 [nextCursor] 도 null 이어야 정상이다. 서버가 어긋나게 주더라도
  * 무한 재요청에 빠지지 않도록, 변환하는 쪽에서 커서가 없으면 끝으로 처리한다.
+ *
+ * `@Serializable` 인 VO 의 필드로 쓰이므로([com.chillsam.courmy.main.entity.my.MyProfileVO] 등)
+ * 이 클래스도 직렬화 가능해야 한다. 제네릭이라 [T] 의 시리얼라이저를 받는 형태로 생성되며,
+ * 담기는 타입도 `@Serializable` 이어야 한다.
  */
+@Serializable
 data class CursorPageVO<T>(
     val items: List<T> = emptyList(),
     val nextCursor: String? = null,

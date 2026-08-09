@@ -33,8 +33,15 @@ class FollowListViewModel
         private var moreJob: Job? = null
         private val unfollowJobs = mutableMapOf<Long, Job>()
 
+        /** 조회 대상. null 이면 내 목록(서버가 JWT 로 식별). 타유저 프로필에서 넘어올 때만 채워진다. */
+        private var targetUserId: Long? = null
+
         override fun onIntent(intent: FollowListIntent) {
             when (intent) {
+                is FollowListIntent.SetTarget -> {
+                    targetUserId = intent.userId
+                }
+
                 is FollowListIntent.SelectTab -> {
                     dispatch(FollowListReducerEvent.TabSelected(intent.tab))
                     // 이미 불러온 탭은 다시 부르지 않는다(탭을 오갈 때마다 요청이 나가지 않게).
@@ -131,22 +138,23 @@ class FollowListViewModel
             moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getFollowListUseCase(followers = tab == FollowTab.FOLLOWER) }
-                        .onSuccess { page ->
-                            dispatch(
-                                FollowListReducerEvent.Loaded(
-                                    tab = tab,
-                                    users = page.items,
-                                    nextCursor = page.nextCursor,
-                                    hasNext = page.hasNext,
-                                ),
-                            )
-                        }.onFailure { e ->
-                            if (e is CancellationException) throw e
-                            // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
-                            Log.w(TAG, "팔로우 목록 로드 실패: tab=$tab", e)
-                            dispatch(FollowListReducerEvent.LoadFailed("목록을 불러오지 못했습니다."))
-                        }
+                    runCatching {
+                        getFollowListUseCase(followers = tab == FollowTab.FOLLOWER, userId = targetUserId)
+                    }.onSuccess { page ->
+                        dispatch(
+                            FollowListReducerEvent.Loaded(
+                                tab = tab,
+                                users = page.items,
+                                nextCursor = page.nextCursor,
+                                hasNext = page.hasNext,
+                            ),
+                        )
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
+                        Log.w(TAG, "팔로우 목록 로드 실패: tab=$tab", e)
+                        dispatch(FollowListReducerEvent.LoadFailed("목록을 불러오지 못했습니다."))
+                    }
                 }
         }
 
@@ -161,7 +169,11 @@ class FollowListViewModel
             moreJob =
                 viewModelScope.launch {
                     runCatching {
-                        getFollowListUseCase(followers = tab == FollowTab.FOLLOWER, cursor = cursor)
+                        getFollowListUseCase(
+                            followers = tab == FollowTab.FOLLOWER,
+                            userId = targetUserId,
+                            cursor = cursor,
+                        )
                     }.onSuccess { page ->
                         dispatch(
                             FollowListReducerEvent.MoreLoaded(

@@ -23,20 +23,28 @@ class UpdateProfileUseCaseTest {
             private set
         var updateCalled = false
             private set
-        var savedBio: String? = null
+        var sentBio: String? = null
             private set
 
-        override suspend fun getMyProfile(): MyProfileVO = error("호출되지 않아야 한다")
-
-        override suspend fun saveBio(bio: String) {
-            savedBio = bio
-        }
+        override suspend fun getMyProfile(
+            size: Int,
+            cursor: String?,
+        ): MyProfileVO = error("호출되지 않아야 한다")
 
         override suspend fun saveInterestThemes(themes: List<String>) = error("호출되지 않아야 한다")
 
         override suspend fun saveInterestRegions(regions: List<AreaVO>) = error("호출되지 않아야 한다")
 
-        override suspend fun getUserProfile(handle: String): UserProfileVO = error("호출되지 않아야 한다")
+        override suspend fun cacheInterests(
+            themes: List<String>,
+            regions: List<AreaVO>,
+        ) = error("호출되지 않아야 한다")
+
+        override suspend fun getUserProfile(
+            handle: String,
+            size: Int,
+            cursor: String?,
+        ): UserProfileVO = error("호출되지 않아야 한다")
 
         override suspend fun setFollow(
             userId: Long,
@@ -47,9 +55,11 @@ class UpdateProfileUseCaseTest {
             nickname: String?,
             handle: String?,
             profileImageUrl: String?,
+            bio: String?,
         ) {
             updateCalled = true
             updatedImageUrl = profileImageUrl
+            sentBio = bio
         }
     }
 
@@ -117,26 +127,50 @@ class UpdateProfileUseCaseTest {
             assertTrue("업로드 실패 시 수정 요청이 나가면 안 된다", !profile.updateCalled)
         }
 
+    /** 소개는 서버가 받는 필드다(`UpdateProfileRequest.bio`) — 로컬 저장으로 새지 않아야 한다. */
     @Test
-    fun `소개를 바꾸면 로컬에 저장된다`() =
+    fun `소개를 바꾸면 수정 요청에 함께 실린다`() =
         runTest {
             val repository = FakeProfileRepository()
             val useCase = UpdateProfileUseCase(repository, FakeMediaRepository())
 
             useCase(bio = "성수 산책 좋아해요")
 
-            assertEquals("성수 산책 좋아해요", repository.savedBio)
-            assertTrue("소개만 바꿀 때 빈 서버 요청을 보내면 안 된다", !repository.updateCalled)
+            assertTrue(repository.updateCalled)
+            assertEquals("성수 산책 좋아해요", repository.sentBio)
+        }
+
+    /** 빈 문자열은 "지움"이라 null 로 바꾸지 않고 그대로 보내야 한다. */
+    @Test
+    fun `소개를 비우면 빈 값을 보내 지운다`() =
+        runTest {
+            val repository = FakeProfileRepository()
+
+            UpdateProfileUseCase(repository, FakeMediaRepository())(bio = "")
+
+            assertTrue(repository.updateCalled)
+            assertEquals("", repository.sentBio)
         }
 
     @Test
-    fun `소개를 건드리지 않으면 저장하지 않는다`() =
+    fun `소개를 건드리지 않으면 요청에 싣지 않는다`() =
         runTest {
             val repository = FakeProfileRepository()
             val useCase = UpdateProfileUseCase(repository, FakeMediaRepository())
 
             useCase(nickname = "허나영임")
 
-            assertNull(repository.savedBio)
+            assertNull(repository.sentBio)
+        }
+
+    /** 바뀐 게 없으면 아무 필드도 없는 요청이 나가면 안 된다. */
+    @Test
+    fun `바뀐 항목이 없으면 요청하지 않는다`() =
+        runTest {
+            val repository = FakeProfileRepository()
+
+            UpdateProfileUseCase(repository, FakeMediaRepository())()
+
+            assertTrue("빈 수정 요청을 보내면 안 된다", !repository.updateCalled)
         }
 }
