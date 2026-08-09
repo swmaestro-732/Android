@@ -1,6 +1,6 @@
 package com.chillsam.courmy.main.data.saved.dto
 
-import com.chillsam.courmy.common.data.category.toCourseTagLabel
+import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 import kotlinx.serialization.Serializable
