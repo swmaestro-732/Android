@@ -1,6 +1,6 @@
 package com.chillsam.courmy.course.data.place.dto
 
-import com.chillsam.courmy.common.data.category.toPlaceCategoryLabel
+import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import kotlinx.serialization.Serializable

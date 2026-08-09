@@ -1,6 +1,6 @@
 package com.chillsam.courmy.main.data.home.dto
 
-import com.chillsam.courmy.common.data.category.toCourseTagLabel
+import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.data.profile.dto.formatCount
 import com.chillsam.courmy.main.entity.home.HomeCourseVO

@@ -1,7 +1,7 @@
 package com.chillsam.courmy.course.data.courseDetail.dto
 
-import com.chillsam.courmy.common.data.category.toCourseTagLabel
-import com.chillsam.courmy.common.data.category.toPlaceCategoryLabel
+import com.chillsam.courmy.common.entity.category.toCourseTagLabel
+import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
