@@ -38,6 +38,20 @@ class CreateCourseDtoMappingTest {
     }
 
     @Test
+    fun `중간의 잘못된 장소가 빠지면 이어 붙은 장소 사이 도보 분은 비운다`() {
+        val request =
+            draft(
+                place("1", walkingMinutes = 6),
+                place("stub", walkingMinutes = 9),
+                place("3", walkingMinutes = 4),
+                place("4"),
+            ).toCreateRequest()
+
+        assertEquals(listOf(1L, 3L, 4L), request.places.map { it.placeId })
+        assertEquals(listOf(null, 4, null), request.places.map { it.walkingMinutes })
+    }
+
+    @Test
     fun `걸어갈 수 없는 구간은 서버 약속값 그대로 보낸다`() {
         val request =
             draft(
