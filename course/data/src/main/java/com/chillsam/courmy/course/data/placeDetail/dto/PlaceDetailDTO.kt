@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.placeDetail.dto
 
+import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.entity.PlaceDetailVO
 import kotlinx.serialization.Serializable
 
@@ -47,7 +48,7 @@ fun PlaceDetailScreenDTO.toVO(): PlaceDetailVO {
     val hasCoordinates = location?.latitude != null && location.longitude != null
     return PlaceDetailVO(
         name = place?.name.orEmpty(),
-        category = place?.categories.orEmpty().joinToString(" · "),
+        category = place?.categories.toPlaceCategoryLabel(),
         address = place?.address.orEmpty(),
         latitude = location?.latitude.takeIf { hasCoordinates },
         longitude = location?.longitude.takeIf { hasCoordinates },

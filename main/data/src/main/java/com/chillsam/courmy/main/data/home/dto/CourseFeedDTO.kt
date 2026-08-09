@@ -1,7 +1,7 @@
 package com.chillsam.courmy.main.data.home.dto
 
+import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
-import com.chillsam.courmy.main.data.course.toCourseCategoryLabel
 import com.chillsam.courmy.main.data.profile.dto.formatCount
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import kotlinx.serialization.Serializable
@@ -57,7 +57,7 @@ internal fun CourseFeedDTO.toVOList(): List<HomeCourseVO> =
                 id = item.id.toString(),
                 title = item.title.orEmpty(),
                 coverImageUrl = item.coverImageUrl.orEmpty(),
-                categoryLabel = item.theme.toCourseCategoryLabel(),
+                categoryLabel = item.theme.toCourseTagLabel(),
                 saveCountText = formatCount(item.savesCnt ?: 0),
             )
         }

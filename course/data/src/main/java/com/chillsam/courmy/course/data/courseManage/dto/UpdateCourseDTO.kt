@@ -29,7 +29,8 @@ data class UpdateCourseRequest(
 
 /**
  * 편집 요청에 싣는 장소 1건. `caption`(한마디)만 바뀌고 나머지는 불러온 값을 그대로 돌려보낸다.
- * 서버가 places 를 통째로 치환하므로 [imageUrls] 를 빼면 장소 사진이 지워진다.
+ * 서버가 places 를 통째로 치환하므로 [imageUrls] 를 빼면 장소 사진이, [walkingMinutes] 를 빼면
+ * 저장돼 있던 도보 시간이 지워진다.
  */
 @Serializable
 data class UpdateCoursePlaceRequest(
@@ -37,6 +38,7 @@ data class UpdateCoursePlaceRequest(
     val orderNo: Int,
     val caption: String?,
     val imageUrls: List<String>,
+    val walkingMinutes: Int?,
 )
 
 /** 편집 값 → 요청 변환. 빈 문자열은 null 로 보내 "지움"을 표현한다. */
@@ -55,6 +57,7 @@ fun CourseEditVO.toUpdateRequest(): UpdateCourseRequest =
                     orderNo = place.orderNo,
                     caption = place.tip.trim().ifBlank { null },
                     imageUrls = place.imageUrls,
+                    walkingMinutes = place.walkingMinutes,
                 )
             },
     )

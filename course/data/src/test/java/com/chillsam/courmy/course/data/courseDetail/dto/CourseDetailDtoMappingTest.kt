@@ -197,12 +197,137 @@ class CourseDetailDtoMappingTest {
         assertEquals("", vo.title)
         assertEquals(emptyList<String>(), vo.themes)
         assertEquals("0곳", vo.placeCountText)
-        assertEquals("도보 0분", vo.walkText)
+        // 도보 합계가 없으면 "도보 0분" 대신 빈 값 — 화면이 항목째 뺀다.
+        assertEquals("", vo.walkText)
         assertEquals("0 따라감", vo.followerText)
         assertEquals("0.0", vo.rating)
         assertEquals("0개", vo.reviewCountText)
         assertEquals(emptyList<Any>(), vo.places)
         assertEquals(emptyList<Any>(), vo.reviews)
+    }
+
+    /**
+     * 걸어갈 수 없는 구간(-1)이 섞이면 합계가 실제 동선을 말해 주지 않는다.
+     * 표시를 비워 호출부가 "도보" 항목을 아예 빼게 한다.
+     */
+    @Test
+    fun `걸어갈 수 없는 구간이 하나라도 있으면 총 도보 표시를 비운다`() {
+        fun voWith(
+            total: Int,
+            toNext: Int?,
+        ) = fullData()
+            .copy(
+                course =
+                    fullData().course!!.copy(
+                        stats = CourseStatsDTO(walkingMinutes = total),
+                        places = listOf(place(orderNo = 0, name = "첫째", walkToNext = toNext)),
+                    ),
+            ).toVO(myUserId = null)
+
+        assertEquals("도보 20분", voWith(total = 20, toNext = 6).walkText)
+        // 구간 하나가 -1 이면 합계를 믿을 수 없다
+        assertEquals("", voWith(total = 20, toNext = -1).walkText)
+        // 합계가 0 이하면 값이 없다는 뜻이라 "도보 0분" 을 띄우지 않는다
+        assertEquals("", voWith(total = 0, toNext = 6).walkText)
+        assertEquals("", voWith(total = -1, toNext = 6).walkText)
+    }
+
+    @Test
+    fun `코스 태그는 원본을 남기고 표시용 라벨을 따로 만든다`() {
+        val vo =
+            fullData()
+                .copy(course = fullData().course!!.copy(themes = listOf("CULTURE", "성수")))
+                .toVO(myUserId = null)
+
+        assertEquals(listOf("CULTURE", "성수"), vo.themes)
+        // 마스터 코드는 한글 라벨로, 코드로 알아보지 못한 값은 그대로 남긴다.
+        assertEquals(listOf("문화·전시", "성수"), vo.themeLabels)
+    }
+
+    /**
+     * 서버의 `themes`(장소 구성에서 파생한 읽기 전용 카테고리)와 `tags`(작성자가 단 해시태그)는
+     * 별개 필드다. 편집이 `tags` 자리에 `themes` 를 돌려보내면 사용자 태그가 영구 소실되므로,
+     * 상세 매핑이 둘을 섞지 않는다는 것을 고정한다.
+     */
+    @Test
+    fun `작성자 해시태그는 파생 카테고리와 별개로 매핑된다`() {
+        val vo =
+            fullData()
+                .copy(
+                    course =
+                        fullData().course!!.copy(
+                            themes = listOf("CULTURE"),
+                            tags = listOf("감성카페", "비오는날", "성수동"),
+                        ),
+                ).toVO(myUserId = null)
+
+        assertEquals(listOf("감성카페", "비오는날", "성수동"), vo.tags)
+        assertEquals(listOf("CULTURE"), vo.themes)
+    }
+
+    /** 서버가 tags 를 안 주면 편집이 빈 목록을 보내 태그를 지우지 않도록 빈 값으로 둔다. */
+    @Test
+    fun `tags 가 없으면 빈 목록이 된다`() {
+        assertEquals(emptyList<String>(), CourseScreenData(course = CourseScreenDTO()).toVO(null).tags)
+    }
+
+    /**
+     * 서버는 도보 시간을 스스로 계산하지 않고 편집 요청에 실린 값을 저장한다. 상세가 숫자를 버리면
+     * 편집 저장 때 되돌려 보낼 값이 없어 기존 도보 시간이 지워진다.
+     */
+    @Test
+    fun `장소별 도보 분은 표시 문구와 원본 숫자를 함께 담는다`() {
+        val vo =
+            fullData()
+                .copy(
+                    course =
+                        fullData().course!!.copy(
+                            places =
+                                listOf(
+                                    place(orderNo = 0, name = "첫째", walkToNext = 6),
+                                    place(orderNo = 1, name = "둘째", walkToNext = null),
+                                ),
+                        ),
+                ).toVO(myUserId = null)
+
+        assertEquals(6, vo.places[0].walkingMinutesToNext)
+        assertEquals("도보 6분", vo.places[0].walkToNextText)
+        assertNull(vo.places[1].walkingMinutesToNext)
+    }
+
+    /** 서버는 걸어갈 수 없는 구간을 -1 로 준다. 그대로 포맷하면 "도보 -1분" 이 노출된다. */
+    @Test
+    fun `걸어갈 수 없는 구간은 분으로 환산하지 않는다`() {
+        val vo =
+            fullData()
+                .copy(
+                    course =
+                        fullData().course!!.copy(
+                            places = listOf(place(orderNo = 0, name = "첫째", walkToNext = -1)),
+                        ),
+                ).toVO(myUserId = null)
+
+        assertEquals("걸어갈 수 없는 거리", vo.places.single().walkToNextText)
+        // 숫자는 편집 왕복을 위해 그대로 보존한다.
+        assertEquals(-1, vo.places.single().walkingMinutesToNext)
+    }
+
+    @Test
+    fun `장소 카테고리 코드는 한글 라벨로 바뀌고 UNKNOWN 은 빠진다`() {
+        val vo =
+            fullData()
+                .copy(
+                    course =
+                        fullData().course!!.copy(
+                            places =
+                                listOf(
+                                    place(orderNo = 0, name = "첫째", walkToNext = null)
+                                        .copy(categories = listOf("RESTAURANT", "UNKNOWN", "LANDMARK")),
+                                ),
+                        ),
+                ).toVO(myUserId = null)
+
+        assertEquals("음식점 · 역사·명소", vo.places.single().category)
     }
 
     private fun place(

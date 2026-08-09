@@ -60,21 +60,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.helper.FeatureFlags
+import com.chillsam.courmy.common.presentation.ui.modifier.cardElevation
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
+import com.chillsam.courmy.course.presentation.component.CourseRouteMap
 import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
 import com.chillsam.courmy.course.presentation.component.PlaceSheetCourse
 import com.chillsam.courmy.course.presentation.component.dashedBorder
+import com.chillsam.courmy.course.presentation.component.toRoutePoints
 
 /**
  * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(커버·카테고리·제목) → 요약 스탯 → 소개 →
- * "코스 속 장소" 목록(접기/펼치기) → 작성자 카드 → 하단 "코스 저장하기" 액션바로 구성한다.
- * 표시 전용 화면으로 [detail] 데이터를 그대로 렌더링한다.
+ * "코스 속 장소" 목록(접기/펼치기) → "코스 한눈에 보기" 지도 → 작성자 밴드 →
+ * 하단 "코스 저장하기" 액션바로 구성한다. 표시 전용 화면으로 [detail] 데이터를 그대로 렌더링한다.
  *
- * 코스 경로 지도는 걷어냈다. 장소별 위치는 장소를 눌러 뜨는 [PlaceDetailSheet] 의 지도에서 본다.
+ * 지도는 전체 동선만 보여 주고 제스처를 막는다. 장소별 위치를 둘러보는 건 장소를 눌러 뜨는
+ * [PlaceDetailSheet] 의 지도 몫이다.
  *
  * 작성자 정보의 위치는 [LayoutVariants.AUTHOR_AT_BOTTOM] 로 갈린다.
  */
@@ -90,6 +95,8 @@ fun CourseDetailScreen(
     val context = LocalContext.current
     // 장소 행 화살표를 누르면 해당 장소 상세 시트를 띄운다(null 이면 시트 닫힘).
     var selectedPlace by remember { mutableStateOf<CourseDetailPlaceVO?>(null) }
+    // 지도의 "자세히" 로 열면 시트를 코스 전체 보기 상태로 시작한다.
+    var openSheetInOverview by remember { mutableStateOf(false) }
     val placeDetailViewModel: PlaceDetailViewModel = hiltViewModel()
     val placeDetailState by placeDetailViewModel.uiState.collectAsStateWithLifecycle()
     Column(
@@ -106,11 +113,13 @@ fun CourseDetailScreen(
         ) {
             DetailHero(detail = detail, onBack = actions.onBack)
             if (!LayoutVariants.AUTHOR_AT_BOTTOM) {
-                // 작성자 밴드는 화면 가로 전체를 채우는 흰색 밴드라 좌우 패딩 밖에 둔다.
+                // 밴드는 화면 가로 전체를 채우므로 본문 좌우 패딩 밖에 둔다.
+                // 위 배치에서는 히어로 이미지에 바로 붙고 아래쪽으로 요약 스탯과 끊는다.
                 AuthorBand(
                     detail = detail,
                     onAuthorClick = actions.onAuthorClick,
                     onToggleFollow = actions.onFollowAuthor,
+                    dividerBelow = true,
                 )
             }
             Column(
@@ -124,6 +133,15 @@ fun CourseDetailScreen(
                     color = color.contentDefaultLevel1,
                     maxLines = Int.MAX_VALUE,
                 )
+                // 작성자가 직접 단 해시태그. 서버가 파생한 카테고리(themeLabels)와 달리 소개 아래에 둔다.
+                if (detail.tags.isNotEmpty()) {
+                    DsText(
+                        text = detail.tags.joinToString(" ") { "#$it" },
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentAccent,
+                        maxLines = Int.MAX_VALUE,
+                    )
+                }
                 // 코스 소개(제목·스탯·설명)와 장소 목록을 가르는 선.
                 Box(
                     modifier =
@@ -136,20 +154,36 @@ fun CourseDetailScreen(
                     places = detail.places,
                     authorName = detail.authorName,
                     onPlaceClick = { place ->
+                        openSheetInOverview = false
                         selectedPlace = place
                         placeDetailViewModel.open(placeId = place.placeId)
                     },
                 )
-                if (LayoutVariants.AUTHOR_AT_BOTTOM) {
-                    // 작성자 소개는 코스를 다 훑어본 뒤 보는 정보라 맨 아래 카드로 둔다.
-                    AuthorCard(
-                        detail = detail,
-                        onAuthorClick = actions.onAuthorClick,
-                        onToggleFollow = actions.onFollowAuthor,
-                    )
-                }
-                Spacer(Modifier.height(14.dp))
+                // 장소를 다 훑은 뒤 전체 동선을 확인하는 자리다.
+                CourseMapSection(
+                    places = detail.places,
+                    onPlaceClick = { place ->
+                        openSheetInOverview = false
+                        selectedPlace = place
+                        placeDetailViewModel.open(placeId = place.placeId)
+                    },
+                    onOpenDetail = { place ->
+                        openSheetInOverview = true
+                        selectedPlace = place
+                        placeDetailViewModel.open(placeId = place.placeId)
+                    },
+                )
             }
+            if (LayoutVariants.AUTHOR_AT_BOTTOM) {
+                // 아래 배치에서는 위쪽으로 본문과 끊고 아래는 스크롤 끝까지 열어 둔다.
+                AuthorBand(
+                    detail = detail,
+                    onAuthorClick = actions.onAuthorClick,
+                    onToggleFollow = actions.onFollowAuthor,
+                    dividerBelow = false,
+                )
+            }
+            Spacer(Modifier.height(14.dp))
         }
         DetailBottomBar(
             isMine = detail.isMine,
@@ -163,6 +197,7 @@ fun CourseDetailScreen(
     if (currentPlace != null) {
         val dismiss = {
             selectedPlace = null
+            openSheetInOverview = false
             placeDetailViewModel.clear()
         }
         // 시트 내용은 코스 데이터로 즉시 그리고, API 로 받는 주소만 도착하는 대로 채운다.
@@ -173,8 +208,12 @@ fun CourseDetailScreen(
             course =
                 PlaceSheetCourse(
                     title = detail.title,
-                    category = detail.themes.joinToString(" · "),
-                    summary = "${detail.placeCountText} · ${detail.walkText}",
+                    category = detail.themeLabels.joinToString(" · "),
+                    // 걸어갈 수 없는 구간이 섞이면 walkText 가 비므로 빈 값을 빼고 잇는다.
+                    summary =
+                        listOf(detail.placeCountText, detail.walkText)
+                            .filter { it.isNotBlank() }
+                            .joinToString(" · "),
                     authorName = detail.authorName,
                     places = detail.places,
                 ),
@@ -184,6 +223,7 @@ fun CourseDetailScreen(
                 selectedPlace = target
                 placeDetailViewModel.open(placeId = target.placeId)
             },
+            startInOverview = openSheetInOverview,
         )
         // 주소를 못 받아도 나머지는 멀쩡하므로 알리기만 하고 시트는 닫지 않는다.
         LaunchedEffect(placeDetailState.errorMessage) {
@@ -253,7 +293,7 @@ private fun DetailHero(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // 카테고리 칩은 제목 위에 둔다. 서버 themes 를 한 줄로 이어 붙인 값이다.
-            val category = detail.themes.joinToString(" · ")
+            val category = detail.themeLabels.joinToString(" · ")
             if (category.isNotBlank()) {
                 Box(
                     modifier =
@@ -308,6 +348,9 @@ private fun HeroCircleButton(
 /**
  * 코스 상세 공용 이미지. URL 이 있으면 Coil 로 로드하고, 비어 있으면 placeholder 배경만 그린다.
  * 로딩 전/실패 시에도 [color.imagePlaceholder] 배경이 자리를 잡는다.
+ *
+ * @param emptyIconRes URL 이 비었을 때 가운데 그릴 아이콘. 프로필처럼 "무엇이 빠졌는지" 가 분명한
+ *   자리에만 넘긴다 — 코스 커버·장소 사진은 회색 자리만 두는 편이 낫다.
  */
 @Composable
 private fun CourseImage(
@@ -316,13 +359,23 @@ private fun CourseImage(
     shape: Shape = RoundedCornerShape(14.dp),
     contentScale: ContentScale = ContentScale.Crop,
     background: Color = DesignSystemThemeImpl.designSystemColor.imagePlaceholder,
+    @DrawableRes emptyIconRes: Int? = null,
 ) {
     val placeholder =
         modifier
             .clip(shape)
             .background(background)
     if (url.isBlank()) {
-        Box(modifier = placeholder)
+        Box(modifier = placeholder, contentAlignment = Alignment.Center) {
+            if (emptyIconRes != null) {
+                Icon(
+                    painter = painterResource(emptyIconRes),
+                    contentDescription = null,
+                    tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+                    modifier = Modifier.fillMaxSize(EMPTY_ICON_RATIO),
+                )
+            }
+        }
     } else {
         AsyncImage(
             model = url,
@@ -336,67 +389,51 @@ private fun CourseImage(
 }
 
 /**
- * 작성자 카드(현재 배치): 코스 경로 지도 아래에 테두리 있는 카드로 놓인다.
- * 예전 배치는 [AuthorBand] 이며 [LayoutVariants.AUTHOR_AT_BOTTOM] 로 갈린다.
- */
-@Composable
-private fun AuthorCard(
-    detail: CourseDetailVO,
-    onAuthorClick: () -> Unit,
-    onToggleFollow: () -> Unit,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val shape = RoundedCornerShape(14.dp)
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .border(1.dp, color.borderDefaultLevel0, shape)
-                .background(color.bgDefaultLevel1)
-                .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        AuthorContent(
-            detail = detail,
-            onAuthorClick = onAuthorClick,
-            onToggleFollow = onToggleFollow,
-        )
-    }
-}
-
-/**
- * 작성자 밴드(예전 배치): 히어로 바로 밑에서 화면 가로를 꽉 채우는 흰색 밴드.
- * [LayoutVariants.AUTHOR_AT_BOTTOM] 를 false 로 되돌리면 이 배치가 쓰인다.
+ * 작성자 밴드: 화면 가로를 꽉 채우는 구역. 위치는 [LayoutVariants.AUTHOR_AT_BOTTOM] 로 갈린다.
+ *
+ * 구분선은 본문과 맞닿는 한쪽에만 둔다([dividerBelow]). 위아래를 다 선으로 막으면 페이지와 같은
+ * 배경색 위에 얇은 띠만 남아 밴드가 떠 보인다.
  */
 @Composable
 private fun AuthorBand(
     detail: CourseDetailVO,
     onAuthorClick: () -> Unit,
     onToggleFollow: () -> Unit,
+    dividerBelow: Boolean,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Row(
+    Column(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel0)) {
+        if (!dividerBelow) BandDivider()
+        Row(
+            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AuthorContent(
+                detail = detail,
+                onAuthorClick = onAuthorClick,
+                onToggleFollow = onToggleFollow,
+            )
+        }
+        if (dividerBelow) BandDivider()
+    }
+}
+
+/** 작성자 밴드를 본문과 끊는 선. 좌우 여백 없이 화면 끝까지 긋는다. */
+@Composable
+private fun BandDivider() {
+    Box(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(color.bgDefaultLevel1)
-                .padding(horizontal = ScreenHorizontalPadding, vertical = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        AuthorContent(
-            detail = detail,
-            onAuthorClick = onAuthorClick,
-            onToggleFollow = onToggleFollow,
-        )
-    }
+                .height(1.dp)
+                .background(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0),
+    )
 }
 
 /**
  * 작성자 정보 본문: 아바타 · 이름/핸들 · 팔로우 버튼.
- * 두 배치([AuthorCard]·[AuthorBand])가 컨테이너만 다르고 내용은 같아 여기로 모았다.
+ * [AuthorBand] 컨테이너와 분리해 두어 배치가 바뀌어도 내용은 그대로 쓴다.
  */
 @Composable
 private fun RowScope.AuthorContent(
@@ -417,6 +454,8 @@ private fun RowScope.AuthorContent(
             url = detail.authorImageUrl,
             modifier = Modifier.size(40.dp),
             shape = CircleShape,
+            // 사진을 안 올린 작성자. 빈 회색 원만 두면 로딩이 덜 끝난 것처럼 보인다.
+            emptyIconRes = R.drawable.ic_tab_person_24,
         )
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DsText(
@@ -478,17 +517,18 @@ private data class CourseStat(
 )
 
 /**
- * 요약 스탯 한 줄: "📍3곳 · 🚶도보 20분 · 👣1.2k 따라감".
+ * 요약 스탯 한 줄: "🚶도보 20분 · 👣1.2k 따라감".
  *
  * 칩 3개로 그리면 히어로의 카테고리 pill 과 칩이 위아래로 겹쳐 보여, 사실값인 스탯은
  * 아이콘 + 가운뎃점으로 이은 한 줄로 낮춰 둔다. 빈 값은 칸째 빼고 이어 붙인다.
+ *
+ * 장소 수는 두지 않는다 — 바로 아래 "코스 속 장소 N곳" 제목이 같은 값을 다시 말한다.
  */
 @Composable
 private fun StatsRow(detail: CourseDetailVO) {
     val color = DesignSystemThemeImpl.designSystemColor
     val stats =
         listOf(
-            CourseStat(R.drawable.ic_location_24, detail.placeCountText),
             CourseStat(R.drawable.ic_walk_24, detail.walkText),
             CourseStat(R.drawable.ic_footprint_24, detail.followerText),
         ).filter { it.text.isNotBlank() }
@@ -531,6 +571,70 @@ private const val COLLAPSED_VISIBLE_PLACES = 2
 
 /** 이 수를 초과(4곳 이상)할 때만 "나머지 N곳 더보기"로 접는다. 3곳까지는 전부 노출. */
 private const val COLLAPSE_THRESHOLD = 3
+
+/** 코스 지도 구역 높이. 스크롤 화면 안에 들어가므로 한 화면을 다 먹지 않을 만큼만 잡는다. */
+private val CourseMapHeight = 220.dp
+
+/**
+ * 코스 한눈에 보기: 장소 핀과 동선을 한 장의 지도로 보여 준다.
+ *
+ * 좌표가 있는 장소가 없으면 구역째 그리지 않는다 — 빈 지도는 알려 주는 게 없다.
+ * 지도 제스처는 막는다. 세로 스크롤 화면 안이라 지도가 스크롤을 가로채면 화면이 걸린다.
+ * 대신 둘러보는 길을 둘 둔다 — 핀을 누르면 그 장소로([onPlaceClick]), "자세히" 를 누르면
+ * 코스 전체 보기 상태로([onOpenDetail]) 장소 상세 시트가 열린다.
+ */
+@Composable
+private fun CourseMapSection(
+    places: List<CourseDetailPlaceVO>,
+    onPlaceClick: (CourseDetailPlaceVO) -> Unit,
+    onOpenDetail: (CourseDetailPlaceVO) -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val points = remember(places) { places.toRoutePoints() }
+    val first = points.firstOrNull() ?: return
+    Column(
+        modifier = Modifier.padding(top = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DsText(
+                text = "코스 한눈에 보기",
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+                modifier = Modifier.weight(1f),
+            )
+            // 전체 보기로 열 때도 시트는 장소 하나를 기준으로 뜨므로 첫 장소를 넘긴다.
+            DsText(
+                text = "자세히",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentAccent,
+                modifier = Modifier.clickable { onOpenDetail(first.first) },
+            )
+        }
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(CourseMapHeight)
+                    // 표면이 흰색이 아니라(지도 타일 자리) 그림자만 받고 배경은 직접 깐다.
+                    .cardElevation(RoundedCornerShape(16.dp))
+                    .background(color.imagePlaceholder),
+        ) {
+            CourseRouteMap(
+                focus = first.second,
+                // 특정 장소를 보는 게 아니라 전체 동선을 보는 자리라 핀을 모두 진하게 그린다.
+                focusOrder = 0,
+                points = points,
+                overview = true,
+                onMarkerClick = onPlaceClick,
+                scrollEnabled = false,
+            )
+        }
+    }
+}
 
 /** "코스 속 장소" 섹션: 헤더(접기/펼치기) + 펼침(사진·팁) / 접힘(콤팩트 타임라인) 목록. */
 @Composable
@@ -633,9 +737,9 @@ private fun CollapsedPlaces(
                 badgeModifier = badgeModifier(index),
                 onClick = { onPlaceClick(place) },
             )
-            // 노드 사이(다음 장소로 이어질 때)에 도보 시간을 넣는다. 간격도 이 행이 만든다.
+            // 노드 사이 간격. 접힘 상태에서는 도보 시간을 쓰지 않고 연결선만 잇는다.
             if (index < visible.lastIndex || remaining > 0) {
-                WalkLabel(text = place.walkToNextText)
+                TimelineGap()
             }
         }
         if (remaining > 0) {
@@ -648,24 +752,19 @@ private fun CollapsedPlaces(
     }
 }
 
-/** 접힘 타임라인에서 노드와 노드 사이에 놓이는 도보 시간. 이름과 같은 x(선 오른쪽)에 정렬한다. */
+/**
+ * 접힘 타임라인에서 노드와 노드 사이를 벌리는 간격.
+ *
+ * 접었을 때는 도보 시간을 보여 주지 않는다 — 훑어보는 상태라 장소 이름만 남기고, 구간 정보는
+ * 펼친 목록([RouteConnector])에서 본다. 노드를 잇는 세로 연결선이 지나갈 자리는 남겨 둔다.
+ */
 @Composable
-private fun WalkLabel(text: String?) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(start = 36.dp, top = 10.dp, bottom = 10.dp),
-    ) {
-        if (text != null) {
-            DsText(
-                text = text,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
-            )
-        }
-    }
+private fun TimelineGap() {
+    Spacer(Modifier.fillMaxWidth().height(TIMELINE_GAP))
 }
+
+/** 접힘 타임라인의 노드 간격. 도보 시간 한 줄이 차지했던 높이를 그대로 쓴다. */
+private val TIMELINE_GAP = 20.dp
 
 /** 콤팩트 장소 행: 펼침 상태 [DetailPlaceItem] 의 헤더(번호·이름/카테고리·›)와 동일한 레이아웃. */
 @Composable
@@ -777,6 +876,9 @@ private fun MorePlacesRow(
  */
 private const val PLACE_PHOTO_RATIO = 4f / 5f
 
+/** 빈 이미지 자리의 기본 아이콘 크기 비율. 여백을 남겨 아이콘이 갇혀 보이지 않게 한다. */
+private const val EMPTY_ICON_RATIO = 0.55f
+
 /**
  * 장소 1건: 순번·이름·카테고리 헤더 + 사진 + "Tip.{작성자}". 헤더 화살표로 장소 상세 시트를 연다.
  * 팁이 비어 있으면 팁 영역은 렌더하지 않는다.
@@ -828,7 +930,7 @@ private fun DetailPlaceItem(
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(PLACE_PHOTO_RATIO)
-                    .clip(RoundedCornerShape(14.dp))
+                    .cardElevation(RoundedCornerShape(14.dp))
                     // 사진이 프레임을 꽉 채우므로 이 배경은 로딩 전·실패 시에만 보인다.
                     .background(color.imagePlaceholder),
             contentAlignment = Alignment.TopEnd,
@@ -1054,23 +1156,25 @@ private fun DetailBottomBar(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val buttonShape = RoundedCornerShape(15.dp)
-            Box(
-                modifier =
-                    Modifier
-                        .width(52.dp)
-                        .height(56.dp)
-                        .clip(buttonShape)
-                        .border(1.dp, color.borderDefaultLevel0, buttonShape)
-                        .background(color.bgDefaultLevel1)
-                        .clickable(onClick = actions.onShare),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_share_24),
-                    contentDescription = "공유",
-                    tint = color.contentDefaultLevel1,
-                    modifier = Modifier.size(22.dp),
-                )
+            if (FeatureFlags.SHARE_ENABLED) {
+                Box(
+                    modifier =
+                        Modifier
+                            .width(52.dp)
+                            .height(56.dp)
+                            .clip(buttonShape)
+                            .border(1.dp, color.borderDefaultLevel0, buttonShape)
+                            .background(color.bgDefaultLevel1)
+                            .clickable(onClick = actions.onShare),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_share_24),
+                        contentDescription = "공유",
+                        tint = color.contentDefaultLevel1,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
             if (isMine) {
                 // 내 코스는 저장할 이유가 없다. 편집·삭제를 대신 노출한다.

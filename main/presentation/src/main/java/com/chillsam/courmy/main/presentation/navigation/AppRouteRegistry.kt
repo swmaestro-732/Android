@@ -262,6 +262,7 @@ val appRoutes: List<AppRoute> =
                     onAuthorClick = { handle ->
                         navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
                     },
+                    onMyProfileClick = { navigationHelper.navigateTo(MyRoute) },
                     onShare = { notReady() },
                     onEditCourse = {
                         val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()

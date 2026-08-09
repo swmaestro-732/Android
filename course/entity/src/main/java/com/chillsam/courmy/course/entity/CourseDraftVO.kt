@@ -11,6 +11,8 @@ import kotlinx.serialization.Serializable
  * - [suggestedTags] 추천 태그 (탭하면 [tags] 로 추가)
  * - [places]        담은 장소 목록 (드래그로 순서 변경)
  * - [visibility]    공개 범위
+ * - [thumbnailUrl]  코스 대표 사진. 임시저장이 서버에 남게 되면서 초안도 커버를 들고 있어야
+ *                   이어서 작성할 때 되살아난다. 저장 전에는 로컬 URI(content://), 서버에서 되읽으면 공개 URL
  */
 @Serializable
 data class CourseDraftVO(
@@ -20,6 +22,7 @@ data class CourseDraftVO(
     val suggestedTags: List<String> = emptyList(),
     val places: List<CoursePlaceVO> = emptyList(),
     val visibility: CourseVisibility = CourseVisibility.PUBLIC,
+    val thumbnailUrl: String = "",
 ) {
     companion object {
         val empty: CourseDraftVO = CourseDraftVO()

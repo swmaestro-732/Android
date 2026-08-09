@@ -7,8 +7,12 @@ import kotlinx.serialization.Serializable
  *
  * - [title]          코스 제목 (예: "비 오는 날 성수 감성 카페 코스")
  * - [coverImageUrl]  히어로 커버 이미지 URL (없으면 빈 문자열)
- * - [themes]         코스 태그 (예: ["성수", "데이트"]). 서버 `themes` 를 합치지 않고 그대로 담아
+ * - [themes]         서버가 장소 구성에서 **파생**한 카테고리 코드 (예: ["CULTURE"]). 읽기 전용이라
+ *                    요청으로 설정할 수 없다. 표시에는 [themeLabels] 를 쓴다
+ * - [themeLabels] [themes] 를 화면 라벨로 바꾼 값 (예: ["문화·전시"]). 합치지 않고 목록 그대로 담아
  *                    화면에서 칩 하나씩 렌더한다. 비어 있으면 태그 줄을 그리지 않는다
+ * - [tags]           작성자가 직접 단 해시태그 (예: ["감성카페", "비오는날"]). [themes] 와 별개 필드이며
+ *                    **편집이 되돌려 보내야 하는 값**이다. [themes] 를 대신 보내면 사용자 태그가 지워진다
  * - [authorId]       작성자 id. 팔로우 요청 대상이다(0 이면 서버가 주지 않은 것).
  * - [authorName]     작성자 이름 (예: "지호님")
  * - [authorHandle]   작성자 핸들 (예: "@jiho_routes")
@@ -28,6 +32,8 @@ data class CourseDetailVO(
     val title: String,
     val coverImageUrl: String = "",
     val themes: List<String> = emptyList(),
+    val themeLabels: List<String> = emptyList(),
+    val tags: List<String> = emptyList(),
     val authorId: Long = 0L,
     val authorName: String,
     val authorHandle: String,
@@ -61,6 +67,8 @@ data class CourseDetailVO(
  * - [imageUrls]      장소 사진 URL 목록 (순서대로)
  * - [tip]            작성자 팁 ("지호님 팁" 본문)
  * - [walkToNextText] 다음 장소로의 도보 안내 (예: "도보 6분"). 마지막 장소는 null
+ * - [walkingMinutesToNext] [walkToNextText] 의 원본 숫자. 편집이 이 값을 그대로 되돌려 보내야
+ *                    기존 도보 시간이 유지된다(서버가 places 를 통째로 치환한다). 마지막 장소는 null
  * - [latitude]       위도. 좌표가 없으면 null (지도에 핀을 찍지 않는다)
  * - [longitude]      경도. 좌표가 없으면 null
  */
@@ -74,6 +82,7 @@ data class CourseDetailPlaceVO(
     val tip: String,
     val imageUrls: List<String> = emptyList(),
     val walkToNextText: String? = null,
+    val walkingMinutesToNext: Int? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
 )

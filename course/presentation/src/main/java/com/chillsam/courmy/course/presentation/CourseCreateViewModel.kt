@@ -398,19 +398,25 @@ class CourseCreateViewModel
 private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
 
 /**
- * 구간 도보 분을 장소별 문구로 채운다. 구간 수가 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없어
- * null 을 돌려 호출부가 표시를 걷어내게 한다. 마지막 장소는 갈 곳이 없어 빈 문자열이다.
+ * 구간 도보 분을 장소별 값으로 채운다. 구간 수가 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없어
+ * null 을 돌려 호출부가 표시를 걷어내게 한다. 마지막 장소는 갈 곳이 없어 빈 문자열·null 이다.
+ * 서버 저장 요청에도 숫자 값이 필요하므로 표시 문구와 함께 원본 분을 보존한다.
  */
 private fun List<CoursePlaceVO>.withWalkTexts(segments: List<Int>): List<CoursePlaceVO>? {
     if (segments.size != size - 1) return null
     return mapIndexed { index, place ->
-        place.copy(walkText = segments.getOrNull(index)?.toWalkText().orEmpty())
+        val minutes = segments.getOrNull(index)
+        place.copy(walkText = minutes?.toWalkText().orEmpty(), walkingMinutes = minutes)
     }
 }
 
 /** 이미 비어 있으면 null 을 돌려 불필요한 상태 갱신을 막는다. */
 private fun List<CoursePlaceVO>.clearedWalkTexts(): List<CoursePlaceVO>? =
-    if (none { it.walkText.isNotEmpty() }) null else map { it.copy(walkText = "") }
+    if (none { it.walkText.isNotEmpty() || it.walkingMinutes != null }) {
+        null
+    } else {
+        map { it.copy(walkText = "", walkingMinutes = null) }
+    }
 
 /**
  * 구간 도보 분 → 화면 문구.
