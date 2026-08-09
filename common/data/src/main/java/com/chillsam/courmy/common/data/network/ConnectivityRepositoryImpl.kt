@@ -22,11 +22,13 @@ class ConnectivityRepositoryImpl
         @ApplicationContext private val context: Context,
     ) : ConnectivityRepository {
         override fun isOnline(): Boolean {
-            val manager = context.getSystemService<ConnectivityManager>() ?: return false
-            val capabilities = manager.activeNetwork?.let(manager::getNetworkCapabilities) ?: return false
+            val manager = context.getSystemService<ConnectivityManager>()
+            val capabilities = manager?.activeNetwork?.let(manager::getNetworkCapabilities)
             // INTERNET 은 "인터넷용 네트워크", VALIDATED 는 "실제로 나갔다 왔음" 을 뜻한다.
             // 둘을 함께 봐야 캡티브 포털·데이터 끊긴 와이파이를 연결된 것으로 오판하지 않는다.
-            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            return capabilities?.let {
+                it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    it.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            } ?: false
         }
     }
