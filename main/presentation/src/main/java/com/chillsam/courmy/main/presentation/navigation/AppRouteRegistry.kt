@@ -1,6 +1,5 @@
 package com.chillsam.courmy.main.presentation.navigation
 
-import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
@@ -18,6 +17,7 @@ import com.chillsam.courmy.course.presentation.CourseEditViewModel
 import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
+import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.login.LoginPage
 import com.chillsam.courmy.main.presentation.login.OnboardingCompletePage
@@ -257,8 +257,6 @@ val appRoutes: List<AppRoute> =
             render = { args ->
                 val navigationHelper = LocalNavigationHelper.current
                 val context = LocalContext.current
-                // 팔로우·공유·저장 플로우는 아직 미구현이라, 무반응 대신 "준비 중" 안내를 띄운다.
-                val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
                 CourseDetailPage(
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
                     courseId = args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
@@ -269,7 +267,10 @@ val appRoutes: List<AppRoute> =
                                 navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
                             },
                             onMyProfileClick = { navigationHelper.navigateTo(MyRoute) },
-                            onShare = { notReady() },
+                            onShare = {
+                                val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
+                                context.copyShareLink(CourseDetailRoute.route(courseId))
+                            },
                             onEditCourse = {
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
                                 navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
