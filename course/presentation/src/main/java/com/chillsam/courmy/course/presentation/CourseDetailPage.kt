@@ -29,18 +29,13 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
  * 코스 상세 화면(FS-11) 진입점. [CourseDetailViewModel] 상태를 구독해
  * 로딩·에러·정상([CourseDetailScreen])을 분기 렌더한다.
  *
- * 네비게이션 콜백([onBack] 등)은 대상 화면이 다른 모듈(main)에 있어 호출부([AppRouteRegistry])에서 주입한다.
+ * 네비게이션 콜백은 대상 화면이 다른 모듈(main)에 있어 호출부([AppRouteRegistry])에서 주입한다.
  */
 @Composable
 fun CourseDetailPage(
     viewModel: CourseDetailViewModel,
     courseId: Long,
-    onBack: () -> Unit,
-    onAuthorClick: (String) -> Unit,
-    onMyProfileClick: () -> Unit,
-    onShare: () -> Unit,
-    onEditCourse: () -> Unit,
-    onLogin: () -> Unit,
+    actions: CourseDetailPageActions,
     modifier: Modifier = Modifier,
 ) {
     // 첫 진입에 어느 코스인지 알려 준다. Load 는 같은 courseId 면 재호출을 건너뛴다.
@@ -55,7 +50,7 @@ fun CourseDetailPage(
 
     // 삭제가 끝나면 목록/이전 화면으로 돌아간다(사라진 코스를 계속 보여주지 않는다).
     LaunchedEffect(uiState.isDeleted) {
-        if (uiState.isDeleted) onBack()
+        if (uiState.isDeleted) actions.onBack()
     }
 
     // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
@@ -73,23 +68,23 @@ fun CourseDetailPage(
                 isDeleting = uiState.isDeleting,
                 actions =
                     CourseDetailActions(
-                        onBack = onBack,
+                        onBack = actions.onBack,
                         onAuthorClick = {
                             // 내 코스면 작성자가 나다. 타유저 프로필로 보내면 내 화면을 남의 것처럼
                             // (설정·내 코스 없이 팔로우 관점으로) 보게 되므로 마이로 보낸다.
                             if (detail.isMine) {
-                                onMyProfileClick()
+                                actions.onMyProfileClick()
                             } else {
                                 detail.authorHandle
                                     .removePrefix("@")
                                     .takeIf(String::isNotBlank)
-                                    ?.let(onAuthorClick)
+                                    ?.let(actions.onAuthorClick)
                             }
                         },
                         onFollowAuthor = { viewModel.onIntent(CourseDetailIntent.ToggleFollowAuthor) },
-                        onShare = onShare,
+                        onShare = actions.onShare,
                         onSaveCourse = { viewModel.onIntent(CourseDetailIntent.ToggleSave) },
-                        onEditCourse = onEditCourse,
+                        onEditCourse = actions.onEditCourse,
                         onDeleteCourse = { showDeleteConfirm = true },
                     ),
                 modifier = modifier,
@@ -108,7 +103,7 @@ fun CourseDetailPage(
                 LoginRequiredDialog(
                     onConfirm = {
                         viewModel.onIntent(CourseDetailIntent.ConsumeLoginRequired)
-                        onLogin()
+                        actions.onLogin()
                     },
                     onDismiss = { viewModel.onIntent(CourseDetailIntent.ConsumeLoginRequired) },
                 )

@@ -1,6 +1,6 @@
 package com.chillsam.courmy.course.data.draft.dto
 
-import com.chillsam.courmy.common.data.category.toPlaceCategoryLabel
+import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.data.courseDetail.dto.CoursePlaceDTO
 import com.chillsam.courmy.course.data.courseDetail.dto.CourseScreenData
 import com.chillsam.courmy.course.entity.CourseDraftVO

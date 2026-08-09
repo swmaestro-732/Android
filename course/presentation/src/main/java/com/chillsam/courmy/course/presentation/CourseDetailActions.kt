@@ -14,3 +14,13 @@ data class CourseDetailActions(
     val onEditCourse: () -> Unit,
     val onDeleteCourse: () -> Unit,
 )
+
+/** 상세 페이지가 앱 네비게이션 계층에 위임하는 동작 모음. */
+data class CourseDetailPageActions(
+    val onBack: () -> Unit,
+    val onAuthorClick: (String) -> Unit,
+    val onMyProfileClick: () -> Unit,
+    val onShare: () -> Unit,
+    val onEditCourse: () -> Unit,
+    val onLogin: () -> Unit,
+)

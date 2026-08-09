@@ -87,15 +87,18 @@ fun CourseDraftVO.toCreateRequest(
         isPublished = published,
         places =
             places
-                .mapNotNull { place -> place.id.toLongOrNull()?.let { it to place } }
-                .let { kept ->
-                    kept.mapIndexed { index, (placeId, place) ->
+                .withIndex()
+                .mapNotNull { (sourceIndex, place) ->
+                    place.id.toLongOrNull()?.let { Triple(sourceIndex, it, place) }
+                }.let { kept ->
+                    kept.mapIndexed { index, (sourceIndex, placeId, place) ->
+                        val hasOriginalSuccessor = kept.getOrNull(index + 1)?.first == sourceIndex + 1
                         CreateCoursePlaceRequest(
                             placeId = placeId,
                             orderNo = index,
                             caption = place.note.ifBlank { null },
                             imageUrls = place.photoUrls,
-                            walkingMinutes = place.walkingMinutes.takeIf { index < kept.lastIndex },
+                            walkingMinutes = place.walkingMinutes.takeIf { hasOriginalSuccessor },
                         )
                     }
                 },

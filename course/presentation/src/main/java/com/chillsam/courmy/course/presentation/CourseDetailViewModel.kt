@@ -93,6 +93,16 @@ class CourseDetailViewModel
                     state.copy(isLoading = false, errorMessage = event.message)
                 }
 
+                else -> {
+                    reduceAction(state, event)
+                }
+            }
+
+        private fun reduceAction(
+            state: CourseDetailUIState,
+            event: CourseDetailReducerEvent,
+        ): CourseDetailUIState =
+            when (event) {
                 CourseDetailReducerEvent.SaveStarted -> {
                     state.copy(isSaving = true, actionErrorMessage = null)
                 }
@@ -143,6 +153,10 @@ class CourseDetailViewModel
                 is CourseDetailReducerEvent.DeleteFailed -> {
                     state.copy(isDeleting = false, actionErrorMessage = event.message)
                 }
+
+                else -> {
+                    state
+                }
             }
 
         /**
@@ -154,14 +168,19 @@ class CourseDetailViewModel
          */
         private fun toggleFollowAuthor() {
             val state = currentState
-            val detail = state.detail ?: return
-            val authorId = detail.authorId
-            if (state.isFollowing || authorId <= 0L) return
-            if (!isLoggedInUseCase()) {
+            val detail = state.detail
+            if (detail == null || state.isFollowing || detail.authorId <= 0L) return
+            if (isLoggedInUseCase()) {
+                requestFollowAuthor(detail.authorId, !detail.isFollowingAuthor)
+            } else {
                 dispatch(CourseDetailReducerEvent.LoginRequired)
-                return
             }
-            val target = !detail.isFollowingAuthor
+        }
+
+        private fun requestFollowAuthor(
+            authorId: Long,
+            target: Boolean,
+        ) {
             dispatch(CourseDetailReducerEvent.FollowStarted)
             followJob?.cancel()
             followJob =

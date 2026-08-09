@@ -33,6 +33,7 @@ class CourseCreateViewModel
     ) : MviViewModel<CourseCreateIntent, CourseCreateUIState, CourseCreateReducerEvent>(
             CourseCreateUIState.empty,
         ) {
+        private var loadJob: Job? = null
         private var saveJob: Job? = null
         private var draftJob: Job? = null
         private var tagsJob: Job? = null
@@ -169,7 +170,8 @@ class CourseCreateViewModel
                 }
 
                 CourseCreateReducerEvent.LoadStarted -> {
-                    state.copy(isLoading = true)
+                    // 새 초안을 읽는 동안 이전 초안 id를 남기면 실패 뒤 저장이 옛 초안을 덮어쓴다.
+                    state.copy(isLoading = true, draftCourseId = null, errorMessage = null)
                 }
 
                 is CourseCreateReducerEvent.DraftLoaded -> {
@@ -394,28 +396,30 @@ class CourseCreateViewModel
          * (그래야 새로 만들기가 네트워크 상태와 무관하게 즉시 열린다).
          */
         private fun load(draftCourseId: Long?) {
+            loadJob?.cancel()
             if (draftCourseId == null) {
                 dispatch(CourseCreateReducerEvent.DraftLoaded(CourseDraftVO.empty, courseId = null))
                 return
             }
             dispatch(CourseCreateReducerEvent.LoadStarted)
-            viewModelScope.launch {
-                runCatching { getCourseDraftUseCase(draftCourseId) }
-                    .onSuccess {
-                        dispatch(CourseCreateReducerEvent.DraftLoaded(it, courseId = draftCourseId))
-                        // 이어 쓰는 초안에도 장소가 들어 있어 도보 시간을 채워야 한다.
-                        refreshWalkingMinutes()
-                    }.onFailure { e ->
-                        if (e is CancellationException) throw e
-                        // 스피너를 걷지 않으면 화면이 영구 정지한다(초안 없이도 작성은 가능하다).
-                        //
-                        // 이때 draftCourseId 를 채우지 않는다. 못 불러온 초안에 이어서 임시저장하면
-                        // 빈 내용으로 PATCH 가 나가 원래 초안이 지워진다. 새 초안이 하나 더 생기는 쪽이
-                        // 사용자가 되돌릴 수 있는 실패다.
-                        Log.w(TAG, "임시저장 초안 로드 실패: courseId=$draftCourseId", e)
-                        dispatch(CourseCreateReducerEvent.LoadFailed("임시저장한 내용을 불러오지 못했어요."))
-                    }
-            }
+            loadJob =
+                viewModelScope.launch {
+                    runCatching { getCourseDraftUseCase(draftCourseId) }
+                        .onSuccess {
+                            dispatch(CourseCreateReducerEvent.DraftLoaded(it, courseId = draftCourseId))
+                            // 이어 쓰는 초안에도 장소가 들어 있어 도보 시간을 채워야 한다.
+                            refreshWalkingMinutes()
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            // 스피너를 걷지 않으면 화면이 영구 정지한다(초안 없이도 작성은 가능하다).
+                            //
+                            // 이때 draftCourseId 를 채우지 않는다. 못 불러온 초안에 이어서 임시저장하면
+                            // 빈 내용으로 PATCH 가 나가 원래 초안이 지워진다. 새 초안이 하나 더 생기는 쪽이
+                            // 사용자가 되돌릴 수 있는 실패다.
+                            Log.w(TAG, "임시저장 초안 로드 실패: courseId=$draftCourseId", e)
+                            dispatch(CourseCreateReducerEvent.LoadFailed("임시저장한 내용을 불러오지 못했어요."))
+                        }
+                }
         }
 
         /**
@@ -484,9 +488,7 @@ private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
 /**
  * 구간 도보 분을 장소별 값으로 채운다. 구간 수가 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없어
  * null 을 돌려 호출부가 표시를 걷어내게 한다. 마지막 장소는 갈 곳이 없어 빈 문자열·null 이다.
- *
- * 표시용 문구뿐 아니라 원본 숫자도 함께 담는다 — 서버가 도보 시간을 계산하지 않고 코스 생성 요청에
- * 실린 값을 저장하므로, 숫자를 버리면 저장된 코스가 "도보 0분" 이 된다.
+ * 서버 저장 요청에도 숫자 값이 필요하므로 표시 문구와 함께 원본 분을 보존한다.
  */
 private fun List<CoursePlaceVO>.withWalkTexts(segments: List<Int>): List<CoursePlaceVO>? {
     if (segments.size != size - 1) return null
