@@ -46,7 +46,6 @@ import com.chillsam.courmy.main.entity.auth.SignupProfile
 /** 온보딩 완료 화면(FS-08). 가입을 마쳤음을 알리고 "Courmy 시작하기"로 로그인 완료 후 홈으로 진입. */
 @Composable
 fun OnboardingCompletePage(modifier: Modifier = Modifier) {
-    // 상단이 흰색이라 상태바도 같은 색으로 이어 붙인다. 회색으로 두면 띠만 분리돼 보인다.
     StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
@@ -142,6 +141,8 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
                     onClick = {
                         // 홀더에 담아둔 프로필로 회원가입 API 호출.
                         // 관심 지역은 검색 API 가 주는 법정동코드를 그대로 areaCodes 로 보낸다.
+                        // TODO-API-SPEC: 관심 테마는 아직 라벨→tagId 매핑이 없어(태그 목록 API 필요)
+                        //  likeTagIds 를 채우지 못한다. 기기에는 이름으로 남겨 화면 표시에만 쓴다. [wiki-needed]
                         // 이미지가 이미 http URL 이면 그대로 싣고, 로컬 uri 면 가입 성공 후 업로드하도록 넘긴다
                         // (presign 은 액세스 토큰이 필요해 가입 전에는 호출할 수 없다).
                         val picked = SignupSelectionStore.profileImageUrl
@@ -154,8 +155,6 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
                                         handle = SignupSelectionStore.handle,
                                         profileImageUrl = remoteUrl,
                                         areaCodes = SignupSelectionStore.regionCodes,
-                                        // 관심 테마는 서버 코스 카테고리 코드다(라벨을 보내면 400).
-                                        likeThemes = SignupSelectionStore.themes,
                                     ),
                                 localImageUri = picked?.takeIf { remoteUrl == null },
                                 interestThemes = SignupSelectionStore.themes,
