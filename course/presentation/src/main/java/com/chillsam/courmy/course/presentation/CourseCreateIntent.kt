@@ -9,7 +9,13 @@ import com.chillsam.courmy.course.entity.CourseVisibility
  * 코스 만들기 화면 사용자 입력. View → ViewModel 단일 진입.
  */
 sealed interface CourseCreateIntent : MviIntent {
-    data object Load : CourseCreateIntent
+    /**
+     * 화면 진입. [draftCourseId] 가 있으면 그 임시저장 초안을 서버에서 불러와 이어서 작성하고,
+     * 없으면 빈 코스로 시작한다.
+     */
+    data class Load(
+        val draftCourseId: Long?,
+    ) : CourseCreateIntent
 
     data class ChangeName(
         val name: String,
@@ -63,7 +69,10 @@ sealed interface CourseCreateIntent : MviIntent {
         val visibility: CourseVisibility,
     ) : CourseCreateIntent
 
-    /** 임시저장 버튼: 현재 작성 중인 초안 전체를 세션에 임시저장한다. */
+    /**
+     * 임시저장 버튼: 현재 작성 중인 내용을 서버에 임시저장한다.
+     * 이 세션이 이미 만든 초안이 있으면 그것을 갱신하고, 없으면 새로 만든다.
+     */
     data object SaveDraft : CourseCreateIntent
 
     /** 코스 저장 완료: 완성 데이터를 보관하고 저장 목록에 추가한다. */
@@ -82,4 +91,7 @@ sealed interface CourseCreateIntent : MviIntent {
 
     /** 저장 성공 신호를 소비한다(화면 이동을 끝낸 뒤 호출). 남겨 두면 재진입 때 다시 이동한다. */
     data object ConsumeSaved : CourseCreateIntent
+
+    /** 임시저장 성공 신호를 소비한다. [ConsumeSaved] 와 같은 이유로 화면 이동을 끝낸 뒤 호출한다. */
+    data object ConsumeDraftSaved : CourseCreateIntent
 }

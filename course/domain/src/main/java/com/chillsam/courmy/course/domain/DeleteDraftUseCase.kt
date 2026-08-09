@@ -8,5 +8,5 @@ class DeleteDraftUseCase
     constructor(
         private val repository: CourseRepository,
     ) {
-        operator fun invoke(draftId: String) = repository.deleteDraft(draftId)
+        suspend operator fun invoke(courseId: Long) = repository.deleteDraft(courseId)
     }

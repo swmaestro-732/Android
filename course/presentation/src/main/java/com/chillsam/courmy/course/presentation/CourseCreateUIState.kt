@@ -25,6 +25,16 @@ data class CourseCreateUIState(
     val savedCourseId: Long? = null,
     /** 코스는 만들어졌지만 사진 업로드가 실패한 경우 true. 안내만 하고 저장은 성공으로 본다. */
     val imagesMissing: Boolean = false,
+    /**
+     * 이 작성 세션이 서버에 만들어 둔 임시저장 초안의 코스 id.
+     *
+     * 이어서 작성으로 들어왔거나 한 번이라도 임시저장했으면 채워진다. 값이 있으면 임시저장이
+     * 그 초안을 갱신하므로, 여러 번 눌러도 목록에 초안이 늘지 않는다.
+     */
+    val draftCourseId: Long? = null,
+    val isSavingDraft: Boolean = false,
+    /** 임시저장이 끝나면 true. 화면을 빠져나가는 신호. */
+    val draftSaved: Boolean = false,
     val errorMessage: String? = null,
 ) : UiState {
     /**
@@ -36,6 +46,13 @@ data class CourseCreateUIState(
             name.isNotBlank() &&
                 places.size >= MIN_PLACES &&
                 places.all { it.photoUrls.isNotEmpty() }
+
+    /**
+     * 임시저장 가능 조건은 **장소 [MIN_PLACES]곳 이상 하나뿐**이다(서버가 그 아래를 400 으로 거절한다).
+     * 제목·설명·커버·장소 사진·태그는 발행할 때만 필요하므로 여기서 보지 않는다.
+     */
+    val canSaveDraft: Boolean
+        get() = places.size >= MIN_PLACES
 
     /**
      * 현재 단계를 넘어가지 못하게 막는 이유. 통과 상태면 null. 버튼 문구로 그대로 쓴다.

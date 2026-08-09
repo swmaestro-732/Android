@@ -103,12 +103,18 @@ fun CourseSectionHeader(
     }
 }
 
-/** 상단바: ✕ 닫기 · 새 코스 만들기 · 임시저장. */
+/**
+ * 상단바: ✕ 닫기 · 새 코스 만들기 · 임시저장.
+ *
+ * [savingDraft] 는 임시저장이 서버로 나가 있는 동안 true 다. 왕복이 끝나기 전에 다시 눌리면 초안이
+ * 두 번 만들어질 수 있어 문구를 바꾸고 탭을 막는다.
+ */
 @Composable
 fun CourseTopBar(
     onClose: () -> Unit,
     onSaveDraft: () -> Unit,
     modifier: Modifier = Modifier,
+    savingDraft: Boolean = false,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -137,10 +143,15 @@ fun CourseTopBar(
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
         )
         DsText(
-            text = "임시저장",
-            modifier = Modifier.clickable(onClick = onSaveDraft).padding(6.dp),
+            text = if (savingDraft) "저장 중…" else "임시저장",
+            modifier = Modifier.clickable(enabled = !savingDraft, onClick = onSaveDraft).padding(6.dp),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+            color =
+                if (savingDraft) {
+                    DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
+                } else {
+                    DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2
+                },
         )
     }
 }

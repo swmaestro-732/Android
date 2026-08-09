@@ -1,13 +1,13 @@
 package com.chillsam.courmy.course.data
 
-import android.content.Context
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.course.data.courseCreate.CourseCreateApiService
 import com.chillsam.courmy.course.data.courseCreate.CourseCreateDataSource
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailApiService
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
-import com.chillsam.courmy.course.data.draft.DraftLocalStore
-import com.chillsam.courmy.course.data.draft.DraftPreferencesDataStore
+import com.chillsam.courmy.course.data.courseManage.CourseManageDataSource
+import com.chillsam.courmy.course.data.draft.DraftApiService
+import com.chillsam.courmy.course.data.draft.DraftDataSource
 import com.chillsam.courmy.course.data.follow.FollowDataSource
 import com.chillsam.courmy.course.data.place.PlaceApiService
 import com.chillsam.courmy.course.data.place.PlaceDataSource
@@ -19,9 +19,7 @@ import com.chillsam.courmy.course.domain.PlaceRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.serialization.json.Json
 import retrofit2.Retrofit
 import retrofit2.create
 import javax.inject.Singleton
@@ -49,10 +47,11 @@ object CourseDataModule {
 
     @Provides
     @Singleton
-    fun provideDraftLocalStore(
-        @ApplicationContext context: Context,
-        json: Json,
-    ): DraftLocalStore = DraftPreferencesDataStore(context, json)
+    fun provideDraftApiService(retrofit: Retrofit): DraftApiService = retrofit.create()
+
+    @Provides
+    @Singleton
+    fun provideDraftDataSource(apiService: DraftApiService): DraftDataSource = DraftDataSource(apiService)
 
     @Provides
     @Singleton
@@ -60,7 +59,8 @@ object CourseDataModule {
         courseDetailDataSource: CourseDetailDataSource,
         courseCreateDataSource: CourseCreateDataSource,
         recommendedTagDataSource: RecommendedTagDataSource,
-        draftLocalStore: DraftLocalStore,
+        draftDataSource: DraftDataSource,
+        courseManageDataSource: CourseManageDataSource,
         followDataSource: FollowDataSource,
         tokenStore: TokenStore,
     ): CourseRepository =
@@ -68,7 +68,8 @@ object CourseDataModule {
             courseDetailDataSource,
             courseCreateDataSource,
             recommendedTagDataSource,
-            draftLocalStore,
+            draftDataSource,
+            courseManageDataSource,
             followDataSource,
         ) { tokenStore.userId }
 

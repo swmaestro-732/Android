@@ -33,7 +33,9 @@ class CourseCreateViewModel
     ) : MviViewModel<CourseCreateIntent, CourseCreateUIState, CourseCreateReducerEvent>(
             CourseCreateUIState.empty,
         ) {
+        private var loadJob: Job? = null
         private var saveJob: Job? = null
+        private var draftJob: Job? = null
         private var tagsJob: Job? = null
         private var walkJob: Job? = null
 
@@ -41,8 +43,8 @@ class CourseCreateViewModel
         @Suppress("LongMethod", "CyclomaticComplexMethod")
         override fun onIntent(intent: CourseCreateIntent) {
             when (intent) {
-                CourseCreateIntent.Load -> {
-                    load()
+                is CourseCreateIntent.Load -> {
+                    load(intent.draftCourseId)
                 }
 
                 is CourseCreateIntent.ChangeName -> {
@@ -116,7 +118,7 @@ class CourseCreateViewModel
                 }
 
                 CourseCreateIntent.SaveDraft -> {
-                    saveDraftUseCase(currentState.toDraftVO())
+                    saveDraft()
                 }
 
                 is CourseCreateIntent.CompleteCourse -> {
@@ -129,6 +131,10 @@ class CourseCreateViewModel
 
                 CourseCreateIntent.ConsumeSaved -> {
                     dispatch(CourseCreateReducerEvent.SavedConsumed)
+                }
+
+                CourseCreateIntent.ConsumeDraftSaved -> {
+                    dispatch(CourseCreateReducerEvent.DraftSavedConsumed)
                 }
 
                 CourseCreateIntent.NextStep -> {
@@ -164,7 +170,8 @@ class CourseCreateViewModel
                 }
 
                 CourseCreateReducerEvent.LoadStarted -> {
-                    state.copy(isLoading = true)
+                    // 새 초안을 읽는 동안 이전 초안 id를 남기면 실패 뒤 저장이 옛 초안을 덮어쓴다.
+                    state.copy(isLoading = true, draftCourseId = null, errorMessage = null)
                 }
 
                 is CourseCreateReducerEvent.DraftLoaded -> {
@@ -176,10 +183,15 @@ class CourseCreateViewModel
                         isLoading = false,
                         name = event.draft.name,
                         description = event.draft.description,
+                        // 커버는 한 장만 쓰므로 비어 있으면 목록도 비운다.
+                        thumbnailPhotos =
+                            listOfNotNull(event.draft.thumbnailUrl.takeIf { it.isNotBlank() })
+                                .toImmutableList(),
                         tags = event.draft.tags.toImmutableList(),
                         suggestedTags = event.draft.suggestedTags.toImmutableList(),
                         places = event.draft.places.toImmutableList(),
                         visibility = event.draft.visibility,
+                        draftCourseId = event.courseId,
                     )
                 }
 
@@ -237,6 +249,27 @@ class CourseCreateViewModel
 
                 is CourseCreateReducerEvent.SuggestedTagsLoaded -> {
                     state.copy(suggestedTags = event.tags.toImmutableList())
+                }
+
+                CourseCreateReducerEvent.DraftSaveStarted -> {
+                    state.copy(isSavingDraft = true, errorMessage = null)
+                }
+
+                is CourseCreateReducerEvent.DraftSaveSucceeded -> {
+                    state.copy(
+                        isSavingDraft = false,
+                        draftSaved = true,
+                        draftCourseId = event.courseId,
+                        imagesMissing = !event.imagesUploaded,
+                    )
+                }
+
+                is CourseCreateReducerEvent.DraftSaveFailed -> {
+                    state.copy(isSavingDraft = false, errorMessage = event.message)
+                }
+
+                CourseCreateReducerEvent.DraftSavedConsumed -> {
+                    state.copy(draftSaved = false, imagesMissing = false)
                 }
             }
 
@@ -358,33 +391,75 @@ class CourseCreateViewModel
                 }
         }
 
-        private fun load() {
-            dispatch(CourseCreateReducerEvent.LoadStarted)
-            viewModelScope.launch {
-                runCatching { getCourseDraftUseCase() }
-                    .onSuccess {
-                        dispatch(CourseCreateReducerEvent.DraftLoaded(it))
-                        // 이어 쓰는 초안에도 장소가 들어 있어 도보 시간을 채워야 한다.
-                        refreshWalkingMinutes()
-                    }.onFailure { e ->
-                        if (e is CancellationException) throw e
-                        // 스피너를 걷지 않으면 화면이 영구 정지한다(초안 없이도 작성은 가능하다).
-                        Log.w(TAG, "임시저장 초안 로드 실패", e)
-                        dispatch(CourseCreateReducerEvent.LoadFailed("임시저장한 내용을 불러오지 못했어요."))
-                    }
+        /**
+         * 화면 진입. [draftCourseId] 가 없으면 새 코스라 서버에 물어볼 것이 없어 빈 초안으로 바로 연다
+         * (그래야 새로 만들기가 네트워크 상태와 무관하게 즉시 열린다).
+         */
+        private fun load(draftCourseId: Long?) {
+            loadJob?.cancel()
+            if (draftCourseId == null) {
+                dispatch(CourseCreateReducerEvent.DraftLoaded(CourseDraftVO.empty, courseId = null))
+                return
             }
+            dispatch(CourseCreateReducerEvent.LoadStarted)
+            loadJob =
+                viewModelScope.launch {
+                    runCatching { getCourseDraftUseCase(draftCourseId) }
+                        .onSuccess {
+                            dispatch(CourseCreateReducerEvent.DraftLoaded(it, courseId = draftCourseId))
+                            // 이어 쓰는 초안에도 장소가 들어 있어 도보 시간을 채워야 한다.
+                            refreshWalkingMinutes()
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            // 스피너를 걷지 않으면 화면이 영구 정지한다(초안 없이도 작성은 가능하다).
+                            //
+                            // 이때 draftCourseId 를 채우지 않는다. 못 불러온 초안에 이어서 임시저장하면
+                            // 빈 내용으로 PATCH 가 나가 원래 초안이 지워진다. 새 초안이 하나 더 생기는 쪽이
+                            // 사용자가 되돌릴 수 있는 실패다.
+                            Log.w(TAG, "임시저장 초안 로드 실패: courseId=$draftCourseId", e)
+                            dispatch(CourseCreateReducerEvent.LoadFailed("임시저장한 내용을 불러오지 못했어요."))
+                        }
+                }
         }
 
-        /** 현재 화면 입력값을 임시저장용 초안으로 변환한다. */
-        private fun CourseCreateUIState.toDraftVO(): CourseDraftVO =
-            CourseDraftVO(
-                name = name,
-                description = description,
-                tags = tags,
-                suggestedTags = suggestedTags,
-                places = places,
-                visibility = visibility,
-            )
+        /**
+         * 현재 작성 중인 내용을 서버에 임시저장한다.
+         *
+         * 장소 수는 서버가 400 으로 거절하는 유일한 조건이라 보내기 전에 앱에서 걸러 안내한다
+         * (서버 문구를 그대로 노출하지 않는다). 저장이 끝나기 전에 화면을 닫으면 요청이 취소되므로,
+         * 화면 이동은 [CourseCreateUIState.draftSaved] 신호를 받은 뒤에 한다.
+         */
+        private fun saveDraft() {
+            if (currentState.isSavingDraft) return
+            if (!currentState.canSaveDraft) {
+                dispatch(
+                    CourseCreateReducerEvent.DraftSaveFailed(
+                        "장소를 ${CourseCreateUIState.MIN_PLACES}곳 이상 담아야 임시저장할 수 있어요.",
+                    ),
+                )
+                return
+            }
+            dispatch(CourseCreateReducerEvent.DraftSaveStarted)
+            draftJob?.cancel()
+            draftJob =
+                viewModelScope.launch {
+                    runCatching { saveDraftUseCase(currentState.toDraftVO(), currentState.draftCourseId) }
+                        .onSuccess { result ->
+                            dispatch(
+                                CourseCreateReducerEvent.DraftSaveSucceeded(
+                                    courseId = result.courseId,
+                                    imagesUploaded = result.imagesUploaded,
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "임시저장 실패: courseId=${currentState.draftCourseId}", e)
+                            dispatch(
+                                CourseCreateReducerEvent.DraftSaveFailed("임시저장에 실패했어요. 잠시 후 다시 시도해 주세요."),
+                            )
+                        }
+                }
+        }
 
         private companion object {
             /** 도보 시간은 구간이 있어야 의미가 있다(장소 2곳부터). */
@@ -393,6 +468,19 @@ class CourseCreateViewModel
             const val TAG = "CourseCreate"
         }
     }
+
+/** 현재 화면 입력값을 임시저장용 초안으로 변환한다. */
+private fun CourseCreateUIState.toDraftVO(): CourseDraftVO =
+    CourseDraftVO(
+        name = name,
+        description = description,
+        tags = tags,
+        suggestedTags = suggestedTags,
+        places = places,
+        visibility = visibility,
+        // 대표 사진은 한 장만 쓴다. 로컬 URI 는 UseCase 가 업로드해 공개 URL 로 바꾼다.
+        thumbnailUrl = thumbnailPhotos.firstOrNull().orEmpty(),
+    )
 
 /** 걸어서 갈 수 없는 구간(서버가 음수로 알려 준다). */
 private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
