@@ -37,6 +37,11 @@ sealed interface CourseEditReducerEvent : ReducerEvent {
         val description: String,
     ) : CourseEditReducerEvent
 
+    /** 태그 목록 전체를 바꾼다. 추가·삭제 판정은 ViewModel 이 끝낸 뒤 결과만 넘긴다. */
+    data class TagsChanged(
+        val tags: List<String>,
+    ) : CourseEditReducerEvent
+
     data class PlacesChanged(
         val places: List<CourseEditPlaceVO>,
     ) : CourseEditReducerEvent

@@ -37,6 +37,8 @@ data class CourseEditVO(
  * - [name]      장소명. 표시 전용이며 서버로 보내지 않는다
  * - [tip]       작성자 한마디. **편집 가능한 유일한 장소 값**이다
  * - [imageUrls] 장소 사진. 편집 불가이며 지워지지 않게 그대로 되돌려 보낸다
+ * - [walkingMinutes] 다음 장소까지의 도보 분. 편집 불가이며, 빼고 보내면 서버가 places 를 통째로
+ *                    치환하면서 기존 도보 시간이 null 로 지워진다
  */
 @Serializable
 data class CourseEditPlaceVO(
@@ -45,4 +47,5 @@ data class CourseEditPlaceVO(
     val name: String,
     val tip: String = "",
     val imageUrls: List<String> = emptyList(),
+    val walkingMinutes: Int? = null,
 )

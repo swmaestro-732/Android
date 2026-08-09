@@ -1,5 +1,7 @@
 package com.chillsam.courmy.common.data.category
 
+import com.chillsam.courmy.common.entity.category.CourseCategoryVO
+
 // 서버 카테고리 코드 → 화면 라벨.
 //
 // 정본은 `.ai/taxonomy.md` 의 "장소 카테고리"·"코스 태그" 표다. 홈 피드·저장함·코스 상세·
@@ -43,22 +45,7 @@ fun List<String>?.toPlaceCategoryLabel(separator: String = " · "): String =
 /**
  * 코스 태그 코드(`DATE`, `HEALING` …) → 한글 라벨.
  *
- * 라벨은 칩 한 줄에 들어가야 해 정본 표보다 짧게 줄여 쓴다(예: "힐링·산책" → "힐링").
- * 모르는 값(서버에 태그가 추가된 경우)이나 null 은 빈 문자열 — 호출부가 칩을 렌더하지 않는다.
+ * 정본 목록은 [CourseCategoryVO] 다 — presentation 의 관심 테마 선택지도 같은 목록을 써야 해서
+ * entity 레이어에 두고 여기서는 위임만 한다(presentation 은 data 에 의존하지 않는다).
  */
-fun String?.toCourseTagLabel(): String =
-    when (this?.trim()?.uppercase()) {
-        "DATE" -> "데이트"
-        "HEALING" -> "힐링"
-        "FOOD" -> "맛집"
-        "CAFETOUR" -> "카페투어"
-        "CULTURE" -> "문화·전시"
-        "NATURE" -> "자연"
-        "NIGHTVIEW" -> "야경"
-        "SHOPPING" -> "쇼핑"
-        "TRADITION" -> "전통"
-        "ACTIVITY" -> "액티비티"
-        "FAMILY" -> "가족"
-        "SOLO" -> "혼자"
-        else -> ""
-    }
+fun String?.toCourseTagLabel(): String = CourseCategoryVO.labelOf(this)

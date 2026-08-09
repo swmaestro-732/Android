@@ -64,6 +64,14 @@ class CourseEditViewModel
                     changePlaceTip(intent.placeId, intent.tip)
                 }
 
+                is CourseEditIntent.AddTag -> {
+                    addTag(intent.tag)
+                }
+
+                is CourseEditIntent.RemoveTag -> {
+                    dispatch(CourseEditReducerEvent.TagsChanged(currentState.tags - intent.tag))
+                }
+
                 CourseEditIntent.Save -> {
                     save()
                 }
@@ -85,7 +93,9 @@ class CourseEditViewModel
                                 CourseEditReducerEvent.Loaded(
                                     title = detail.title,
                                     description = detail.description,
-                                    tags = detail.themes,
+                                    // 편집 대상은 작성자가 단 해시태그(tags)다. themes 는 서버가 장소
+                                    // 구성에서 파생한 읽기 전용 카테고리라, 그걸 돌려보내면 사용자 태그가 지워진다.
+                                    tags = detail.tags,
                                     places =
                                         detail.places.map { place ->
                                             CourseEditPlaceVO(
@@ -95,6 +105,8 @@ class CourseEditViewModel
                                                 name = place.name,
                                                 tip = place.tip,
                                                 imageUrls = place.imageUrls,
+                                                // 편집 대상은 아니지만 빼고 보내면 서버가 지운다.
+                                                walkingMinutes = place.walkingMinutesToNext,
                                             )
                                         },
                                     thumbnailUrl = detail.coverImageUrl,
@@ -121,6 +133,16 @@ class CourseEditViewModel
                     Log.w(TAG, "공개 설정 로드 실패: courseId=$courseId", e)
                     dispatch(CourseEditReducerEvent.VisibilityLoaded(null))
                 }
+        }
+
+        /**
+         * 태그 추가. 앞뒤 공백과 사용자가 붙인 '#' 을 떼고, 빈 값·중복은 무시한다
+         * (서버로는 '#' 없는 이름만 보낸다).
+         */
+        private fun addTag(raw: String) {
+            val tag = raw.trim().removePrefix("#").trim()
+            if (tag.isBlank() || tag in currentState.tags) return
+            dispatch(CourseEditReducerEvent.TagsChanged(currentState.tags + tag))
         }
 
         private fun changePlaceTip(
@@ -181,6 +203,10 @@ class CourseEditViewModel
 
                 is CourseEditReducerEvent.DescriptionChanged -> {
                     state.copy(description = event.description)
+                }
+
+                is CourseEditReducerEvent.TagsChanged -> {
+                    state.copy(tags = event.tags.toImmutableList())
                 }
 
                 is CourseEditReducerEvent.VisibilityLoaded -> {

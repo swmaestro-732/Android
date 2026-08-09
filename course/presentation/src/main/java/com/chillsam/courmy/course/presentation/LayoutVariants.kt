@@ -16,12 +16,13 @@ object LayoutVariants {
      *
      * 두 배치 모두 가로 밴드(`AuthorBand`)로 그리고 놓이는 위치만 다르다.
      *
-     * - true  — 장소 목록 아래 맨 끝. 현재 배치.
-     * - false — 히어로 바로 밑. 예전 배치.
+     * - true  — 장소 목록·지도 아래 맨 끝. 예전 배치.
+     * - false — 히어로(제목) 바로 밑, 요약 스탯 위. 현재 배치.
      *
+     * 구분선은 밴드가 본문과 맞닿는 쪽에만 그린다(위 배치는 아래쪽, 아래 배치는 위쪽).
      * 팔로우 버튼의 "팔로잉" 상태 표시는 두 배치가 공유하므로 이 값과 무관하다.
      */
-    const val AUTHOR_AT_BOTTOM = true
+    const val AUTHOR_AT_BOTTOM = false
 
     /**
      * 장소 상세 시트의 배치.

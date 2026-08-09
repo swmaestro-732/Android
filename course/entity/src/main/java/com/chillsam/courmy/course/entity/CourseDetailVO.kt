@@ -67,6 +67,8 @@ data class CourseDetailVO(
  * - [imageUrls]      장소 사진 URL 목록 (순서대로)
  * - [tip]            작성자 팁 ("지호님 팁" 본문)
  * - [walkToNextText] 다음 장소로의 도보 안내 (예: "도보 6분"). 마지막 장소는 null
+ * - [walkingMinutesToNext] [walkToNextText] 의 원본 숫자. 편집이 이 값을 그대로 되돌려 보내야
+ *                    기존 도보 시간이 유지된다(서버가 places 를 통째로 치환한다). 마지막 장소는 null
  * - [latitude]       위도. 좌표가 없으면 null (지도에 핀을 찍지 않는다)
  * - [longitude]      경도. 좌표가 없으면 null
  */
@@ -80,6 +82,7 @@ data class CourseDetailPlaceVO(
     val tip: String,
     val imageUrls: List<String> = emptyList(),
     val walkToNextText: String? = null,
+    val walkingMinutesToNext: Int? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
 )

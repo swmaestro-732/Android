@@ -26,6 +26,15 @@ sealed interface CourseEditIntent : MviIntent {
         val tip: String,
     ) : CourseEditIntent
 
+    /** 태그 추가. 공백만 있거나 이미 있는 태그는 ViewModel 이 걸러낸다. */
+    data class AddTag(
+        val tag: String,
+    ) : CourseEditIntent
+
+    data class RemoveTag(
+        val tag: String,
+    ) : CourseEditIntent
+
     data object Save : CourseEditIntent
 
     /** 저장 실패 안내를 닫는다. */

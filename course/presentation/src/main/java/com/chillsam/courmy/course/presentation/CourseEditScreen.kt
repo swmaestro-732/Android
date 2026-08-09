@@ -27,22 +27,22 @@ import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.component.alignTextFieldBorder
+import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseEditPlaceVO
 import com.chillsam.courmy.course.presentation.component.CourseVisibilitySegment
+import com.chillsam.courmy.course.presentation.component.SelectedTags
+import com.chillsam.courmy.course.presentation.component.TagInputRow
 
 /**
  * 코스 편집 화면.
  *
- * 바꿀 수 있는 건 코스 정보(제목·설명)와 장소별 한마디뿐이다. 사진과 장소 구성은 편집 대상이 아니라
+ * 바꿀 수 있는 건 코스 정보(제목·설명)·태그·장소별 한마디다. 사진과 장소 구성은 편집 대상이 아니라
  * 장소는 순번·이름만 읽기 전용으로 보여 주고 한마디 입력만 연다.
  *
  * 공개 설정은 서버가 PATCH 본문에 요구해서(빼면 400) 화면에 노출한다. 다만 상세 응답에 현재 값이 없어
  * PUBLIC 으로 시작하므로, 몰래 덮어쓰지 않도록 안내 문구를 함께 띄운다.
- *
- * 태그는 계약이 정리되지 않아 편집 UI 를 두지 않는다(불러온 값을 그대로 되돌려 보내기만 한다).
- * [com.chillsam.courmy.course.entity.CourseEditVO] 주석 참고. [wiki-needed]
  */
 @Composable
 fun CourseEditScreen(
@@ -92,6 +92,15 @@ fun CourseEditScreen(
                     placeholder = "이 코스를 소개해 주세요",
                     singleLine = false,
                 )
+            }
+            EditSection(title = "태그") {
+                // 코스 생성의 태그 카드에서 선택 칩·입력행만 가져다 쓴다. 추천 태그는 생성 화면에서만
+                // 받아 오는 값이라 편집에서는 두지 않는다.
+                SelectedTags(
+                    tags = state.tags,
+                    onRemoveTag = { onIntent(CourseEditIntent.RemoveTag(it)) },
+                )
+                TagInputRow(onAddTag = { onIntent(CourseEditIntent.AddTag(it)) })
             }
             EditSection(title = "공개 설정") {
                 // 현재 값을 못 읽었을 때만 알린다. 읽어 왔으면 그 값이 이미 선택돼 있으므로 조용히 둔다.
@@ -204,9 +213,7 @@ private fun EditPlaceTipCard(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(shape)
-                .border(1.dp, color.borderDefaultLevel0, shape)
-                .background(color.bgDefaultLevel1)
+                .cardShadow(shape)
                 .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
