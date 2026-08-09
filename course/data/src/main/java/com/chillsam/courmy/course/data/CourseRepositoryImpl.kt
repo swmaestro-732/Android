@@ -57,9 +57,9 @@ class CourseRepositoryImpl(
     override suspend fun getCourseDraft(courseId: Long): CourseDraftVO {
         val envelope = courseDetailDataSource.getCourseDetail(courseId)
         val data = requireNotNull(envelope.data) { "임시저장 코스 응답에 data 가 없습니다: courseId=$courseId" }
-        // 공개 설정은 화면 조합 응답에 없어 도메인 API 에서 따로 읽는다(편집 화면과 같은 이유).
-        // 못 읽어도 이어서 작성 자체는 되어야 하므로 막지 않고 기본값으로 둔다.
-        val visibility = runCatching { courseManageDataSource.getVisibility(courseId) }.getOrNull()
+        // 공개 설정 조회 실패를 PUBLIC 으로 바꾸면 PRIVATE 초안을 다음 저장 때 공개할 수 있으므로
+        // 네트워크·인증 오류는 호출부까지 전파한다. 정상 응답에 값이 없을 때만 매핑 기본값을 쓴다.
+        val visibility = courseManageDataSource.getVisibility(courseId)
         return data.toDraftVO(visibility)
     }
 

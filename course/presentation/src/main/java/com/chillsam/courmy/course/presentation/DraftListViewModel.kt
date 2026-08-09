@@ -28,6 +28,7 @@ class DraftListViewModel
             DraftListUIState.empty,
         ) {
         private var loadJob: Job? = null
+        private val deletingCourseIds = mutableSetOf<Long>()
 
         override fun onIntent(intent: DraftListIntent) {
             when (intent) {
@@ -65,14 +66,19 @@ class DraftListViewModel
          * 서버에는 남아, 다시 들어왔을 때 되살아난 것처럼 보인다.
          */
         private fun delete(courseId: Long) {
+            if (!deletingCourseIds.add(courseId)) return
             viewModelScope.launch {
-                runCatching { deleteDraftUseCase(courseId) }
-                    .onSuccess { dispatch(DraftListReducerEvent.Deleted(courseId)) }
-                    .onFailure { e ->
-                        if (e is CancellationException) throw e
-                        Log.w(TAG, "임시저장 삭제 실패: courseId=$courseId", e)
-                        dispatch(DraftListReducerEvent.DeleteFailed("삭제하지 못했어요. 잠시 후 다시 시도해 주세요."))
-                    }
+                try {
+                    runCatching { deleteDraftUseCase(courseId) }
+                        .onSuccess { dispatch(DraftListReducerEvent.Deleted(courseId)) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "임시저장 삭제 실패: courseId=$courseId", e)
+                            dispatch(DraftListReducerEvent.DeleteFailed("삭제하지 못했어요. 잠시 후 다시 시도해 주세요."))
+                        }
+                } finally {
+                    deletingCourseIds.remove(courseId)
+                }
             }
         }
 
