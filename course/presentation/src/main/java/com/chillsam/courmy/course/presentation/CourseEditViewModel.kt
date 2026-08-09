@@ -197,6 +197,17 @@ class CourseEditViewModel
                     state.copy(isLoading = false, errorMessage = event.message)
                 }
 
+                else -> {
+                    reduceEditing(state, event)
+                }
+            }
+
+        /** 입력·저장 이벤트를 로딩 이벤트와 분리해 reducer의 분기 복잡도를 제한한다. */
+        private fun reduceEditing(
+            state: CourseEditUIState,
+            event: CourseEditReducerEvent,
+        ): CourseEditUIState =
+            when (event) {
                 is CourseEditReducerEvent.TitleChanged -> {
                     state.copy(title = event.title)
                 }
@@ -238,6 +249,10 @@ class CourseEditViewModel
 
                 CourseEditReducerEvent.ErrorDismissed -> {
                     state.copy(errorMessage = null)
+                }
+
+                else -> {
+                    state
                 }
             }
 

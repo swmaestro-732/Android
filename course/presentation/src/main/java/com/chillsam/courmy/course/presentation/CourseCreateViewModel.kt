@@ -484,9 +484,7 @@ private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
 /**
  * 구간 도보 분을 장소별 값으로 채운다. 구간 수가 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없어
  * null 을 돌려 호출부가 표시를 걷어내게 한다. 마지막 장소는 갈 곳이 없어 빈 문자열·null 이다.
- *
- * 표시용 문구뿐 아니라 원본 숫자도 함께 담는다 — 서버가 도보 시간을 계산하지 않고 코스 생성 요청에
- * 실린 값을 저장하므로, 숫자를 버리면 저장된 코스가 "도보 0분" 이 된다.
+ * 서버 저장 요청에도 숫자 값이 필요하므로 표시 문구와 함께 원본 분을 보존한다.
  */
 private fun List<CoursePlaceVO>.withWalkTexts(segments: List<Int>): List<CoursePlaceVO>? {
     if (segments.size != size - 1) return null
