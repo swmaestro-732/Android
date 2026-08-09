@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.profile.dto
 
+import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.entity.user.FollowRelation
@@ -24,6 +25,9 @@ data class MyPageEnvelope(
 data class MyPageScreenDTO(
     val profile: MyPageProfileDTO? = null,
     val courses: List<MyPageCourseDTO>? = null,
+    /** 코스 목록의 다음 페이지 커서. 서버가 만든 불투명 문자열이라 해석하지 않고 되돌려준다. */
+    val nextCursor: String? = null,
+    val hasNext: Boolean = false,
 )
 
 /**
@@ -42,6 +46,8 @@ data class MyPageProfileDTO(
     val nickname: String? = null,
     val handle: String? = null,
     val profileImageUrl: String? = null,
+    /** 한 줄 소개. 미설정이면 null 로 온다. */
+    val bio: String? = null,
     @JsonNames("following")
     val isFollowing: Boolean = false,
     @JsonNames("follower")
@@ -100,24 +106,36 @@ fun MyPageScreenDTO.toUserProfileVO(myUserId: Long?): UserProfileVO {
                 isFollowing = profile?.isFollowing ?: false,
                 isFollower = profile?.isFollower ?: false,
             ),
+        bio = profile?.bio.orEmpty(),
         isMe = myUserId != null && myUserId == id,
-        courses = courses.orEmpty().map { it.toVO() },
+        courses = toCoursePage(),
     )
 }
 
-/** 내 프로필 변환. bio 는 서버 응답에 없어 항상 빈 문자열이다([MyProfileVO] 주석 참고). */
+/**
+ * 코스 목록 한 페이지. 서버가 `hasNext=true` 인데 커서를 안 주는 경우에도 무한 재요청에 빠지지 않도록,
+ * 커서가 없으면 끝으로 처리한다(다른 목록 API 의 `toPageVO` 와 같은 방어).
+ */
+private fun MyPageScreenDTO.toCoursePage(): CursorPageVO<ProfileCourseVO> =
+    CursorPageVO(
+        items = courses.orEmpty().map { it.toVO() },
+        nextCursor = nextCursor,
+        hasNext = hasNext && !nextCursor.isNullOrBlank(),
+    )
+
+/** 내 프로필 변환. */
 fun MyPageScreenDTO.toMyProfileVO(): MyProfileVO {
     val profile = this.profile
     return MyProfileVO(
         id = profile?.id ?: 0L,
         nickname = profile?.nickname.orEmpty(),
         handle = profile?.handle.orEmpty(),
-        bio = "",
+        bio = profile?.bio.orEmpty(),
         profileImageUrl = profile?.profileImageUrl.orEmpty(),
         myCourseCount = profile?.coursesCnt ?: 0,
         followerCount = formatCount(profile?.followersCnt ?: 0),
         followingCount = formatCount(profile?.followingsCnt ?: 0),
-        myCourses = courses.orEmpty().map { it.toVO() },
+        myCourses = toCoursePage(),
     )
 }
 
@@ -144,14 +162,35 @@ private fun trimTrailingZero(value: Double): String {
     return if (truncated % 1.0 == 0.0) truncated.toInt().toString() else truncated.toString()
 }
 
-/** `PATCH /api/v1/users` 요청. null 인 필드는 서버가 건드리지 않는다(부분 수정). */
+/**
+ * `PATCH /api/v1/users` 요청. null 인 필드는 서버가 건드리지 않는다(부분 수정).
+ *
+ * [areaCodes]·[likeThemes] 는 **전체 치환**이다 — 빈 배열이면 전부 해제, null 이면 유지.
+ * [likeThemes] 는 코스 카테고리 이름(`CAFETOUR` …)이고 서버가 enum 으로 검증해 모르는 값은
+ * `400 "존재하지 않는 관심 테마가 포함되어 있습니다"` 로 거부한다(라벨을 보내면 안 된다).
+ *
+ * 주의: 이 엔드포인트는 **모르는 필드를 400 없이 조용히 무시**한다. 필드명을 틀리면 200 을 받고도
+ * 값만 반영되지 않아 알아채기 어려우므로, 이름을 서버 DTO 와 정확히 맞춘다.
+ */
 @Serializable
 data class UpdateProfileRequest(
     val nickname: String? = null,
     val handle: String? = null,
     val profileImageUrl: String? = null,
+    val bio: String? = null,
+    val areaCodes: List<String>? = null,
+    val likeThemes: List<String>? = null,
 )
 
+/**
+ * `PATCH /api/v1/users` 응답 봉투.
+ *
+ * TODO-API-SPEC: `data`(`AccountProfileResponse`)에 서버가 정규화한 최종 값
+ * (`bio`·`likeThemes`·`areas`)이 담겨 오는데 지금은 받지 않는다. 관심 지역·테마를 **되읽을 수 있는
+ * 유일한 경로**이기도 하다(마이페이지 응답에는 없다). 다만 `areas` 는 `{code, name}` 뿐이라
+ * 화면이 쓰는 `AreaVO`(shortName·fullName)를 복원할 수 없어, 지역 조회 API 가 생길 때 함께
+ * 정리하는 편이 낫다. [wiki-needed]
+ */
 @Serializable
 data class UpdateProfileEnvelope(
     val code: Int? = null,

@@ -23,13 +23,6 @@ object ProfileDataModule {
     @Singleton
     fun provideProfileDataSource(apiService: ProfileApiService): ProfileDataSource = ProfileDataSource(apiService)
 
-    /** TODO-API-SPEC: 서버에 bio 필드가 생기면 이 provider 를 제거한다. [wiki-needed] */
-    @Provides
-    @Singleton
-    fun provideBioDataStore(
-        @ApplicationContext context: Context,
-    ): BioPreferencesDataStore = BioPreferencesDataStore(context)
-
     /** TODO-API-SPEC: 마이페이지 응답에 관심 테마·지역이 실리면 이 provider 를 제거한다. [wiki-needed] */
     @Provides
     @Singleton
@@ -42,7 +35,6 @@ object ProfileDataModule {
     fun provideProfileRepository(
         dataSource: ProfileDataSource,
         tokenStore: TokenStore,
-        bioStore: BioPreferencesDataStore,
         interestStore: InterestPreferencesDataStore,
-    ): ProfileRepository = ProfileRepositoryImpl(dataSource, tokenStore, bioStore, interestStore)
+    ): ProfileRepository = ProfileRepositoryImpl(dataSource, tokenStore, interestStore)
 }

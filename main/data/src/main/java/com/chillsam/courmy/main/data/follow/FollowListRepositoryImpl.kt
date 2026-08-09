@@ -8,22 +8,26 @@ import com.chillsam.courmy.main.domain.follow.FollowListRepository
 import com.chillsam.courmy.main.entity.my.FollowUserVO
 
 /**
- * 엔드포인트가 대상 사용자 id 를 경로로 받으므로, "내" 목록은 세션 토큰에서 id 를 꺼내 채운다
- * (프로필의 자기 자신 판정과 같은 방식).
+ * 엔드포인트가 대상 사용자 id 를 경로로 받으므로, 대상이 지정되지 않은 "내" 목록은 세션 토큰에서
+ * id 를 꺼내 채운다(프로필의 자기 자신 판정과 같은 방식).
  */
 class FollowListRepositoryImpl(
     private val dataSource: FollowListDataSource,
     private val tokenStore: TokenStore,
 ) : FollowListRepository {
-    override suspend fun getMyFollowers(
+    override suspend fun getFollowers(
+        userId: Long?,
         size: Int,
         cursor: String?,
-    ): CursorPageVO<FollowUserVO> = dataSource.getFollowers(requireMyUserId(), size, cursor).requireData()
+    ): CursorPageVO<FollowUserVO> = dataSource.getFollowers(userId.orMine(), size, cursor).requireData()
 
-    override suspend fun getMyFollowings(
+    override suspend fun getFollowings(
+        userId: Long?,
         size: Int,
         cursor: String?,
-    ): CursorPageVO<FollowUserVO> = dataSource.getFollowings(requireMyUserId(), size, cursor).requireData()
+    ): CursorPageVO<FollowUserVO> = dataSource.getFollowings(userId.orMine(), size, cursor).requireData()
+
+    private fun Long?.orMine(): Long = this ?: requireMyUserId()
 
     private fun requireMyUserId(): Long =
         requireNotNull(tokenStore.userId) {

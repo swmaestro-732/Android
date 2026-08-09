@@ -11,6 +11,9 @@ sealed interface UserProfileIntent : MviIntent {
     /** 에러 상태에서 재시도. */
     data object Retry : UserProfileIntent
 
+    /** 코스 목록 끝에 닿아 다음 페이지를 이어 받는다(홈 피드와 같은 방식). */
+    data object LoadMore : UserProfileIntent
+
     /** 팔로우 버튼 탭 — 현재 관계의 반대로 요청한다. */
     data object ToggleFollow : UserProfileIntent
 

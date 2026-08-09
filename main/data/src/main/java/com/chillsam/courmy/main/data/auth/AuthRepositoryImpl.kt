@@ -54,7 +54,7 @@ class AuthRepositoryImpl(
                             handle = profile.handle,
                             profileImageUrl = profile.profileImageUrl,
                             areaCodes = profile.areaCodes.ifEmpty { null },
-                            likeTagIds = profile.likeTagIds.ifEmpty { null },
+                            likeThemes = profile.likeThemes.ifEmpty { null },
                         ),
                     ).data,
             ) { "signup 응답에 data 가 없습니다." }

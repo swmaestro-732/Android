@@ -20,7 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
+import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -28,23 +30,26 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
+import com.chillsam.courmy.main.domain.my.FollowListPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
+import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.entity.user.UserProfileVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.profile.ProfileCoursesGrid
 import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
 import com.chillsam.courmy.main.presentation.profile.ProfileSectionLabel
+import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
  * 타유저 프로필 화면(FS-15 OtherUserPageActivity).
  * 상단 프로필·코스 그리드는 마이 화면과 `presentation/profile` 공용 컴포저블을 그대로 공유해
- * 두 화면이 같은 모습을 갖는다. 이 화면만의 차이는 좌상단 뒤로 가기와 팔로우 버튼,
- * 그리고 소개(bio)가 없다는 점이다 — 서버 응답에 필드가 없다([UserProfileVO] 주석 참고).
+ * 두 화면이 같은 모습을 갖는다. 이 화면만의 차이는 좌상단 뒤로 가기와 팔로우 버튼이다.
  *
  * 조회 키는 handle 이며(`GET /service/v1/mypage/{handle}`), 라우트 인자로 받아 로드한다.
  */
@@ -86,8 +91,10 @@ fun UserProfilePage(
         profile != null -> {
             UserProfileContent(
                 profile = profile,
+                courses = uiState.courses,
                 isFollowInFlight = uiState.isFollowInFlight,
                 onToggleFollow = { viewModel.onIntent(UserProfileIntent.ToggleFollow) },
+                onLoadMore = { viewModel.onIntent(UserProfileIntent.LoadMore) },
                 modifier = modifier,
             )
         }
@@ -109,15 +116,21 @@ fun UserProfilePage(
 @Composable
 private fun UserProfileContent(
     profile: UserProfileVO,
+    courses: List<ProfileCourseVO>,
     isFollowInFlight: Boolean,
     onToggleFollow: () -> Unit,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
-    // 공유 URL(App Link)과 타유저 팔로우 목록 조회가 아직 없어 안내만 한다. 무반응 버튼으로 두지 않는다.
+    // 타유저 팔로우 목록 조회가 아직 없어 그쪽만 안내로 둔다. 무반응 버튼으로 두지 않는다.
     val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
+    val shareProfile = { context.copyShareLink(UserProfileRoute.route(profile.handle)) }
+    val scrollState = rememberScrollState()
+    // Lazy 목록이 아니라 스크롤 값으로 끝을 판단한다(홈 피드와 같은 헬퍼의 ScrollState 오버로드).
+    LoadMoreOnScrollEnd(scrollState, onLoadMore)
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(
@@ -125,7 +138,7 @@ private fun UserProfileContent(
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
         ) {
             ProfileHeader(
                 imageUrl = profile.profileImageUrl,
@@ -133,18 +146,27 @@ private fun UserProfileContent(
                 handle = profile.handle,
                 followerCount = profile.followerCount,
                 followingCount = profile.followingCount,
-                // 팔로워·팔로잉 목록은 아직 내 계정 것만 조회할 수 있어 타유저 화면에서는 이동하지 않는다.
-                onFollowerClick = notReady,
-                onFollowingClick = notReady,
+                onFollowerClick = {
+                    navigationHelper.navigateByRoute(
+                        FollowListPage.route(FollowListPage.TAB_FOLLOWER, profile.id),
+                    )
+                },
+                onFollowingClick = {
+                    navigationHelper.navigateByRoute(
+                        FollowListPage.route(FollowListPage.TAB_FOLLOWING, profile.id),
+                    )
+                },
                 onBack = { navigationHelper.navigateToBack() },
-                // 서버가 타유저 소개를 주지 않아 소개 줄 자체를 두지 않는다.
-                bio = null,
+                // 소개가 비어 있으면 줄 자체를 두지 않는다.
+                bio = profile.bio.ifBlank { null },
             ) {
-                ProfileHeaderIconButton(
-                    iconRes = R.drawable.ic_share_24,
-                    contentDescription = "공유",
-                    onClick = notReady,
-                )
+                if (FeatureFlags.SHARE_ENABLED) {
+                    ProfileHeaderIconButton(
+                        iconRes = R.drawable.ic_share_24,
+                        contentDescription = "공유",
+                        onClick = shareProfile,
+                    )
+                }
             }
             // 자기 자신을 연 경우(응답 id == 내 id)에는 팔로우 버튼을 노출하지 않는다.
             if (!profile.isMe) {
@@ -164,7 +186,7 @@ private fun UserProfileContent(
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
             ProfileSectionLabel(text = "코스 ${profile.courseCount}")
             ProfileCoursesGrid(
-                courses = profile.courses,
+                courses = courses,
                 onCourseClick = { courseId ->
                     navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
                 },

@@ -28,6 +28,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
+import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -40,14 +42,17 @@ import com.chillsam.courmy.main.domain.my.FollowListPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
+import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.profile.ProfileCoursesGrid
 import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
 import com.chillsam.courmy.main.presentation.profile.ProfileSectionLabel
+import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
  * 마이·프로필 화면(FS-15). [MyViewModel] 이 로드한 프로필 상태에 따라
@@ -68,7 +73,12 @@ fun MyPage(
     RefreshOnResume { viewModel.onIntent(MyProfileIntent.Retry) }
     when {
         profile != null -> {
-            MyContent(profile = profile, modifier = modifier)
+            MyContent(
+                profile = profile,
+                courses = uiState.courses,
+                onLoadMore = { viewModel.onIntent(MyProfileIntent.LoadMore) },
+                modifier = modifier,
+            )
         }
 
         uiState.isLoading -> {
@@ -134,13 +144,18 @@ private fun CreateFirstCourseCard(onClick: () -> Unit) {
 @Composable
 private fun MyContent(
     profile: MyProfileVO,
+    courses: List<ProfileCourseVO>,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
-    // 공유할 프로필 URL(App Link)이 아직 없어 안내만 한다. 무반응 버튼으로 두지 않는다.
-    val shareNotReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
+    // 내 프로필도 남에게는 타유저 프로필로 열리므로 그 링크를 공유한다.
+    val shareProfile = { context.copyShareLink(UserProfileRoute.route(profile.handle)) }
+    val scrollState = rememberScrollState()
+    // Lazy 목록이 아니라 스크롤 값으로 끝을 판단한다(홈 피드와 같은 헬퍼의 ScrollState 오버로드).
+    LoadMoreOnScrollEnd(scrollState, onLoadMore)
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(
@@ -148,7 +163,7 @@ private fun MyContent(
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
         ) {
             ProfileHeader(
                 imageUrl = profile.profileImageUrl,
@@ -166,11 +181,13 @@ private fun MyContent(
                 onBack = null,
                 bio = profile.bio,
             ) {
-                ProfileHeaderIconButton(
-                    iconRes = R.drawable.ic_share_24,
-                    contentDescription = "공유",
-                    onClick = shareNotReady,
-                )
+                if (FeatureFlags.SHARE_ENABLED) {
+                    ProfileHeaderIconButton(
+                        iconRes = R.drawable.ic_share_24,
+                        contentDescription = "공유",
+                        onClick = shareProfile,
+                    )
+                }
                 ProfileHeaderIconButton(
                     iconRes = R.drawable.ic_settings_24,
                     contentDescription = "설정",
@@ -179,15 +196,15 @@ private fun MyContent(
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
-            ProfileSectionLabel(text = "내 코스")
-            if (profile.myCourses.isEmpty()) {
+            ProfileSectionLabel(text = "내 코스 ${profile.myCourseCount}")
+            if (courses.isEmpty()) {
                 // 코스가 없으면 빈 그리드 대신 만들러 갈 자리를 둔다.
                 CreateFirstCourseCard(
                     onClick = { navigationHelper.navigateTo(CourseCreatePage) },
                 )
             } else {
                 ProfileCoursesGrid(
-                    courses = profile.myCourses,
+                    courses = courses,
                     onCourseClick = { courseId ->
                         navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
                     },

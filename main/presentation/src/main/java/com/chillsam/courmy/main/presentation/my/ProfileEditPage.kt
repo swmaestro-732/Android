@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.entity.category.CourseCategoryVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -50,6 +51,7 @@ import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.component.alignTextFieldBorder
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.media.rememberAccentedImagePicker
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
@@ -69,12 +71,9 @@ private const val NICKNAME_MAX_LENGTH = 12
 private const val BIO_MAX_LENGTH = 60
 
 /**
- * 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·관심 테마/지역을 편집한다.
+ * 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·소개·관심 테마/지역을 편집한다.
  *
- * TODO-API-SPEC: 소개(bio)는 서버 `UpdateProfileRequest`·`MyPageProfileResponse` 어디에도 필드가 없어
- * **기기에만 저장한다**(마이 화면의 소개도 같은 로컬 값을 읽는다). 그래서 이 기기에서만 보이고
- * 다른 사용자에게는 보이지 않으며 앱을 지우면 사라진다.
- * 백엔드에 필드가 추가되면 로컬 저장(BioPreferencesDataStore)을 지우고 저장 요청에 합친다. [wiki-needed]
+ * 관심 테마는 서버 코스 카테고리 코드로 저장되므로 표시할 때만 라벨로 바꾼다.
  */
 @Composable
 fun ProfileEditPage(
@@ -83,6 +82,8 @@ fun ProfileEditPage(
     myViewModel: MyViewModel = hiltViewModel(),
     editViewModel: ProfileEditViewModel = hiltViewModel(),
 ) {
+    // 상단이 흰색이라 상태바도 같은 색으로 이어 붙인다. 회색으로 두면 띠만 분리돼 보인다.
+    StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     // 편집 원본값은 실제 내 프로필(GET /service/v1/mypage)에서 가져온다.
@@ -181,7 +182,11 @@ fun ProfileEditPage(
             )
             InterestSummary(
                 title = "관심 테마",
-                chips = profile?.interestThemes.orEmpty(),
+                // 저장된 값은 서버 코드라 라벨로 바꿔 보여준다(모르는 코드는 그대로 노출).
+                chips =
+                    profile?.interestThemes.orEmpty().map { code ->
+                        CourseCategoryVO.labelOf(code).ifBlank { code }
+                    },
                 onEdit = { navigationHelper.navigateTo(InterestThemePage) },
             )
             InterestSummary(

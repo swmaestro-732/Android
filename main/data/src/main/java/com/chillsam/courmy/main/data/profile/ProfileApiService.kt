@@ -19,14 +19,20 @@ import retrofit2.http.Query
  * baseUrl 은 common:data 의 NetworkModule 이 제공한다.
  */
 interface ProfileApiService {
-    /** 내 마이페이지 — 내 프로필 + 내가 발행한 코스. */
+    /** 내 마이페이지 — 내 프로필 + 내가 발행한 코스(커서 페이징). */
     @GET("service/v1/mypage")
-    suspend fun getMyPage(): Response<MyPageEnvelope>
+    suspend fun getMyPage(
+        @Query("size") size: Int,
+        /** 이전 응답의 `nextCursor`. null 이면 Retrofit 이 파라미터를 뺀다(첫 페이지). */
+        @Query("cursor") cursor: String? = null,
+    ): Response<MyPageEnvelope>
 
-    /** 타유저 마이페이지 — 대상 프로필 + 공개 코스. 팔로우 플래그는 JWT 의 뷰어 기준. */
+    /** 타유저 마이페이지 — 대상 프로필 + 공개 코스(커서 페이징). 팔로우 플래그는 JWT 의 뷰어 기준. */
     @GET("service/v1/mypage/{handle}")
     suspend fun getUserPage(
         @Path("handle") handle: String,
+        @Query("size") size: Int,
+        @Query("cursor") cursor: String? = null,
     ): Response<MyPageEnvelope>
 
     /** 대상 사용자의 팔로워로 "나"를 추가(멱등이라 PUT). */

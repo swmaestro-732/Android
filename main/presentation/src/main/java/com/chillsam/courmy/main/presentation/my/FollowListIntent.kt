@@ -9,6 +9,14 @@ sealed interface FollowListIntent : MviIntent {
         val tab: FollowTab,
     ) : FollowListIntent
 
+    /**
+     * 어느 사용자의 목록을 볼지 정한다. null 이면 내 목록이다.
+     * 라우트 인자로 오므로 [SelectTab] 보다 먼저 한 번만 보낸다.
+     */
+    data class SetTarget(
+        val userId: Long?,
+    ) : FollowListIntent
+
     data object Retry : FollowListIntent
 
     /** 지금 탭의 목록 끝에 닿았을 때 다음 페이지 요청. */

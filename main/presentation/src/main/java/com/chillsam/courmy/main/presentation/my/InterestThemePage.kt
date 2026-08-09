@@ -24,30 +24,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.entity.category.CourseCategoryVO
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 
-private val THEME_OPTIONS =
-    listOf(
-        "감성 카페",
-        "전시·갤러리",
-        "맛집 탐방",
-        "동네 산책",
-        "와인바",
-        "브런치",
-        "베이커리",
-        "소품샵",
-        "전통주",
-        "루프탑",
-        "북카페",
-        "디저트",
-    )
+/**
+ * 선택지는 서버 코스 카테고리와 같은 목록이다([CourseCategoryVO]).
+ *
+ * 선택 상태·저장은 코드(`CAFETOUR` …)로 하고 칩에는 라벨을 보여준다 — 서버가 `likeThemes` 를
+ * enum 으로 검증해서, 라벨을 보내면 `400 "존재하지 않는 관심 테마가 포함되어 있습니다"` 로 거부한다.
+ */
+private val THEME_OPTIONS = CourseCategoryVO.entries
 private const val MIN_THEME_COUNT = 3
 
 /** 관심 테마 편집 화면(FS-06). 최소 [MIN_THEME_COUNT]개 이상 칩을 선택한다. */
@@ -57,6 +51,8 @@ fun InterestThemePage(
     onNext: ((List<String>) -> Unit)? = null,
     progressStep: Int? = null,
 ) {
+    // 상단이 흰색이라 상태바도 같은 색으로 이어 붙인다. 회색으로 두면 띠만 분리돼 보인다.
+    StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     // 편집 모드에서만 저장된 관심사를 읽고 되쓴다. 회원가입은 완료 화면까지 홀더로 나른다.
@@ -156,10 +152,11 @@ private fun ThemeChips(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         THEME_OPTIONS.forEach { theme ->
+            // 선택 상태는 서버 코드로 관리하고 화면에는 라벨만 보여준다.
             DsChip(
-                text = theme,
-                selected = theme in selected,
-                onClick = { onToggle(theme) },
+                text = theme.label,
+                selected = theme.name in selected,
+                onClick = { onToggle(theme.name) },
             )
         }
     }

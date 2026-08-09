@@ -8,10 +8,6 @@ import javax.inject.Inject
  *
  * 새 이미지를 골랐으면 presign 업로드로 공개 URL 을 먼저 확보한 뒤 그 URL 로 프로필을 갱신한다
  * (업로드가 실패하면 프로필도 갱신하지 않는다 — 반쯤 반영된 상태를 만들지 않기 위해).
- *
- * TODO-API-SPEC: 서버 `UpdateProfileRequest` 에 소개(bio) 필드가 없어, **소개만 기기에 따로 저장한다**
- * ([ProfileRepository.saveBio]). 그래서 소개는 이 기기에서만 보이고 다른 사용자에게는 보이지 않는다.
- * 백엔드에 필드가 추가되면 [ProfileRepository.saveBio] 를 지우고 bio 를 updateProfile 요청에 함께 싣는다. [wiki-needed]
  */
 class UpdateProfileUseCase
     @Inject
@@ -29,14 +25,13 @@ class UpdateProfileUseCase
                 localImageUri
                     ?.takeIf { it.isNotBlank() }
                     ?.let { mediaRepository.uploadImage(it) }
-            if (nickname != null || handle != null || imageUrl != null) {
-                profileRepository.updateProfile(
-                    nickname = nickname,
-                    handle = handle,
-                    profileImageUrl = imageUrl,
-                )
-            }
-            // TODO-API-SPEC: 서버에 필드가 생기면 위 updateProfile 요청에 합친다. [wiki-needed]
-            bio?.let { profileRepository.saveBio(it) }
+            // 바뀐 항목이 하나도 없으면 빈 요청을 보내지 않는다.
+            if (listOfNotNull(nickname, handle, imageUrl, bio).isEmpty()) return
+            profileRepository.updateProfile(
+                nickname = nickname,
+                handle = handle,
+                profileImageUrl = imageUrl,
+                bio = bio,
+            )
         }
     }

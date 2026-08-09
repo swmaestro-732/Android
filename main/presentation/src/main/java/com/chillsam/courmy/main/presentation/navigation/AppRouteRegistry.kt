@@ -211,7 +211,10 @@ val appRoutes: List<AppRoute> =
                     } else {
                         FollowTab.FOLLOWER
                     }
-                FollowListPage(initialTab = tab)
+                FollowListPage(
+                    initialTab = tab,
+                    targetUserId = args[FollowListRoute.ARG_USER_ID]?.toLongOrNull(),
+                )
             },
         ),
         AppRoute(
