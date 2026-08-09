@@ -7,7 +7,6 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.course.presentation.CourseCompletePage
 import com.chillsam.courmy.course.presentation.CourseCompleteViewModel
-import com.chillsam.courmy.course.presentation.CourseCreateIntent
 import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
 import com.chillsam.courmy.course.presentation.CourseDetailPage
@@ -149,17 +148,13 @@ val appRoutes: List<AppRoute> =
         // 상단바·저장바 네비게이션은 대상 화면(홈/코스 완성)이 main 모듈이라 여기서 주입한다.
         AppRoute(
             path = CourseCreateRoute.PATH,
-            render = {
+            render = { args ->
                 val navigationHelper = LocalNavigationHelper.current
-                val viewModel = hiltViewModel<CourseCreateViewModel>()
                 CourseCreatePage(
-                    viewModel = viewModel,
+                    viewModel = hiltViewModel<CourseCreateViewModel>(),
                     onClose = { navigationHelper.navigateToBack() },
-                    onSaveDraft = {
-                        // 임시저장하고 작성 화면을 빠져나온다(들어온 곳으로 되돌아간다).
-                        viewModel.onIntent(CourseCreateIntent.SaveDraft)
-                        navigationHelper.navigateToBack()
-                    },
+                    // 서버 저장 성공 뒤 작성 화면에서 호출한다.
+                    onSaveDraft = { navigationHelper.navigateToBack() },
                     // 서버 저장 성공 후 CourseCreatePage 가 호출한다(저장 인텐트는 Page 내부에서 발행).
                     //
                     // **작성 화면 엔트리를 먼저 걷어내고** 완성 화면으로 간다. 백스택에 남겨 두면
@@ -172,6 +167,7 @@ val appRoutes: List<AppRoute> =
                         navigationHelper.navigateToBack()
                         navigationHelper.navigateTo(CourseCompleteRoute)
                     },
+                    draftCourseId = args[CourseCreateRoute.ARG_DRAFT_ID]?.toLongOrNull(),
                 )
             },
         ),

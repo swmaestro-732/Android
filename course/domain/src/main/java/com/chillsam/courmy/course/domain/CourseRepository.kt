@@ -10,44 +10,41 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * 코스 작성·보관 데이터 접근 규약. 구현은 data 레이어.
  *
- * 세션 목록([savedCourses]·[drafts])과 마지막 완성 코스([lastCompleted])는 앱이 켜져 있는 동안
- * 공유되는 상태이므로 [StateFlow] 로 노출한다.
+ * 세션 목록([savedCourses])과 마지막 완성 코스([lastCompleted])는 앱이 켜져 있는 동안 공유되는
+ * 인메모리 상태라 [StateFlow] 로 노출하며, 콜드 스타트 시 초기화된다.
  *
- * 임시저장 초안([drafts])만 기기에 남아 콜드 스타트 후에도 유지된다. 나머지는 인메모리다.
+ * 임시저장 초안은 서버에 발행 전(`isPublished = false`) 코스로 보관된다. 기기에 두지 않으므로
+ * 조회·저장·삭제 모두 왕복이 필요한 suspend 함수다.
  */
 interface CourseRepository {
     /** 저장 완료한 코스 목록(마이 화면 노출). */
     val savedCourses: StateFlow<List<SavedCourseVO>>
 
-    /** 임시저장한 코스 목록(임시저장 화면 노출). 각 항목은 [DraftSummaryVO.id] 로 식별한다. */
-    val drafts: StateFlow<List<DraftSummaryVO>>
-
     /** 방금 저장 완료한 코스(FS-34-Done 완성 화면 표시용). null 이면 완성 화면이 예시로 폴백. */
     val lastCompleted: StateFlow<CourseCompleteVO?>
 
-    /**
-     * 작성 시작 시점의 코스 초안을 가져온다.
-     * [beginEditDraft] 로 이어서 편집할 초안이 지정돼 있으면 그 전체 내용을, 아니면 빈 초안(추천 태그만)을 반환한다.
-     */
-    suspend fun getCourseDraft(): CourseDraftVO
+    /** 내 임시저장 목록(`GET /api/v1/courses/drafts`). 서버가 전체를 배열로 주므로 커서 페이징이 없다. */
+    suspend fun getDrafts(): List<DraftSummaryVO>
 
     /**
-     * 기기에 저장해 둔 초안을 [drafts] 로 올린다. 목록 화면이 열릴 때 한 번 부르면 된다.
-     * (작성 화면은 [getCourseDraft] 가 알아서 처리한다.)
+     * 임시저장 초안의 전체 내용을 불러온다(이어서 작성).
+     * 초안을 되읽는 경로는 코스 조회뿐이라 발행된 코스와 같은 API 를 쓴다.
      */
-    suspend fun loadDrafts()
-
-    /** 다음 [getCourseDraft] 가 돌려줄 "이어서 편집할" 임시저장 초안을 id 로 지정한다. */
-    fun beginEditDraft(draftId: String)
+    suspend fun getCourseDraft(courseId: Long): CourseDraftVO
 
     /**
-     * 현재 작성 중인 초안을 임시저장한다.
-     * 편집 세션 id 로 upsert 하므로, 제목을 바꿔 저장해도 같은 초안이 갱신될 뿐 중복이 생기지 않는다.
+     * 작성 중인 초안을 서버에 임시저장하고 코스 id 를 돌려준다.
+     *
+     * [courseId] 가 있으면 그 초안을 갱신(`PATCH`)하고, 없으면 새로 만든다(`POST`).
+     * 이미 만든 초안에 다시 `POST` 하면 같은 코스가 초안 목록에 복제되므로 반드시 구분해서 부른다.
      */
-    fun saveDraft(draft: CourseDraftVO)
+    suspend fun saveDraft(
+        draft: CourseDraftVO,
+        courseId: Long?,
+    ): Long
 
-    /** 임시저장 초안 1건을 지운다. 목록([drafts])에서도 즉시 빠진다. */
-    fun deleteDraft(draftId: String)
+    /** 임시저장 초안 1건을 지운다(발행 전 코스라 코스 삭제와 같은 엔드포인트를 쓴다). */
+    suspend fun deleteDraft(courseId: Long)
 
     /** 코스 저장 완료 처리: 완성 화면 데이터를 보관하고 [savedCourses] 에도 추가한다. */
     fun completeCourse(course: CourseCompleteVO?)

@@ -74,6 +74,8 @@ import kotlinx.coroutines.isActive
 /**
  * 코스 만들기 화면.
  *
+ * [draftCourseId] 가 있으면 그 임시저장 초안을 불러와 이어서 작성한다(임시저장 목록에서 진입).
+ *
  * 상단바·저장바의 네비게이션([onClose]·[onSaveDraft]·[onSaveCourse])은 대상 화면이 다른 모듈(main)에
  * 있어 course 모듈이 직접 참조할 수 없으므로, 호출부([AppRouteRegistry])에서 콜백으로 주입한다.
  */
@@ -83,6 +85,7 @@ fun CourseCreatePage(
     onClose: () -> Unit,
     onSaveDraft: () -> Unit,
     onSaveCourse: (Long) -> Unit,
+    draftCourseId: Long? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -92,7 +95,19 @@ fun CourseCreatePage(
     // 어떤 경로로 엔트리가 살아남더라도 "새로 만들기"가 이전 입력을 되살리지 않도록 보장한다.
     // 이 화면에는 하단 탭바가 없고 화면도 세로 고정이라, 편집 도중 컴포지션만 다시 만들어져
     // 입력이 날아갈 경로는 없다.
-    LaunchedEffect(Unit) { viewModel.onIntent(CourseCreateIntent.Load) }
+    LaunchedEffect(draftCourseId) { viewModel.onIntent(CourseCreateIntent.Load(draftCourseId)) }
+
+    // 임시저장은 서버 왕복이라, 저장이 끝난 뒤에 화면을 빠져나간다. 먼저 나가면 ViewModel 이
+    // 정리되면서 저장 요청까지 취소돼 초안이 만들어지지 않는다.
+    LaunchedEffect(uiState.draftSaved) {
+        if (uiState.draftSaved) {
+            val message =
+                if (uiState.imagesMissing) "사진은 저장되지 않았어요. 이어서 작성할 때 다시 올려 주세요." else "임시저장했어요"
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            onSaveDraft()
+            viewModel.onIntent(CourseCreateIntent.ConsumeDraftSaved)
+        }
+    }
 
     // 서버 저장이 끝난 뒤에만 완성 화면으로 넘어간다(실패했는데 성공처럼 보이지 않게).
     LaunchedEffect(uiState.savedCourseId) {
@@ -117,7 +132,8 @@ fun CourseCreatePage(
         uiState = uiState,
         onIntent = viewModel::onIntent,
         onClose = onClose,
-        onSaveDraft = onSaveDraft,
+        // 화면 이동이 아니라 저장 요청만 보낸다. 나가는 것은 저장 성공 신호를 받고 위에서 한다.
+        onSaveDraft = { viewModel.onIntent(CourseCreateIntent.SaveDraft) },
         onRequestSave = { completed -> viewModel.onIntent(CourseCreateIntent.CompleteCourse(completed)) },
     )
 }
@@ -167,6 +183,7 @@ private fun CourseCreateContent(
                 onClose = { if (uiState.hasContent) showExitConfirm = true else onClose() },
                 onSaveDraft = onSaveDraft,
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+                savingDraft = uiState.isSavingDraft,
             )
             StepProgressBar(
                 step = uiState.step,
@@ -247,7 +264,7 @@ private fun CourseCreateContent(
         if (showExitConfirm) {
             ExitConfirmDialog(
                 onSaveAndExit = {
-                    // onSaveDraft 가 저장 후 홈으로 이동하므로 별도 onClose 는 부르지 않는다.
+                    // 저장이 끝나면 화면이 알아서 빠져나가므로(draftSaved 신호) 별도 onClose 는 부르지 않는다.
                     showExitConfirm = false
                     onSaveDraft()
                 },

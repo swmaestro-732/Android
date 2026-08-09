@@ -34,6 +34,7 @@ class CourseCreateViewModel
             CourseCreateUIState.empty,
         ) {
         private var saveJob: Job? = null
+        private var draftJob: Job? = null
         private var tagsJob: Job? = null
         private var walkJob: Job? = null
 
@@ -41,8 +42,8 @@ class CourseCreateViewModel
         @Suppress("LongMethod", "CyclomaticComplexMethod")
         override fun onIntent(intent: CourseCreateIntent) {
             when (intent) {
-                CourseCreateIntent.Load -> {
-                    load()
+                is CourseCreateIntent.Load -> {
+                    load(intent.draftCourseId)
                 }
 
                 is CourseCreateIntent.ChangeName -> {
@@ -116,7 +117,7 @@ class CourseCreateViewModel
                 }
 
                 CourseCreateIntent.SaveDraft -> {
-                    saveDraftUseCase(currentState.toDraftVO())
+                    saveDraft()
                 }
 
                 is CourseCreateIntent.CompleteCourse -> {
@@ -129,6 +130,10 @@ class CourseCreateViewModel
 
                 CourseCreateIntent.ConsumeSaved -> {
                     dispatch(CourseCreateReducerEvent.SavedConsumed)
+                }
+
+                CourseCreateIntent.ConsumeDraftSaved -> {
+                    dispatch(CourseCreateReducerEvent.DraftSavedConsumed)
                 }
 
                 CourseCreateIntent.NextStep -> {
@@ -176,10 +181,15 @@ class CourseCreateViewModel
                         isLoading = false,
                         name = event.draft.name,
                         description = event.draft.description,
+                        // 커버는 한 장만 쓰므로 비어 있으면 목록도 비운다.
+                        thumbnailPhotos =
+                            listOfNotNull(event.draft.thumbnailUrl.takeIf { it.isNotBlank() })
+                                .toImmutableList(),
                         tags = event.draft.tags.toImmutableList(),
                         suggestedTags = event.draft.suggestedTags.toImmutableList(),
                         places = event.draft.places.toImmutableList(),
                         visibility = event.draft.visibility,
+                        draftCourseId = event.courseId,
                     )
                 }
 
@@ -237,6 +247,27 @@ class CourseCreateViewModel
 
                 is CourseCreateReducerEvent.SuggestedTagsLoaded -> {
                     state.copy(suggestedTags = event.tags.toImmutableList())
+                }
+
+                CourseCreateReducerEvent.DraftSaveStarted -> {
+                    state.copy(isSavingDraft = true, errorMessage = null)
+                }
+
+                is CourseCreateReducerEvent.DraftSaveSucceeded -> {
+                    state.copy(
+                        isSavingDraft = false,
+                        draftSaved = true,
+                        draftCourseId = event.courseId,
+                        imagesMissing = !event.imagesUploaded,
+                    )
+                }
+
+                is CourseCreateReducerEvent.DraftSaveFailed -> {
+                    state.copy(isSavingDraft = false, errorMessage = event.message)
+                }
+
+                CourseCreateReducerEvent.DraftSavedConsumed -> {
+                    state.copy(draftSaved = false, imagesMissing = false)
                 }
             }
 
@@ -358,33 +389,73 @@ class CourseCreateViewModel
                 }
         }
 
-        private fun load() {
+        /**
+         * 화면 진입. [draftCourseId] 가 없으면 새 코스라 서버에 물어볼 것이 없어 빈 초안으로 바로 연다
+         * (그래야 새로 만들기가 네트워크 상태와 무관하게 즉시 열린다).
+         */
+        private fun load(draftCourseId: Long?) {
+            if (draftCourseId == null) {
+                dispatch(CourseCreateReducerEvent.DraftLoaded(CourseDraftVO.empty, courseId = null))
+                return
+            }
             dispatch(CourseCreateReducerEvent.LoadStarted)
             viewModelScope.launch {
-                runCatching { getCourseDraftUseCase() }
+                runCatching { getCourseDraftUseCase(draftCourseId) }
                     .onSuccess {
-                        dispatch(CourseCreateReducerEvent.DraftLoaded(it))
+                        dispatch(CourseCreateReducerEvent.DraftLoaded(it, courseId = draftCourseId))
                         // 이어 쓰는 초안에도 장소가 들어 있어 도보 시간을 채워야 한다.
                         refreshWalkingMinutes()
                     }.onFailure { e ->
                         if (e is CancellationException) throw e
                         // 스피너를 걷지 않으면 화면이 영구 정지한다(초안 없이도 작성은 가능하다).
-                        Log.w(TAG, "임시저장 초안 로드 실패", e)
+                        //
+                        // 이때 draftCourseId 를 채우지 않는다. 못 불러온 초안에 이어서 임시저장하면
+                        // 빈 내용으로 PATCH 가 나가 원래 초안이 지워진다. 새 초안이 하나 더 생기는 쪽이
+                        // 사용자가 되돌릴 수 있는 실패다.
+                        Log.w(TAG, "임시저장 초안 로드 실패: courseId=$draftCourseId", e)
                         dispatch(CourseCreateReducerEvent.LoadFailed("임시저장한 내용을 불러오지 못했어요."))
                     }
             }
         }
 
-        /** 현재 화면 입력값을 임시저장용 초안으로 변환한다. */
-        private fun CourseCreateUIState.toDraftVO(): CourseDraftVO =
-            CourseDraftVO(
-                name = name,
-                description = description,
-                tags = tags,
-                suggestedTags = suggestedTags,
-                places = places,
-                visibility = visibility,
-            )
+        /**
+         * 현재 작성 중인 내용을 서버에 임시저장한다.
+         *
+         * 장소 수는 서버가 400 으로 거절하는 유일한 조건이라 보내기 전에 앱에서 걸러 안내한다
+         * (서버 문구를 그대로 노출하지 않는다). 저장이 끝나기 전에 화면을 닫으면 요청이 취소되므로,
+         * 화면 이동은 [CourseCreateUIState.draftSaved] 신호를 받은 뒤에 한다.
+         */
+        private fun saveDraft() {
+            if (currentState.isSavingDraft) return
+            if (!currentState.canSaveDraft) {
+                dispatch(
+                    CourseCreateReducerEvent.DraftSaveFailed(
+                        "장소를 ${CourseCreateUIState.MIN_PLACES}곳 이상 담아야 임시저장할 수 있어요.",
+                    ),
+                )
+                return
+            }
+            dispatch(CourseCreateReducerEvent.DraftSaveStarted)
+            draftJob?.cancel()
+            draftJob =
+                viewModelScope.launch {
+                    runCatching { saveDraftUseCase(currentState.toDraftVO(), currentState.draftCourseId) }
+                        .onSuccess { result ->
+                            dispatch(
+                                CourseCreateReducerEvent.DraftSaveSucceeded(
+                                    courseId = result.courseId,
+                                    imagesUploaded = result.imagesUploaded,
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "임시저장 실패: courseId=${currentState.draftCourseId}", e)
+                            dispatch(
+                                CourseCreateReducerEvent.DraftSaveFailed("임시저장에 실패했어요. 잠시 후 다시 시도해 주세요."),
+                            )
+                        }
+                }
+        }
 
         private companion object {
             /** 도보 시간은 구간이 있어야 의미가 있다(장소 2곳부터). */
@@ -394,13 +465,28 @@ class CourseCreateViewModel
         }
     }
 
+/** 현재 화면 입력값을 임시저장용 초안으로 변환한다. */
+private fun CourseCreateUIState.toDraftVO(): CourseDraftVO =
+    CourseDraftVO(
+        name = name,
+        description = description,
+        tags = tags,
+        suggestedTags = suggestedTags,
+        places = places,
+        visibility = visibility,
+        // 대표 사진은 한 장만 쓴다. 로컬 URI 는 UseCase 가 업로드해 공개 URL 로 바꾼다.
+        thumbnailUrl = thumbnailPhotos.firstOrNull().orEmpty(),
+    )
+
 /** 걸어서 갈 수 없는 구간(서버가 음수로 알려 준다). */
 private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
 
 /**
  * 구간 도보 분을 장소별 값으로 채운다. 구간 수가 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없어
  * null 을 돌려 호출부가 표시를 걷어내게 한다. 마지막 장소는 갈 곳이 없어 빈 문자열·null 이다.
- * 서버 저장 요청에도 숫자 값이 필요하므로 표시 문구와 함께 원본 분을 보존한다.
+ *
+ * 표시용 문구뿐 아니라 원본 숫자도 함께 담는다 — 서버가 도보 시간을 계산하지 않고 코스 생성 요청에
+ * 실린 값을 저장하므로, 숫자를 버리면 저장된 코스가 "도보 0분" 이 된다.
  */
 private fun List<CoursePlaceVO>.withWalkTexts(segments: List<Int>): List<CoursePlaceVO>? {
     if (segments.size != size - 1) return null

@@ -7,9 +7,7 @@ import com.chillsam.courmy.common.domain.telemetry.AppFlow
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.common.domain.telemetry.track
 import com.chillsam.courmy.course.entity.CourseDraftVO
-import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CreateCourseResultVO
-import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 /**
@@ -35,8 +33,8 @@ class CreateCourseUseCase
             published: Boolean = true,
         ): CreateCourseResultVO =
             telemetry.track(AppFlow.CourseCreate) {
-                val uploader = ImageUploader()
-                val places = draft.places.map { place -> place.uploadPhotos(uploader) }
+                val uploader = CourseImageUploader(mediaRepository)
+                val places = draft.places.map { place -> uploader.uploadPhotos(place) }
                 val thumbnailUrl = thumbnailUris.firstOrNull()?.let { uploader.upload(it, UploadPurpose.COURSE) }
                 val courseId =
                     repository.createCourse(
@@ -53,34 +51,4 @@ class CreateCourseUseCase
                 }
                 CreateCourseResultVO(courseId = courseId, imagesUploaded = uploader.allSucceeded)
             }
-
-        private suspend fun CoursePlaceVO.uploadPhotos(uploader: ImageUploader) =
-            copy(photoUrls = photoUrls.mapNotNull { uploader.upload(it, UploadPurpose.PLACE) })
-
-        /** 업로드 결과를 모아 두는 헬퍼. 하나라도 실패하면 [allSucceeded] 가 false 가 된다. */
-        private inner class ImageUploader {
-            var allSucceeded: Boolean = true
-                private set
-
-            /**
-             * 이미 http URL 이면 업로드하지 않고 그대로 쓴다(편집 재저장 대비). 실패하면 null.
-             *
-             * 실패 원인을 여기서 따로 남기지 않는 이유: 요청/응답은 data 레이어의 API 로깅에 이미
-             * 남고(`API` 태그), domain 은 순수 Kotlin 이라 안드로이드 로거를 쓸 수 없다.
-             */
-            suspend fun upload(
-                uri: String,
-                purpose: UploadPurpose,
-            ): String? =
-                if (uri.startsWith("http")) {
-                    uri
-                } else {
-                    runCatching { mediaRepository.uploadImage(uri, purpose) }
-                        .getOrElse { e ->
-                            if (e is CancellationException) throw e
-                            allSucceeded = false
-                            null
-                        }
-                }
-        }
     }
