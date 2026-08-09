@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseCompleteVO
@@ -147,8 +148,7 @@ private fun SummaryCard(course: CourseCompleteVO) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(shape)
-                .border(1.dp, color.borderDefaultLevel0, shape),
+                .cardShadow(shape),
     ) {
         // 이미지가 없거나 로드에 실패해도 플레이스홀더 색이 그대로 보이도록 배경 위에 겹쳐 그린다.
         AsyncImage(

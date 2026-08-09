@@ -29,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogProperties
@@ -41,7 +43,9 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
+import com.chillsam.courmy.common.presentation.helper.LocalStatusBarState
 import com.chillsam.courmy.common.presentation.helper.SessionUiState
+import com.chillsam.courmy.common.presentation.helper.StatusBarState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.onboarding.SplashPage
@@ -63,6 +67,7 @@ fun RootComposable(
         val messageHelper = LocalMessageHelper.current
         val navigationHelper = LocalNavigationHelper.current
         val sessionState = remember { SessionUiState() }
+        val statusBarState = remember { StatusBarState() }
 
         // 세션 만료(refresh 재발급 실패) → 세션 해제 + 안내 후 로그인 화면으로 교체(백스택 초기화).
         val sessionExpiryViewModel: SessionExpiryViewModel = hiltViewModel()
@@ -141,7 +146,10 @@ fun RootComposable(
                 contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
                 snackbarHost = { SnackbarHost(snackBarHostState) },
             ) { innerPadding ->
-                CompositionLocalProvider(LocalSessionUiState provides sessionState) {
+                CompositionLocalProvider(
+                    LocalSessionUiState provides sessionState,
+                    LocalStatusBarState provides statusBarState,
+                ) {
                     AppNavHost(
                         backStack = backStack,
                         modifier = Modifier.padding(innerPadding),
@@ -149,7 +157,7 @@ fun RootComposable(
                 }
             }
 
-            StatusBarScrim(isSplash = backStack.lastOrNull().isSplash())
+            StatusBarScrim(color = statusBarState.color ?: DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0)
         }
     }
 }
@@ -161,18 +169,18 @@ fun RootComposable(
  * 방식이라, 이미 statusBarsPadding 으로 자리를 비워 둔 화면은 그 빈자리를 채우고 코스 상세처럼
  * 커버를 시스템바 뒤까지 그리는 화면은 그 위를 가린다.
  *
- * 스플래시는 화면 전체가 브랜드 초록이라 같은 초록으로 이어 붙이고, 나머지 화면은 기본 배경색을
- * 쓴다. 배경 밝기가 다르므로 시스템 아이콘 색도 함께 뒤집는다.
+ * 색은 화면이 [StatusBarColor] 로 알려 준 값이고, 시스템 아이콘 명암은 그 색의 휘도로 정한다 —
+ * 화면마다 어느 아이콘 색을 쓸지 따로 적어 두면 색을 바꿀 때 같이 고치는 걸 잊는다.
  */
 @Composable
-private fun BoxScope.StatusBarScrim(isSplash: Boolean) {
-    val color = DesignSystemThemeImpl.designSystemColor
+private fun BoxScope.StatusBarScrim(color: Color) {
     val view = LocalView.current
     if (!view.isInEditMode) {
-        LaunchedEffect(isSplash) {
+        val lightIcons = color.luminance() > LIGHT_SURFACE_LUMINANCE
+        LaunchedEffect(lightIcons) {
             val window = (view.context as Activity).window
-            // 밝은 배경 위에서만 아이콘을 어둡게 한다(초록 스플래시에서는 흰 아이콘).
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isSplash
+            // 밝은 배경 위에서만 아이콘을 어둡게 한다.
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = lightIcons
         }
     }
     Spacer(
@@ -181,12 +189,12 @@ private fun BoxScope.StatusBarScrim(isSplash: Boolean) {
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
                 .windowInsetsTopHeight(WindowInsets.statusBars)
-                .background(if (isSplash) color.bgAccent else color.bgDefaultLevel0),
+                .background(color),
     )
 }
 
-/** 스플래시 화면인지. 백스택 최상단 경로로 판단한다. */
-private fun NavKey?.isSplash(): Boolean = (this as? GenericNavKey)?.path == SplashPage.PATH
+/** 이 휘도를 넘으면 "밝은 배경" 으로 보고 시스템 아이콘을 어둡게 한다. */
+private const val LIGHT_SURFACE_LUMINANCE = 0.5f
 
 @Composable
 private fun MessageEffect(

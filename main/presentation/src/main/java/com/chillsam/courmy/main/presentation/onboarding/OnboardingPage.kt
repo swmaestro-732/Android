@@ -40,6 +40,7 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -68,6 +69,8 @@ fun OnboardingPage(
     onSkip: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 상단이 흰색이라 상태바도 같은 색으로 이어 붙인다. 회색으로 두면 띠만 분리돼 보인다.
+    StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val color = DesignSystemThemeImpl.designSystemColor
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val scope = rememberCoroutineScope()

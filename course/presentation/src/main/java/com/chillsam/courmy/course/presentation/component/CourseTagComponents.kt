@@ -26,6 +26,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.collections.immutable.ImmutableList
 
@@ -42,13 +43,8 @@ fun CourseTagCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
-                .border(
-                    1.dp,
-                    DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0,
-                    RoundedCornerShape(18.dp),
-                ).padding(17.dp),
+                .cardShadow(RoundedCornerShape(18.dp))
+                .padding(17.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         FieldLabel("태그")
