@@ -45,14 +45,12 @@ import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
-import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.profile.ProfileCoursesGrid
 import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
 import com.chillsam.courmy.main.presentation.profile.ProfileSectionLabel
-import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
  * 마이·프로필 화면(FS-15). [MyViewModel] 이 로드한 프로필 상태에 따라
@@ -151,8 +149,7 @@ private fun MyContent(
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
-    // 내 프로필도 남에게는 타유저 프로필로 열리므로 그 링크를 공유한다.
-    val shareProfile = { context.copyShareLink(UserProfileRoute.route(profile.handle)) }
+    val shareProfile = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
     val scrollState = rememberScrollState()
     // Lazy 목록이 아니라 스크롤 값으로 끝을 판단한다(홈 피드와 같은 헬퍼의 ScrollState 오버로드).
     LoadMoreOnScrollEnd(scrollState, onLoadMore)
