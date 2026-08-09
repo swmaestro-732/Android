@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseCompleteVO
@@ -147,8 +148,7 @@ private fun SummaryCard(course: CourseCompleteVO) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(shape)
-                .border(1.dp, color.borderDefaultLevel0, shape),
+                .cardShadow(shape),
     ) {
         // 이미지가 없거나 로드에 실패해도 플레이스홀더 색이 그대로 보이도록 배경 위에 겹쳐 그린다.
         AsyncImage(
@@ -207,30 +207,14 @@ private fun StopRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            AsyncImage(
-                model = stop.imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier =
-                    Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(color.imagePlaceholder),
-            )
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 DsText(
                     text = stop.name,
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                 )
-                val subtitle =
-                    if (stop.durationText.isBlank()) {
-                        stop.category
-                    } else {
-                        "${stop.category} · ${stop.durationText}"
-                    }
                 DsText(
-                    text = subtitle,
+                    text = stop.category,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )
@@ -291,14 +275,14 @@ fun sampleCourseComplete(title: String = "성수 종일 나들이 코스"): Cour
     CourseCompleteVO(
         category = "성수 · 하루 코스",
         title = title,
-        summaryText = "6 스팟 · 6시간",
+        summaryText = "6 스팟",
         stops =
             listOf(
-                CourseStopVO(1, "어니언 성수", "카페 · 베이커리", "60분"),
-                CourseStopVO(2, "대림창고 갤러리", "전시 · 카페", "70분"),
-                CourseStopVO(3, "센터커피 로스터리", "카페 · 디저트", "50분"),
-                CourseStopVO(4, "서울숲 산책로", "공원 · 산책", "40분"),
-                CourseStopVO(5, "글로우 서울", "디저트 · 포토존", "45분"),
-                CourseStopVO(6, "소월길 와인바", "와인 · 다이닝", "90분"),
+                CourseStopVO(1, "어니언 성수", "카페 · 베이커리"),
+                CourseStopVO(2, "대림창고 갤러리", "전시 · 카페"),
+                CourseStopVO(3, "센터커피 로스터리", "카페 · 디저트"),
+                CourseStopVO(4, "서울숲 산책로", "공원 · 산책"),
+                CourseStopVO(5, "글로우 서울", "디저트 · 포토존"),
+                CourseStopVO(6, "소월길 와인바", "와인 · 다이닝"),
             ),
     )

@@ -9,6 +9,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -193,7 +195,11 @@ internal fun CoursePhotoRow(
     onPhotosChange: (List<String>) -> Unit,
     showCount: Boolean = true,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+    // 6장을 다 담으면 슬롯(56dp)이 화면 가로를 넘어 추가 슬롯이 잘린다. 가로로 밀어 볼 수 있게 한다.
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
         photos.forEach { uri ->
             FilledPhotoSlot(uri = uri, onRemove = { onPhotosChange(photos - uri) })
         }

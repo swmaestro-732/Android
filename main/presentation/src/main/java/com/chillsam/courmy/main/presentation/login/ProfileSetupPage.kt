@@ -45,6 +45,7 @@ import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.component.alignTextFieldBorder
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.media.rememberAccentedImagePicker
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
@@ -56,6 +57,8 @@ fun ProfileSetupPage(
     modifier: Modifier = Modifier,
     handleCheckViewModel: HandleCheckViewModel = hiltViewModel(),
 ) {
+    // 상단이 흰색이라 상태바도 같은 색으로 이어 붙인다. 회색으로 두면 띠만 분리돼 보인다.
+    StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     var nickname by remember { mutableStateOf("") }

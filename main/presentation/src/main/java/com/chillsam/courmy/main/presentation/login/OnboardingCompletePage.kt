@@ -37,6 +37,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.home.HomePage
@@ -45,6 +46,7 @@ import com.chillsam.courmy.main.entity.auth.SignupProfile
 /** 온보딩 완료 화면(FS-08). 가입을 마쳤음을 알리고 "Courmy 시작하기"로 로그인 완료 후 홈으로 진입. */
 @Composable
 fun OnboardingCompletePage(modifier: Modifier = Modifier) {
+    StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor

@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.home.HomePage
@@ -192,9 +193,7 @@ private fun GuestBenefitCard(
     Column(
         modifier =
             modifier
-                .clip(RoundedCornerShape(16.dp))
-                .background(color.bgDefaultLevel1)
-                .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(16.dp))
+                .cardShadow(RoundedCornerShape(16.dp))
                 .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

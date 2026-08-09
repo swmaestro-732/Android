@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 
@@ -50,9 +51,7 @@ fun CoursePlaceCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(shape)
-                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
-                .border(1.dp, DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, shape),
+                .cardShadow(shape),
     ) {
         PlaceHeader(
             place = place,
