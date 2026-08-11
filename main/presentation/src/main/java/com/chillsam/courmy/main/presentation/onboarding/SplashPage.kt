@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,7 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
@@ -40,6 +45,8 @@ fun SplashPage(
     modifier: Modifier = Modifier,
     viewModel: SplashViewModel = hiltViewModel(),
 ) {
+    // 화면 전체가 브랜드 초록이라 상태바까지 잇는다(아이콘 명암은 휘도로 자동 결정된다).
+    StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgAccent)
     val color = DesignSystemThemeImpl.designSystemColor
     // 로고 크기를 폰트에 반영(런타임 스케일 없이 크게 → 스케일 레이어/히치 방지).
     val logoStyle =
@@ -54,6 +61,13 @@ fun SplashPage(
     val exit = remember { Animatable(0f) }
 
     LaunchedEffectMorph(progress, exit, viewModel, onFinished)
+
+    // 오프라인이면 스플래시에 머문다. 목적지가 비어 있어 위 모프가 마지막 단계에서 멈춰 있고,
+    // 다이얼로그는 닫히지 않으므로 다시 연결될 때까지 앱으로 들어갈 수 없다.
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
+    if (isOffline) {
+        OfflineBlockingDialog(onRetry = viewModel::retry)
+    }
 
     Box(
         modifier =
@@ -159,6 +173,23 @@ fun SplashPage(
                 )
             }
         }
+    }
+}
+
+/**
+ * 네트워크가 없을 때 앱 진입을 막는 안내.
+ *
+ * 닫을 방법을 두지 않는다(스크림·뒤로가기 모두 무시) — 오프라인에서 들여보내면 빈 화면과 실패
+ * 토스트만 보이므로, 연결을 되찾는 것 말고 할 수 있는 일이 없다.
+ */
+@Composable
+private fun OfflineBlockingDialog(onRetry: () -> Unit) {
+    DsDialogScaffold(
+        title = "인터넷 연결이 필요해요",
+        description = "Wi-Fi 나 데이터가 켜져 있는지 확인하고 다시 시도해 주세요.",
+        onDismiss = {},
+    ) {
+        DsButton(text = "다시 시도", onClick = onRetry)
     }
 }
 
