@@ -492,7 +492,7 @@ private fun AuthorFollowButton(
     onClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val background = if (isFollowing) color.bgDefaultLevel0 else color.bgAccent
+    val background = if (isFollowing) color.bgDefaultLevel1 else color.bgAccent
     val contentColor = if (isFollowing) color.contentDefaultLevel3 else color.contentOnAccent
     Box(
         modifier =
