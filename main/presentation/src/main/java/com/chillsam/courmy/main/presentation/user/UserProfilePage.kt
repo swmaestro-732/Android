@@ -125,8 +125,6 @@ private fun UserProfileContent(
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
-    // 타유저 팔로우 목록 조회가 아직 없어 그쪽만 안내로 둔다. 무반응 버튼으로 두지 않는다.
-    val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
     val shareProfile = { context.copyShareLink(UserProfileRoute.route(profile.handle)) }
     val scrollState = rememberScrollState()
     // Lazy 목록이 아니라 스크롤 값으로 끝을 판단한다(홈 피드와 같은 헬퍼의 ScrollState 오버로드).
