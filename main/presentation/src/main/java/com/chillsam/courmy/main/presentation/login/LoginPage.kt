@@ -43,14 +43,14 @@ import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.home.HomePage
-import com.chillsam.courmy.main.domain.login.TermsAgreementPage
+import com.chillsam.courmy.main.domain.login.ProfileSetupPage
 import kotlinx.coroutines.launch
 
 private val KakaoYellow = Color(0xFFFEE500)
 
 /**
  * 로그인·시작하기 화면(FS-03). "카카오로 시작하기" → 카카오 SDK 로그인(idToken) → 서버 social-login.
- * 기존 회원이면 홈으로, 신규 회원이면 회원가입 플로우(약관→프로필→…→완료)로 진입한다.
+ * 기존 회원이면 홈으로, 신규 회원이면 회원가입 플로우(프로필→…→완료)로 진입한다.
  */
 @Composable
 fun LoginPage(modifier: Modifier = Modifier) {
@@ -73,7 +73,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
             }
 
             LoginResult.NEW_USER -> {
-                navigationHelper.navigateTo(TermsAgreementPage)
+                navigationHelper.navigateTo(ProfileSetupPage)
             }
 
             null -> {
@@ -133,7 +133,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                 )
             }
             DsText(
-                text = "로그인 후 약관 동의 절차가 이어져요.",
+                text = "처음이라면 프로필 설정이 이어져요.",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
                 textAlign = TextAlign.Center,
