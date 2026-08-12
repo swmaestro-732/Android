@@ -15,6 +15,10 @@ object FeatureFlags {
      * **다른 기기에서 링크를 눌러도 앱이 열리지 않는다**(브라우저로 빠진다).
      *
      * 호스트를 확정하고 assetlinks.json 을 무인증으로 공개하면 true 로 되돌린다. [wiki-needed]
+     *
+     * 배포할 assetlinks.json 내용은 `docs/assetlinks.json` 에 준비돼 있다. 앱 서명 키와
+     * 업로드 키 지문이 모두 들어 있어야 하므로(Play 설치본과 APK 직접 설치본의 서명이 다르다)
+     * 새로 만들지 말고 그 파일을 그대로 `/.well-known/` 에 올린다.
      */
     const val SHARE_ENABLED = false
 }
