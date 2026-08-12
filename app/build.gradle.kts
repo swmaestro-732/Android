@@ -70,6 +70,31 @@ gradle.taskGraph.whenReady {
     if (buildingRelease && !hasFirebaseConfig) {
         throw GradleException("google-services.json 이 없습니다. 릴리스 빌드에는 필수입니다(Crashlytics).")
     }
+
+    // 서명 설정이 비면 아래 buildTypes 의 debug 폴백이 걸려, bundleRelease 가 "성공" 하면서
+    // debug 서명 AAB 를 뱉는다. Play 업로드 단계에서야 거부당해 원인을 찾기 어려우므로 여기서 끊는다.
+    // 위 두 가드와 달리 배포 산출물을 만드는 task 로만 좁힌다 — benchmark/nonMinifiedRelease 변형은
+    // 이름에 Release 가 붙지만 의도적으로 debug 서명이라, 업로드 키가 없다고 막으면 안 된다.
+    val packagingRelease = allTasks.any { it.name == "packageRelease" || it.name == "bundleRelease" }
+    if (packagingRelease) {
+        val missingSigning =
+            listOf(
+                "storeFile" to releaseStoreFile,
+                "storePassword" to signingSecret("storePassword", "KEYSTORE_PASSWORD"),
+                "keyAlias" to signingSecret("keyAlias", "KEY_ALIAS"),
+                "keyPassword" to signingSecret("keyPassword", "KEY_PASSWORD"),
+            ).filter { it.second == null }
+                .map { it.first }
+        if (missingSigning.isNotEmpty()) {
+            throw GradleException(
+                "릴리스 서명 설정이 비었습니다: ${missingSigning.joinToString()}. " +
+                    "keystore.properties 또는 KEYSTORE_FILE/KEYSTORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD 환경변수를 채우세요.",
+            )
+        }
+        if (!file(releaseStoreFile!!).exists()) {
+            throw GradleException("keystore 파일이 없습니다: $releaseStoreFile")
+        }
+    }
 }
 
 android {
@@ -122,7 +147,8 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            // keystore 준비되면 release 서명, 없으면 debug 폴백(초기 아티팩트 빌드용)
+            // keystore 준비되면 release 서명. 폴백은 서명 없이도 configuration 이 통과하게 하려는 것뿐이고,
+            // 실제로 debug 서명 산출물이 나가는 건 위 taskGraph 가드가 막는다.
             signingConfig =
                 if (hasReleaseSigning) {
                     signingConfigs.getByName("release")
