@@ -147,6 +147,16 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // Play Console 의 "디버그 기호가 업로드되지 않았습니다" 경고 대응.
+            //
+            // 다만 이 설정만으로는 경고가 사라지지 않는다. 확인해 보면 extractReleaseNativeSymbolTables
+            // 가 .so 24개를 입력받아 0개를 내놓는다 — 우리 네이티브 코드는 없고, 들어 있는 .so 는 전부
+            // 서드파티(libnavermap.so 등)인데 벤더가 이미 stripped 로 배포해 추출할 심볼이 없다.
+            // 네이버가 unstripped 로 배포하지 않는 한 이 경고는 남는다.
+            //
+            // 그럼에도 켜 두는 건, 나중에 프로젝트에 네이티브 코드가 생기거나 의존성이 심볼을 달고
+            // 오면 자동으로 담기게 하기 위함이다. 추출물이 없으니 빌드 시간·용량 비용은 0 이다.
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             // keystore 준비되면 release 서명. 폴백은 서명 없이도 configuration 이 통과하게 하려는 것뿐이고,
             // 실제로 debug 서명 산출물이 나가는 건 위 taskGraph 가드가 막는다.
             signingConfig =
