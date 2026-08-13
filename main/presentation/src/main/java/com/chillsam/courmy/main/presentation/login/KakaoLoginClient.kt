@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.login
 
 import android.content.Context
+import com.kakao.sdk.auth.AuthApiClient
 import com.kakao.sdk.auth.model.OAuthToken
 import com.kakao.sdk.common.model.AuthError
 import com.kakao.sdk.common.model.AuthErrorCause
@@ -70,15 +71,30 @@ object KakaoLoginClient {
             }
         }
 
+    /**
+     * 토큰 없이 인증 API 를 부르면 안 되는 이유.
+     *
+     * 토큰이 없으면 [com.kakao.sdk.auth.network.AccessTokenInterceptor] 가
+     * `ClientError(TokenNotFound)` 를 던진다. 이건 `RuntimeException` 이지 `IOException` 이 아니라서
+     * OkHttp `AsyncCall.run` 이 `catch (t: Throwable)` 로 받아 콜백에 실패를 전달한 뒤 `throw t` 로
+     * 되던진다. 되던져진 예외는 OkHttp 워커 스레드 밖으로 나가 uncaught 로 처리되고 프로세스가 죽는다.
+     * 호출부의 `runCatching` 은 다른 스레드라 이걸 잡지 못한다. 그래서 호출 전에 막는다.
+     */
+    private fun hasKakaoToken(): Boolean = AuthApiClient.instance.hasToken()
+
     /** 카카오 세션 로그아웃(토큰 폐기). 실패해도 앱 로그아웃은 진행하므로 예외를 삼킨다. */
-    suspend fun logout() =
+    suspend fun logout() {
+        if (!hasKakaoToken()) return
         suspendCancellableCoroutine { cont ->
             UserApiClient.instance.logout { _ -> cont.resume(Unit) }
         }
+    }
 
     /** 카카오 연결 끊기(회원 탈퇴 시). 다음 로그인에서 동의를 다시 받는다. */
-    suspend fun unlink() =
+    suspend fun unlink() {
+        if (!hasKakaoToken()) return
         suspendCancellableCoroutine { cont ->
             UserApiClient.instance.unlink { _ -> cont.resume(Unit) }
         }
+    }
 }
