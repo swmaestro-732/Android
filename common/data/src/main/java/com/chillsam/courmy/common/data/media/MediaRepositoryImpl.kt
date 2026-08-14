@@ -7,6 +7,8 @@ import com.chillsam.courmy.common.data.media.dto.PresignImageRequest
 import com.chillsam.courmy.common.data.media.dto.PresignRequest
 import com.chillsam.courmy.common.domain.media.MediaRepository
 import com.chillsam.courmy.common.domain.media.UploadPurpose
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
@@ -23,52 +25,59 @@ class MediaRepositoryImpl(
     private val context: Context,
 ) : BaseRemoteDataSource(),
     MediaRepository {
+    /**
+     * 호출자는 대부분 `viewModelScope.launch`(= `Dispatchers.Main.immediate`)라 여기서 IO 로 넘기지
+     * 않으면 아래 작업이 그대로 메인 스레드에서 돈다. `contentResolver.getType` 은 바인더 IPC 고,
+     * [readBytesUpTo] 는 최대 5MB 를 읽는다. 특히 클라우드 백업만 되어 있는 사진(Google Photos)은
+     * `openInputStream` 이 원본 다운로드를 기다리며 수 초간 블록해 ANR 로 이어진다.
+     */
     override suspend fun uploadImage(
         localUri: String,
         purpose: UploadPurpose,
-    ): String {
-        val uri = Uri.parse(localUri)
-        val contentType = context.contentResolver.getType(uri) ?: DEFAULT_CONTENT_TYPE
-        // 서버 MediaService 가 확장자를 매핑하는 타입만 받는다. 그 외는 presign 이 415 로 떨어지므로
-        // 올리기 전에 걸러 사유를 분명히 남긴다(최근 기기 사진은 HEIC 인 경우가 있다).
-        require(contentType in SUPPORTED_CONTENT_TYPES) {
-            "지원하지 않는 이미지 형식입니다($contentType). JPEG·PNG·WebP 만 올릴 수 있어요."
-        }
-        val bytes = readBytesUpTo(uri, MAX_UPLOAD_BYTES)
+    ): String =
+        withContext(Dispatchers.IO) {
+            val uri = Uri.parse(localUri)
+            val contentType = context.contentResolver.getType(uri) ?: DEFAULT_CONTENT_TYPE
+            // 서버 MediaService 가 확장자를 매핑하는 타입만 받는다. 그 외는 presign 이 415 로 떨어지므로
+            // 올리기 전에 걸러 사유를 분명히 남긴다(최근 기기 사진은 HEIC 인 경우가 있다).
+            require(contentType in SUPPORTED_CONTENT_TYPES) {
+                "지원하지 않는 이미지 형식입니다($contentType). JPEG·PNG·WebP 만 올릴 수 있어요."
+            }
+            val bytes = readBytesUpTo(uri, MAX_UPLOAD_BYTES)
 
-        // 서버는 여러 장을 한 번에 받지만 여기서는 한 장만 올리므로 1개짜리 목록으로 요청하고 첫 항목을 쓴다.
-        val presign =
-            requireNotNull(
-                checkResponse(
-                    apiService.presign(
-                        PresignRequest(
-                            purpose = purpose.name,
-                            images =
-                                listOf(
-                                    PresignImageRequest(
-                                        contentType = contentType,
-                                        contentLength = bytes.size.toLong(),
+            // 서버는 여러 장을 한 번에 받지만 여기서는 한 장만 올리므로 1개짜리 목록으로 요청하고 첫 항목을 쓴다.
+            val presign =
+                requireNotNull(
+                    checkResponse(
+                        apiService.presign(
+                            PresignRequest(
+                                purpose = purpose.name,
+                                images =
+                                    listOf(
+                                        PresignImageRequest(
+                                            contentType = contentType,
+                                            contentLength = bytes.size.toLong(),
+                                        ),
                                     ),
-                                ),
+                            ),
                         ),
-                    ),
-                ).data?.items?.firstOrNull(),
-            ) { "presign 응답에 발급 결과가 없습니다." }
+                    ).data?.items?.firstOrNull(),
+                ) { "presign 응답에 발급 결과가 없습니다." }
 
-        val uploadUrl = requireNotNull(presign.uploadUrl) { "presign 응답에 uploadUrl 이 없습니다." }
-        val imageUrl = requireNotNull(presign.imageUrl) { "presign 응답에 imageUrl 이 없습니다." }
+            val uploadUrl = requireNotNull(presign.uploadUrl) { "presign 응답에 uploadUrl 이 없습니다." }
+            val imageUrl = requireNotNull(presign.imageUrl) { "presign 응답에 imageUrl 이 없습니다." }
 
-        // 서명이 Content-Type 을 포함하므로 presign 요청과 동일한 값을 실어야 한다.
-        // S3 PUT 성공은 본문이 없으므로 상태 코드만 본다(checkResponse 는 2xx 에도 body 를 요구한다).
-        checkSuccess(
-            apiService.uploadToPresignedUrl(
-                uploadUrl = uploadUrl,
-                contentType = contentType,
-                body = bytes.toRequestBody(contentType.toMediaType()),
-            ),
-        )
-        return imageUrl
-    }
+            // 서명이 Content-Type 을 포함하므로 presign 요청과 동일한 값을 실어야 한다.
+            // S3 PUT 성공은 본문이 없으므로 상태 코드만 본다(checkResponse 는 2xx 에도 body 를 요구한다).
+            checkSuccess(
+                apiService.uploadToPresignedUrl(
+                    uploadUrl = uploadUrl,
+                    contentType = contentType,
+                    body = bytes.toRequestBody(contentType.toMediaType()),
+                ),
+            )
+            imageUrl
+        }
 
     /**
      * [limit] 바이트까지만 읽고, 넘으면 중단한다.
