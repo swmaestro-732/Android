@@ -21,16 +21,21 @@ android {
                 .get()
                 .toInt()
 
-        // API-CONFIG-INJECTION-POINT: 베이스 URL 은 local.properties 에서 주입한다.
-        //   API_BASE_URL=...    (미설정 시 Courmy 백엔드로 폴백)
+        // API-CONFIG-INJECTION-POINT: 베이스 URL 은 local.properties 또는 환경변수로 주입한다.
+        //   API_BASE_URL=...    (미설정 시 Courmy 운영 백엔드로 폴백)
         // 인증은 JWT accessToken(Bearer)만 쓰며, 공개 엔드포인트는 인증이 필요 없다(별도 API key 없음).
+        //
+        // CI 러너에는 local.properties 가 없으므로 환경변수 폴백이 필요하다. 미등록 secret 은
+        // 빈 문자열로 들어오기 때문에 null 이 아니라 blank 로 판정해야 폴백이 걸린다.
         val localProps =
             Properties().apply {
                 val f = rootProject.file("local.properties")
                 if (f.exists()) f.inputStream().use { load(it) }
             }
         val apiBaseUrl =
-            localProps.getProperty("API_BASE_URL") ?: "https://d2ovt2o1pkjfc.cloudfront.net/"
+            listOf(localProps.getProperty("API_BASE_URL"), System.getenv("API_BASE_URL"))
+                .firstOrNull { !it.isNullOrBlank() }
+                ?: "https://courmy.com/"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
     }
 

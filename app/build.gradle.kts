@@ -59,23 +59,31 @@ if (hasFirebaseConfig) {
     )
 }
 
-// 릴리스 빌드는 앱키가 비면 KakaoSdk.init 이 스킵되고 리다이렉트 scheme 가 깨지므로, 패키징 전에 즉시 실패시킨다.
-// (디버그/로컬 개발은 키 없이도 진행 가능하게 둔다.)
+// 배포 산출물(APK/AAB)을 만드는 task 로만 가드를 건다.
+//
+// "이름에 Release 가 들어가면" 으로 잡으면 범위가 너무 넓다 — baseline profile 의 nonMinifiedRelease
+// 나 CI 의 minifyReleaseWithR8 처럼 **배포물을 만들지 않는** 개발/검증 task 까지 앱키·google-services
+// 를 요구하게 되어, 정작 필요 없는 곳에서 빌드가 끊긴다. R8 규칙 회귀를 CI 에서 잡으려면
+// minifyReleaseWithR8 이 키 없이도 돌 수 있어야 한다.
 gradle.taskGraph.whenReady {
-    val buildingRelease = allTasks.any { it.name.contains("Release", ignoreCase = true) }
-    if (buildingRelease && kakaoNativeAppKey.isBlank()) {
+    val packagingRelease = allTasks.any { it.name == "packageRelease" || it.name == "bundleRelease" }
+
+    // 앱키가 비면 KakaoSdk.init 이 스킵되고 리다이렉트 scheme(kakao{appKey})가 깨진다.
+    if (packagingRelease && kakaoNativeAppKey.isBlank()) {
         throw GradleException("KAKAO_NATIVE_APP_KEY 가 설정되지 않았습니다. 릴리스 빌드에는 필수입니다(local.properties 또는 환경변수).")
     }
+    // 네이버 지도 client id 는 비어도 빌드가 통과해 버린다. 그 상태로 나가면 지도가 인증에 실패하는데
+    // OnAuthFailedListener 를 붙이지 않아 오류 표시 없이 빈 화면만 남아 원인 파악이 어렵다.
+    if (packagingRelease && naverMapClientId.isBlank()) {
+        throw GradleException("NAVER_MAP_CLIENT_ID 가 설정되지 않았습니다. 릴리스 빌드에는 필수입니다(local.properties 또는 환경변수).")
+    }
     // 크래시 리포팅 없이 출시하면 운영 중 장애를 볼 수단이 없으므로 릴리스에서는 필수로 둔다.
-    if (buildingRelease && !hasFirebaseConfig) {
+    if (packagingRelease && !hasFirebaseConfig) {
         throw GradleException("google-services.json 이 없습니다. 릴리스 빌드에는 필수입니다(Crashlytics).")
     }
 
     // 서명 설정이 비면 아래 buildTypes 의 debug 폴백이 걸려, bundleRelease 가 "성공" 하면서
     // debug 서명 AAB 를 뱉는다. Play 업로드 단계에서야 거부당해 원인을 찾기 어려우므로 여기서 끊는다.
-    // 위 두 가드와 달리 배포 산출물을 만드는 task 로만 좁힌다 — benchmark/nonMinifiedRelease 변형은
-    // 이름에 Release 가 붙지만 의도적으로 debug 서명이라, 업로드 키가 없다고 막으면 안 된다.
-    val packagingRelease = allTasks.any { it.name == "packageRelease" || it.name == "bundleRelease" }
     if (packagingRelease) {
         val missingSigning =
             listOf(
@@ -120,9 +128,11 @@ android {
                 .toInt()
         // Play 는 versionCode 로만 버전 순서를 판단한다. 업로드할 때마다 반드시 올려야 하고,
         // 한 번 쓴 값은 재사용할 수 없다(같은 값으로 올리면 중복으로 거부된다).
-        versionCode = 2
+        versionCode = 3
         // 사용자에게 보이는 표시용 문자열. 정식 출시 전이라 0.x 로 둔다.
-        versionName = "0.1.0"
+        // SemVer 만 쓰고 빌드 번호를 접미사로 붙이지 않는다 — Play Console 과 Crashlytics 가
+        // versionName 과 versionCode 를 이미 함께 보여주므로 중복이다. 정식 출시 때 1.0.0.
+        versionName = "0.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
