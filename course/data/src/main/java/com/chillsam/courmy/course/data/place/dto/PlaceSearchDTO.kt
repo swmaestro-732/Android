@@ -52,7 +52,9 @@ data class PlaceLocationDTO(
  */
 fun PlaceSearchDataDTO.toPageVO(): CursorPageVO<CoursePlaceVO> =
     CursorPageVO(
-        items = places.orEmpty().map { it.toVO() },
+        // id 가 없으면 코스 생성 요청에 실을 수 없고, 목록 key 가 전부 "0" 으로 겹쳐
+        // LazyColumn 이 중복 key 로 죽는다(지도 검색 쪽 toVOList 와 동일한 정책).
+        items = places.orEmpty().filter { it.id != null }.map { it.toVO() },
         nextCursor = nextCursor?.takeIf { it.isNotBlank() },
         // 커서가 없으면 더 받을 수 없으므로, 서버가 hasNext=true 로 줘도 끝으로 본다.
         hasNext = hasNext && !nextCursor.isNullOrBlank(),

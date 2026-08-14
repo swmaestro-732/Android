@@ -134,7 +134,9 @@ class PlaceSearchViewModel
                 is PlaceSearchReducerEvent.Loaded -> {
                     state.copy(
                         isSearching = false,
-                        results = event.results,
+                        // 첫 페이지에도 같은 방어가 필요하다 — 한 페이지 안에 중복 id 가 섞여 오면
+                        // 목록 key 가 겹쳐 죽는다(아래 MoreLoaded 와 같은 이유).
+                        results = event.results.distinctBy { it.id },
                         errorMessage = null,
                         fromMapSearch = event.fromMapSearch,
                         nextCursor = event.nextCursor,
