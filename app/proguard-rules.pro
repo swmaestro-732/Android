@@ -45,3 +45,22 @@
 -keepclasseswithmembers class **$$serializer {
     *** INSTANCE;
 }
+
+##---------------- Kakao SDK ----------------
+# Kakao SDK 는 에러 객체를 만들 때 enum 상수를 이름으로 리플렉션 조회한다.
+# KakaoClientError.kt 의 ClientError 보조 생성자가 실제로 하는 일:
+#
+#     reason.javaClass.getField(reason.name).getAnnotation(Description::class.java)?.value
+#         ?: "Client-side error"
+#
+# R8 이 ClientErrorCause.TokenNotFound 를 q 로 바꾸면 getField("TokenNotFound") 가
+# NoSuchFieldException 을 던진다. 이건 IOException 이 아니라서 OkHttp AsyncCall.run 의
+# `catch (t: Throwable) { ...; throw t }` 를 타고 워커 스레드 밖으로 튀어나가 프로세스가 죽는다.
+# (release 에서 로그인 취소·토큰 없음 등 모든 ClientError 경로가 즉시 크래시)
+#
+# v2-common AAR 에는 consumer proguard 규칙이 아예 없어서 앱이 직접 지정해야 한다.
+# 필드 이름 보존은 Gson 기반 모델 역직렬화에도 함께 필요하다.
+-keep class com.kakao.sdk.**.model.* { <fields>; }
+
+# Kakao SDK 가 내부적으로 등록하는 Gson TypeAdapter 들.
+-keep class * extends com.google.gson.TypeAdapter

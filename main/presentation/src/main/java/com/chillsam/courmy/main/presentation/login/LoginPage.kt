@@ -1,6 +1,5 @@
 package com.chillsam.courmy.main.presentation.login
 
-import android.util.Log
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
@@ -24,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +42,6 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.ProfileSetupPage
-import kotlinx.coroutines.launch
 
 private val KakaoYellow = Color(0xFFFEE500)
 
@@ -62,7 +59,6 @@ fun LoginPage(modifier: Modifier = Modifier) {
     val viewModel: LoginViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
     // 로그인 성공 → 분기 내비게이션(1회성). 기존 회원은 세션 로그인 후 홈, 신규 회원은 가입 플로우.
     LaunchedEffect(uiState.result) {
@@ -121,7 +117,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     background = KakaoYellow,
                     textColor = color.contentDefaultLevel0,
                     enabled = !uiState.isLoading,
-                    onClick = { startKakaoLogin(scope, context, viewModel) },
+                    onClick = { viewModel.onIntent(LoginIntent.KakaoLogin(context)) },
                 )
                 SocialButton(
                     text = "게스트로 돌아가기",
@@ -153,27 +149,6 @@ fun LoginPage(modifier: Modifier = Modifier) {
                 CircularProgressIndicator(color = color.contentAccent)
             }
         }
-    }
-}
-
-/** 카카오 SDK 로그인 → idToken 을 ViewModel 로 넘긴다. 사용자가 취소하면 조용히 무시한다. */
-private fun startKakaoLogin(
-    scope: kotlinx.coroutines.CoroutineScope,
-    context: android.content.Context,
-    viewModel: LoginViewModel,
-) {
-    scope.launch {
-        runCatching { KakaoLoginClient.login(context) }
-            .onSuccess { idToken -> viewModel.onIntent(LoginIntent.SocialLogin(idToken)) }
-            .onFailure { e ->
-                // 컴포지션 이탈로 코루틴이 취소되면(회전·재생성) 실패로 오인해 토스트를 띄우지 않도록 먼저 재던진다.
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                // 사용자 취소는 조용히 앱에 머문다. 그 외 실패만 안내.
-                if (e !is KakaoLoginClient.CanceledException) {
-                    Log.w("Login", "카카오 SDK 로그인 실패: ${e.javaClass.simpleName} - ${e.message}", e)
-                    Toast.makeText(context, "카카오 로그인을 완료하지 못했어요.", Toast.LENGTH_SHORT).show()
-                }
-            }
     }
 }
 

@@ -30,6 +30,10 @@ style:
   UnusedPrivateMember:
     # @Preview 등 도구가 호출하는 비공개 함수 오탐 방지.
     ignoreAnnotated: ['Preview', 'Composable']
+  ReturnCount:
+    # 입력 검증용 가드절(`?: return null`, `if (...) return null`)은 세지 않는다.
+    # 가드절을 max 2 에 맞추려면 중첩 if 로 되돌려야 해서 오히려 읽기 나빠진다.
+    excludeGuardClauses: true
 
 naming:
   active: true

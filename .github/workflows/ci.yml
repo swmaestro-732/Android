@@ -99,6 +99,12 @@ jobs:
       - name: Build + Unit test + Android Lint + Kover 리포트
         # 리포트(xml=파싱용, html=아티팩트 열람용) 먼저 생성. 게이트는 아래 별도 스텝.
         run: ./gradlew assembleDebug testDebugUnitTest lintDebug koverXmlReport koverHtmlReport --stacktrace
+      # debug 빌드는 R8 을 타지 않아, keep 규칙이 빠져 release 에서만 죽는 결함(리플렉션·직렬화)을
+      # PR 단계에서 전혀 잡지 못한다. 실제로 Kakao SDK 의 enum 리플렉션 크래시가 이 구멍으로 새어나가
+      # 배포본에서야 드러났다. 산출물은 필요 없으니 R8 만 돌려 규칙 회귀를 막는다.
+      # (packageRelease/bundleRelease 가 아니라서 앱키·keystore·google-services.json 없이 통과한다.)
+      - name: R8 minify 검증 (release 전용 결함 조기 발견)
+        run: ./gradlew :app:minifyReleaseWithR8 --stacktrace
       - name: Extract Kover coverage
         id: coverage
         if: always() # 게이트가 나중에 실패해도 커버리지 %는 리포트에 항상 싣는다

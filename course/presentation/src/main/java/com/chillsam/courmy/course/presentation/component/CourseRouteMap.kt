@@ -144,12 +144,24 @@ fun CourseRouteMap(
 fun List<CourseDetailPlaceVO>.toRoutePoints(): List<Pair<CourseDetailPlaceVO, LatLng>> =
     mapNotNull { place -> place.latLngOrNull()?.let { place to it } }
 
-/** 좌표가 한쪽만 있으면 쓸 수 없다(엉뚱한 지점에 핀이 찍힌다). 둘 다 있을 때만 만든다. */
+/**
+ * 좌표가 한쪽만 있거나 위경도 범위를 벗어나면 쓸 수 없다. 둘 다 정상일 때만 만든다.
+ *
+ * 범위를 거르는 건 엉뚱한 지점에 핀이 찍히는 걸 막기 위함이기도 하지만, 이 값이 그대로 지도 SDK 의
+ * 네이티브 레이어(libnavermap.so)까지 내려가기 때문이기도 하다. 거기서 죽으면 JVM 예외가 아니라
+ * 프로세스가 통째로 내려가서 try/catch 로도 못 막는다. 들어올 때 거르는 게 유일한 방어다.
+ *
+ * NaN·Infinity 도 여기서 함께 걸러진다 — 범위 비교가 IEEE 규칙상 항상 false 라 자연히 제외된다.
+ */
 fun CourseDetailPlaceVO.latLngOrNull(): LatLng? {
-    val latitude = this.latitude
-    val longitude = this.longitude
-    return if (latitude != null && longitude != null) LatLng(latitude, longitude) else null
+    val latitude = this.latitude ?: return null
+    val longitude = this.longitude ?: return null
+    if (latitude !in VALID_LATITUDE || longitude !in VALID_LONGITUDE) return null
+    return LatLng(latitude, longitude)
 }
+
+private val VALID_LATITUDE = -90.0..90.0
+private val VALID_LONGITUDE = -180.0..180.0
 
 /** 순번 마커·경로선에 쓰는 색 묶음. 파라미터 수를 줄이려 홀더로 전달한다. */
 @Immutable

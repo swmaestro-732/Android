@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.navigation
 
 import android.util.Log
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
@@ -30,6 +31,8 @@ fun AppNavHost(
     modifier: Modifier = Modifier,
 ) {
     val navigationHelper = LocalNavigationHelper.current
+    val activity = LocalActivity.current
+    val exitApp = { activity?.finish() ?: Unit }
 
     LaunchedEffect(Unit) {
         navigationHelper.navigationFlow.collect { signal ->
@@ -37,14 +40,14 @@ fun AppNavHost(
                 is NavSignal.GoToDestPage -> handleNavRoute(signal.route, backStack)
                 is NavSignal.DeepLink -> handleDeepLink(signal.route, backStack)
                 is NavSignal.Replace -> handleReplace(signal.route, backStack)
-                NavSignal.Back -> backStack.handleBack()
+                NavSignal.Back -> backStack.handleBack(exitApp)
             }
         }
     }
 
     NavDisplay(
         backStack = backStack,
-        onBack = { backStack.handleBack() },
+        onBack = { backStack.handleBack(exitApp) },
         modifier = modifier,
         transitionSpec = {
             // 스플래시가 들어오거나 나갈 때만 페이드(그 외 화면 전환은 즉시 유지).
@@ -167,8 +170,19 @@ private fun NavBackStack<NavKey>.bringToFront(key: NavKey) {
 /**
  * 뒤로가기 정책: 백스택 최상단 한 단계만 pop 해 **직전 화면**으로 돌아간다.
  * (마이→설정→프로필 편집 처럼 여러 단계를 거친 경우 각 단계로 순서대로 복귀.)
- * 루트(size==1)면 스택을 비워 시스템에 위임한다(앱 종료).
+ *
+ * 루트(size==1)에서는 pop 하지 않고 [onExitApp] 으로 화면을 닫는다.
+ * "스택을 비우면 시스템이 알아서 종료" 가 아니다 — NavDisplay 는 진입부에서
+ * `require(backStack.isNotEmpty())` 를 검사하므로(navigation3-ui 1.1.1 NavDisplay.kt:360),
+ * 스택을 비우면 다음 recomposition 에서 IllegalArgumentException 으로 죽는다.
+ *
+ * 시스템 뒤로가기는 NavDisplay 가 `isBackEnabled` 로 알아서 막지만, 화면 좌상단의 앱 자체
+ * 뒤로 버튼([com.chillsam.courmy.common.presentation.helper.NavigationHelper.navigateToBack])은
+ * 그 가드를 지나지 않으므로 여기서 막아야 한다.
+ *
+ * 딥링크로 들어온 경우 스택이 1칸이라 이 경로를 탄다([AppRoute.syntheticStack] 기본값).
+ * 부모 화면으로 돌아가게 하려면 해당 라우트가 syntheticStack 으로 부모 체인을 선언해야 한다.
  */
-private fun NavBackStack<NavKey>.handleBack() {
-    removeLastOrNull()
+private fun NavBackStack<NavKey>.handleBack(onExitApp: () -> Unit) {
+    if (size > 1) removeLastOrNull() else onExitApp()
 }
