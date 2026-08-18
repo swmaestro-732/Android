@@ -6,8 +6,7 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- 세션 토큰은 Keystore 키로 암호화돼 있고 그 키는 백업되지 않는다. 암호문만 복원되면
+         복호화가 불가능해 재로그인만 유발하므로 애초에 백업 대상에서 제외한다. -->
+    <exclude domain="file" path="datastore/secure_session.preferences_pb" />
 </full-backup-content>

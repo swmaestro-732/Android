@@ -1,0 +1,41 @@
+# Dependabot — 의존성 업데이트 자동 PR.
+# Renovate 와 병행 금지(중복 PR). 본 프로젝트는 Dependabot 단독 사용.
+version: 2
+updates:
+  # Gradle 의존성 + 버전 카탈로그(libs.versions.toml)
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"       # 초기엔 주 1회 유지
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"          # conventional-commit 규칙(chore) 준수
+    groups:
+      # 관련 라이브러리를 묶어 PR 수를 줄인다.
+      # Dependabot 은 목록 순서상 "첫 매칭" 그룹에 배정하므로, 더 좁은 compose 를
+      # 넓은 androidx 보다 먼저 둔다(안 그러면 compose 의존성이 androidx 에 흡수됨).
+      compose:
+        patterns: ["androidx.compose*"]
+      androidx:
+        patterns: ["androidx.*"]
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp*"
+      # 위 그룹에 안 잡히는 나머지(coil, retrofit, okhttp 등)를 전부 한 PR 로.
+      misc:
+        patterns: ["*"]
+
+  # GitHub Actions 워크플로 액션 버전 — 전부 한 PR 로 묶는다.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"       # 초기엔 주 1회 유지
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        patterns: ["*"]

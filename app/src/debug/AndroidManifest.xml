@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 디버그 빌드에서만 평문(HTTP) 허용: 로컬 백엔드(http://localhost:8080 등) 테스트용.
+         릴리스는 메인 매니페스트 기본값(cleartext 차단)을 따라 HTTPS 만 허용한다. -->
+    <application
+        android:usesCleartextTraffic="true"
+        tools:targetApi="28">
+
+        <!-- 개발 중 일부러 낸 크래시와 테스트 이벤트가 운영 대시보드에 섞이면 실제 장애를 못 알아본다.
+             그래서 debug 빌드는 수집을 끈다. 로컬에서 리포팅 자체를 확인하고 싶으면 true 로 바꾼다. -->
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+    </application>
+
+</manifest>

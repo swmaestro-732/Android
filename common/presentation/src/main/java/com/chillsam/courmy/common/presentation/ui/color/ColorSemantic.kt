@@ -1,0 +1,63 @@
+package com.chillsam.courmy.common.presentation.ui.color
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.Color
+import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+
+@Immutable
+data class DesignSystemSemanticColors(
+    val bgDefaultLevel0: Color,
+    val bgDefaultLevel1: Color,
+    val bgAccent: Color,
+    val bgAccentPressed: Color,
+    val bgAccentSubtle: Color,
+    // 이미지 플레이스홀더: 원격 이미지 로드 실패·로딩 중 기본으로 깔리는 배경. 값은 borderDefaultLevel1(Gray300)과 동일.
+    val imagePlaceholder: Color,
+    // 스위치(토글) off 트랙 배경. 값은 imagePlaceholder(Gray300)와 같지만 역할이 달라 슬롯 분리.
+    val bgSwitchOff: Color,
+    val borderDefaultLevel0: Color,
+    val borderDefaultLevel1: Color,
+    val borderAccent: Color,
+    val borderDanger: Color,
+    val contentDefaultLevel0: Color,
+    val contentDefaultLevel1: Color,
+    val contentDefaultLevel2: Color,
+    val contentDefaultLevel3: Color,
+    val contentOnAccent: Color,
+    val contentAccent: Color,
+    val contentRating: Color,
+    val contentDanger: Color,
+    val contentSuccess: Color,
+    val contentLocation: Color,
+) {
+    // 문자열 키 → 시맨틱 색 조회. 서버 구동 UI·원격 컨피그 등 토큰 이름이 데이터(String)로
+    // 들어오는 경우를 위한 범용 진입점. 분기는 슬롯 수만큼의 평면 디스패치라 복잡도 규칙 예외.
+    @Suppress("CyclomaticComplexMethod")
+    @Composable
+    fun withStringKey(key: String): Color =
+        when (key) {
+            "bgDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0
+            "bgDefaultLevel1" -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
+            "bgAccent" -> DesignSystemThemeImpl.designSystemColor.bgAccent
+            "bgAccentPressed" -> DesignSystemThemeImpl.designSystemColor.bgAccentPressed
+            "bgAccentSubtle" -> DesignSystemThemeImpl.designSystemColor.bgAccentSubtle
+            "imagePlaceholder" -> DesignSystemThemeImpl.designSystemColor.imagePlaceholder
+            "bgSwitchOff" -> DesignSystemThemeImpl.designSystemColor.bgSwitchOff
+            "borderDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0
+            "borderDefaultLevel1" -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel1
+            "borderAccent" -> DesignSystemThemeImpl.designSystemColor.borderAccent
+            "borderDanger" -> DesignSystemThemeImpl.designSystemColor.borderDanger
+            "contentDefaultLevel0" -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0
+            "contentDefaultLevel1" -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1
+            "contentDefaultLevel2" -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2
+            "contentDefaultLevel3" -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
+            "contentOnAccent" -> DesignSystemThemeImpl.designSystemColor.contentOnAccent
+            "contentAccent" -> DesignSystemThemeImpl.designSystemColor.contentAccent
+            "contentRating" -> DesignSystemThemeImpl.designSystemColor.contentRating
+            "contentDanger" -> DesignSystemThemeImpl.designSystemColor.contentDanger
+            "contentSuccess" -> DesignSystemThemeImpl.designSystemColor.contentSuccess
+            "contentLocation" -> DesignSystemThemeImpl.designSystemColor.contentLocation
+            else -> DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
+        }
+}
