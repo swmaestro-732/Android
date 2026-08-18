@@ -16,9 +16,13 @@ object FeatureFlags {
      *
      * 호스트를 확정하고 assetlinks.json 을 무인증으로 공개하면 true 로 되돌린다. [wiki-needed]
      *
-     * 배포할 assetlinks.json 내용은 `docs/assetlinks.json` 에 준비돼 있다. 앱 서명 키와
-     * 업로드 키 지문이 모두 들어 있어야 하므로(Play 설치본과 APK 직접 설치본의 서명이 다르다)
-     * 새로 만들지 말고 그 파일을 그대로 `/.well-known/` 에 올린다.
+     * 배포할 assetlinks.json 내용은 `docs/assetlinks.json` 에 준비돼 있다. 새로 만들지 말고
+     * 그 파일을 그대로 `/.well-known/` 에 올린다.
+     *
+     * 지문이 둘인 이유 — 첫 번째는 Play 앱 서명 키다. 설치본은 Google 이 이 키로 다시 서명하므로
+     * **항상** 필요하다. 두 번째는 우리 업로드 키로, CD 가 GitHub Release 에 업로드 키로 서명한
+     * APK 를 첨부하는 **동안만** 필요하다. 그 직접 배포를 그만두면 두 번째 지문은 지운다 —
+     * 남겨 두면 더 이상 배포하지 않는 서명에까지 링크 검증을 열어 두는 셈이다.
      */
     const val SHARE_ENABLED = false
 }

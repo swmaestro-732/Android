@@ -10,6 +10,7 @@ import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.common.util.Utility
 import com.kakao.sdk.user.UserApiClient
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -35,17 +36,22 @@ object KakaoLoginClient {
         suspendCancellableCoroutine { cont ->
             // continuation 은 한 번만 resume 할 수 있는데, 여기 콜백은 두 번 이상 불릴 수 있다
             // (톡 로그인 실패 → 계정 로그인 폴백 구간에서 양쪽 콜백이 모두 도착하는 경우).
-            // 게다가 카카오톡을 다녀오는 사이 호출부가 취소되면 continuation 은 이미 죽어 있다.
             //
-            // 가드 없이 resume 하면 두 번째 호출에서 IllegalStateException("Already resumed") 이
-            // **SDK 콜백 스레드에서** uncaught 로 터진다. 호출부의 runCatching 은 다른 코루틴이라
-            // 이걸 잡지 못하고 프로세스가 죽는다. 그래서 살아 있을 때만 넘긴다.
+            // 두 번째 resume 은 IllegalStateException("Already resumed") 을 **SDK 콜백 스레드에서**
+            // uncaught 로 터뜨린다. 호출부의 runCatching 은 다른 코루틴이라 이걸 잡지 못하고
+            // 프로세스가 죽는다.
+            //
+            // `if (cont.isActive) cont.resume(...)` 는 검사와 resume 이 원자적이지 않아, 두 콜백이
+            // 모두 "살아 있음" 을 읽은 뒤 각자 resume 할 수 있다. CAS 로 완료 권한을 하나에게만 준다.
+            // 취소된 continuation 에 resume 하는 건 안전하다 — kotlinx.coroutines 가 무시한다.
+            val completed = AtomicBoolean(false)
+
             fun succeed(idToken: String) {
-                if (cont.isActive) cont.resume(idToken)
+                if (completed.compareAndSet(false, true)) cont.resume(idToken)
             }
 
             fun fail(error: Throwable) {
-                if (cont.isActive) cont.resumeWithException(error)
+                if (completed.compareAndSet(false, true)) cont.resumeWithException(error)
             }
 
             val handle: (OAuthToken?, Throwable?) -> Unit = { token, error ->
