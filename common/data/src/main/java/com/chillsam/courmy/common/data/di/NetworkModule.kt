@@ -1,12 +1,15 @@
 package com.chillsam.courmy.common.data.di
 
 import com.chillsam.courmy.common.data.BuildConfig
+import com.chillsam.courmy.common.data.appUpdate.AppUpdateEventBusImpl
 import com.chillsam.courmy.common.data.auth.TokenAuthenticator
 import com.chillsam.courmy.common.data.auth.TokenReissueApi
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.common.data.logging.ApiLogInterceptor
+import com.chillsam.courmy.common.data.network.UpdateRequiredInterceptor
 import com.chillsam.courmy.common.data.session.SessionEventBusImpl
 import com.chillsam.courmy.common.data.telemetry.TelemetryInterceptor
+import com.chillsam.courmy.common.domain.appUpdate.AppUpdateEventBus
 import com.chillsam.courmy.common.domain.session.SessionEventBus
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import dagger.Module
@@ -46,6 +49,7 @@ object NetworkModule {
         tokenStore: TokenStore,
         tokenAuthenticator: TokenAuthenticator,
         telemetry: Telemetry,
+        appUpdateEventBus: AppUpdateEventBus,
         json: Json,
     ): OkHttpClient {
         // request/response 를 'API' 태그로 남기는 debug 전용 로깅(토큰 자동 마스킹).
@@ -57,6 +61,8 @@ object NetworkModule {
             .addInterceptor(apiLogging)
             // 릴리스에서도 동작 — 실패만 원격으로 남긴다(본문·헤더 미포함).
             .addInterceptor(TelemetryInterceptor(telemetry))
+            // 426 → 앱 전체를 덮는 강제 업데이트 안내(응답은 그대로 흘려보낸다).
+            .addInterceptor(UpdateRequiredInterceptor(json, apiHost, appUpdateEventBus))
             // 401 → refreshToken 으로 accessToken 재발급 후 원요청 1회 재시도.
             .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -102,6 +108,7 @@ object NetworkModule {
     @Named(BARE)
     fun provideBareOkHttpClient(
         telemetry: Telemetry,
+        appUpdateEventBus: AppUpdateEventBus,
         json: Json,
     ): OkHttpClient {
         val apiLogging = ApiLogInterceptor(json, enabled = BuildConfig.DEBUG)
@@ -110,6 +117,8 @@ object NetworkModule {
             .addInterceptor(apiLogging)
             // 재발급 실패는 토큰 만료 시점에 강제 로그아웃으로 이어지므로 운영에서 반드시 보여야 한다.
             .addInterceptor(TelemetryInterceptor(telemetry))
+            // 재발급 경로가 먼저 426 을 만날 수도 있다(앱을 켜자마자 갱신 시도). 여기도 잡아 둔다.
+            .addInterceptor(UpdateRequiredInterceptor(json, apiHost, appUpdateEventBus))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -133,6 +142,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideSessionEventBus(impl: SessionEventBusImpl): SessionEventBus = impl
+
+    @Provides
+    @Singleton
+    fun provideAppUpdateEventBus(impl: AppUpdateEventBusImpl): AppUpdateEventBus = impl
 
     private fun retrofit(
         okHttpClient: OkHttpClient,
