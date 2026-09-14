@@ -96,6 +96,7 @@ data class CourseDetailPlaceVO(
  * - [dateText]    상대 날짜 (예: "2일 전")
  * - [body]        리뷰 본문
  * - [photoUrls]   첨부 사진 URL 목록 (비면 미표시)
+ * - [tags]        리뷰어가 고른 태그. 상세 미리보기 카드(FS-11)는 감추고 후기 목록(FS-37)만 보여준다.
  */
 @Serializable
 data class CourseReviewVO(
@@ -105,4 +106,17 @@ data class CourseReviewVO(
     val dateText: String,
     val body: String,
     val photoUrls: List<String> = emptyList(),
+    val tags: List<CourseReviewTagVO> = emptyList(),
+)
+
+/**
+ * 리뷰 태그 1개. 서버가 코드(`packed`)와 표기(문구·이모지)를 함께 내려주고 화면은 표기만 쓴다.
+ *
+ * - [label] 태그 문구 (예: "커피 맛집")
+ * - [icon]  앞에 붙는 이모지. 서버가 안 주면 빈 문자열이고, 그때는 문구만 그린다.
+ */
+@Serializable
+data class CourseReviewTagVO(
+    val label: String,
+    val icon: String = "",
 )

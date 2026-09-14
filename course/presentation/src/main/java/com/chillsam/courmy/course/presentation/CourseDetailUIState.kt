@@ -21,8 +21,25 @@ data class CourseDetailUIState(
     val isDeleting: Boolean = false,
     /** 삭제가 끝나 화면을 닫아도 되는 상태. */
     val isDeleted: Boolean = false,
+    val social: CourseSocialUIState = CourseSocialUIState(),
 ) : UiState {
     companion object {
         val empty: CourseDetailUIState = CourseDetailUIState()
     }
 }
+
+/** 서버 계약 전까지 상세 화면 생명주기 동안 유지하는 좋아요·댓글 상태. */
+data class CourseSocialUIState(
+    val isLiked: Boolean = false,
+    val likeCount: Int = 128,
+    val commentDraft: String = "",
+    val comments: List<CourseCommentItem> = emptyList(),
+)
+
+/** 코스 상세 댓글 표시 모델. API 계약 확정 전 presentation 상태에만 둔다. */
+data class CourseCommentItem(
+    val id: Long,
+    val author: String,
+    val body: String,
+    val dateText: String,
+)
