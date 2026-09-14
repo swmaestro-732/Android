@@ -20,7 +20,18 @@ data class MyProfileUIState(
     val nextCursor: String? = null,
     val hasNext: Boolean = false,
     val isLoadingMore: Boolean = false,
+    val selectedTab: ProfileTab = ProfileTab.MY_COURSES,
+    /** 포크한 코스. 페이징이 없어 [courses] 와 달리 한 번에 다 들고 있는다. */
+    val forkedCourses: ImmutableList<ProfileCourseVO> = persistentListOf(),
 ) : UiState {
+    /** 지금 탭이 그려야 할 목록. 화면이 탭마다 분기하지 않도록 여기서 골라 준다. */
+    val visibleCourses: ImmutableList<ProfileCourseVO>
+        get() =
+            when (selectedTab) {
+                ProfileTab.MY_COURSES -> courses
+                ProfileTab.FORKED -> forkedCourses
+            }
+
     companion object {
         val empty: MyProfileUIState = MyProfileUIState()
     }

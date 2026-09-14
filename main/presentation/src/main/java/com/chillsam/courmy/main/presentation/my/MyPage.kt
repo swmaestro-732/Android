@@ -42,7 +42,6 @@ import com.chillsam.courmy.main.domain.my.FollowListPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
-import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
@@ -51,7 +50,9 @@ import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
-import com.chillsam.courmy.main.presentation.profile.ProfileSectionLabel
+import com.chillsam.courmy.main.presentation.profile.ProfileTabItem
+import com.chillsam.courmy.main.presentation.profile.ProfileTabRow
+import kotlinx.collections.immutable.persistentListOf
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
@@ -75,8 +76,9 @@ fun MyPage(
         profile != null -> {
             MyContent(
                 profile = profile,
-                courses = uiState.courses,
+                uiState = uiState,
                 onLoadMore = { viewModel.onIntent(MyProfileIntent.LoadMore) },
+                onSelectTab = { viewModel.onIntent(MyProfileIntent.SelectTab(it)) },
                 modifier = modifier,
             )
         }
@@ -140,12 +142,40 @@ private fun CreateFirstCourseCard(onClick: () -> Unit) {
     }
 }
 
+/** 포크한 코스가 없을 때의 안내. 담는 건 코스 상세에서 하는 일이라 여기서 진입점을 주지 않는다. */
+@Composable
+private fun EmptyForkedCourses() {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp)
+                .height(EmptyCourseCardHeight),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        DsText(
+            text = "아직 포크한 코스가 없어요",
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel2,
+        )
+        Spacer(Modifier.height(4.dp))
+        DsText(
+            text = "마음에 드는 코스를 내 것으로 떠 와 보세요",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel3,
+        )
+    }
+}
+
 /** 프로필 로드 성공 시 실제 마이 화면(상단 프로필, 코스 그리드, 하단 탭바). */
 @Composable
 private fun MyContent(
     profile: MyProfileVO,
-    courses: List<ProfileCourseVO>,
+    uiState: MyProfileUIState,
     onLoadMore: () -> Unit,
+    onSelectTab: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navigationHelper = LocalNavigationHelper.current
@@ -196,19 +226,39 @@ private fun MyContent(
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
-            ProfileSectionLabel(text = "내 코스 ${profile.myCourseCount}")
-            if (courses.isEmpty()) {
-                // 코스가 없으면 빈 그리드 대신 만들러 갈 자리를 둔다.
-                CreateFirstCourseCard(
-                    onClick = { navigationHelper.navigateTo(CourseCreatePage) },
-                )
-            } else {
-                ProfileCoursesGrid(
-                    courses = courses,
-                    onCourseClick = { courseId ->
-                        navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
-                    },
-                )
+            ProfileTabRow(
+                tabs =
+                    persistentListOf(
+                        // 헤더 통계와 같은 숫자를 써야 해서 목록 크기가 아니라 서버가 준 값을 쓴다
+                        // (내 코스는 페이징이라 지금 받아 둔 건 일부일 수 있다).
+                        ProfileTabItem(ProfileTab.MY_COURSES.label(), profile.myCourseCount),
+                        ProfileTabItem(ProfileTab.FORKED.label(), uiState.forkedCourses.size),
+                    ),
+                selectedIndex = ProfileTab.entries.indexOf(uiState.selectedTab),
+                onSelect = { index -> onSelectTab(ProfileTab.entries[index]) },
+            )
+            val visibleCourses = uiState.visibleCourses
+            when {
+                visibleCourses.isNotEmpty() -> {
+                    ProfileCoursesGrid(
+                        courses = visibleCourses,
+                        onCourseClick = { courseId ->
+                            navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                        },
+                    )
+                }
+
+                // 내 코스가 없으면 빈 그리드 대신 만들러 갈 자리를 둔다.
+                uiState.selectedTab == ProfileTab.MY_COURSES -> {
+                    CreateFirstCourseCard(
+                        onClick = { navigationHelper.navigateTo(CourseCreatePage) },
+                    )
+                }
+
+                // 포크는 내가 만드는 게 아니라 남의 코스에서 담아 오는 거라 만들기로 유도하지 않는다.
+                else -> {
+                    EmptyForkedCourses()
+                }
             }
             Spacer(Modifier.height(20.dp))
         }
