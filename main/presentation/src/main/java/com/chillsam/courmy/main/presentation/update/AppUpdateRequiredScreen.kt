@@ -45,11 +45,14 @@ private const val TITLE = "새 버전으로 업데이트해 주세요"
 private const val MESSAGE = "스토어에서 최신 버전으로 업데이트해 주세요."
 
 /**
- * 서버가 426 을 내렸을 때 앱 전체를 덮는 강제 업데이트 안내.
+ * 서버가 426 을 내렸을 때 앱 화면 전체를 대신하는 강제 업데이트 안내.
  *
  * 다이얼로그가 아니라 화면인 이유: 오프라인 차단은 스플래시 한 곳에서만 걸리지만 426 은 어느 화면에서
  * 쓰던 중에도 내려온다. 반투명 다이얼로그로 덮으면 뒤에 남은 화면이 계속 눌러 볼 수 있는 것처럼 보이는데,
  * 실제로는 모든 요청이 426 으로 떨어져 아무것도 되지 않는다.
+ *
+ * [com.chillsam.courmy.main.presentation.navigation.RootComposable] 이 이걸 **덮지 않고 갈아끼운다** —
+ * 그래야 열려 있던 다이얼로그가 함께 사라진다. 이유는 그쪽 주석 참고.
  *
  * 닫는 길을 두지 않는다 — 스토어에서 앱을 갱신하는 것 말고 사용자가 할 수 있는 일이 없다.
  * 뒤로가기는 막는 대신 **앱을 종료**시킨다. 막아 두면 나갈 방법이 사라지고, 뒤 화면으로 보내면
@@ -58,9 +61,8 @@ private const val MESSAGE = "스토어에서 최신 버전으로 업데이트해
  * 문구는 앱이 가진다(서버 426 본문을 쓰지 않는 이유는
  * [com.chillsam.courmy.common.domain.appUpdate.AppUpdateEventBus] 참고).
  *
- * 상태바 색은 [com.chillsam.courmy.main.presentation.navigation.RootComposable] 이 맡는다 —
- * 덮인 화면도 계속 컴포즈되며 자기 `StatusBarColor` 를 쓰기 때문에, 여기서 선언하면 어느 쪽이
- * 이길지가 컴포지션 순서에 달리게 된다.
+ * 상태바 색은 `RootComposable` 이 맡는다 — 직전 화면이 남긴 `StatusBarColor` 가 그대로 남아 있어서,
+ * 여기서 따로 선언하면 어느 쪽이 이길지가 컴포지션 순서에 달리게 된다.
  */
 @Composable
 fun AppUpdateRequiredScreen(modifier: Modifier = Modifier) {
