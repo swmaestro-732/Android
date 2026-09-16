@@ -3,7 +3,6 @@ package com.chillsam.courmy.common.data.network
 import com.chillsam.courmy.common.data.appUpdate.AppUpdateEventBusImpl
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
@@ -11,7 +10,8 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -21,13 +21,12 @@ import org.junit.Test
  * 그런 식으로 조용히 망가뜨리면 원인 찾기가 아주 어렵다.
  */
 class UpdateRequiredInterceptorTest {
-    private val json = Json { ignoreUnknownKeys = true }
     private val apiHost = "api.courmy.com"
 
     private fun intercept(
         url: String,
         code: Int,
-        body: String,
+        body: String = "",
     ): Pair<AppUpdateEventBusImpl, Response> {
         val eventBus = AppUpdateEventBusImpl()
         val request = Request.Builder().url(url).build()
@@ -45,36 +44,35 @@ class UpdateRequiredInterceptorTest {
                 every { it.request() } returns request
                 every { it.proceed(any()) } returns response
             }
-        return eventBus to UpdateRequiredInterceptor(json, apiHost, eventBus).intercept(chain)
+        return eventBus to UpdateRequiredInterceptor(apiHost, eventBus).intercept(chain)
     }
 
     @Test
-    fun `426 이면 서버 문구와 함께 강제 업데이트를 알린다`() {
+    fun `우리 API 의 426 이면 강제 업데이트를 알린다`() {
         val (eventBus, _) =
             intercept(
                 url = "https://$apiHost/service/v1/courses/18",
                 code = 426,
-                body = """{"code":4260,"message":"9월 30일부터 이전 버전은 지원되지 않아요."}""",
+                body = """{"code":4260,"message":"앱 업데이트가 필요합니다."}""",
             )
 
-        assertEquals("9월 30일부터 이전 버전은 지원되지 않아요.", eventBus.updateRequired.value?.message)
+        assertTrue(eventBus.updateRequired.value)
     }
 
     @Test
     fun `426 응답 본문은 소비되지 않아 뒤에서 다시 읽을 수 있다`() {
-        val body = """{"code":4260,"message":"업데이트가 필요해요."}"""
+        val body = """{"code":4260,"message":"앱 업데이트가 필요합니다."}"""
         val (_, response) = intercept("https://$apiHost/service/v1/courses/18", 426, body)
 
         assertEquals(body, response.body.string())
     }
 
     @Test
-    fun `문구를 못 읽어도 강제 업데이트 자체는 알린다`() {
+    fun `본문이 봉투 형식이 아니어도 강제 업데이트는 걸린다`() {
+        // 상태 코드만 보고 판단한다 — 봉투 스키마가 바뀌어도 조용히 안 걸리는 쪽으로 깨지면 안 된다.
         val (eventBus, _) = intercept("https://$apiHost/service/v1/courses/18", 426, "not json")
 
-        // 상태는 켜지되 문구만 비어 화면 기본 문구로 넘어간다.
-        assertEquals(true, eventBus.updateRequired.value != null)
-        assertNull(eventBus.updateRequired.value?.message)
+        assertTrue(eventBus.updateRequired.value)
     }
 
     @Test
@@ -86,7 +84,7 @@ class UpdateRequiredInterceptorTest {
                 body = """{"message":"upgrade"}""",
             )
 
-        assertNull(eventBus.updateRequired.value)
+        assertFalse(eventBus.updateRequired.value)
     }
 
     @Test
@@ -98,6 +96,19 @@ class UpdateRequiredInterceptorTest {
                 body = """{"code":4040,"message":"없는 코스예요."}""",
             )
 
-        assertNull(eventBus.updateRequired.value)
+        assertFalse(eventBus.updateRequired.value)
+    }
+
+    @Test
+    fun `헤더 형식 오류로 내려오는 400 은 강제 업데이트가 아니다`() {
+        // INVALID_APP_HEADER(4005). 우리 잘못이지 사용자 앱이 낡았다는 뜻이 아니다.
+        val (eventBus, _) =
+            intercept(
+                url = "https://$apiHost/service/v1/home",
+                code = 400,
+                body = """{"code":4005,"message":"앱 버전 헤더가 올바르지 않습니다."}""",
+            )
+
+        assertFalse(eventBus.updateRequired.value)
     }
 }

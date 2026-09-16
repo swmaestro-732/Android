@@ -166,14 +166,14 @@ fun RootComposable(
             // 강제 업데이트(426)는 특정 화면의 에러가 아니라 앱 전체가 못 쓰게 된 상태다. 어느 화면에서
             // 내려왔든 그 위를 덮고, 스토어에서 갱신하기 전엔 걷히지 않는다. Scaffold 바깥에 두는 이유는
             // 스낵바까지 덮기 위해서다 — 뒤에서 실패한 요청들의 토스트가 이 화면 위로 올라오면 안 된다.
-            updateRequired?.let { AppUpdateRequiredScreen(message = it.message) }
+            if (updateRequired) AppUpdateRequiredScreen()
 
             // 아래 화면은 덮여도 계속 컴포즈되며 자기 StatusBarColor 를 쓴다. 그대로 두면 코스 상세처럼
             // 어두운 커버를 쓰는 화면 위에서 흰 안내 화면에 어두운 띠가 얹힌다 — 덮은 쪽 색으로 고정한다.
             StatusBarScrim(
                 color =
                     when {
-                        updateRequired != null -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
+                        updateRequired -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
                         else -> statusBarState.color ?: DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0
                     },
             )

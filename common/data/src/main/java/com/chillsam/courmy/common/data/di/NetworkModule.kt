@@ -65,7 +65,7 @@ object NetworkModule {
             // 릴리스에서도 동작 — 실패만 원격으로 남긴다(본문·헤더 미포함).
             .addInterceptor(TelemetryInterceptor(telemetry))
             // 426 → 앱 전체를 덮는 강제 업데이트 안내(응답은 그대로 흘려보낸다).
-            .addInterceptor(UpdateRequiredInterceptor(json, apiHost, appUpdateEventBus))
+            .addInterceptor(UpdateRequiredInterceptor(apiHost, appUpdateEventBus))
             // 401 → refreshToken 으로 accessToken 재발급 후 원요청 1회 재시도.
             .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -123,7 +123,7 @@ object NetworkModule {
             // 재발급 실패는 토큰 만료 시점에 강제 로그아웃으로 이어지므로 운영에서 반드시 보여야 한다.
             .addInterceptor(TelemetryInterceptor(telemetry))
             // 재발급 경로가 먼저 426 을 만날 수도 있다(앱을 켜자마자 갱신 시도). 여기도 잡아 둔다.
-            .addInterceptor(UpdateRequiredInterceptor(json, apiHost, appUpdateEventBus))
+            .addInterceptor(UpdateRequiredInterceptor(apiHost, appUpdateEventBus))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

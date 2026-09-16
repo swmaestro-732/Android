@@ -41,8 +41,8 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 private val IconBadgeSize = 88.dp
 private val IconSize = 40.dp
 
-private const val DEFAULT_TITLE = "새 버전으로 업데이트해 주세요"
-private const val DEFAULT_MESSAGE = "지금 쓰는 버전은 더 이상 지원되지 않아요.\n스토어에서 업데이트한 뒤 다시 이용해 주세요."
+private const val TITLE = "새 버전으로 업데이트해 주세요"
+private const val MESSAGE = "스토어에서 최신 버전으로 업데이트해 주세요."
 
 /**
  * 서버가 426 을 내렸을 때 앱 전체를 덮는 강제 업데이트 안내.
@@ -55,17 +55,15 @@ private const val DEFAULT_MESSAGE = "지금 쓰는 버전은 더 이상 지원�
  * 뒤로가기는 막는 대신 **앱을 종료**시킨다. 막아 두면 나갈 방법이 사라지고, 뒤 화면으로 보내면
  * 다시 못 쓰는 화면으로 돌아갈 뿐이라 둘 다 답이 아니다.
  *
- * [message] 는 서버가 내려준 문구다(있으면 그대로 쓴다). 정책·기한 안내는 서버 배포로 바꿀 수 있어야 한다.
+ * 문구는 앱이 가진다(서버 426 본문을 쓰지 않는 이유는
+ * [com.chillsam.courmy.common.domain.appUpdate.AppUpdateEventBus] 참고).
  *
  * 상태바 색은 [com.chillsam.courmy.main.presentation.navigation.RootComposable] 이 맡는다 —
  * 덮인 화면도 계속 컴포즈되며 자기 `StatusBarColor` 를 쓰기 때문에, 여기서 선언하면 어느 쪽이
  * 이길지가 컴포지션 순서에 달리게 된다.
  */
 @Composable
-fun AppUpdateRequiredScreen(
-    message: String?,
-    modifier: Modifier = Modifier,
-) {
+fun AppUpdateRequiredScreen(modifier: Modifier = Modifier) {
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
 
@@ -109,14 +107,14 @@ fun AppUpdateRequiredScreen(
             Spacer(Modifier.height(12.dp))
 
             DsText(
-                text = DEFAULT_TITLE,
+                text = TITLE,
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
                 textAlign = TextAlign.Center,
                 maxLines = Int.MAX_VALUE,
             )
             DsText(
-                text = message ?: DEFAULT_MESSAGE,
+                text = MESSAGE,
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel2,
                 textAlign = TextAlign.Center,
@@ -155,6 +153,6 @@ private fun storeIntent(url: String): Intent =
 @Composable
 private fun AppUpdateRequiredScreenPreview() {
     DesignSystemTheme {
-        AppUpdateRequiredScreen(message = null)
+        AppUpdateRequiredScreen()
     }
 }
