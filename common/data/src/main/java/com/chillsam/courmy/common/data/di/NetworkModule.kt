@@ -5,8 +5,12 @@ import com.chillsam.courmy.common.data.auth.TokenAuthenticator
 import com.chillsam.courmy.common.data.auth.TokenReissueApi
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.common.data.logging.ApiLogInterceptor
+import com.chillsam.courmy.common.data.network.AppVersionInterceptor
+import com.chillsam.courmy.common.data.network.UpdateRequiredInterceptor
+import com.chillsam.courmy.common.data.network.apiHost
 import com.chillsam.courmy.common.data.session.SessionEventBusImpl
 import com.chillsam.courmy.common.data.telemetry.TelemetryInterceptor
+import com.chillsam.courmy.common.domain.appUpdate.AppUpdateEventBus
 import com.chillsam.courmy.common.domain.session.SessionEventBus
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import dagger.Module
@@ -14,7 +18,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -46,6 +49,8 @@ object NetworkModule {
         tokenStore: TokenStore,
         tokenAuthenticator: TokenAuthenticator,
         telemetry: Telemetry,
+        appUpdateEventBus: AppUpdateEventBus,
+        appVersionInterceptor: AppVersionInterceptor,
         json: Json,
     ): OkHttpClient {
         // request/response 를 'API' 태그로 남기는 debug 전용 로깅(토큰 자동 마스킹).
@@ -54,9 +59,13 @@ object NetworkModule {
         return OkHttpClient
             .Builder()
             .addInterceptor(authInterceptor(tokenStore))
+            // 로깅보다 앞에 둬야 debug 로그에 실제로 나간 X-App-* 가 찍힌다.
+            .addInterceptor(appVersionInterceptor)
             .addInterceptor(apiLogging)
             // 릴리스에서도 동작 — 실패만 원격으로 남긴다(본문·헤더 미포함).
             .addInterceptor(TelemetryInterceptor(telemetry))
+            // 426 → 앱 전체를 덮는 강제 업데이트 안내(응답은 그대로 흘려보낸다).
+            .addInterceptor(UpdateRequiredInterceptor(apiHost, appUpdateEventBus))
             // 401 → refreshToken 으로 accessToken 재발급 후 원요청 1회 재시도.
             .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -68,8 +77,6 @@ object NetworkModule {
     // 우리 API 호스트로 가는 요청에만, accessToken 이 있을 때 Authorization 을 붙인다.
     // 호스트를 확인해 서드파티 호스트·CDN·프리사인 업로드 URL 로 토큰이 새지 않게 하고,
     // 토큰이 없으면 헤더를 생략한다(코스 상세 등 공개 엔드포인트).
-    private val apiHost: String? = BuildConfig.API_BASE_URL.toHttpUrlOrNull()?.host
-
     private fun authInterceptor(tokenStore: TokenStore): Interceptor =
         Interceptor { chain ->
             val original = chain.request()
@@ -102,14 +109,21 @@ object NetworkModule {
     @Named(BARE)
     fun provideBareOkHttpClient(
         telemetry: Telemetry,
+        appUpdateEventBus: AppUpdateEventBus,
+        appVersionInterceptor: AppVersionInterceptor,
         json: Json,
     ): OkHttpClient {
         val apiLogging = ApiLogInterceptor(json, enabled = BuildConfig.DEBUG)
         return OkHttpClient
             .Builder()
+            // 재발급도 우리 API 다. 헤더를 빼면 서버가 버전을 못 보고 통과시켜, 낡은 앱이 토큰만
+            // 계속 갱신하며 나머지 요청은 전부 426 으로 죽는 어중간한 상태가 된다.
+            .addInterceptor(appVersionInterceptor)
             .addInterceptor(apiLogging)
             // 재발급 실패는 토큰 만료 시점에 강제 로그아웃으로 이어지므로 운영에서 반드시 보여야 한다.
             .addInterceptor(TelemetryInterceptor(telemetry))
+            // 재발급 경로가 먼저 426 을 만날 수도 있다(앱을 켜자마자 갱신 시도). 여기도 잡아 둔다.
+            .addInterceptor(UpdateRequiredInterceptor(apiHost, appUpdateEventBus))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

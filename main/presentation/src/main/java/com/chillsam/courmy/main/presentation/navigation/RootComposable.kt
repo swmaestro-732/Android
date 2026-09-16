@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.chillsam.courmy.common.domain.message.MessageEffect
@@ -49,6 +50,8 @@ import com.chillsam.courmy.common.presentation.helper.StatusBarState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.onboarding.SplashPage
+import com.chillsam.courmy.main.presentation.update.AppUpdateRequiredScreen
+import com.chillsam.courmy.main.presentation.update.AppUpdateViewModel
 import kotlinx.coroutines.flow.Flow
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
 
@@ -79,6 +82,9 @@ fun RootComposable(
             }
         }
 
+        val appUpdateViewModel: AppUpdateViewModel = hiltViewModel()
+        val updateRequired by appUpdateViewModel.updateRequired.collectAsStateWithLifecycle()
+
         val onShowOneButtonDialog =
             remember<(MessageEffect.ShowOneButtonDialog) -> Unit> {
                 { oneButtonDialogEffect = it }
@@ -89,7 +95,9 @@ fun RootComposable(
             onShowOneButtonDialog = onShowOneButtonDialog,
         )
 
-        oneButtonDialogEffect?.let { dialog ->
+        // 강제 업데이트 중에는 띄우지 않는다. 이 다이얼로그도 별도 Window 라 안내 화면 위에 남는데,
+        // 어차피 모든 요청이 426 이라 여기서 안내할 수 있는 건 "업데이트하라" 말고 없다.
+        oneButtonDialogEffect?.takeUnless { updateRequired }?.let { dialog ->
             AlertDialog(
                 onDismissRequest = {
                     if (!dialog.cantIgnore) oneButtonDialogEffect = null
@@ -136,28 +144,47 @@ fun RootComposable(
         }
 
         Box(modifier = modifier.fillMaxSize()) {
-            Scaffold(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1),
-                // 상·하단 시스템바 inset 은 소비하지 않는다(가로만 소비). 각 화면이 배경을 시스템바
-                // 뒤까지 그린 뒤 콘텐츠·하단 액션에만 status/navigationBarsPadding 을 적용한다.
-                contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
-                snackbarHost = { SnackbarHost(snackBarHostState) },
-            ) { innerPadding ->
-                CompositionLocalProvider(
-                    LocalSessionUiState provides sessionState,
-                    LocalStatusBarState provides statusBarState,
-                ) {
-                    AppNavHost(
-                        backStack = backStack,
-                        modifier = Modifier.padding(innerPadding),
-                    )
+            // 강제 업데이트(426)는 특정 화면의 에러가 아니라 앱 전체가 못 쓰게 된 상태다.
+            // 위에 덮지 않고 화면 전체를 **갈아끼운다** — 덮는 방식은 다이얼로그를 이기지 못한다.
+            // Compose 의 Dialog 는 자기 Window 를 만들어 Activity content view 위에 그려지므로,
+            // 코스 상세에서 로그인 안내가 떠 있는 채로 426 이 오면 안내 화면이 그 뒤에 깔리고
+            // 사용자는 다이얼로그의 "네"로 로그인 화면까지 빠져나갈 수 있다(실제로 재현됨).
+            // AppNavHost 를 컴포지션에서 들어내면 그 안에서 열려 있던 다이얼로그도 함께 사라진다.
+            // 스낵바 역시 Scaffold 와 같이 없어져 실패한 요청들의 안내가 올라오지 않는다.
+            if (updateRequired) {
+                AppUpdateRequiredScreen()
+            } else {
+                Scaffold(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1),
+                    // 상·하단 시스템바 inset 은 소비하지 않는다(가로만 소비). 각 화면이 배경을 시스템바
+                    // 뒤까지 그린 뒤 콘텐츠·하단 액션에만 status/navigationBarsPadding 을 적용한다.
+                    contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal),
+                    snackbarHost = { SnackbarHost(snackBarHostState) },
+                ) { innerPadding ->
+                    CompositionLocalProvider(
+                        LocalSessionUiState provides sessionState,
+                        LocalStatusBarState provides statusBarState,
+                    ) {
+                        AppNavHost(
+                            backStack = backStack,
+                            modifier = Modifier.padding(innerPadding),
+                        )
+                    }
                 }
             }
 
-            StatusBarScrim(color = statusBarState.color ?: DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0)
+            // statusBarState 에는 직전 화면이 남긴 색이 그대로 있다. 코스 상세처럼 어두운 커버를 쓰던
+            // 화면에서 넘어오면 흰 안내 화면 위에 어두운 띠가 얹히므로, 안내 화면 색으로 고정한다.
+            StatusBarScrim(
+                color =
+                    when {
+                        updateRequired -> DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
+                        else -> statusBarState.color ?: DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0
+                    },
+            )
         }
     }
 }
