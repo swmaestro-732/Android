@@ -74,6 +74,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
 
+    // PackageInfoCompat — minSdk 24 에서도 longVersionCode 를 읽는다(플랫폼 API 는 28+).
+    implementation(libs.androidx.core.ktx)
+
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
