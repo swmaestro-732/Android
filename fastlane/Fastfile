@@ -1,0 +1,15 @@
+# CD — Android 배포 자동화.
+# 1단계: 서명된 release 아티팩트(AAB/APK) 빌드만. 실제 배포(Firebase App Distribution,
+# Play 업로드) lane 은 대상/계정이 준비되면 이 파일에 추가한다.
+default_platform(:android)
+
+platform :android do
+  desc "서명된 release AAB + APK 빌드 (아티팩트 생성)"
+  lane :build do
+    gradle(task: "clean")
+    # AAB — Play 업로드 표준 포맷
+    gradle(task: "bundle", build_type: "Release")
+    # APK — 직접 설치/확인용
+    gradle(task: "assemble", build_type: "Release")
+  end
+end

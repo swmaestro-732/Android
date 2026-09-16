@@ -1,0 +1,23 @@
+<!--
+  발자국 아이콘: 앞뒤로 어긋난 발 두 개. 코스 요약의 "N 따라감"(이 코스를 따라간 사람 수) 앞에 쓴다.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 앞발(위·왼쪽) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M7.5,3.5m-3,0a3,4 0 1,0 6,0a3,4 0 1,0 -6,0z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M5,9.5m-2.4,0a2.4,2.6 0 1,0 4.8,0a2.4,2.6 0 1,0 -4.8,0z" />
+    <!-- 뒷발(아래·오른쪽) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M16.5,11m-3,0a3,4 0 1,0 6,0a3,4 0 1,0 -6,0z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M19,17m-2.4,0a2.4,2.6 0 1,0 4.8,0a2.4,2.6 0 1,0 -4.8,0z" />
+</vector>

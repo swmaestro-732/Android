@@ -5,15 +5,11 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- 세션 토큰(암호문)은 백업하지 않는다. Keystore 키가 함께 넘어가지 않아 복원해도
+             복호화 불가 → 재로그인만 유발하므로 제외한다. -->
+        <exclude domain="file" path="datastore/secure_session.preferences_pb" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="file" path="datastore/secure_session.preferences_pb" />
     </device-transfer>
-    -->
 </data-extraction-rules>

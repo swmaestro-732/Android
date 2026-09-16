@@ -1,0 +1,134 @@
+name: CD
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Android CD — release 브랜치의 내부 테스트 빌드를 GitHub Pre-release로 배포.
+# APK/AAB를 Release Assets에 각각 첨부하므로 Actions ZIP을 풀지 않고 바로 다운로드할 수 있다.
+#
+# 🔑 실서명하려면 저장소 Settings → Secrets 에 등록:
+#     KEYSTORE_BASE64   : `base64 -i release.jks` 결과
+#     KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD
+#   이건 폴백이 없다. app/build.gradle.kts 의 packageRelease/bundleRelease 가드가
+#   서명 설정이 비면 빌드를 끊는다(debug 서명 AAB 가 Play 로 나가는 걸 막는다).
+#
+# 🔥 Crashlytics — google-services.json 은 API key 를 담고 있어 커밋하지 않으므로 secret 으로 주입:
+#     GOOGLE_SERVICES_JSON_BASE64 : `base64 -i app/google-services.json` 결과
+#   이건 폴백이 없다. release 빌드는 이 파일이 없으면 실패한다(크래시 리포팅 없는 출시 방지).
+#
+# 🔌 앱 키 — 로컬은 local.properties 에서 읽지만 러너에는 그 파일이 없으므로 env 로 주입:
+#     KAKAO_NATIVE_APP_KEY : 없으면 release 빌드가 즉시 실패한다.
+#     NAVER_MAP_CLIENT_ID  : 없어도 빌드는 통과하지만 지도가 인증에 실패해
+#                            오류 표시 없이 빈 화면이 된다. 반드시 등록할 것.
+#     API_BASE_URL         : 미설정 시 common/data 의 운영 URL 폴백을 쓴다(선택).
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [release]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-artifact:
+    name: build release artifact
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      # keystore secret 이 있을 때만 복원 → release 서명. 없으면 아래 빌드 단계에서
+      # app/build.gradle.kts 의 packageRelease/bundleRelease 가드가 끊는다(debug 서명 AAB 방지).
+      - name: Restore keystore
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+      # keystore 와 달리 폴백이 없다 — 없으면 Gradle 이 어차피 실패하므로, 여기서 먼저
+      # 무엇을 등록해야 하는지 알려주고 끊는다.
+      - name: Restore google-services.json
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$GOOGLE_SERVICES_JSON_BASE64" ]]; then
+            echo "GOOGLE_SERVICES_JSON_BASE64 secret 이 없습니다." >&2
+            echo "Firebase 콘솔에서 google-services.json 을 받아" >&2
+            echo "  base64 -i app/google-services.json" >&2
+            echo "결과를 저장소 Settings → Secrets 에 등록하세요." >&2
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > app/google-services.json
+      # 러너에는 local.properties 가 없다. 앱 키는 여기서 env 로 넣어야만
+      # build.gradle.kts 의 System.getenv 폴백이 값을 본다.
+      - name: Build release artifact (Fastlane)
+        env:
+          KEYSTORE_FILE: ${{ env.HAS_KEYSTORE == 'true' && format('{0}/release.jks', runner.temp) || '' }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KAKAO_NATIVE_APP_KEY: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
+          NAVER_MAP_CLIENT_ID: ${{ secrets.NAVER_MAP_CLIENT_ID }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        run: bundle exec fastlane android build
+      - name: Prepare release assets
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          metadata="app/build/outputs/apk/release/output-metadata.json"
+          version_name="$(jq -r '.elements[0].versionName' "$metadata")"
+          if [[ -z "$version_name" || "$version_name" == "null" ]]; then
+            echo "versionName을 $metadata에서 읽지 못했습니다." >&2
+            exit 1
+          fi
+
+          apk_source="$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)"
+          aab_source="$(find app/build/outputs/bundle/release -maxdepth 1 -name '*.aab' -print -quit)"
+          if [[ -z "$apk_source" || -z "$aab_source" ]]; then
+            echo "release APK/AAB를 찾지 못했습니다." >&2
+            exit 1
+          fi
+
+          mkdir -p release-assets
+          apk_asset="release-assets/courmy-${version_name}-release.apk"
+          aab_asset="release-assets/courmy-${version_name}-release.aab"
+          cp "$apk_source" "$apk_asset"
+          cp "$aab_source" "$aab_asset"
+
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "tag=internal-v${version_name}-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "apk_asset=$apk_asset" >> "$GITHUB_OUTPUT"
+          echo "aab_asset=$aab_asset" >> "$GITHUB_OUTPUT"
+      - name: Publish GitHub pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          VERSION_NAME: ${{ steps.release.outputs.version_name }}
+          APK_ASSET: ${{ steps.release.outputs.apk_asset }}
+          AAB_ASSET: ${{ steps.release.outputs.aab_asset }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            "$APK_ASSET" \
+            "$AAB_ASSET" \
+            --target "$GITHUB_SHA" \
+            --title "Courmy ${VERSION_NAME} 내부 테스트 #${GITHUB_RUN_NUMBER}" \
+            --notes "release 브랜치 ${GITHUB_SHA}에서 생성된 내부 테스트 빌드입니다." \
+            --prerelease

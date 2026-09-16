@@ -1,0 +1,172 @@
+package com.chillsam.courmy.course.presentation
+
+import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
+import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+
+/**
+ * 코스 상세 화면(FS-11) 진입점. [CourseDetailViewModel] 상태를 구독해
+ * 로딩·에러·정상([CourseDetailScreen])을 분기 렌더한다.
+ *
+ * 네비게이션 콜백은 대상 화면이 다른 모듈(main)에 있어 호출부([AppRouteRegistry])에서 주입한다.
+ */
+@Composable
+fun CourseDetailPage(
+    viewModel: CourseDetailViewModel,
+    courseId: Long,
+    actions: CourseDetailPageActions,
+    modifier: Modifier = Modifier,
+) {
+    // 첫 진입에 어느 코스인지 알려 준다. Load 는 같은 courseId 면 재호출을 건너뛴다.
+    LaunchedEffect(courseId) { viewModel.onIntent(CourseDetailIntent.Load(courseId)) }
+    // 편집하고 돌아오면 제목·소개·한마디가 바뀌어 있어 다시 보일 때마다 새로 불러온다.
+    // Load 로는 위 가드에 걸려 서버를 안 치므로, 가드 없는 Retry 로 강제로 다시 읽는다.
+    RefreshOnResume { viewModel.onIntent(CourseDetailIntent.Retry) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val detail = uiState.detail
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    // 삭제가 끝나면 목록/이전 화면으로 돌아간다(사라진 코스를 계속 보여주지 않는다).
+    LaunchedEffect(uiState.isDeleted) {
+        if (uiState.isDeleted) actions.onBack()
+    }
+
+    // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
+    LaunchedEffect(uiState.actionErrorMessage) {
+        uiState.actionErrorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.onIntent(CourseDetailIntent.ConsumeError)
+        }
+    }
+    when {
+        detail != null -> {
+            CourseDetailScreen(
+                detail = detail,
+                isSaving = uiState.isSaving,
+                isDeleting = uiState.isDeleting,
+                actions =
+                    CourseDetailActions(
+                        onBack = actions.onBack,
+                        onAuthorClick = {
+                            // 내 코스면 작성자가 나다. 타유저 프로필로 보내면 내 화면을 남의 것처럼
+                            // (설정·내 코스 없이 팔로우 관점으로) 보게 되므로 마이로 보낸다.
+                            if (detail.isMine) {
+                                actions.onMyProfileClick()
+                            } else {
+                                detail.authorHandle
+                                    .removePrefix("@")
+                                    .takeIf(String::isNotBlank)
+                                    ?.let(actions.onAuthorClick)
+                            }
+                        },
+                        onFollowAuthor = { viewModel.onIntent(CourseDetailIntent.ToggleFollowAuthor) },
+                        onShare = actions.onShare,
+                        onSaveCourse = { viewModel.onIntent(CourseDetailIntent.ToggleSave) },
+                        onEditCourse = actions.onEditCourse,
+                        onDeleteCourse = { showDeleteConfirm = true },
+                    ),
+                modifier = modifier,
+            )
+            if (showDeleteConfirm) {
+                CourseDeleteConfirmDialog(
+                    onConfirm = {
+                        showDeleteConfirm = false
+                        viewModel.onIntent(CourseDetailIntent.Delete)
+                    },
+                    onDismiss = { showDeleteConfirm = false },
+                )
+            }
+            // 비로그인 상태로 팔로우를 누른 경우. 안내를 닫는 건 어느 쪽을 골라도 같다.
+            if (uiState.needsLogin) {
+                LoginRequiredDialog(
+                    onConfirm = {
+                        viewModel.onIntent(CourseDetailIntent.ConsumeLoginRequired)
+                        actions.onLogin()
+                    },
+                    onDismiss = { viewModel.onIntent(CourseDetailIntent.ConsumeLoginRequired) },
+                )
+            }
+        }
+
+        uiState.isLoading -> {
+            CourseDetailLoading(modifier)
+        }
+
+        else -> {
+            CourseDetailError(
+                message = uiState.errorMessage,
+                onRetry = { viewModel.onIntent(CourseDetailIntent.Retry) },
+                modifier = modifier,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CourseDetailLoading(modifier: Modifier = Modifier) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.align(Alignment.Center),
+            color = DesignSystemThemeImpl.designSystemColor.contentAccent,
+        )
+    }
+}
+
+@Composable
+private fun CourseDetailError(
+    message: String?,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
+    ) {
+        Column(
+            modifier = Modifier.align(Alignment.Center).padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            DsText(
+                text = message ?: "코스를 불러오지 못했습니다.",
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+            )
+            DsText(
+                text = "다시 시도",
+                style = DesignSystemThemeImpl.typeScale.textRegularM,
+                color = DesignSystemThemeImpl.designSystemColor.contentAccent,
+                modifier = Modifier.clickable(onClick = onRetry),
+            )
+        }
+    }
+}
