@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
@@ -33,8 +35,8 @@ private const val MAX_PREVIEW_PHOTOS = 4
  * 코스 상세 리뷰 섹션(Figma FS-11 하단). 헤더(평균 별점·리뷰 수·전체보기) + 리뷰 미리보기 카드.
  *
  * 서버가 상세 응답에 **미리보기 2개**만 담아 주므로([com.chillsam.courmy.course.entity.CourseDetailVO.reviews])
- * 이 섹션은 목록을 페이징하지 않는다. 나머지는 "전체보기" → 리뷰 목록 화면(FS-37)의 몫인데,
- * 그 화면과 `GET /service/v1/courses/{courseId}/reviews` 가 아직 없어 지금은 **비활성 라벨**로만 둔다.
+ * 이 섹션은 목록을 페이징하지 않는다. 나머지는 "전체보기" → 후기 전체보기 화면(FS-37)의 몫이며,
+ * 그 화면이 `GET /service/v1/courses/{courseId}/reviews` 를 정렬·커서 페이징으로 받아 온다.
  */
 @Composable
 internal fun CourseReviewSection(
@@ -120,12 +122,16 @@ private fun ReviewSectionHeader(
  *
  * 상세 미리보기(FS-11)와 후기 전체보기(FS-37)가 같은 카드를 쓴다. 다른 건 태그 칩 노출 여부뿐이라
  * [showTags] 로 가른다 — 미리보기에서는 카드가 길어져 장소 목록을 밀어내므로 감춘다.
+ *
+ * [onDelete] 가 null 이 아니면 우측 상단에 삭제 버튼을 둔다. 내 후기일 때만 호출부가 넘긴다 —
+ * 서버도 남의 리뷰 삭제를 거절하므로, 눌러 봐야 실패할 버튼을 보여주지 않는다.
  */
 @Composable
 internal fun ReviewCard(
     review: CourseReviewVO,
     modifier: Modifier = Modifier,
     showTags: Boolean = false,
+    onDelete: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val cardShape = RoundedCornerShape(16.dp)
@@ -150,7 +156,10 @@ internal fun ReviewCard(
                 // 작성자 밴드와 같은 규칙 — 프로필 자리는 무엇이 빠졌는지 보이게 아이콘을 둔다.
                 emptyIconRes = R.drawable.ic_tab_person_24,
             )
-            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(1.dp),
+            ) {
                 DsText(
                     text = review.author,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -169,6 +178,20 @@ internal fun ReviewCard(
                         )
                     }
                 }
+            }
+            if (onDelete != null) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_trash_24),
+                    contentDescription = "내 후기 삭제",
+                    tint = color.contentDefaultLevel3,
+                    modifier =
+                        Modifier
+                            .clip(CircleShape)
+                            .clickable(onClick = onDelete)
+                            // 아이콘만 두면 탭 영역이 좁다. 여백까지 누를 수 있게 클릭 안쪽에 패딩을 둔다.
+                            .padding(4.dp)
+                            .size(18.dp),
+                )
             }
         }
         if (review.body.isNotBlank()) {

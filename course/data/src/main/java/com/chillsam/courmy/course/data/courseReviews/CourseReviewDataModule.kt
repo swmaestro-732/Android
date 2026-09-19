@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.courseReviews
 
+import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.course.domain.CourseReviewRepository
 import dagger.Module
 import dagger.Provides
@@ -9,7 +10,7 @@ import retrofit2.Retrofit
 import retrofit2.create
 import javax.inject.Singleton
 
-/** 코스 후기 전체보기(FS-37) 전용 DI. */
+/** 코스 후기(FS-37 전체보기 + 작성·삭제) 전용 DI. */
 @Module
 @InstallIn(SingletonComponent::class)
 object CourseReviewDataModule {
@@ -19,11 +20,19 @@ object CourseReviewDataModule {
 
     @Provides
     @Singleton
-    fun provideCourseReviewListDataSource(apiService: CourseReviewListApiService): CourseReviewListDataSource =
-        CourseReviewListDataSource(apiService)
+    fun provideCourseReviewWriteApiService(retrofit: Retrofit): CourseReviewWriteApiService = retrofit.create()
 
     @Provides
     @Singleton
-    fun provideCourseReviewRepository(dataSource: CourseReviewListDataSource): CourseReviewRepository =
-        CourseReviewRepositoryImpl(dataSource)
+    fun provideCourseReviewListDataSource(
+        listApiService: CourseReviewListApiService,
+        writeApiService: CourseReviewWriteApiService,
+    ): CourseReviewListDataSource = CourseReviewListDataSource(listApiService, writeApiService)
+
+    @Provides
+    @Singleton
+    fun provideCourseReviewRepository(
+        dataSource: CourseReviewListDataSource,
+        tokenStore: TokenStore,
+    ): CourseReviewRepository = CourseReviewRepositoryImpl(dataSource) { tokenStore.userId }
 }

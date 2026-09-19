@@ -2,6 +2,7 @@ package com.chillsam.courmy.course.data.courseDetail.dto
 
 import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
+import com.chillsam.courmy.common.entity.time.toRelativeTimeText
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -112,17 +113,25 @@ data class ReviewSummaryDTO(
     val previews: List<ReviewPreviewDTO>? = null,
 )
 
+/**
+ * 상세에 딸린 리뷰 미리보기 1건.
+ *
+ * 후기 전체보기(`CourseReviewItemDTO`)와 같은 모양이다. [createdAt] 은 ISO-8601 UTC 이며,
+ * 서버는 "3분 전" 같은 상대 시각 문구를 주지 않으므로 앱이 변환한다.
+ */
 @Serializable
 data class ReviewPreviewDTO(
+    val id: Long? = null,
     val author: ReviewAuthorDTO? = null,
     val rating: Int? = null,
     val content: String? = null,
-    val relativeTime: String? = null,
+    val createdAt: String? = null,
     val photoUrls: List<String>? = null,
 )
 
 @Serializable
 data class ReviewAuthorDTO(
+    val id: Long? = null,
     val nickname: String? = null,
     val profileImageUrl: String? = null,
 )
@@ -168,7 +177,7 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
                 .map { it.toVO() },
         rating = (summary?.averageRating ?: 0.0).toString(),
         reviewCountText = "${summary?.totalCount ?: 0}개",
-        reviews = summary?.previews.orEmpty().map { it.toVO() },
+        reviews = summary?.previews.orEmpty().map { it.toVO(myUserId) },
         isSaved = course.viewer?.hasSaved ?: false,
         isFollowingAuthor = course.author?.isFollowing ?: false,
         isMine = myUserId != null && myUserId == course.author?.id,
@@ -238,14 +247,17 @@ private fun Int.toWalkText(): String =
 
 private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
 
-private fun ReviewPreviewDTO.toVO(): CourseReviewVO =
+private fun ReviewPreviewDTO.toVO(myUserId: Long?): CourseReviewVO =
     CourseReviewVO(
+        id = id ?: 0L,
+        authorId = author?.id ?: 0L,
         author = author?.nickname ?: "익명",
         authorImageUrl = author?.profileImageUrl.orEmpty(),
         rating = rating ?: 0,
-        dateText = relativeTime.orEmpty(),
+        dateText = createdAt.toRelativeTimeText(),
         body = content.orEmpty(),
         photoUrls = photoUrls.orEmpty(),
+        isMine = myUserId != null && author?.id != null && author.id == myUserId,
     )
 
 private const val SEPARATOR = " · "

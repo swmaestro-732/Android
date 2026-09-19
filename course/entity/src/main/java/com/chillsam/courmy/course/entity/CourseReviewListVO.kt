@@ -12,9 +12,14 @@ import kotlinx.serialization.Serializable
  * - [totalCountText]    리뷰 총 개수 (예: "128개")
  * - [distribution]      별점 분포. 5점부터 내림차순이며 서버가 준 구간만 담는다.
  * - [photoCountText]    후기 사진 총 개수 (예: "86"). 사진이 없으면 빈 문자열.
- * - [photoUrls]         상단 사진 띠에 그릴 URL. 화면이 보여줄 만큼만 잘라서 담는다.
+ * - [photoUrls]         상단 사진 띠에 그릴 URL. 서버가 사진만 모아 주는 필드는 없어서
+ *                       **받아 온 리뷰들의 사진을 순서대로 펼쳐** 화면이 보여줄 만큼만 잘라 담는다.
  * - [morePhotoCountText] 사진 띠 마지막 칸의 "+82". 더 없으면 빈 문자열.
- * - [reviews]           리뷰 목록. **서버가 준 순서 그대로**이며 그게 "최신순"이다.
+ * - [reviews]           리뷰 목록. 서버가 정렬해서 주므로 순서를 그대로 쓴다.
+ * - [nextCursor]        다음 페이지 커서(불투명 문자열). 다음 요청에 그대로 돌려준다. 끝이면 null.
+ * - [hasNext]           다음 페이지 존재 여부. [nextCursor] 가 없으면 더 받지 않는다.
+ * - [hasCompletedCourse] 내가 이 코스를 완주했는지. **작성 버튼을 이 값으로 막지 않는다** —
+ *                       서버가 작성 시 완주를 요구하지 않고, 완주 판정 자체가 아직 고정값이다.
  */
 @Serializable
 data class CourseReviewListVO(
@@ -26,7 +31,18 @@ data class CourseReviewListVO(
     val photoUrls: List<String> = emptyList(),
     val morePhotoCountText: String = "",
     val reviews: List<CourseReviewVO> = emptyList(),
+    val nextCursor: String? = null,
+    val hasNext: Boolean = false,
+    val hasCompletedCourse: Boolean = false,
 ) {
+    /**
+     * 받아 온 페이지 안에 내 리뷰가 있는지. 작성 버튼을 미리 감추는 데만 쓴다.
+     *
+     * 내 리뷰가 아직 못 받은 뒤쪽 페이지에 있으면 false 라서 작성 버튼이 보일 수 있다.
+     * 그때는 서버가 409(이미 작성함)로 막고 화면이 그 사유를 안내한다 — 이 값만 믿지 않는다.
+     */
+    val hasMyReview: Boolean get() = reviews.any { it.isMine }
+
     companion object {
         val empty: CourseReviewListVO =
             CourseReviewListVO(

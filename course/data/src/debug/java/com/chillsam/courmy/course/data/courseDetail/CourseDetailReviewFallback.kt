@@ -4,6 +4,10 @@ import com.chillsam.courmy.course.data.courseDetail.dto.CourseDetailEnvelope
 import com.chillsam.courmy.course.data.courseDetail.dto.ReviewAuthorDTO
 import com.chillsam.courmy.course.data.courseDetail.dto.ReviewPreviewDTO
 import com.chillsam.courmy.course.data.courseDetail.dto.ReviewSummaryDTO
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /**
  * 리뷰 섹션 표시 확인용 임시 폴백 — **디버그 빌드 전용**.
@@ -28,37 +32,55 @@ internal object CourseDetailReviewFallback {
     private const val ENABLED = true
 
     /**
-     * 서버가 리뷰를 안 내려줬을 때만 [SAMPLE] 로 채운 응답을 돌려준다.
+     * 서버가 리뷰를 안 내려줬을 때만 예시로 채운 응답을 돌려준다.
      * 서버가 값을 주면(빈 목록이라도) 그쪽이 이긴다 — 진짜 "리뷰 0개" 를 가짜로 덮지 않는다.
      */
     fun applyTo(envelope: CourseDetailEnvelope): CourseDetailEnvelope {
         if (!ENABLED) return envelope
         val data = envelope.data ?: return envelope
         if (data.reviewSummary != null) return envelope
-        return envelope.copy(data = data.copy(reviewSummary = SAMPLE))
+        return envelope.copy(data = data.copy(reviewSummary = sample()))
     }
 
-    /** Figma FS-11 목업과 같은 문구·구성. 실제 응답 형태(작성자·별점·상대날짜)를 그대로 흉내 낸다. */
-    private val SAMPLE =
+    /**
+     * [daysAgo] 일 전의 ISO-8601 UTC 문자열. 서버가 `createdAt` 으로 주는 형식과 같아야
+     * 상대 시각 변환이 실제와 같은 경로를 탄다. 고정 날짜를 박아 두면 시간이 흐를수록
+     * "3년 전" 이 되어 표시가 맞는지 확인할 수 없다.
+     */
+    private fun daysAgo(daysAgo: Int): String {
+        val format =
+            SimpleDateFormat(ISO_PATTERN, Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+        return format.format(Date(System.currentTimeMillis() - daysAgo * MILLIS_PER_DAY))
+    }
+
+    /** Figma FS-11 목업과 같은 문구·구성. 실제 응답 형태(리뷰 id·작성자 id·createdAt)를 그대로 흉내 낸다. */
+    private fun sample() =
         ReviewSummaryDTO(
             averageRating = 4.8,
             totalCount = 128,
             previews =
                 listOf(
                     ReviewPreviewDTO(
-                        author = ReviewAuthorDTO(nickname = "소마님", profileImageUrl = ""),
+                        id = 1,
+                        author = ReviewAuthorDTO(id = 10, nickname = "소마님", profileImageUrl = ""),
                         rating = 5,
                         content = "비 오는 날 딱이에요. 통창 자리 순서대로 도니 동선도 완벽했어요. 웨이팅도 거의 없었어요 🌧",
-                        relativeTime = "2일 전",
+                        createdAt = daysAgo(2),
                         photoUrls = emptyList(),
                     ),
                     ReviewPreviewDTO(
-                        author = ReviewAuthorDTO(nickname = "현우님", profileImageUrl = ""),
+                        id = 2,
+                        author = ReviewAuthorDTO(id = 11, nickname = "현우님", profileImageUrl = ""),
                         rating = 4,
                         content = "데이트 코스로 완벽했어요. 마지막 와인바가 특히 좋았습니다. 이동 동선도 편했어요.",
-                        relativeTime = "5일 전",
+                        createdAt = daysAgo(5),
                         photoUrls = emptyList(),
                     ),
                 ),
         )
+
+    private const val ISO_PATTERN = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+    private const val MILLIS_PER_DAY = 24L * 60 * 60 * 1000
 }

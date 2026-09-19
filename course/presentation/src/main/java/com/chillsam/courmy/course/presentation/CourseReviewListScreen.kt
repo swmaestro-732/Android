@@ -10,16 +10,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,12 +34,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsRatingStars
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
+import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseRatingBucketVO
 import com.chillsam.courmy.course.entity.CourseReviewListVO
+import com.chillsam.courmy.course.entity.CourseReviewSort
 import com.chillsam.courmy.course.entity.CourseReviewVO
 import kotlinx.collections.immutable.ImmutableList
 
@@ -46,6 +56,8 @@ private val PHOTO_TILE = 88.dp
  *
  * 목록이 길어질 수 있어 [LazyColumn] 으로 그리고, 집계·사진·정렬 탭은 함께 스크롤되는 헤더로 둔다.
  * 코스 상세의 리뷰 섹션과 카드를 공유한다([ReviewCard]) — 여기서는 태그 칩까지 보여준다.
+ *
+ * 정렬은 서버가 하므로 [onSortChange] 는 목록을 처음부터 다시 받게 한다.
  */
 @Composable
 fun CourseReviewListScreen(
@@ -55,9 +67,18 @@ fun CourseReviewListScreen(
     onBack: () -> Unit,
     onSortChange: (CourseReviewSort) -> Unit,
     modifier: Modifier = Modifier,
+    isLoadingMore: Boolean = false,
+    deletingReviewId: Long = 0L,
+    canWriteReview: Boolean = false,
+    onLoadMore: () -> Unit = {},
+    onDeleteReview: (Long) -> Unit = {},
+    onWriteReview: () -> Unit = {},
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val listState = rememberLazyListState()
+    // 삭제를 물어볼 리뷰 id. 0 이면 확인 창을 띄우지 않는다 — 되돌릴 수 없어 한 번 확인한다.
+    var pendingDeleteId by remember { mutableLongStateOf(0L) }
+    LoadMoreOnScrollEnd(listState = listState, onLoadMore = onLoadMore)
     Column(
         modifier =
             modifier
@@ -74,8 +95,12 @@ fun CourseReviewListScreen(
             if (reviews.isEmpty()) {
                 item(key = "empty") { ReviewListEmpty() }
             } else {
-                // 리뷰에 서버 id 가 없어 안정 키를 못 만든다. 키 없이 두면 Compose 가 위치로 매칭한다.
-                items(items = reviews) { review ->
+                // 서버 id 만으로 키를 만들면 id 를 못 받은 항목끼리 0 으로 겹쳐 런타임에 터진다.
+                // 위치를 섞어 항상 유일하게 만든다.
+                itemsIndexed(
+                    items = reviews,
+                    key = { index, review -> "${review.id}-$index" },
+                ) { _, review ->
                     Box(
                         modifier =
                             Modifier.padding(
@@ -83,11 +108,56 @@ fun CourseReviewListScreen(
                                 vertical = 6.dp,
                             ),
                     ) {
-                        ReviewCard(review = review, showTags = true)
+                        ReviewCard(
+                            review = review,
+                            showTags = true,
+                            // 삭제 중인 카드는 다시 누르지 못하게 버튼을 뗀다.
+                            onDelete =
+                                if (review.isMine && review.id > 0 && deletingReviewId == 0L) {
+                                    { pendingDeleteId = review.id }
+                                } else {
+                                    null
+                                },
+                        )
                     }
                 }
             }
+            if (isLoadingMore) {
+                item(key = "loadingMore") { LoadingMoreFooter() }
+            }
         }
+        if (canWriteReview) {
+            ReviewWriteBar(onWriteReview = onWriteReview)
+        }
+    }
+    if (pendingDeleteId != 0L) {
+        DsConfirmDialog(
+            title = "후기를 삭제할까요?",
+            description = "삭제한 후기는 되돌릴 수 없어요.",
+            confirmText = "삭제",
+            dismissText = "취소",
+            destructive = true,
+            onConfirm = {
+                onDeleteReview(pendingDeleteId)
+                pendingDeleteId = 0L
+            },
+            onDismiss = { pendingDeleteId = 0L },
+        )
+    }
+}
+
+/** 하단 후기 작성 버튼. 이미 쓴 후기가 있으면 호출부가 이 줄을 아예 빼 버린다. */
+@Composable
+private fun ReviewWriteBar(onWriteReview: () -> Unit) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
+                .navigationBarsPadding()
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+    ) {
+        DsButton(text = "후기 쓰기", onClick = onWriteReview, modifier = Modifier.fillMaxWidth())
     }
 }
 

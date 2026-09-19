@@ -2,6 +2,7 @@ package com.chillsam.courmy.course.data.courseDetail.dto
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -60,7 +61,7 @@ class CourseDetailDtoMappingTest {
                                         author = null,
                                         rating = 5,
                                         content = "좋아요",
-                                        relativeTime = "1일 전",
+                                        createdAt = "2026-09-18T00:00:00Z",
                                         photoUrls = listOf("a", "b"),
                                     ),
                                 ),
@@ -69,7 +70,8 @@ class CourseDetailDtoMappingTest {
 
         assertEquals("익명", vo.reviews[0].author)
         assertEquals(listOf("a", "b"), vo.reviews[0].photoUrls)
-        assertEquals("1일 전", vo.reviews[0].dateText)
+        // 서버가 주는 것은 createdAt(UTC) 뿐이라 상대 시각은 앱이 만든다. 고정 시각이 없어 형식만 확인한다.
+        assertTrue(vo.reviews[0].dateText.endsWith("전"))
     }
 
     /** 서버가 isMine 을 주지 않아 작성자 id 와 세션 id 비교로 판정한다. 잘못되면 남의 코스에 삭제 버튼이 뜬다. */
@@ -147,10 +149,10 @@ class CourseDetailDtoMappingTest {
                         previews =
                             listOf(
                                 ReviewPreviewDTO(
-                                    author = ReviewAuthorDTO("성수러버", "rv.jpg"),
+                                    author = ReviewAuthorDTO(id = 2, nickname = "성수러버", profileImageUrl = "rv.jpg"),
                                     rating = 5,
                                     content = "좋아요",
-                                    relativeTime = "1일 전",
+                                    createdAt = "2026-09-18T00:00:00Z",
                                     photoUrls = listOf("rp.jpg"),
                                 ),
                             ),
