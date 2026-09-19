@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.my.GetMyProfileUseCase
-import com.chillsam.courmy.main.presentation.my.mock.ProfileForkMockData
+import com.chillsam.courmy.main.presentation.my.mock.ProfilePlanMockData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -96,15 +96,15 @@ class MyViewModel
                     state.copy(selectedTab = event.tab)
                 }
 
-                is MyProfileReducerEvent.ForkedLoaded -> {
-                    state.copy(forkedCourses = event.courses.toImmutableList())
+                is MyProfileReducerEvent.PlanLoaded -> {
+                    state.copy(planCourses = event.courses.toImmutableList())
                 }
             }
 
         private fun load() {
             dispatch(MyProfileReducerEvent.LoadStarted)
-            // TODO(SCRUM-포크API): 포크 목록 API 가 붙으면 프로필과 함께 서버에서 받아 온다.
-            dispatch(MyProfileReducerEvent.ForkedLoaded(ProfileForkMockData.forkedCourses))
+            // TODO(SCRUM-계획API): 계획 목록 API 가 붙으면 프로필과 함께 서버에서 받아 온다.
+            dispatch(MyProfileReducerEvent.PlanLoaded(ProfilePlanMockData.planCourses))
             loadJob?.cancel()
             // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
             moreJob?.cancel()
@@ -129,8 +129,8 @@ class MyViewModel
          */
         private fun loadMore() {
             val state = currentState
-            // 포크 탭은 페이징이 없어, 그쪽을 보는 동안 스크롤이 끝에 닿아도 내 코스를 더 받지 않는다.
-            if (state.selectedTab != ProfileTab.MY_COURSES || state.isLoading || state.isLoadingMore) return
+            // 계획 탭은 페이징이 없어, 그쪽을 보는 동안 스크롤이 끝에 닿아도 코스를 더 받지 않는다.
+            if (state.selectedTab != ProfileTab.COURSES || state.isLoading || state.isLoadingMore) return
             // 마지막 페이지면 커서가 없다. 서버가 어긋나게 줄 때를 대비해 둘을 함께 본다.
             val cursor = state.nextCursor?.takeIf { state.hasNext } ?: return
             dispatch(MyProfileReducerEvent.LoadMoreStarted)

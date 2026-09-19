@@ -113,10 +113,10 @@ private fun ProfileTabRowPreview() {
             ProfileTabRow(
                 tabs =
                     persistentListOf(
-                        ProfileTabItem("내 코스", 8),
-                        ProfileTabItem("포크", 3),
+                        ProfileTabItem("계획", 3),
+                        ProfileTabItem("코스", 8),
                     ),
-                selectedIndex = 0,
+                selectedIndex = 1,
                 onSelect = {},
             )
         }

@@ -12,7 +12,7 @@ sealed interface MyProfileIntent : MviIntent {
     /** 코스 목록 끝에 닿아 다음 페이지를 이어 받는다(홈 피드와 같은 방식). */
     data object LoadMore : MyProfileIntent
 
-    /** 내 코스 ↔ 포크 탭 전환. */
+    /** 계획 ↔ 코스 탭 전환. */
     data class SelectTab(
         val tab: ProfileTab,
     ) : MyProfileIntent

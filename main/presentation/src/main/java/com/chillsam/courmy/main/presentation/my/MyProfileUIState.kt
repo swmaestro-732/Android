@@ -20,16 +20,20 @@ data class MyProfileUIState(
     val nextCursor: String? = null,
     val hasNext: Boolean = false,
     val isLoadingMore: Boolean = false,
-    val selectedTab: ProfileTab = ProfileTab.MY_COURSES,
-    /** 포크한 코스. 페이징이 없어 [courses] 와 달리 한 번에 다 들고 있는다. */
-    val forkedCourses: ImmutableList<ProfileCourseVO> = persistentListOf(),
+    /**
+     * 처음 열었을 때 보여 줄 탭. 계획이 탭 줄에서는 앞이지만 기본값은 코스다 —
+     * 계획은 아직 mock 이라, 마이를 열자마자 가짜 목록이 첫 화면이 되면 안 된다.
+     */
+    val selectedTab: ProfileTab = ProfileTab.COURSES,
+    /** 계획 목록. 페이징이 없어 [courses] 와 달리 한 번에 다 들고 있는다. */
+    val planCourses: ImmutableList<ProfileCourseVO> = persistentListOf(),
 ) : UiState {
     /** 지금 탭이 그려야 할 목록. 화면이 탭마다 분기하지 않도록 여기서 골라 준다. */
     val visibleCourses: ImmutableList<ProfileCourseVO>
         get() =
             when (selectedTab) {
-                ProfileTab.MY_COURSES -> courses
-                ProfileTab.FORKED -> forkedCourses
+                ProfileTab.PLAN -> planCourses
+                ProfileTab.COURSES -> courses
             }
 
     companion object {

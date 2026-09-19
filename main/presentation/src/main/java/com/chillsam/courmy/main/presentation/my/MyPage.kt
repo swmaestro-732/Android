@@ -52,7 +52,7 @@ import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
 import com.chillsam.courmy.main.presentation.profile.ProfileTabItem
 import com.chillsam.courmy.main.presentation.profile.ProfileTabRow
-import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
@@ -142,9 +142,9 @@ private fun CreateFirstCourseCard(onClick: () -> Unit) {
     }
 }
 
-/** 포크한 코스가 없을 때의 안내. 담는 건 코스 상세에서 하는 일이라 여기서 진입점을 주지 않는다. */
+/** 계획이 없을 때의 안내. 계획을 세우는 자리가 아직 없어 여기서 진입점을 주지 않는다. */
 @Composable
-private fun EmptyForkedCourses() {
+private fun EmptyPlanCourses() {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(
         modifier =
@@ -156,13 +156,13 @@ private fun EmptyForkedCourses() {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         DsText(
-            text = "아직 포크한 코스가 없어요",
+            text = "아직 세운 계획이 없어요",
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel2,
         )
         Spacer(Modifier.height(4.dp))
         DsText(
-            text = "마음에 드는 코스를 내 것으로 떠 와 보세요",
+            text = "가 보고 싶은 곳을 모아 계획을 세워 보세요",
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel3,
         )
@@ -226,14 +226,21 @@ private fun MyContent(
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
+            // 탭 순서는 ProfileTab 선언 순서를 그대로 따른다(계획 → 코스).
             ProfileTabRow(
                 tabs =
-                    persistentListOf(
-                        // 헤더 통계와 같은 숫자를 써야 해서 목록 크기가 아니라 서버가 준 값을 쓴다
-                        // (내 코스는 페이징이라 지금 받아 둔 건 일부일 수 있다).
-                        ProfileTabItem(ProfileTab.MY_COURSES.label(), profile.myCourseCount),
-                        ProfileTabItem(ProfileTab.FORKED.label(), uiState.forkedCourses.size),
-                    ),
+                    ProfileTab.entries
+                        .map { tab ->
+                            val count =
+                                when (tab) {
+                                    ProfileTab.PLAN -> uiState.planCourses.size
+
+                                    // 헤더 통계와 같은 숫자를 써야 해서 목록 크기가 아니라 서버가 준 값을 쓴다
+                                    // (코스는 페이징이라 지금 받아 둔 건 일부일 수 있다).
+                                    ProfileTab.COURSES -> profile.myCourseCount
+                                }
+                            ProfileTabItem(tab.label(), count)
+                        }.toImmutableList(),
                 selectedIndex = ProfileTab.entries.indexOf(uiState.selectedTab),
                 onSelect = { index -> onSelectTab(ProfileTab.entries[index]) },
             )
@@ -242,22 +249,26 @@ private fun MyContent(
                 visibleCourses.isNotEmpty() -> {
                     ProfileCoursesGrid(
                         courses = visibleCourses,
+                        // 계획은 아직 mock 이라 서버에 없는 id 다. 상세를 열면 실패하므로 눌러도 넘기지 않는다.
+                        // TODO(SCRUM-계획API): 계획 목록 API 가 붙으면 코스와 똑같이 상세로 보낸다.
                         onCourseClick = { courseId ->
-                            navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                            if (uiState.selectedTab == ProfileTab.COURSES) {
+                                navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                            }
                         },
                     )
                 }
 
-                // 내 코스가 없으면 빈 그리드 대신 만들러 갈 자리를 둔다.
-                uiState.selectedTab == ProfileTab.MY_COURSES -> {
+                // 코스가 없으면 빈 그리드 대신 만들러 갈 자리를 둔다.
+                uiState.selectedTab == ProfileTab.COURSES -> {
                     CreateFirstCourseCard(
                         onClick = { navigationHelper.navigateTo(CourseCreatePage) },
                     )
                 }
 
-                // 포크는 내가 만드는 게 아니라 남의 코스에서 담아 오는 거라 만들기로 유도하지 않는다.
+                // 계획은 세우는 자리가 아직 없어 만들기로 유도하지 않는다.
                 else -> {
-                    EmptyForkedCourses()
+                    EmptyPlanCourses()
                 }
             }
             Spacer(Modifier.height(20.dp))
