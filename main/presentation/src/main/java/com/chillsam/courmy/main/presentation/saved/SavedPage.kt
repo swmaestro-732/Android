@@ -52,6 +52,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
+import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
@@ -151,6 +152,7 @@ private fun SavedCourseList(
             onTabSelected = { tab ->
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
+                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
                     MainTab.MY -> navigationHelper.navigateTo(MyPage)
                     else -> Unit
                 }
@@ -282,6 +284,7 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
             onTabSelected = { tab ->
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
+                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
                     MainTab.MY -> navigationHelper.navigateTo(GuestMyPage)
                     else -> Unit
                 }

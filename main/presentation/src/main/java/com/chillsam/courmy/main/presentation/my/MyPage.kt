@@ -38,6 +38,7 @@ import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.FollowListPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.settings.SettingsPage
@@ -218,6 +219,7 @@ private fun MyContent(
             onTabSelected = { tab ->
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
+                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
                     MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
                     else -> Unit
                 }

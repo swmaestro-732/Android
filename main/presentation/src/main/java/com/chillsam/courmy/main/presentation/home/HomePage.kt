@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.presentation.home
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +18,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,9 +31,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
@@ -42,9 +47,11 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.domain.DraftListPage
+import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
+import com.chillsam.courmy.main.domain.search.SearchPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
@@ -108,6 +115,11 @@ fun HomePage(modifier: Modifier = Modifier) {
             item {
                 HomeHeader(imageUrl = profile?.profileImageUrl.orEmpty())
             }
+            item {
+                HomeSearchBar(
+                    onClick = { navigationHelper.navigateTo(SearchPage) },
+                )
+            }
             // 헤더·하단 탭은 늘 보여야 하므로, 로딩·에러는 화면 전체가 아니라 피드 자리에서만 분기한다.
             when {
                 feedState.courses.isNotEmpty() -> {
@@ -139,18 +151,8 @@ fun HomePage(modifier: Modifier = Modifier) {
             }
         }
 
-        CourmyBottomBar(
-            selectedTab = MainTab.HOME,
-            onTabSelected = { tab ->
-                when (tab) {
-                    // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
-                    MainTab.MY -> navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
-
-                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
-
-                    else -> Unit
-                }
-            },
+        HomeBottomBar(
+            loggedIn = session.isLoggedIn,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
 
@@ -170,6 +172,65 @@ fun HomePage(modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+/**
+ * 홈 검색바(FS-09). 여기서 직접 입력받지 않고 검색 화면으로 넘긴다 —
+ * 최근 검색어·급상승 검색어를 함께 보여줘야 해서 입력은 그쪽에서 받는다.
+ */
+@Composable
+private fun HomeSearchBar(onClick: () -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val shape = RoundedCornerShape(percent = 50)
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(color.bgDefaultLevel1)
+                .border(width = 1.dp, color = color.borderDefaultLevel0, shape = shape)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_search_24),
+            contentDescription = null,
+            tint = color.contentDefaultLevel2,
+            modifier = Modifier.size(18.dp),
+        )
+        DsText(
+            text = "장소 · 동네 · 테마 검색",
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = color.contentDefaultLevel3,
+        )
+    }
+}
+
+/** 홈의 하단 탭바. 홈은 지금 보고 있는 탭이라 다시 눌러도 아무 일도 하지 않는다. */
+@Composable
+private fun HomeBottomBar(
+    loggedIn: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val navigationHelper = LocalNavigationHelper.current
+    CourmyBottomBar(
+        selectedTab = MainTab.HOME,
+        onTabSelected = { tab ->
+            when (tab) {
+                // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
+                MainTab.MY -> navigationHelper.navigateTo(if (loggedIn) MyPage else GuestMyPage)
+
+                MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
+
+                MainTab.MAP -> navigationHelper.navigateTo(MapPage)
+
+                MainTab.HOME -> Unit
+            }
+        },
+        modifier = modifier,
+    )
 }
 
 /** 피드 로딩 자리. 헤더 아래 카드 영역만 차지한다. */
