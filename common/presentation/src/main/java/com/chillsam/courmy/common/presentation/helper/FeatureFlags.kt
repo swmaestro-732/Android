@@ -10,11 +10,11 @@ object FeatureFlags {
     /**
      * 공유 버튼 노출 여부.
      *
-     * 링크 복사·딥링크 라우팅은 동작하지만, 매니페스트의 App Links 호스트
-     * (`www.courmy.com`)가 DNS 에 없고 `/.well-known/assetlinks.json` 도 배포되지 않아
-     * **다른 기기에서 링크를 눌러도 앱이 열리지 않는다**(브라우저로 빠진다).
-     *
-     * 호스트를 확정하고 assetlinks.json 을 무인증으로 공개하면 true 로 되돌린다. [wiki-needed]
+     * **켜 두었지만 조건이 다 갖춰진 것은 아니다.** 링크 복사 자체는 동작한다. 다만 매니페스트의
+     * App Links 호스트(`www.courmy.com`)가 DNS 에 없고 `/.well-known/assetlinks.json` 도
+     * 배포되지 않아, **받은 사람이 링크를 눌러도 앱이 아니라 브라우저로 열린다**.
+     * 공유 진입점을 먼저 내보이기로 한 판단에 따라 켠 것이고, 링크가 앱으로 열리게 하려면
+     * 호스트 확정과 assetlinks.json 공개가 여전히 남아 있다. [wiki-needed]
      *
      * 배포할 assetlinks.json 내용은 `docs/assetlinks.json` 에 준비돼 있다. 새로 만들지 말고
      * 그 파일을 그대로 `/.well-known/` 에 올린다.
@@ -24,5 +24,5 @@ object FeatureFlags {
      * APK 를 첨부하는 **동안만** 필요하다. 그 직접 배포를 그만두면 두 번째 지문은 지운다 —
      * 남겨 두면 더 이상 배포하지 않는 서명에까지 링크 검증을 열어 두는 셈이다.
      */
-    const val SHARE_ENABLED = false
+    const val SHARE_ENABLED = true
 }

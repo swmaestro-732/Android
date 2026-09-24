@@ -28,6 +28,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -74,9 +76,16 @@ import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.chillsam.courmy.course.presentation.component.toRoutePoints
 
 /**
- * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(커버·카테고리·제목) → 요약 스탯 → 소개 →
- * "코스 속 장소" 목록(접기/펼치기) → "코스 한눈에 보기" 지도 → 작성자 밴드 →
- * 하단 "코스 저장하기" 액션바로 구성한다. 표시 전용 화면으로 [detail] 데이터를 그대로 렌더링한다.
+ * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(커버·카테고리·제목·설정) → 요약 스탯 → 소개 →
+ * "코스 속 장소" 목록(접기/펼치기) → "코스 한눈에 보기" 지도 → 후기 → 작성자 밴드 →
+ * 하단 액션바로 구성한다. 표시 전용 화면으로 [detail] 데이터를 그대로 렌더링한다.
+ *
+ * 동작은 두 층으로 나눈다.
+ * - 하단 액션바: 댓글·복제 + 주버튼 "따라가기" — 이 화면에서 하려는 일.
+ *   댓글은 본문에 깔지 않고 하단 시트([CourseCommentSheet])로 띄운다
+ * - 히어로 우측: 좋아요·저장·공유 아이콘 + 내 코스일 때만 ⋮ ([CourseSettingsMenu]) 로 편집·삭제
+ *
+ * 지도는 본문에 이미 들어 있어 "지도 보기" 버튼을 따로 두지 않는다.
  *
  * 지도는 전체 동선만 보여 주고 제스처를 막는다. 장소별 위치를 둘러보는 건 장소를 눌러 뜨는
  * [PlaceDetailSheet] 의 지도 몫이다.
@@ -100,6 +109,8 @@ fun CourseDetailScreen(
     var openSheetInOverview by remember { mutableStateOf(false) }
     val placeDetailViewModel: PlaceDetailViewModel = hiltViewModel()
     val placeDetailState by placeDetailViewModel.uiState.collectAsStateWithLifecycle()
+    // 댓글은 본문에 깔지 않고 하단 시트로 띄운다([CourseCommentSheet]).
+    var showComments by remember { mutableStateOf(false) }
     Column(
         modifier =
             modifier
@@ -112,7 +123,14 @@ fun CourseDetailScreen(
                     .weight(1f)
                     .verticalScroll(rememberScrollState()),
         ) {
-            DetailHero(detail = detail, onBack = actions.onBack)
+            DetailHero(
+                detail = detail,
+                isSaving = isSaving,
+                isDeleting = isDeleting,
+                isLiked = social.isLiked,
+                actions = actions,
+                onBack = actions.onBack,
+            )
             if (!LayoutVariants.AUTHOR_AT_BOTTOM) {
                 // 밴드는 화면 가로 전체를 채우므로 본문 좌우 패딩 밖에 둔다.
                 // 위 배치에서는 히어로 이미지에 바로 붙고 아래쪽으로 요약 스탯과 끊는다.
@@ -176,11 +194,6 @@ fun CourseDetailScreen(
                 )
                 // Figma FS-11 에서 리뷰는 장소·동선을 다 본 뒤(= 코스 자체 정보의 끝) 오는 남의 평가다.
                 CourseReviewSection(detail = detail, onSeeAll = actions.onSeeAllReviews)
-                CourseSocialSection(
-                    state = social,
-                    onCommentChange = actions.onCommentChange,
-                    onSubmitComment = actions.onSubmitComment,
-                )
             }
             if (LayoutVariants.AUTHOR_AT_BOTTOM) {
                 // 아래 배치에서는 위쪽으로 본문과 끊고 아래는 스크롤 끝까지 열어 둔다.
@@ -193,14 +206,14 @@ fun CourseDetailScreen(
             }
             Spacer(Modifier.height(14.dp))
         }
-        DetailBottomBar(
-            isMine = detail.isMine,
-            isSaved = detail.isSaved,
-            isSaving = isSaving,
-            isDeleting = isDeleting,
-            isLiked = social.isLiked,
-            likeCount = social.likeCount,
-            actions = actions,
+        DetailBottomBar(onCommentClick = { showComments = true })
+    }
+    if (showComments) {
+        CourseCommentSheet(
+            state = social,
+            onCommentChange = actions.onCommentChange,
+            onSubmitComment = actions.onSubmitComment,
+            onDismiss = { showComments = false },
         )
     }
     val currentPlace = selectedPlace
@@ -244,10 +257,21 @@ fun CourseDetailScreen(
     }
 }
 
-/** 상단 히어로: 어두운 배경 위 뒤로가기, 카테고리 칩, 코스 제목. */
+/**
+ * 상단 히어로: 어두운 배경 위 뒤로가기 · 좋아요·저장·공유 · 설정(⋮), 카테고리 칩, 코스 제목.
+ *
+ * 좋아요와 저장은 **누른 상태가 보여야 하는 토글**이라 메뉴에 접지 않고 아이콘으로 내놓는다.
+ * 메뉴 안에 있으면 열기 전에는 지금 눌렀는지 알 수 없고, 토글 한 번에 두 탭이 든다.
+ *
+ * ⋮ 는 편집·삭제 전용이라 **내 코스일 때만** 나온다([CourseSettingsMenu]).
+ */
 @Composable
 private fun DetailHero(
     detail: CourseDetailVO,
+    isSaving: Boolean,
+    isDeleting: Boolean,
+    isLiked: Boolean,
+    actions: CourseDetailActions,
     onBack: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -294,6 +318,37 @@ private fun DetailHero(
                 contentDescription = "뒤로가기",
                 onClick = onBack,
             )
+            Spacer(Modifier.weight(1f))
+            HeroCircleButton(
+                iconRes = if (isLiked) R.drawable.ic_like_on_24 else R.drawable.ic_like_off_24,
+                contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
+                tint = if (isLiked) color.contentAccent else color.contentDefaultLevel0,
+                onClick = actions.onToggleLike,
+            )
+            // 내 코스는 저장할 이유가 없다. 편집·삭제가 대신 ⋮ 에 붙는다.
+            if (!detail.isMine) {
+                Spacer(Modifier.width(8.dp))
+                HeroCircleButton(
+                    iconRes =
+                        if (detail.isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
+                    contentDescription = if (detail.isSaved) "저장 취소" else "코스 저장",
+                    tint = if (detail.isSaved) color.contentAccent else color.contentDefaultLevel0,
+                    enabled = !isSaving,
+                    onClick = actions.onSaveCourse,
+                )
+            }
+            if (FeatureFlags.SHARE_ENABLED) {
+                Spacer(Modifier.width(8.dp))
+                HeroCircleButton(
+                    iconRes = R.drawable.ic_share_24,
+                    contentDescription = "공유",
+                    onClick = actions.onShare,
+                )
+            }
+            if (detail.isMine) {
+                Spacer(Modifier.width(8.dp))
+                CourseSettingsMenu(isDeleting = isDeleting, actions = actions)
+            }
         }
         Column(
             modifier =
@@ -330,11 +385,99 @@ private fun DetailHero(
     }
 }
 
+/**
+ * 히어로 우측 설정(⋮) 메뉴 — 편집·삭제.
+ *
+ * 되돌리기 어렵고 드물게 쓰는 관리 동작만 담는다. 좋아요·저장·공유처럼 자주 누르거나
+ * 상태가 보여야 하는 것은 밖에 아이콘으로 둔다. 호출부가 내 코스일 때만 그린다.
+ */
+@Composable
+private fun CourseSettingsMenu(
+    isDeleting: Boolean,
+    actions: CourseDetailActions,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        HeroCircleButton(
+            iconRes = R.drawable.ic_more_vert_24,
+            contentDescription = "코스 설정",
+            onClick = { expanded = true },
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            containerColor = color.bgDefaultLevel1,
+        ) {
+            CourseSettingsMenuItem(
+                text = "코스 편집",
+                iconRes = R.drawable.ic_notes_24,
+                contentColor = color.contentDefaultLevel0,
+                enabled = !isDeleting,
+                onClick = {
+                    expanded = false
+                    actions.onEditCourse()
+                },
+            )
+            CourseSettingsMenuItem(
+                text = if (isDeleting) "삭제 중…" else "코스 삭제",
+                iconRes = R.drawable.ic_trash_24,
+                contentColor = color.contentDanger,
+                enabled = !isDeleting,
+                onClick = {
+                    expanded = false
+                    actions.onDeleteCourse()
+                },
+            )
+        }
+    }
+}
+
+/** 설정 메뉴 한 줄. 아이콘 색을 항목별로 달리해 삭제만 경고색으로 세운다. */
+@Composable
+private fun CourseSettingsMenuItem(
+    text: String,
+    iconRes: Int,
+    contentColor: Color,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val tint = if (enabled) contentColor else color.contentDefaultLevel3
+    DropdownMenuItem(
+        enabled = enabled,
+        onClick = onClick,
+        leadingIcon = {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(20.dp),
+            )
+        },
+        text = {
+            DsText(
+                text = text,
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = tint,
+            )
+        },
+    )
+}
+
+/**
+ * 히어로 위에 얹는 둥근 아이콘 버튼.
+ *
+ * 커버 사진이 어떤 색이든 아이콘이 읽혀야 해서 흰 원판을 깔고 그 위에 그린다.
+ * [tint] 로 좋아요·저장의 켜진 상태를 강조색으로 바꾼다.
+ */
 @Composable
 private fun HeroCircleButton(
     iconRes: Int,
     contentDescription: String?,
     onClick: () -> Unit,
+    tint: Color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+    enabled: Boolean = true,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Box(
@@ -343,13 +486,13 @@ private fun HeroCircleButton(
                 .size(34.dp)
                 .clip(CircleShape)
                 .background(color.bgDefaultLevel1)
-                .clickable(onClick = onClick),
+                .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = contentDescription,
-            tint = color.contentDefaultLevel0,
+            tint = if (enabled) tint else color.contentDefaultLevel3,
             modifier = Modifier.size(22.dp),
         )
     }
@@ -646,14 +789,20 @@ private fun CourseMapSection(
     }
 }
 
-/** "코스 속 장소" 섹션: 헤더(접기/펼치기) + 펼침(사진·팁) / 접힘(콤팩트 타임라인) 목록. */
+/**
+ * "코스 속 장소" 섹션: 헤더(접기/펼치기) + 펼침(사진·팁) / 접힘(콤팩트 타임라인) 목록.
+ *
+ * **접힌 상태로 시작한다.** 펼쳐 두면 장소마다 큰 사진과 팁이 붙어 6곳짜리 코스만 돼도
+ * 화면 몇 개 분량이 되고, 그 아래 지도·후기까지 닿으려면 한참 내려야 한다.
+ * 접힘 목록은 장소 이름을 순서대로 훑게 해 주고, 자세히 볼 사람만 펼치면 된다.
+ */
 @Composable
 private fun PlacesSection(
     places: List<CourseDetailPlaceVO>,
     authorName: String,
     onPlaceClick: (CourseDetailPlaceVO) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(true) }
+    var expanded by remember { mutableStateOf(false) }
     val color = DesignSystemThemeImpl.designSystemColor
     // 위쪽 소개·태그 묶음과 장소 목록 사이를 한 단 더 벌려 섹션이 나뉘어 보이게 한다.
     Column(
@@ -1135,21 +1284,23 @@ private fun RouteConnector(text: String) {
     }
 }
 
+/** 하단 액션바 버튼 모서리. 아이콘 버튼과 주버튼이 같은 값을 써야 한 줄로 읽힌다. */
+private val BOTTOM_BAR_BUTTON_SHAPE = RoundedCornerShape(15.dp)
+
 /**
- * 하단 고정 액션바: 공유 버튼 + 코스 저장 버튼. 상단에 옅은 구분선.
- * [isSaved] 면 "저장됨"으로 바뀌고, 누르면 저장이 취소된다.
+ * 하단 고정 액션바: 댓글 · 복제 아이콘 + "따라가기" 주버튼. 상단에 옅은 구분선.
+ *
+ * 이 화면에서 하려는 일 하나(따라가기)만 가로로 넓은 주버튼으로 세우고, 나머지는 아이콘으로 둔다.
+ * 저장·공유·편집·삭제는 상단 ⋮ 로 옮겼다([CourseSettingsMenu]).
+ *
+ * 복제·따라가기는 **서버 엔드포인트가 없다**. 자리와 모양만 잡아 두고 누르면 준비 중임을
+ * 알린다. 비활성으로 두되 탭은 받는다 — 아무 반응이 없으면 고장으로 읽힌다.
  */
 @Composable
-private fun DetailBottomBar(
-    isMine: Boolean,
-    isSaved: Boolean,
-    isSaving: Boolean,
-    isDeleting: Boolean,
-    isLiked: Boolean,
-    likeCount: Int,
-    actions: CourseDetailActions,
-) {
+private fun DetailBottomBar(onCommentClick: () -> Unit) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val context = LocalContext.current
+    val notReady = { Toast.makeText(context, "준비 중이에요.", Toast.LENGTH_SHORT).show() }
     Column(modifier = Modifier.background(color.bgDefaultLevel1)) {
         Box(
             modifier =
@@ -1165,106 +1316,79 @@ private fun DetailBottomBar(
                     .navigationBarsPadding()
                     .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            val buttonShape = RoundedCornerShape(15.dp)
-            BottomBarLikeButton(
-                isLiked = isLiked,
-                likeCount = likeCount,
-                shape = buttonShape,
-                onClick = actions.onToggleLike,
-            )
-            if (FeatureFlags.SHARE_ENABLED) {
-                Box(
-                    modifier =
-                        Modifier
-                            .width(52.dp)
-                            .height(56.dp)
-                            .clip(buttonShape)
-                            .border(1.dp, color.borderDefaultLevel0, buttonShape)
-                            .background(color.bgDefaultLevel1)
-                            .clickable(onClick = actions.onShare),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_share_24),
-                        contentDescription = "공유",
-                        tint = color.contentDefaultLevel1,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-            }
-            if (isMine) {
-                // 내 코스는 저장할 이유가 없다. 편집·삭제를 대신 노출한다.
-                BottomBarButton(
-                    text = "코스 편집하기",
-                    shape = buttonShape,
-                    background = color.bgAccent,
-                    contentColor = color.contentOnAccent,
-                    enabled = !isDeleting,
-                    onClick = actions.onEditCourse,
-                )
-                BottomBarButton(
-                    text = if (isDeleting) "삭제 중…" else "코스 삭제하기",
-                    shape = buttonShape,
+            val idle =
+                BottomBarIconColors(
+                    tint = color.contentDefaultLevel2,
+                    border = color.borderDefaultLevel0,
                     background = color.bgDefaultLevel1,
-                    contentColor = color.contentDanger,
-                    enabled = !isDeleting,
-                    borderColor = color.borderDefaultLevel0,
-                    onClick = actions.onDeleteCourse,
                 )
-            } else {
-                BottomBarButton(
-                    text = if (isSaved) "저장됨" else "코스 저장하기",
-                    shape = buttonShape,
-                    background = if (isSaved) color.bgAccentSubtle else color.bgAccent,
-                    // 저장됨은 옅은 강조 배경 위라, 글자도 강조색이어야 상태가 읽힌다.
-                    contentColor = if (isSaved) color.contentAccent else color.contentOnAccent,
-                    enabled = !isSaving,
-                    iconRes = if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
-                    onClick = actions.onSaveCourse,
-                )
-            }
+            BottomBarIconButton(
+                iconRes = R.drawable.ic_tab_chat_24,
+                contentDescription = "댓글",
+                colors = idle,
+                onClick = onCommentClick,
+            )
+            BottomBarIconButton(
+                iconRes = R.drawable.ic_copy_24,
+                contentDescription = "코스 복제",
+                // 쓸 수 없는 버튼이라 옅게 둔다. 옆의 댓글과 같은 무게로 보이면 안 된다.
+                colors = idle.copy(tint = color.contentDefaultLevel3),
+                onClick = notReady,
+            )
+            BottomBarButton(
+                text = "따라가기",
+                shape = BOTTOM_BAR_BUTTON_SHAPE,
+                background = color.bgAccentSubtle,
+                contentColor = color.contentAccent,
+                enabled = true,
+                iconRes = R.drawable.ic_footprint_24,
+                onClick = notReady,
+            )
         }
     }
 }
 
-/** 하단 바 좋아요: 아이콘과 숫자를 세로로 묶어 좁은 폭에서도 상태와 규모를 함께 보여 준다. */
+/** 하단 바 아이콘 버튼의 색 묶음. 상태(좋아요 on/off)나 활성 여부에 따라 셋이 함께 바뀐다. */
+private data class BottomBarIconColors(
+    val tint: Color,
+    val border: Color,
+    val background: Color,
+)
+
+/**
+ * 하단 바 아이콘 버튼. 글자 없이 아이콘만 두고, 뜻은 [contentDescription] 이 스크린 리더에 전한다.
+ */
 @Composable
-private fun BottomBarLikeButton(
-    isLiked: Boolean,
-    likeCount: Int,
-    shape: Shape,
+private fun BottomBarIconButton(
+    iconRes: Int,
+    contentDescription: String,
+    colors: BottomBarIconColors,
     onClick: () -> Unit,
 ) {
-    val color = DesignSystemThemeImpl.designSystemColor
     Column(
         modifier =
             Modifier
                 .width(52.dp)
                 .height(56.dp)
-                .clip(shape)
-                .border(1.dp, if (isLiked) color.borderAccent else color.borderDefaultLevel0, shape)
-                .background(if (isLiked) color.bgAccentSubtle else color.bgDefaultLevel1)
+                .clip(BOTTOM_BAR_BUTTON_SHAPE)
+                .border(1.dp, colors.border, BOTTOM_BAR_BUTTON_SHAPE)
+                .background(colors.background)
                 .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         Icon(
-            painter = painterResource(if (isLiked) R.drawable.ic_like_on_24 else R.drawable.ic_like_off_24),
-            contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
-            tint = if (isLiked) color.contentAccent else color.contentDefaultLevel2,
+            painter = painterResource(iconRes),
+            contentDescription = contentDescription,
+            tint = colors.tint,
             modifier = Modifier.size(21.dp),
-        )
-        DsText(
-            text = likeCount.toString(),
-            style = DesignSystemThemeImpl.typeScale.textExtraXS,
-            color = if (isLiked) color.contentAccent else color.contentDefaultLevel2,
         )
     }
 }
 
-/** 하단 액션바의 가로 확장 버튼. 저장·편집·삭제가 같은 형태를 공유한다. */
+/** 하단 액션바의 가로 확장 버튼. 주버튼(따라가기)이 쓴다. */
 @Composable
 private fun RowScope.BottomBarButton(
     text: String,
