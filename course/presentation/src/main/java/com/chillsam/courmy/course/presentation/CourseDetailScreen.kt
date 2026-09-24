@@ -206,7 +206,11 @@ fun CourseDetailScreen(
             }
             Spacer(Modifier.height(14.dp))
         }
-        DetailBottomBar(onCommentClick = { showComments = true })
+        DetailBottomBar(
+            isMine = detail.isMine,
+            onCommentClick = { showComments = true },
+            onForkClick = actions.onForkCourse,
+        )
     }
     if (showComments) {
         CourseCommentSheet(
@@ -1293,11 +1297,17 @@ private val BOTTOM_BAR_BUTTON_SHAPE = RoundedCornerShape(15.dp)
  * 이 화면에서 하려는 일 하나(따라가기)만 가로로 넓은 주버튼으로 세우고, 나머지는 아이콘으로 둔다.
  * 저장·공유·편집·삭제는 상단 ⋮ 로 옮겼다([CourseSettingsMenu]).
  *
- * 복제·따라가기는 **서버 엔드포인트가 없다**. 자리와 모양만 잡아 두고 누르면 준비 중임을
- * 알린다. 비활성으로 두되 탭은 받는다 — 아무 반응이 없으면 고장으로 읽힌다.
+ * 복제는 내 코스에는 두지 않는다([isMine]) — 편집이 있어 같은 결과를 더 짧게 얻는다.
+ *
+ * 따라가기는 아직 **서버 엔드포인트가 없다**. 자리와 모양만 잡아 두고 누르면 준비 중임을
+ * 알린다 — 아무 반응이 없으면 고장으로 읽힌다.
  */
 @Composable
-private fun DetailBottomBar(onCommentClick: () -> Unit) {
+private fun DetailBottomBar(
+    isMine: Boolean,
+    onCommentClick: () -> Unit,
+    onForkClick: () -> Unit,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
     val notReady = { Toast.makeText(context, "준비 중이에요.", Toast.LENGTH_SHORT).show() }
@@ -1330,13 +1340,14 @@ private fun DetailBottomBar(onCommentClick: () -> Unit) {
                 colors = idle,
                 onClick = onCommentClick,
             )
-            BottomBarIconButton(
-                iconRes = R.drawable.ic_copy_24,
-                contentDescription = "코스 복제",
-                // 쓸 수 없는 버튼이라 옅게 둔다. 옆의 댓글과 같은 무게로 보이면 안 된다.
-                colors = idle.copy(tint = color.contentDefaultLevel3),
-                onClick = notReady,
-            )
+            if (!isMine) {
+                BottomBarIconButton(
+                    iconRes = R.drawable.ic_fork_24,
+                    contentDescription = "코스 복제",
+                    colors = idle,
+                    onClick = onForkClick,
+                )
+            }
             BottomBarButton(
                 text = "따라가기",
                 shape = BOTTOM_BAR_BUTTON_SHAPE,
@@ -1450,6 +1461,7 @@ private fun CourseDetailScreenPreview() {
                     onFollowAuthor = {},
                     onShare = {},
                     onSaveCourse = {},
+                    onForkCourse = {},
                     onEditCourse = {},
                     onDeleteCourse = {},
                     onToggleLike = {},

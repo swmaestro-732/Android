@@ -75,6 +75,8 @@ import kotlinx.coroutines.isActive
  * 코스 만들기 화면.
  *
  * [draftCourseId] 가 있으면 그 임시저장 초안을 불러와 이어서 작성한다(임시저장 목록에서 진입).
+ * [forkFromCourseId] 가 있으면 그 코스를 포크한다 — 원본의 장소 구성만 담긴 새 코스로 시작한다
+ * (코스 상세의 포크 버튼에서 진입).
  *
  * 상단바·저장바의 네비게이션([onClose]·[onSaveDraft]·[onSaveCourse])은 대상 화면이 다른 모듈(main)에
  * 있어 course 모듈이 직접 참조할 수 없으므로, 호출부([AppRouteRegistry])에서 콜백으로 주입한다.
@@ -86,6 +88,7 @@ fun CourseCreatePage(
     onSaveDraft: () -> Unit,
     onSaveCourse: (Long) -> Unit,
     draftCourseId: Long? = null,
+    forkFromCourseId: Long? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -95,7 +98,9 @@ fun CourseCreatePage(
     // 어떤 경로로 엔트리가 살아남더라도 "새로 만들기"가 이전 입력을 되살리지 않도록 보장한다.
     // 이 화면에는 하단 탭바가 없고 화면도 세로 고정이라, 편집 도중 컴포지션만 다시 만들어져
     // 입력이 날아갈 경로는 없다.
-    LaunchedEffect(draftCourseId) { viewModel.onIntent(CourseCreateIntent.Load(draftCourseId)) }
+    LaunchedEffect(draftCourseId, forkFromCourseId) {
+        viewModel.onIntent(CourseCreateIntent.Load(draftCourseId, forkFromCourseId))
+    }
 
     // 임시저장은 서버 왕복이라, 저장이 끝난 뒤에 화면을 빠져나간다. 먼저 나가면 ViewModel 이
     // 정리되면서 저장 요청까지 취소돼 초안이 만들어지지 않는다.
@@ -364,6 +369,50 @@ private fun PlaceRecordSection(
     }
 }
 
+/**
+ * 포크로 들어왔음을 알리는 배너.
+ *
+ * 장소가 이미 담긴 채로 열리기 때문에, 안내가 없으면 사용자가 이전 작성분이 남은 것으로 오해한다.
+ * 사진·한마디는 승계하지 않는다는 것도 여기서 함께 알려, 다음 단계에서 빈 카드를 보고 당황하지 않게 한다.
+ *
+ * [keepRuleText] 는 원본 장소 유지 규칙이다. 못 빼는 장소는 삭제 버튼이 아예 없는데, 그 이유를
+ * 카드마다 반복하지 않고 여기 한 곳에서만 말한다.
+ */
+@Composable
+private fun ForkSourceBanner(
+    authorName: String,
+    keepRuleText: String?,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(color.bgAccentSubtle)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        DsText(
+            text = authorName.ifBlank { "다른 사람" } + "의 코스를 복제하는 중이에요",
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentAccent,
+        )
+        DsText(
+            text = "장소 구성만 가져왔어요. 사진과 한마디는 직접 채워 주세요.",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel2,
+        )
+        keepRuleText?.let {
+            DsText(
+                text = it,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+        }
+    }
+}
+
 // 드래그 재정렬(제스처 콜백 + 자동 스크롤 + make-room) 핸들러라 분기가 많다. UI 이벤트 처리 복잡도.
 @Suppress("CyclomaticComplexMethod")
 @Composable
@@ -378,6 +427,13 @@ private fun PlaceSection(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val haptics = LocalHapticFeedback.current
+    if (uiState.isForking) {
+        ForkSourceBanner(
+            authorName = uiState.forkAuthorName,
+            keepRuleText = uiState.forkKeepRuleText,
+        )
+        Spacer(Modifier.height(16.dp))
+    }
     Row(verticalAlignment = Alignment.CenterVertically) {
         CourseSectionHeader(number = CourseCreateUIState.STEP_PLACES, title = "장소 고르기", modifier = Modifier.weight(1f))
         DsText(
@@ -470,6 +526,9 @@ private fun PlaceSection(
                 onPhotosChange = { onIntent(CourseCreateIntent.ChangePlacePhotos(place.id, it)) },
                 // 이 단계는 "무엇을 담고 어떤 순서로 갈지"만 정한다. 기록은 다음 단계에서.
                 showRecord = false,
+                // 포크는 원본 장소를 일정 수 이상 남겨야 한다. 여유가 없으면 그 장소는 끝내 못 빼므로
+                // 삭제 버튼을 아예 감추고, 이유는 상단 포크 배너에서 한 번만 알린다.
+                showRemove = uiState.canRemovePlace(place.id),
                 dragHandleModifier =
                     Modifier.pointerInput(place.id) {
                         detectDragGestures(

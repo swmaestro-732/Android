@@ -2,6 +2,7 @@ package com.chillsam.courmy.course.presentation
 
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
 import com.chillsam.courmy.course.entity.CourseDraftVO
+import com.chillsam.courmy.course.entity.CourseForkSourceVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseVisibility
 
@@ -23,6 +24,14 @@ sealed interface CourseCreateReducerEvent : ReducerEvent {
     data class DraftLoaded(
         val draft: CourseDraftVO,
         val courseId: Long?,
+    ) : CourseCreateReducerEvent
+
+    /**
+     * 포크할 원본을 불러왔다. 장소 구성만 채운 새 코스로 화면을 연다.
+     * 이어쓰는 초안이 아니므로 [DraftLoaded] 와 달리 초안 id 를 남기지 않는다.
+     */
+    data class ForkSourceLoaded(
+        val source: CourseForkSourceVO,
     ) : CourseCreateReducerEvent
 
     data class NameChanged(

@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CompleteCourseUseCase
 import com.chillsam.courmy.course.domain.CreateCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDraftUseCase
+import com.chillsam.courmy.course.domain.GetCourseForkSourceUseCase
 import com.chillsam.courmy.course.domain.GetRecommendedTagsUseCase
 import com.chillsam.courmy.course.domain.GetWalkingMinutesUseCase
 import com.chillsam.courmy.course.domain.SaveDraftUseCase
@@ -14,7 +15,9 @@ import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CoursePlaceCoordinate
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -25,6 +28,7 @@ class CourseCreateViewModel
     @Inject
     constructor(
         private val getCourseDraftUseCase: GetCourseDraftUseCase,
+        private val getCourseForkSourceUseCase: GetCourseForkSourceUseCase,
         private val saveDraftUseCase: SaveDraftUseCase,
         private val completeCourseUseCase: CompleteCourseUseCase,
         private val createCourseUseCase: CreateCourseUseCase,
@@ -44,7 +48,7 @@ class CourseCreateViewModel
         override fun onIntent(intent: CourseCreateIntent) {
             when (intent) {
                 is CourseCreateIntent.Load -> {
-                    load(intent.draftCourseId)
+                    load(intent.draftCourseId, intent.forkFromCourseId)
                 }
 
                 is CourseCreateIntent.ChangeName -> {
@@ -100,6 +104,9 @@ class CourseCreateViewModel
                 }
 
                 is CourseCreateIntent.RemovePlace -> {
+                    // 포크는 원본 장소를 최소 유지 수 아래로 뺄 수 없다(서버가 400 으로 거절한다).
+                    // 카드의 삭제 버튼도 비활성이지만, 상태 쪽에서도 막아 경로가 하나 더 생기지 않게 한다.
+                    if (!currentState.canRemovePlace(intent.placeId)) return
                     // 장소가 빠지면 앞뒤 구간이 새로 이어지므로 도보 시간을 다시 구한다.
                     dispatch(
                         CourseCreateReducerEvent.PlacesChanged(
@@ -171,7 +178,16 @@ class CourseCreateViewModel
 
                 CourseCreateReducerEvent.LoadStarted -> {
                     // 새 초안을 읽는 동안 이전 초안 id를 남기면 실패 뒤 저장이 옛 초안을 덮어쓴다.
-                    state.copy(isLoading = true, draftCourseId = null, errorMessage = null)
+                    // 포크 출처도 같은 이유로 지운다 — 남겨 두면 로드가 실패했을 때 이전 진입의
+                    // 원본 id·장소 집합이 살아남아, 엉뚱한 코스의 포크로 저장되고 유지 가드까지 따라온다.
+                    state.copy(
+                        isLoading = true,
+                        draftCourseId = null,
+                        forkFromCourseId = null,
+                        forkOriginPlaceIds = persistentSetOf(),
+                        forkAuthorName = "",
+                        errorMessage = null,
+                    )
                 }
 
                 is CourseCreateReducerEvent.DraftLoaded -> {
@@ -192,6 +208,21 @@ class CourseCreateViewModel
                         places = event.draft.places.toImmutableList(),
                         visibility = event.draft.visibility,
                         draftCourseId = event.courseId,
+                    )
+                }
+
+                is CourseCreateReducerEvent.ForkSourceLoaded -> {
+                    // DraftLoaded 와 같은 이유로 빈 상태에서 새로 만든다. 포크는 늘 새 코스라
+                    // draftCourseId 를 남기지 않는다 — 남기면 임시저장이 원본 작성자의 초안을 건드린다.
+                    CourseCreateUIState.empty.copy(
+                        isLoading = false,
+                        places = event.source.places.toImmutableList(),
+                        forkFromCourseId = event.source.courseId,
+                        forkOriginPlaceIds =
+                            event.source.places
+                                .mapTo(mutableSetOf()) { it.id }
+                                .toImmutableSet(),
+                        forkAuthorName = event.source.authorName,
                     )
                 }
 
@@ -392,32 +423,60 @@ class CourseCreateViewModel
         }
 
         /**
-         * 화면 진입. [draftCourseId] 가 없으면 새 코스라 서버에 물어볼 것이 없어 빈 초안으로 바로 연다
-         * (그래야 새로 만들기가 네트워크 상태와 무관하게 즉시 열린다).
+         * 화면 진입 데이터 적재. 세 갈래다 — 빈 코스(인자 없음) · 임시저장 이어쓰기 · 포크.
+         *
+         * 빈 코스는 서버에 물어볼 것이 없어 바로 연다(새로 만들기가 네트워크 상태와 무관하게 즉시 열린다).
+         * 나머지 둘은 읽어 오는 대상만 다르고 스피너·실패 처리가 같아 한 경로로 묶는다.
+         * [forkFromCourseId] 가 우선이다 — 포크는 늘 새 코스라 이어쓸 초안이 있을 수 없다.
          */
-        private fun load(draftCourseId: Long?) {
+        private fun load(
+            draftCourseId: Long?,
+            forkFromCourseId: Long?,
+        ) {
             loadJob?.cancel()
-            if (draftCourseId == null) {
+            val loadEvent: (suspend () -> CourseCreateReducerEvent)? =
+                when {
+                    forkFromCourseId != null -> {
+                        { CourseCreateReducerEvent.ForkSourceLoaded(getCourseForkSourceUseCase(forkFromCourseId)) }
+                    }
+
+                    draftCourseId != null -> {
+                        { CourseCreateReducerEvent.DraftLoaded(getCourseDraftUseCase(draftCourseId), draftCourseId) }
+                    }
+
+                    else -> {
+                        null
+                    }
+                }
+            if (loadEvent == null) {
                 dispatch(CourseCreateReducerEvent.DraftLoaded(CourseDraftVO.empty, courseId = null))
                 return
             }
             dispatch(CourseCreateReducerEvent.LoadStarted)
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getCourseDraftUseCase(draftCourseId) }
-                        .onSuccess {
-                            dispatch(CourseCreateReducerEvent.DraftLoaded(it, courseId = draftCourseId))
-                            // 이어 쓰는 초안에도 장소가 들어 있어 도보 시간을 채워야 한다.
+                    runCatching { loadEvent() }
+                        .onSuccess { event ->
+                            dispatch(event)
+                            // 이어 쓰는 초안에도, 포크한 원본에도 장소가 들어 있어 도보 시간을 채워야 한다.
                             refreshWalkingMinutes()
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
-                            // 스피너를 걷지 않으면 화면이 영구 정지한다(초안 없이도 작성은 가능하다).
+                            // 스피너를 걷지 않으면 화면이 영구 정지한다(불러오지 못해도 작성은 가능하다).
                             //
-                            // 이때 draftCourseId 를 채우지 않는다. 못 불러온 초안에 이어서 임시저장하면
-                            // 빈 내용으로 PATCH 가 나가 원래 초안이 지워진다. 새 초안이 하나 더 생기는 쪽이
-                            // 사용자가 되돌릴 수 있는 실패다.
-                            Log.w(TAG, "임시저장 초안 로드 실패: courseId=$draftCourseId", e)
-                            dispatch(CourseCreateReducerEvent.LoadFailed("임시저장한 내용을 불러오지 못했어요."))
+                            // 이때 초안 id·포크 원본 id 를 **채우지 않는다**. 못 불러온 초안에 이어서 임시저장하면
+                            // 빈 내용으로 PATCH 가 나가 원래 초안이 지워지고, 원본을 못 읽은 포크로 저장하면
+                            // 서버가 어차피 404 로 거절한다. 둘 다 평범한 새 코스로 이어 쓰게 두는 쪽이 덜 잃는다.
+                            Log.w(TAG, "작성 화면 진입 로드 실패: draftId=$draftCourseId, forkFromId=$forkFromCourseId", e)
+                            dispatch(
+                                CourseCreateReducerEvent.LoadFailed(
+                                    if (forkFromCourseId != null) {
+                                        "복제할 코스를 불러오지 못했어요."
+                                    } else {
+                                        "임시저장한 내용을 불러오지 못했어요."
+                                    },
+                                ),
+                            )
                         }
                 }
         }
@@ -480,6 +539,8 @@ private fun CourseCreateUIState.toDraftVO(): CourseDraftVO =
         visibility = visibility,
         // 대표 사진은 한 장만 쓴다. 로컬 URI 는 UseCase 가 업로드해 공개 URL 로 바꾼다.
         thumbnailUrl = thumbnailPhotos.firstOrNull().orEmpty(),
+        // 포크면 원본 id 를 실어 서버가 출처를 남기게 한다. 직접 만든 코스면 null 이다.
+        forkedFromId = forkFromCourseId,
     )
 
 /** 걸어서 갈 수 없는 구간(서버가 음수로 알려 준다). */

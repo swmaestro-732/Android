@@ -188,13 +188,18 @@ val appRoutes: List<AppRoute> =
         ),
         // 코스 만들기: course 모듈의 실제 MVI 화면(SCRUM-234).
         // 상단바·저장바 네비게이션은 대상 화면(홈/코스 완성)이 main 모듈이라 여기서 주입한다.
+        //
+        // 이 화면은 세 가지로 열린다 — 빈 코스(인자 없음), 임시저장 이어쓰기(draftId),
+        // 남의 코스 포크(forkFromId). 어느 쪽인지는 라우트 인자로만 구분되므로 여기서 읽어 넘긴다.
         AppRoute(
             path = CourseCreateRoute.PATH,
-            render = {
+            render = { args ->
                 val navigationHelper = LocalNavigationHelper.current
                 val viewModel = hiltViewModel<CourseCreateViewModel>()
                 CourseCreatePage(
                     viewModel = viewModel,
+                    draftCourseId = args[CourseCreateRoute.ARG_DRAFT_ID]?.toLongOrNull(),
+                    forkFromCourseId = args[CourseCreateRoute.ARG_FORK_FROM_ID]?.toLongOrNull(),
                     onClose = { navigationHelper.navigateToBack() },
                     onSaveDraft = {
                         // 임시저장하고 작성 화면을 빠져나온다(들어온 곳으로 되돌아간다).
@@ -310,6 +315,11 @@ val appRoutes: List<AppRoute> =
                             onShare = {
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
                                 context.copyShareLink(CourseDetailRoute.route(courseId))
+                            },
+                            onForkCourse = {
+                                args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull()?.let { courseId ->
+                                    navigationHelper.navigateByRoute(CourseCreateRoute.forkRoute(courseId))
+                                }
                             },
                             onEditCourse = {
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()

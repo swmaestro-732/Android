@@ -33,6 +33,10 @@ private const val NOTE_MAX_LENGTH = 40
  * 코스 만들기는 장소를 두 단계로 나눠 다룬다. Step 1(장소 고르기)은 헤더만 보여 목록을 짧게 유지하고,
  * Step 2(장소별 기록)에서 [showRecord] 로 한마디·사진 입력을 편다.
  * [showDragHandle] 은 순서 변경이 가능한 Step 1 에서만 켠다.
+ *
+ * [showRemove] 가 false 면 삭제 버튼을 그리지 않는다. 포크가 원본 장소를 일정 수 이상 유지해야 해서
+ * **끝내 뺄 수 없는** 장소에 쓴다 — 흐린 버튼을 남겨 두면 한 번도 누를 수 없는 어포던스가 되므로,
+ * 버튼을 치우고 이유는 화면 상단 배너에서 한 번만 알린다.
  */
 @Composable
 fun CoursePlaceCard(
@@ -44,6 +48,7 @@ fun CoursePlaceCard(
     dragHandleModifier: Modifier = Modifier,
     showRecord: Boolean = true,
     showDragHandle: Boolean = true,
+    showRemove: Boolean = true,
 ) {
     val shape = RoundedCornerShape(16.dp)
     val hasNote = place.note.isNotEmpty()
@@ -58,6 +63,7 @@ fun CoursePlaceCard(
             onRemove = onRemove,
             dragHandleModifier = dragHandleModifier,
             showDragHandle = showDragHandle,
+            showRemove = showRemove,
         )
         if (!showRecord) return@Column
         // 메모 유무와 무관하게 동일한 컴포저블 트리를 유지하고 배경색만 토글해, 입력 중 포커스가 끊기지 않게 한다.
@@ -90,6 +96,7 @@ private fun PlaceHeader(
     onRemove: () -> Unit,
     dragHandleModifier: Modifier = Modifier,
     showDragHandle: Boolean = true,
+    showRemove: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(10.dp),
@@ -123,20 +130,22 @@ private fun PlaceHeader(
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
             )
         }
-        Box(
-            modifier =
-                Modifier
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, CircleShape)
-                    .clickable(onClick = onRemove),
-            contentAlignment = Alignment.Center,
-        ) {
-            DsText(
-                text = "−",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
-            )
+        if (showRemove) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .border(1.dp, DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0, CircleShape)
+                        .clickable(onClick = onRemove),
+                contentAlignment = Alignment.Center,
+            ) {
+                DsText(
+                    text = "−",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+                )
+            }
         }
     }
 }

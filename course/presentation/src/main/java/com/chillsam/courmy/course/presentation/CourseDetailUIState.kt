@@ -16,8 +16,10 @@ data class CourseDetailUIState(
     val isFollowing: Boolean = false,
     /** 저장 실패처럼 토스트로 한 번 알리고 지우는 일시 오류. */
     val actionErrorMessage: String? = null,
-    /** 비로그인 상태로 팔로우를 눌러 로그인 안내를 띄워야 하는 상태. */
+    /** 비로그인 상태로 팔로우·포크를 눌러 로그인 안내를 띄워야 하는 상태. */
     val needsLogin: Boolean = false,
+    /** 포크 진입이 확정돼 코스 만들기로 이동해도 되는 상태. 이동을 끝내면 지운다. */
+    val isForkRequested: Boolean = false,
     val isDeleting: Boolean = false,
     /** 삭제가 끝나 화면을 닫아도 되는 상태. */
     val isDeleted: Boolean = false,

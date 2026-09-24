@@ -16,6 +16,10 @@ data class CreateCourseRequest(
     val thumbnailUrl: String? = null,
     val tags: List<String> = emptyList(),
     val visibility: String,
+    /**
+     * 포크 원본 코스 id. 남의 코스를 포크해 만든 코스면 채워 보내고, 직접 만든 코스면 null 이다.
+     * 서버는 이 값을 `courses.forked_from_id` 로 저장해 출처를 추적하며, 원본이 없으면 404 로 거절한다.
+     */
     val forkedFromId: Long? = null,
     val places: List<CreateCoursePlaceRequest> = emptyList(),
     /**
@@ -73,6 +77,9 @@ data class CourseIdDTO(
  * 도보 분은 "이 장소 → 다음 장소" 구간 값이라 **마지막 장소는 항상 null** 로 보낸다. 중간 장소가
  * 제외되면 남은 이웃끼리의 실제 도보 시간과 달라지므로, 그 경우에도 마지막만은 비워 서버가 없는
  * 구간을 만들지 않게 한다.
+ *
+ * 포크로 시작한 초안이면 [CourseDraftVO.forkedFromId] 가 그대로 실려 서버가 출처
+ * (`courses.forked_from_id`)를 남긴다. 원본이 없으면 서버가 404 로 거절한다.
  */
 fun CourseDraftVO.toCreateRequest(
     thumbnailUrl: String?,
@@ -84,6 +91,7 @@ fun CourseDraftVO.toCreateRequest(
         description = description.ifBlank { null },
         tags = tags,
         visibility = visibility.name,
+        forkedFromId = forkedFromId,
         isPublished = published,
         places =
             places

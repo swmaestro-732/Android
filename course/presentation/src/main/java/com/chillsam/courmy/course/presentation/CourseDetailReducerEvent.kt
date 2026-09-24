@@ -58,6 +58,11 @@ sealed interface CourseDetailReducerEvent : ReducerEvent {
 
     data object LoginRequiredConsumed : CourseDetailReducerEvent
 
+    /** 포크 진입이 확정됐다(로그인 확인 통과). 화면이 이 값을 보고 코스 만들기로 이동한다. */
+    data object ForkRequested : CourseDetailReducerEvent
+
+    data object ForkRequestConsumed : CourseDetailReducerEvent
+
     data object DeleteStarted : CourseDetailReducerEvent
 
     /** 삭제 확정 — 화면이 이 값을 보고 이전 화면으로 돌아간다. */

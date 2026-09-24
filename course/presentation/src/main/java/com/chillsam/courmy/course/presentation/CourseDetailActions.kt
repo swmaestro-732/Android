@@ -11,6 +11,8 @@ data class CourseDetailActions(
     val onFollowAuthor: () -> Unit,
     val onShare: () -> Unit,
     val onSaveCourse: () -> Unit,
+    /** 이 코스를 포크해 코스 만들기로 간다. 내 코스에는 노출하지 않는다. */
+    val onForkCourse: () -> Unit,
     val onEditCourse: () -> Unit,
     val onDeleteCourse: () -> Unit,
     val onToggleLike: () -> Unit,
@@ -26,6 +28,7 @@ data class CourseDetailPageActions(
     val onAuthorClick: (String) -> Unit,
     val onMyProfileClick: () -> Unit,
     val onShare: () -> Unit,
+    val onForkCourse: () -> Unit,
     val onEditCourse: () -> Unit,
     val onLogin: () -> Unit,
     val onSeeAllReviews: () -> Unit,

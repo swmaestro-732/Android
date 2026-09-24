@@ -75,6 +75,20 @@ class CourseDetailViewModel
                     handleSocialIntent(intent)
                 }
 
+                CourseDetailIntent.ForkCourse -> {
+                    // 팔로우와 같은 이유로 누르기 전에 가린다 — 포크는 장소를 고르고 사진까지 다 올린
+                    // 뒤에야 저장이 401 로 막히므로, 그때 알리면 작성한 것을 통째로 잃는다.
+                    if (isLoggedInUseCase()) {
+                        dispatch(CourseDetailReducerEvent.ForkRequested)
+                    } else {
+                        dispatch(CourseDetailReducerEvent.LoginRequired)
+                    }
+                }
+
+                CourseDetailIntent.ConsumeForkRequest -> {
+                    dispatch(CourseDetailReducerEvent.ForkRequestConsumed)
+                }
+
                 CourseDetailIntent.Delete -> {
                     delete()
                 }
@@ -119,6 +133,9 @@ class CourseDetailViewModel
                 }
             }
 
+        // 이미 reduce 에서 로드/액션으로 한 번 쪼갠 뒤다. 남은 복잡도는 이벤트 종류 수 그 자체이고
+        // 각 갈래는 copy 한 줄이라, 더 쪼개면 상태 변이가 흩어져 MVI 의 "한 곳에서만 변이" 가 흐려진다.
+        @Suppress("CyclomaticComplexMethod")
         private fun reduceAction(
             state: CourseDetailUIState,
             event: CourseDetailReducerEvent,
@@ -161,6 +178,14 @@ class CourseDetailViewModel
 
                 CourseDetailReducerEvent.LoginRequiredConsumed -> {
                     state.copy(needsLogin = false)
+                }
+
+                CourseDetailReducerEvent.ForkRequested -> {
+                    state.copy(isForkRequested = true)
+                }
+
+                CourseDetailReducerEvent.ForkRequestConsumed -> {
+                    state.copy(isForkRequested = false)
                 }
 
                 CourseDetailReducerEvent.DeleteStarted -> {

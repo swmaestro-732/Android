@@ -1,10 +1,13 @@
 package com.chillsam.courmy.course.presentation
 
 import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.course.entity.CourseForkRule
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseVisibility
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 
 /**
  * 코스 만들기 화면 상태(Figma FS-34). 컬렉션은 Compose 안정성을 위해 Immutable* 사용.
@@ -36,7 +39,47 @@ data class CourseCreateUIState(
     /** 임시저장이 끝나면 true. 화면을 빠져나가는 신호. */
     val draftSaved: Boolean = false,
     val errorMessage: String? = null,
+    /**
+     * 포크 중이면 원본 코스 id. null 이면 평범한 코스 만들기다.
+     * 저장 요청에 `forkedFromId` 로 실려 서버가 출처를 남긴다.
+     */
+    val forkFromCourseId: Long? = null,
+    /** 포크 원본이 담고 있던 장소 id 들. 이 중 [requiredKeptOriginPlaceCount] 곳은 반드시 남겨야 한다. */
+    val forkOriginPlaceIds: ImmutableSet<String> = persistentSetOf(),
+    /** 포크 원본 작성자 이름. 안내 배너 문구에만 쓴다. */
+    val forkAuthorName: String = "",
 ) : UiState {
+    /** 남의 코스를 포크해 작성 중인지. */
+    val isForking: Boolean
+        get() = forkFromCourseId != null
+
+    /** 원본에서 반드시 그대로 남겨야 하는 장소 수([CourseForkRule]). 포크가 아니면 0. */
+    val requiredKeptOriginPlaceCount: Int
+        get() = CourseForkRule.requiredKeptPlaceCount(forkOriginPlaceIds.size)
+
+    /** 지금 코스에 남아 있는 원본 장소 수. */
+    val keptOriginPlaceCount: Int
+        get() = places.count { it.id in forkOriginPlaceIds }
+
+    /**
+     * [placeId] 를 코스에서 뺄 수 있는지.
+     *
+     * 포크가 아니면 언제나 뺄 수 있고, 포크여도 **내가 추가한 장소**는 자유롭게 뺀다.
+     * 원본 장소만, 최소 유지 수 아래로 내려가는 삭제를 막는다(서버가 400 으로 거절하는 조건과 같다).
+     */
+    fun canRemovePlace(placeId: String): Boolean =
+        placeId !in forkOriginPlaceIds || keptOriginPlaceCount > requiredKeptOriginPlaceCount
+
+    /**
+     * 포크 배너에 붙일 유지 규칙 안내. 포크가 아니면 null.
+     *
+     * 막힌 카드마다 띄우지 않고 배너 한 곳에만 둔다 — 원본이 4곳 이하면 처음부터 한 곳도 뺄 수 없어
+     * 같은 문장이 카드 수만큼 반복되기 때문이다. 못 빼는 장소는 삭제 버튼 자체를 감춰서 알린다.
+     * 여유가 있든 없든 규칙은 같으므로 문구도 바뀌지 않는다(상태에 따라 깜빡이지 않는다).
+     */
+    val forkKeepRuleText: String?
+        get() = "원본 장소는 ${requiredKeptOriginPlaceCount}곳 이상 유지해야 해요".takeIf { isForking }
+
     /**
      * 코스 저장 가능 최소 조건: 코스 이름 有 · 장소 [MIN_PLACES]곳 이상 · 각 장소마다 사진 1장 이상.
      * 미충족 시 저장 버튼을 비활성화한다.
