@@ -47,6 +47,7 @@ class CourseDetailViewModel
                     // 같은 코스로 재구성되면 다시 부르지 않는다(화면 회전·재진입).
                     if (courseId == intent.courseId) return
                     courseId = intent.courseId
+                    dispatch(CourseDetailReducerEvent.SocialStateReset)
                     load()
                 }
 
@@ -60,6 +61,18 @@ class CourseDetailViewModel
 
                 CourseDetailIntent.ToggleFollowAuthor -> {
                     toggleFollowAuthor()
+                }
+
+                CourseDetailIntent.ToggleLike -> {
+                    handleSocialIntent(intent)
+                }
+
+                is CourseDetailIntent.ChangeCommentDraft -> {
+                    dispatch(CourseDetailReducerEvent.CommentDraftChanged(intent.value.take(MAX_COMMENT_LENGTH)))
+                }
+
+                CourseDetailIntent.SubmitComment -> {
+                    handleSocialIntent(intent)
                 }
 
                 CourseDetailIntent.Delete -> {
@@ -91,6 +104,14 @@ class CourseDetailViewModel
 
                 is CourseDetailReducerEvent.Failed -> {
                     state.copy(isLoading = false, errorMessage = event.message)
+                }
+
+                CourseDetailReducerEvent.LikeToggled,
+                CourseDetailReducerEvent.SocialStateReset,
+                is CourseDetailReducerEvent.CommentDraftChanged,
+                is CourseDetailReducerEvent.CommentAdded,
+                -> {
+                    reduceSocial(state, event)
                 }
 
                 else -> {
@@ -158,6 +179,79 @@ class CourseDetailViewModel
                     state
                 }
             }
+
+        private fun reduceSocial(
+            state: CourseDetailUIState,
+            event: CourseDetailReducerEvent,
+        ): CourseDetailUIState =
+            when (event) {
+                CourseDetailReducerEvent.LikeToggled -> {
+                    val liked = !state.social.isLiked
+                    state.copy(
+                        social =
+                            state.social.copy(
+                                isLiked = liked,
+                                likeCount =
+                                    (state.social.likeCount + if (liked) 1 else -1)
+                                        .coerceAtLeast(0),
+                            ),
+                    )
+                }
+
+                CourseDetailReducerEvent.SocialStateReset -> {
+                    state.copy(social = CourseSocialUIState())
+                }
+
+                is CourseDetailReducerEvent.CommentDraftChanged -> {
+                    state.copy(social = state.social.copy(commentDraft = event.value))
+                }
+
+                is CourseDetailReducerEvent.CommentAdded -> {
+                    state.copy(
+                        social =
+                            state.social.copy(
+                                commentDraft = "",
+                                comments = listOf(event.comment) + state.social.comments,
+                            ),
+                    )
+                }
+
+                else -> {
+                    state
+                }
+            }
+
+        private fun handleSocialIntent(intent: CourseDetailIntent) {
+            if (currentState.detail == null) return
+            if (!isLoggedInUseCase()) {
+                dispatch(CourseDetailReducerEvent.LoginRequired)
+                return
+            }
+            when (intent) {
+                CourseDetailIntent.ToggleLike -> {
+                    dispatch(CourseDetailReducerEvent.LikeToggled)
+                }
+
+                CourseDetailIntent.SubmitComment -> {
+                    val body = currentState.social.commentDraft.trim()
+                    if (body.isEmpty()) return
+                    dispatch(
+                        CourseDetailReducerEvent.CommentAdded(
+                            CourseCommentItem(
+                                id = nextLocalCommentId++,
+                                author = "나",
+                                body = body,
+                                dateText = "방금 전",
+                            ),
+                        ),
+                    )
+                }
+
+                else -> {
+                    Unit
+                }
+            }
+        }
 
         /**
          * 작성자 팔로우 토글. 저장과 같은 이유로 서버가 확정한 뒤에 상태를 바꾼다.
@@ -275,5 +369,8 @@ class CourseDetailViewModel
 
         private companion object {
             const val TAG = "CourseDetail"
+            const val MAX_COMMENT_LENGTH = 300
         }
+
+        private var nextLocalCommentId: Long = 1L
     }

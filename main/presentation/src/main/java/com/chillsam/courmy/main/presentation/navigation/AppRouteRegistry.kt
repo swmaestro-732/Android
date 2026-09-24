@@ -14,6 +14,8 @@ import com.chillsam.courmy.course.presentation.CourseDetailPageActions
 import com.chillsam.courmy.course.presentation.CourseDetailViewModel
 import com.chillsam.courmy.course.presentation.CourseEditPage
 import com.chillsam.courmy.course.presentation.CourseEditViewModel
+import com.chillsam.courmy.course.presentation.CourseReviewListPage
+import com.chillsam.courmy.course.presentation.CourseReviewListViewModel
 import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
@@ -46,6 +48,7 @@ import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRou
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
 import com.chillsam.courmy.course.domain.CourseEditPage as CourseEditRoute
+import com.chillsam.courmy.course.domain.CourseReviewListPage as CourseReviewListRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
@@ -313,7 +316,22 @@ val appRoutes: List<AppRoute> =
                                 navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
                             },
                             onLogin = { navigationHelper.navigateTo(LoginRoute) },
+                            onSeeAllReviews = {
+                                val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
+                                navigationHelper.navigateByRoute(CourseReviewListRoute.route(courseId))
+                            },
                         ),
+                )
+            },
+        ),
+        AppRoute(
+            path = CourseReviewListRoute.PATH,
+            render = { args ->
+                val navigationHelper = LocalNavigationHelper.current
+                CourseReviewListPage(
+                    viewModel = hiltViewModel<CourseReviewListViewModel>(),
+                    courseId = args[CourseReviewListRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
+                    onBack = { navigationHelper.navigateToBack() },
                 )
             },
         ),

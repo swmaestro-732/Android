@@ -8,4 +8,6 @@ class CourseDetailDataSource(
 ) : BaseRemoteDataSource() {
     suspend fun getCourseDetail(courseId: Long): CourseDetailEnvelope =
         checkResponse(apiService.getCourseDetail(courseId))
+            // 릴리스 변형에서는 no-op 이다 — [CourseDetailReviewFallback] 참고.
+            .let(CourseDetailReviewFallback::applyTo)
 }

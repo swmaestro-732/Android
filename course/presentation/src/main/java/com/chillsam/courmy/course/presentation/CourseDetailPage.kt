@@ -66,6 +66,7 @@ fun CourseDetailPage(
                 detail = detail,
                 isSaving = uiState.isSaving,
                 isDeleting = uiState.isDeleting,
+                social = uiState.social,
                 actions =
                     CourseDetailActions(
                         onBack = actions.onBack,
@@ -86,6 +87,10 @@ fun CourseDetailPage(
                         onSaveCourse = { viewModel.onIntent(CourseDetailIntent.ToggleSave) },
                         onEditCourse = actions.onEditCourse,
                         onDeleteCourse = { showDeleteConfirm = true },
+                        onToggleLike = { viewModel.onIntent(CourseDetailIntent.ToggleLike) },
+                        onCommentChange = { viewModel.onIntent(CourseDetailIntent.ChangeCommentDraft(it)) },
+                        onSubmitComment = { viewModel.onIntent(CourseDetailIntent.SubmitComment) },
+                        onSeeAllReviews = actions.onSeeAllReviews,
                     ),
                 modifier = modifier,
             )

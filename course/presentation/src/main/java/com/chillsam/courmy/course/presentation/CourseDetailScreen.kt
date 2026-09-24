@@ -88,6 +88,7 @@ fun CourseDetailScreen(
     detail: CourseDetailVO,
     isSaving: Boolean,
     isDeleting: Boolean,
+    social: CourseSocialUIState,
     actions: CourseDetailActions,
     modifier: Modifier = Modifier,
 ) {
@@ -173,6 +174,13 @@ fun CourseDetailScreen(
                         placeDetailViewModel.open(placeId = place.placeId)
                     },
                 )
+                // Figma FS-11 에서 리뷰는 장소·동선을 다 본 뒤(= 코스 자체 정보의 끝) 오는 남의 평가다.
+                CourseReviewSection(detail = detail, onSeeAll = actions.onSeeAllReviews)
+                CourseSocialSection(
+                    state = social,
+                    onCommentChange = actions.onCommentChange,
+                    onSubmitComment = actions.onSubmitComment,
+                )
             }
             if (LayoutVariants.AUTHOR_AT_BOTTOM) {
                 // 아래 배치에서는 위쪽으로 본문과 끊고 아래는 스크롤 끝까지 열어 둔다.
@@ -190,6 +198,8 @@ fun CourseDetailScreen(
             isSaved = detail.isSaved,
             isSaving = isSaving,
             isDeleting = isDeleting,
+            isLiked = social.isLiked,
+            likeCount = social.likeCount,
             actions = actions,
         )
     }
@@ -353,7 +363,7 @@ private fun HeroCircleButton(
  *   자리에만 넘긴다 — 코스 커버·장소 사진은 회색 자리만 두는 편이 낫다.
  */
 @Composable
-private fun CourseImage(
+internal fun CourseImage(
     url: String,
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(14.dp),
@@ -1135,6 +1145,8 @@ private fun DetailBottomBar(
     isSaved: Boolean,
     isSaving: Boolean,
     isDeleting: Boolean,
+    isLiked: Boolean,
+    likeCount: Int,
     actions: CourseDetailActions,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -1156,6 +1168,12 @@ private fun DetailBottomBar(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val buttonShape = RoundedCornerShape(15.dp)
+            BottomBarLikeButton(
+                isLiked = isLiked,
+                likeCount = likeCount,
+                shape = buttonShape,
+                onClick = actions.onToggleLike,
+            )
             if (FeatureFlags.SHARE_ENABLED) {
                 Box(
                     modifier =
@@ -1211,6 +1229,41 @@ private fun DetailBottomBar(
     }
 }
 
+/** 하단 바 좋아요: 아이콘과 숫자를 세로로 묶어 좁은 폭에서도 상태와 규모를 함께 보여 준다. */
+@Composable
+private fun BottomBarLikeButton(
+    isLiked: Boolean,
+    likeCount: Int,
+    shape: Shape,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier =
+            Modifier
+                .width(52.dp)
+                .height(56.dp)
+                .clip(shape)
+                .border(1.dp, if (isLiked) color.borderAccent else color.borderDefaultLevel0, shape)
+                .background(if (isLiked) color.bgAccentSubtle else color.bgDefaultLevel1)
+                .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            painter = painterResource(if (isLiked) R.drawable.ic_like_on_24 else R.drawable.ic_like_off_24),
+            contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
+            tint = if (isLiked) color.contentAccent else color.contentDefaultLevel2,
+            modifier = Modifier.size(21.dp),
+        )
+        DsText(
+            text = likeCount.toString(),
+            style = DesignSystemThemeImpl.typeScale.textExtraXS,
+            color = if (isLiked) color.contentAccent else color.contentDefaultLevel2,
+        )
+    }
+}
+
 /** 하단 액션바의 가로 확장 버튼. 저장·편집·삭제가 같은 형태를 공유한다. */
 @Composable
 private fun RowScope.BottomBarButton(
@@ -1260,6 +1313,12 @@ private fun CourseDetailScreenPreview() {
             detail = courseDetailSample,
             isSaving = false,
             isDeleting = false,
+            social =
+                CourseSocialUIState(
+                    isLiked = true,
+                    likeCount = 128,
+                    comments = listOf(CourseCommentItem(1L, "코스러버", "주말에 꼭 가보고 싶어요!", "방금 전")),
+                ),
             actions =
                 CourseDetailActions(
                     onBack = {},
@@ -1269,6 +1328,10 @@ private fun CourseDetailScreenPreview() {
                     onSaveCourse = {},
                     onEditCourse = {},
                     onDeleteCourse = {},
+                    onToggleLike = {},
+                    onCommentChange = {},
+                    onSubmitComment = {},
+                    onSeeAllReviews = {},
                 ),
         )
     }
