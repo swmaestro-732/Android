@@ -43,7 +43,6 @@ import com.chillsam.courmy.main.domain.my.FollowListPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
-import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
@@ -52,7 +51,9 @@ import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
-import com.chillsam.courmy.main.presentation.profile.ProfileSectionLabel
+import com.chillsam.courmy.main.presentation.profile.ProfileTabItem
+import com.chillsam.courmy.main.presentation.profile.ProfileTabRow
+import kotlinx.collections.immutable.toImmutableList
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
@@ -76,8 +77,9 @@ fun MyPage(
         profile != null -> {
             MyContent(
                 profile = profile,
-                courses = uiState.courses,
+                uiState = uiState,
                 onLoadMore = { viewModel.onIntent(MyProfileIntent.LoadMore) },
+                onSelectTab = { viewModel.onIntent(MyProfileIntent.SelectTab(it)) },
                 modifier = modifier,
             )
         }
@@ -141,12 +143,40 @@ private fun CreateFirstCourseCard(onClick: () -> Unit) {
     }
 }
 
+/** 계획이 없을 때의 안내. 계획을 세우는 자리가 아직 없어 여기서 진입점을 주지 않는다. */
+@Composable
+private fun EmptyPlanCourses() {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp)
+                .height(EmptyCourseCardHeight),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        DsText(
+            text = "아직 세운 계획이 없어요",
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel2,
+        )
+        Spacer(Modifier.height(4.dp))
+        DsText(
+            text = "가 보고 싶은 곳을 모아 계획을 세워 보세요",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel3,
+        )
+    }
+}
+
 /** 프로필 로드 성공 시 실제 마이 화면(상단 프로필, 코스 그리드, 하단 탭바). */
 @Composable
 private fun MyContent(
     profile: MyProfileVO,
-    courses: List<ProfileCourseVO>,
+    uiState: MyProfileUIState,
     onLoadMore: () -> Unit,
+    onSelectTab: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navigationHelper = LocalNavigationHelper.current
@@ -197,19 +227,50 @@ private fun MyContent(
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
-            ProfileSectionLabel(text = "내 코스 ${profile.myCourseCount}")
-            if (courses.isEmpty()) {
+            // 탭 순서는 ProfileTab 선언 순서를 그대로 따른다(계획 → 코스).
+            ProfileTabRow(
+                tabs =
+                    ProfileTab.entries
+                        .map { tab ->
+                            val count =
+                                when (tab) {
+                                    ProfileTab.PLAN -> uiState.planCourses.size
+
+                                    // 헤더 통계와 같은 숫자를 써야 해서 목록 크기가 아니라 서버가 준 값을 쓴다
+                                    // (코스는 페이징이라 지금 받아 둔 건 일부일 수 있다).
+                                    ProfileTab.COURSES -> profile.myCourseCount
+                                }
+                            ProfileTabItem(tab.label(), count)
+                        }.toImmutableList(),
+                selectedIndex = ProfileTab.entries.indexOf(uiState.selectedTab),
+                onSelect = { index -> onSelectTab(ProfileTab.entries[index]) },
+            )
+            val visibleCourses = uiState.visibleCourses
+            when {
+                visibleCourses.isNotEmpty() -> {
+                    ProfileCoursesGrid(
+                        courses = visibleCourses,
+                        // 계획은 아직 mock 이라 서버에 없는 id 다. 상세를 열면 실패하므로 눌러도 넘기지 않는다.
+                        // TODO(SCRUM-계획API): 계획 목록 API 가 붙으면 코스와 똑같이 상세로 보낸다.
+                        onCourseClick = { courseId ->
+                            if (uiState.selectedTab == ProfileTab.COURSES) {
+                                navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                            }
+                        },
+                    )
+                }
+
                 // 코스가 없으면 빈 그리드 대신 만들러 갈 자리를 둔다.
-                CreateFirstCourseCard(
-                    onClick = { navigationHelper.navigateTo(CourseCreatePage) },
-                )
-            } else {
-                ProfileCoursesGrid(
-                    courses = courses,
-                    onCourseClick = { courseId ->
-                        navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
-                    },
-                )
+                uiState.selectedTab == ProfileTab.COURSES -> {
+                    CreateFirstCourseCard(
+                        onClick = { navigationHelper.navigateTo(CourseCreatePage) },
+                    )
+                }
+
+                // 계획은 세우는 자리가 아직 없어 만들기로 유도하지 않는다.
+                else -> {
+                    EmptyPlanCourses()
+                }
             }
             Spacer(Modifier.height(20.dp))
         }
