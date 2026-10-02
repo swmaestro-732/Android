@@ -94,6 +94,7 @@ fun CourseDetailPage(
                         onShare = actions.onShare,
                         onSaveCourse = { viewModel.onIntent(CourseDetailIntent.ToggleSave) },
                         onForkCourse = { viewModel.onIntent(CourseDetailIntent.ForkCourse) },
+                        onFollowCourse = actions.onFollowCourse,
                         onEditCourse = actions.onEditCourse,
                         onDeleteCourse = { showDeleteConfirm = true },
                         onToggleLike = { viewModel.onIntent(CourseDetailIntent.ToggleLike) },

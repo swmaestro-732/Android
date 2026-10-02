@@ -210,6 +210,7 @@ fun CourseDetailScreen(
             isMine = detail.isMine,
             onCommentClick = { showComments = true },
             onForkClick = actions.onForkCourse,
+            onFollowClick = actions.onFollowCourse,
         )
     }
     if (showComments) {
@@ -1293,18 +1294,16 @@ private val BOTTOM_BAR_BUTTON_SHAPE = RoundedCornerShape(15.dp)
  *
  * 복제는 내 코스에는 두지 않는다([isMine]) — 편집이 있어 같은 결과를 더 짧게 얻는다.
  *
- * 따라가기는 아직 **서버 엔드포인트가 없다**. 자리와 모양만 잡아 두고 누르면 준비 중임을
- * 알린다 — 아무 반응이 없으면 고장으로 읽힌다.
+ * 따라가기는 따라가기 화면(FS-21)으로 보낸다. 진행 기록은 그 화면이 맡는다.
  */
 @Composable
 private fun DetailBottomBar(
     isMine: Boolean,
     onCommentClick: () -> Unit,
     onForkClick: () -> Unit,
+    onFollowClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val context = LocalContext.current
-    val notReady = { Toast.makeText(context, "준비 중이에요.", Toast.LENGTH_SHORT).show() }
     Column(modifier = Modifier.background(color.bgDefaultLevel1)) {
         Box(
             modifier =
@@ -1349,7 +1348,7 @@ private fun DetailBottomBar(
                 contentColor = color.contentAccent,
                 enabled = true,
                 iconRes = R.drawable.ic_footprint_24,
-                onClick = notReady,
+                onClick = onFollowClick,
             )
         }
     }
@@ -1456,6 +1455,7 @@ private fun CourseDetailScreenPreview() {
                     onShare = {},
                     onSaveCourse = {},
                     onForkCourse = {},
+                    onFollowCourse = {},
                     onEditCourse = {},
                     onDeleteCourse = {},
                     onToggleLike = {},

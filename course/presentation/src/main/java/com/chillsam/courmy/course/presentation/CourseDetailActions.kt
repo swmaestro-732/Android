@@ -13,6 +13,8 @@ data class CourseDetailActions(
     val onSaveCourse: () -> Unit,
     /** 이 코스를 포크해 코스 만들기로 간다. 내 코스에는 노출하지 않는다. */
     val onForkCourse: () -> Unit,
+    /** 하단 "따라가기" — 코스 따라가기 화면(FS-21)으로 간다. */
+    val onFollowCourse: () -> Unit,
     val onEditCourse: () -> Unit,
     val onDeleteCourse: () -> Unit,
     val onToggleLike: () -> Unit,
@@ -29,6 +31,7 @@ data class CourseDetailPageActions(
     val onMyProfileClick: () -> Unit,
     val onShare: () -> Unit,
     val onForkCourse: () -> Unit,
+    val onFollowCourse: () -> Unit,
     val onEditCourse: () -> Unit,
     val onLogin: () -> Unit,
     val onSeeAllReviews: () -> Unit,
