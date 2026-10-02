@@ -20,8 +20,14 @@ object PlaceReviewDataModule {
 
     @Provides
     @Singleton
-    fun providePlaceReviewListDataSource(apiService: PlaceReviewListApiService): PlaceReviewListDataSource =
-        PlaceReviewListDataSource(apiService)
+    fun providePlaceReviewWriteApiService(retrofit: Retrofit): PlaceReviewWriteApiService = retrofit.create()
+
+    @Provides
+    @Singleton
+    fun providePlaceReviewListDataSource(
+        listApiService: PlaceReviewListApiService,
+        writeApiService: PlaceReviewWriteApiService,
+    ): PlaceReviewListDataSource = PlaceReviewListDataSource(listApiService, writeApiService)
 
     @Provides
     @Singleton

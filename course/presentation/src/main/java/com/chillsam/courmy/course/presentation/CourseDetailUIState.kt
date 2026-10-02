@@ -30,7 +30,11 @@ data class CourseDetailUIState(
     }
 }
 
-/** 서버 계약 전까지 상세 화면 생명주기 동안 유지하는 좋아요·댓글 상태. */
+/**
+ * 좋아요·댓글 상태. 좋아요 토글은 서버와 연동되지만, 상세 조회(BFF)가 아직 좋아요 여부·집계를
+ * 주지 않아 **진입 시점 값은 세션 기본값**이고 토글 성공 시 서버 집계로 보정된다. 댓글은 아직
+ * 서버 계약 전이라 화면 세션 상태로만 유지한다. [wiki-needed]
+ */
 data class CourseSocialUIState(
     val isLiked: Boolean = false,
     val likeCount: Int = 128,

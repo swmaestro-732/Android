@@ -255,6 +255,7 @@ fun CourseDetailScreen(
                 placeDetailViewModel.open(placeId = target.placeId)
             },
             startInOverview = openSheetInOverview,
+            onDeleteReview = { reviewId -> placeDetailViewModel.deleteReview(reviewId) },
         )
         // 주소를 못 받아도 나머지는 멀쩡하므로 알리기만 하고 시트는 닫지 않는다.
         LaunchedEffect(placeDetailState.errorMessage) {

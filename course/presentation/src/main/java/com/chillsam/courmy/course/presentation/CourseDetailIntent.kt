@@ -19,7 +19,7 @@ sealed interface CourseDetailIntent : MviIntent {
     /** 작성자 팔로우/언팔로우. */
     data object ToggleFollowAuthor : CourseDetailIntent
 
-    /** 코스 좋아요 토글. 서버 API가 생기기 전까지 화면 세션 상태로 반영한다. */
+    /** 코스 좋아요 토글. 화면에 먼저 반영하고 서버(`POST/DELETE /api/v1/courses/{id}/likes`)로 확정한다. */
     data object ToggleLike : CourseDetailIntent
 
     /** 댓글 입력값 변경. */

@@ -19,6 +19,11 @@ data class CreateCourseRequest(
     /**
      * 포크 원본 코스 id. 남의 코스를 포크해 만든 코스면 채워 보내고, 직접 만든 코스면 null 이다.
      * 서버는 이 값을 `courses.forked_from_id` 로 저장해 출처를 추적하며, 원본이 없으면 404 로 거절한다.
+     *
+     * 포크 전용 API(`POST /api/v1/courses/{courseId}/forks`)가 생긴 뒤로는 포크 생성이
+     * [ForkCourseRequest] 로 나가므로, 이 필드는 실제로는 항상 null 이다(라우팅은
+     * `CourseRepositoryImpl.createCourse` 참고). 서버 `CreateCourseRequest` 에 아직 남아 있어
+     * 계약 호환을 위해 유지한다.
      */
     val forkedFromId: Long? = null,
     val places: List<CreateCoursePlaceRequest> = emptyList(),
@@ -56,6 +61,24 @@ data class CreateCoursePlaceRequest(
     val walkingMinutes: Int? = null,
 )
 
+/**
+ * `POST /api/v1/courses/{courseId}/forks` 요청(swagger `ForkCourseRequest`).
+ *
+ * 원본 코스는 바디가 아니라 **경로**로 지정하므로 [CreateCourseRequest] 에서 `forkedFromId` 만 뺀
+ * 모양이다. 필드 뜻·직렬화 주의사항(기본값 생략, `isPublished` 표기)은 [CreateCourseRequest] 와 같다.
+ * 서버 DTO 가 다르므로 모르는 키를 실어 보내지 않도록 타입을 분리해 둔다.
+ */
+@Serializable
+data class ForkCourseRequest(
+    val title: String,
+    val description: String? = null,
+    val thumbnailUrl: String? = null,
+    val tags: List<String> = emptyList(),
+    val visibility: String,
+    val places: List<CreateCoursePlaceRequest> = emptyList(),
+    val isPublished: Boolean,
+)
+
 @Serializable
 data class CreateCourseEnvelope(
     val code: Int? = null,
@@ -67,6 +90,21 @@ data class CreateCourseEnvelope(
 data class CourseIdDTO(
     val courseId: Long? = null,
 )
+
+/**
+ * 생성 요청 → 포크 요청. 장소·순번·도보 분 매핑을 [toCreateRequest] 한 곳에만 두기 위해
+ * 완성된 생성 요청에서 옮겨 담는다. 원본 코스 id 는 경로로 가므로 여기서 버린다.
+ */
+fun CreateCourseRequest.toForkRequest(): ForkCourseRequest =
+    ForkCourseRequest(
+        title = title,
+        description = description,
+        thumbnailUrl = thumbnailUrl,
+        tags = tags,
+        visibility = visibility,
+        places = places,
+        isPublished = isPublished,
+    )
 
 /**
  * 초안 → 생성 요청 변환.

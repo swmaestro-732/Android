@@ -40,6 +40,22 @@ sealed interface CourseDetailReducerEvent : ReducerEvent {
 
     data object LikeToggled : CourseDetailReducerEvent
 
+    /**
+     * 좋아요 토글이 서버에서 확정됨. 낙관적으로 먼저 바꾼 화면 값을 서버 집계로 보정한다
+     * (다른 사용자의 좋아요가 섞이면 로컬 ±1 과 어긋날 수 있다).
+     */
+    data class LikeConfirmed(
+        val liked: Boolean,
+        val likeCount: Int,
+    ) : CourseDetailReducerEvent
+
+    /** 좋아요 토글 실패 — 낙관적으로 바꿨던 값을 토글 전으로 되돌리고 한 번 알린다. */
+    data class LikeFailed(
+        val message: String,
+        val liked: Boolean,
+        val likeCount: Int,
+    ) : CourseDetailReducerEvent
+
     /** 같은 ViewModel 인스턴스로 다른 코스를 열 때 로컬 소셜 상태를 비운다. */
     data object SocialStateReset : CourseDetailReducerEvent
 

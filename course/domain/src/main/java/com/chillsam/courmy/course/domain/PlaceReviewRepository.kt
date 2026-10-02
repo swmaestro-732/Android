@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.course.entity.CourseReviewDraftVO
 import com.chillsam.courmy.course.entity.CourseReviewListVO
 import com.chillsam.courmy.course.entity.CourseReviewSort
 
@@ -23,6 +24,23 @@ interface PlaceReviewRepository {
         cursor: String? = null,
         size: Int = DEFAULT_PAGE_SIZE,
     ): CourseReviewListVO
+
+    /**
+     * 후기를 작성하고 생성된 리뷰 id 를 돌려준다(`POST /api/v1/places/{placeId}/reviews`).
+     *
+     * 요청·응답 모양이 코스 후기와 같아 초안 VO([CourseReviewDraftVO])를 그대로 쓴다.
+     * [CourseReviewDraftVO.photoUrls] 는 업로드가 끝난 공개 URL 이어야 한다.
+     */
+    suspend fun createPlaceReview(
+        placeId: Long,
+        draft: CourseReviewDraftVO,
+    ): Long
+
+    /** 내 후기를 삭제한다(`DELETE /api/v1/places/{placeId}/reviews/{reviewId}`). */
+    suspend fun deletePlaceReview(
+        placeId: Long,
+        reviewId: Long,
+    )
 
     companion object {
         /** 한 번에 받아 올 후기 수. 코스 후기와 같은 서버 제약(1~50)을 따른다. */

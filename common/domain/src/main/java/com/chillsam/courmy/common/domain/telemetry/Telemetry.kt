@@ -54,6 +54,7 @@ enum class AppFlow(
     CourseUpdate("course_update"),
     CourseDetailLoad("course_detail_load"),
     CourseSave("course_save"),
+    CourseLike("course_like"),
     FollowAuthor("follow_author"),
 }
 

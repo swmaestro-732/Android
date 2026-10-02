@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
  * - [address]   주소 (예: "서울 성동구 아차산로 110")
  * - [latitude]  위도. 좌표가 없으면 null (지도·길찾기를 렌더하지 않는다)
  * - [longitude] 경도. 좌표가 없으면 null
+ * - [isSaved]   조회자의 저장 여부(`viewer.hasSaved`). 저장 토글의 초기값으로 쓴다.
  */
 @Serializable
 data class PlaceDetailVO(
@@ -23,6 +24,7 @@ data class PlaceDetailVO(
     val address: String = "",
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val isSaved: Boolean = false,
 ) {
     /** 지도·길찾기를 그릴 수 있는지. 위경도가 모두 있어야 한다. */
     val hasLocation: Boolean

@@ -1,10 +1,13 @@
 package com.chillsam.courmy.main.presentation.search
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.main.domain.search.SearchCoursesUseCase
 import com.chillsam.courmy.main.presentation.search.mock.SearchMockData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -12,14 +15,17 @@ import javax.inject.Inject
 /**
  * 검색 결과 화면(FS-18).
  *
- * TODO(SCRUM-검색API): 지금은 [SearchMockData] 를 읽어 검색어와 무관하게 같은 결과를 돌려준다.
- * 통합 검색 API 가 붙으면 UseCase 주입으로 바꾸고 검색어를 실제로 넘긴다.
+ * 코스 탭은 [SearchCoursesUseCase](`GET /api/v1/courses/search`)로 실 조회한다.
+ *
+ * TODO(SCRUM-검색API): 장소 탭은 아직 [SearchMockData] 다 — 장소 검색 API(`GET /api/v1/places/search`)
+ * 연동이 별도 작업이라 코스만 먼저 붙였다. 장소가 붙으면 mock 참조를 지운다.
  */
 @HiltViewModel
 class SearchResultViewModel
     @Inject
-    constructor() :
-    MviViewModel<SearchResultIntent, SearchResultUIState, SearchResultReducerEvent>(
+    constructor(
+        private val searchCoursesUseCase: SearchCoursesUseCase,
+    ) : MviViewModel<SearchResultIntent, SearchResultUIState, SearchResultReducerEvent>(
             SearchResultUIState.empty,
         ) {
         private var loadJob: Job? = null
@@ -57,14 +63,36 @@ class SearchResultViewModel
             loadJob =
                 viewModelScope.launch {
                     dispatch(SearchResultReducerEvent.LoadStarted(query))
-                    dispatch(
-                        SearchResultReducerEvent.Loaded(
-                            places = SearchMockData.places,
-                            courses = SearchMockData.courses,
-                            placeTotalCount = SearchMockData.PLACE_TOTAL_COUNT,
-                            courseTotalCount = SearchMockData.COURSE_TOTAL_COUNT,
-                        ),
-                    )
+                    // 서버가 빈 keyword 를 400 으로 거부한다. 라우트 인자가 빠진 경우라 빈 결과로 둔다.
+                    if (query.isBlank()) {
+                        dispatch(
+                            SearchResultReducerEvent.Loaded(
+                                places = emptyList(),
+                                courses = emptyList(),
+                                placeTotalCount = 0,
+                                courseTotalCount = 0,
+                            ),
+                        )
+                        return@launch
+                    }
+                    runCatching { searchCoursesUseCase(keyword = query) }
+                        .onSuccess { courses ->
+                            dispatch(
+                                SearchResultReducerEvent.Loaded(
+                                    // 장소 검색 API 연동 전까지는 목업 유지(파일 상단 TODO).
+                                    places = SearchMockData.places,
+                                    courses = courses,
+                                    placeTotalCount = SearchMockData.PLACE_TOTAL_COUNT,
+                                    // 응답에 전체 건수가 없어(커서 페이징) 첫 페이지 개수로 표기한다.
+                                    courseTotalCount = courses.size,
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
+                            Log.w(TAG, "코스 검색 실패: query=$query", e)
+                            dispatch(SearchResultReducerEvent.Failed("검색 결과를 불러오지 못했습니다."))
+                        }
                 }
         }
 
@@ -114,4 +142,8 @@ class SearchResultViewModel
                     state.copy(errorMessage = null)
                 }
             }
+
+        private companion object {
+            const val TAG = "SearchResult"
+        }
     }

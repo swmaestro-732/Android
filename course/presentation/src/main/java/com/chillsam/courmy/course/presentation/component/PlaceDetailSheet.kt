@@ -68,6 +68,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.createBitmap
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -174,6 +175,7 @@ fun PlaceDetailSheet(
     onSelectPlace: (CourseDetailPlaceVO) -> Unit,
     modifier: Modifier = Modifier,
     startInOverview: Boolean = false,
+    onDeleteReview: (Long) -> Unit = {},
 ) {
     val places = course.places
     val color = DesignSystemThemeImpl.designSystemColor
@@ -264,6 +266,7 @@ fun PlaceDetailSheet(
                         isSaved = isSaved,
                         onToggleSave = onToggleSave,
                         onDismiss = animatedDismiss,
+                        onDeleteReview = onDeleteReview,
                     )
                 }
             }
@@ -354,10 +357,13 @@ private fun ColumnScope.PlaceInfoLayout(
     isSaved: Boolean,
     onToggleSave: () -> Unit,
     onDismiss: () -> Unit,
+    onDeleteReview: (Long) -> Unit = {},
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
     val reviewItems = reviews?.reviews.orEmpty()
+    // 삭제 확인 중인 내 후기 id. 실수 탭 한 번으로 지워지지 않게 확인을 거친다(후기 목록 화면과 동일).
+    var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
     Column(
         modifier =
             Modifier
@@ -474,10 +480,33 @@ private fun ColumnScope.PlaceInfoLayout(
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                reviewItems.take(REVIEW_PREVIEW_COUNT).forEach { review -> ReviewCard(review = review) }
+                reviewItems.take(REVIEW_PREVIEW_COUNT).forEach { review ->
+                    ReviewCard(
+                        review = review,
+                        // 삭제는 내 후기만 가능하고, id 가 없으면 서버에 요청할 수 없다.
+                        onDelete =
+                            if (review.isMine && review.id > 0) {
+                                { pendingDeleteId = review.id }
+                            } else {
+                                null
+                            },
+                    )
+                }
             }
         }
         Spacer(Modifier.height(16.dp))
+    }
+    pendingDeleteId?.let { reviewId ->
+        DsConfirmDialog(
+            title = "후기를 삭제할까요?",
+            description = "삭제한 후기는 되돌릴 수 없어요.",
+            destructive = true,
+            onConfirm = {
+                onDeleteReview(reviewId)
+                pendingDeleteId = null
+            },
+            onDismiss = { pendingDeleteId = null },
+        )
     }
 }
 
