@@ -737,8 +737,10 @@ private val CourseMapHeight = 220.dp
  *
  * 좌표가 있는 장소가 없으면 구역째 그리지 않는다 — 빈 지도는 알려 주는 게 없다.
  * 지도 제스처는 막는다. 세로 스크롤 화면 안이라 지도가 스크롤을 가로채면 화면이 걸린다.
- * 대신 둘러보는 길을 둘 둔다 — 핀을 누르면 그 장소로([onPlaceClick]), "자세히" 를 누르면
- * 코스 전체 보기 상태로([onOpenDetail]) 장소 상세 시트가 열린다.
+ * 대신 둘러보는 길을 둘 둔다 — 핀을 누르면 그 장소로([onPlaceClick]), 핀 밖 지도를 누르면
+ * 코스 전체 보기 상태로([onOpenDetail]) 장소 상세 시트가 열린다. 별도 "자세히" 버튼을 두지
+ * 않는 이유 — 제스처가 막힌 미니맵은 그 자체가 "눌러서 크게 보기"로 읽히는 진입점이고,
+ * 글자 버튼보다 지도 전체가 훨씬 큰 표적이다.
  */
 @Composable
 private fun CourseMapSection(
@@ -753,24 +755,11 @@ private fun CourseMapSection(
         modifier = Modifier.padding(top = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DsText(
-                text = "코스 한눈에 보기",
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-                modifier = Modifier.weight(1f),
-            )
-            // 전체 보기로 열 때도 시트는 장소 하나를 기준으로 뜨므로 첫 장소를 넘긴다.
-            DsText(
-                text = "자세히",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentAccent,
-                modifier = Modifier.clickable { onOpenDetail(first.first) },
-            )
-        }
+        DsText(
+            text = "코스 한눈에 보기",
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+        )
         Box(
             modifier =
                 Modifier
@@ -788,6 +777,8 @@ private fun CourseMapSection(
                 overview = true,
                 onMarkerClick = onPlaceClick,
                 scrollEnabled = false,
+                // 전체 보기로 열 때도 시트는 장소 하나를 기준으로 뜨므로 첫 장소를 넘긴다.
+                onMapClick = { onOpenDetail(first.first) },
             )
         }
     }
