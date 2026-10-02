@@ -1,6 +1,5 @@
 package com.chillsam.courmy.main.presentation.home
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,20 +8,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,15 +29,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
-import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
-import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
@@ -47,32 +48,45 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.domain.DraftListPage
+import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.search.SearchPage
+import com.chillsam.courmy.main.domain.search.SearchResultPage
+import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
-import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.home.mock.HomeNearbyMockData
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 
+/** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
+private const val RECOMMENDED_PREVIEW_COUNT = 5
+
+/** 테마별 둘러보기 타일. 탭하면 테마명을 검색어로 하는 검색 결과로 보낸다. */
+private val themeTiles: List<String> =
+    listOf("데이트 코스", "혼술 · 회식", "전시 · 산책", "카페 투어")
+
 /**
- * 앱의 기본 시작 화면(FS-09). 헤더(위치·날씨·인사) + 공개 코스 피드로 구성한다.
+ * 앱의 기본 시작 화면(FS-09). 새 시안 기준으로 섹션형 홈으로 개편했다.
  *
- * 피드는 `GET /service/v1/courses`(공개 엔드포인트)라 로그인 여부와 무관하게 노출한다.
- * 헤더는 위치·날씨를 쓰지 않는다(고정값 "성수동 · 흐림 18°"·"코스 42" 를 걷어냈다).
- * 코스 수는 실제 피드 건수를 그대로 쓴다. [wiki-needed]
+ * 헤더(위치·날씨 mock + 인사) → 검색바 → 오늘의 추천 코스(가로 미리보기)
+ * → 근처 저장 장소(mock) → 테마별 둘러보기 순서다.
+ *
+ * 추천 코스는 기존 홈 피드와 같은 `GET /service/v1/courses`(공개 엔드포인트)를 쓰고,
+ * 세로 피드 전체는 [RecommendedCoursesPage] 로 옮겼다 — 홈은 앞쪽 몇 건만 미리 보여준다.
+ * "커미 AI" 배너·"진행 중인 코스" 띠는 이번 범위에서 제외했다. [wiki-needed]
  */
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
-    val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
     // 공개 코스 피드(GET /service/v1/courses). 공개 엔드포인트라 게스트에서도 그대로 부른다.
     val feedViewModel: HomeFeedViewModel = hiltViewModel()
@@ -80,19 +94,8 @@ fun HomePage(modifier: Modifier = Modifier) {
     // 헤더 인사말·아바타는 내 프로필에서 가져온다.
     val profile = if (session.isLoggedIn) myProfileForHeader() else null
 
-    // 코스를 만들거나 저장한 뒤 탭을 옮겼다 오면 목록이 바뀌어 있을 수 있어 다시 불러온다.
+    // 코스를 만들고 돌아오면 추천 미리보기가 바뀌어 있을 수 있어 다시 불러온다.
     RefreshOnResume { feedViewModel.onIntent(HomeFeedIntent.Retry) }
-
-    val listState = rememberLazyListState()
-    LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
-
-    // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
-    LaunchedEffect(feedState.actionErrorMessage) {
-        feedState.actionErrorMessage?.let { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            feedViewModel.onIntent(HomeFeedIntent.ConsumeError)
-        }
-    }
 
     Box(
         modifier =
@@ -101,53 +104,47 @@ fun HomePage(modifier: Modifier = Modifier) {
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
         LazyColumn(
-            state = listState,
             modifier = Modifier.fillMaxSize().statusBarsPadding(),
             contentPadding =
                 PaddingValues(
-                    start = ScreenHorizontalPadding,
-                    end = ScreenHorizontalPadding,
                     top = 12.dp,
                     bottom = BottomBarHeight + 40.dp,
                 ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             item {
-                HomeHeader(imageUrl = profile?.profileImageUrl.orEmpty())
+                HomeHeader(
+                    profile = profile,
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                )
             }
             item {
                 HomeSearchBar(
                     onClick = { navigationHelper.navigateTo(SearchPage) },
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
-            // 헤더·하단 탭은 늘 보여야 하므로, 로딩·에러는 화면 전체가 아니라 피드 자리에서만 분기한다.
-            when {
-                feedState.courses.isNotEmpty() -> {
-                    items(feedState.courses, key = { it.id }) { course ->
-                        HomeCourseCard(
-                            course = course,
-                            isSaved = course.id in feedState.savedCourseIds,
-                            onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
-                            onBookmarkClick = { feedViewModel.onIntent(HomeFeedIntent.ToggleSave(course.id)) },
-                        )
-                    }
-                    if (feedState.isLoadingMore) {
-                        item { LoadingMoreFooter() }
-                    }
-                }
-
-                feedState.isLoading -> {
-                    item { FeedLoading() }
-                }
-
-                else -> {
-                    item {
-                        FeedMessage(
-                            message = feedState.errorMessage ?: "아직 공개된 코스가 없어요.",
-                            onRetry = feedState.errorMessage?.let { { feedViewModel.onIntent(HomeFeedIntent.Retry) } },
-                        )
-                    }
-                }
+            item {
+                RecommendedCoursesSection(
+                    feedState = feedState,
+                    onSeeAll = { navigationHelper.navigateTo(RecommendedCoursesPage) },
+                    onCourseClick = { id -> navigationHelper.navigateByRoute(CourseDetailPage.route(id)) },
+                    onRetry = { feedViewModel.onIntent(HomeFeedIntent.Retry) },
+                )
+            }
+            item {
+                NearbySavedSection(
+                    onSeeMap = { navigationHelper.navigateTo(MapPage) },
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                )
+            }
+            item {
+                ThemeBrowseSection(
+                    onThemeClick = { theme ->
+                        navigationHelper.navigateByRoute(SearchResultPage.route(theme))
+                    },
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                )
             }
         }
 
@@ -179,12 +176,15 @@ fun HomePage(modifier: Modifier = Modifier) {
  * 최근 검색어·급상승 검색어를 함께 보여줘야 해서 입력은 그쪽에서 받는다.
  */
 @Composable
-private fun HomeSearchBar(onClick: () -> Unit) {
+private fun HomeSearchBar(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     val shape = RoundedCornerShape(percent = 50)
     Row(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .clip(shape)
                 .background(color.bgDefaultLevel1)
@@ -233,45 +233,6 @@ private fun HomeBottomBar(
     )
 }
 
-/** 피드 로딩 자리. 헤더 아래 카드 영역만 차지한다. */
-@Composable
-private fun FeedLoading() {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(color = DesignSystemThemeImpl.designSystemColor.contentAccent)
-    }
-}
-
-/** 피드가 비었거나 실패했을 때의 안내. [onRetry] 가 있으면 재시도를 노출한다. */
-@Composable
-private fun FeedMessage(
-    message: String,
-    onRetry: (() -> Unit)?,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        DsText(
-            text = message,
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = color.contentDefaultLevel2,
-        )
-        if (onRetry != null) {
-            DsText(
-                text = "다시 시도",
-                style = DesignSystemThemeImpl.typeScale.textRegularM,
-                color = color.contentAccent,
-                modifier = Modifier.clickable(onClick = onRetry),
-            )
-        }
-    }
-}
-
 /**
  * 홈 헤더용 내 프로필.
  *
@@ -288,31 +249,369 @@ private fun myProfileForHeader(): MyProfileVO? {
     return myState.profile
 }
 
-/** 홈 헤더: 위치·날씨 → 인사 타이틀 + 우상단 아바타 → 코스 개수 안내(더미 고정값). */
+/**
+ * 홈 헤더: 위치·날씨 보조줄 → 인사 타이틀 + 우상단 아바타.
+ *
+ * 위치·날씨는 연동 전이라 시안 고정값([HomeNearbyMockData.LOCATION_WEATHER])을 쓴다.
+ * 로그인했으면 닉네임을 넣어 부르고, 게스트는 닉네임 없는 기존 문구를 유지한다.
+ */
 @Composable
-private fun HomeHeader(imageUrl: String) {
+private fun HomeHeader(
+    profile: MyProfileVO?,
+    modifier: Modifier = Modifier,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Column {
-        Row(verticalAlignment = Alignment.Top) {
-            Column(modifier = Modifier.weight(1f)) {
-                DsText(
-                    text = "오늘의 코스 추천",
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel2,
-                )
-                DsText(
-                    text = "어디로 떠나볼까요?",
-                    modifier = Modifier.padding(top = 6.dp),
-                    style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                    color = color.contentDefaultLevel0,
-                    maxLines = 2,
-                )
-            }
-            ProfileAvatar(
-                imageUrl = imageUrl,
-                size = 44.dp,
-                modifier = Modifier.padding(start = 12.dp),
+    val greeting =
+        if (profile != null) {
+            "${profile.nickname}님, 오늘은\n어디로 떠나볼까요?"
+        } else {
+            "어디로 떠나볼까요?"
+        }
+    Row(modifier = modifier, verticalAlignment = Alignment.Top) {
+        Column(modifier = Modifier.weight(1f)) {
+            DsText(
+                text = HomeNearbyMockData.LOCATION_WEATHER,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel3,
+            )
+            DsText(
+                text = greeting,
+                modifier = Modifier.padding(top = 6.dp),
+                style = DesignSystemThemeImpl.typeScale.titleExtraL,
+                color = color.contentDefaultLevel0,
+                maxLines = 2,
             )
         }
+        ProfileAvatar(
+            imageUrl = profile?.profileImageUrl.orEmpty(),
+            size = 44.dp,
+            modifier = Modifier.padding(start = 12.dp),
+        )
+    }
+}
+
+/** 섹션 공통 헤더: 좌측 제목 + 우측 액션 링크. */
+@Composable
+private fun SectionHeader(
+    title: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        DsText(
+            text = title,
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+            modifier = Modifier.weight(1f),
+        )
+        DsText(
+            text = actionLabel,
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentAccent,
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .clickable(onClick = onAction)
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+        )
+    }
+}
+
+/**
+ * "오늘의 추천 코스" 섹션: 피드 앞쪽 [RECOMMENDED_PREVIEW_COUNT] 건을 가로 카드로 미리 보여준다.
+ *
+ * 가로 스크롤 카드가 화면 가장자리까지 흐르도록 섹션 자체는 수평 패딩 없이 두고,
+ * 헤더·카드 목록의 contentPadding 으로만 여백을 준다.
+ */
+@Composable
+private fun RecommendedCoursesSection(
+    feedState: HomeFeedUIState,
+    onSeeAll: () -> Unit,
+    onCourseClick: (String) -> Unit,
+    onRetry: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(
+            title = "오늘의 추천 코스",
+            actionLabel = "전체보기",
+            onAction = onSeeAll,
+            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+        )
+        // 헤더·다른 섹션은 늘 보여야 하므로, 로딩·에러는 카드 자리에서만 분기한다.
+        when {
+            feedState.courses.isNotEmpty() -> {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(
+                        feedState.courses.take(RECOMMENDED_PREVIEW_COUNT),
+                        key = { it.id },
+                    ) { course ->
+                        RecommendedCourseCard(
+                            course = course,
+                            onClick = { onCourseClick(course.id) },
+                        )
+                    }
+                }
+            }
+
+            feedState.isLoading -> {
+                FeedLoading()
+            }
+
+            else -> {
+                FeedMessage(
+                    message = feedState.errorMessage ?: "아직 공개된 코스가 없어요.",
+                    onRetry = feedState.errorMessage?.let { { onRetry() } },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 추천 코스 가로 카드: 상단 썸네일(카테고리 칩) + 하단 흰 배경의 제목·메타.
+ *
+ * TODO-API-SPEC: 시안의 메타는 "4 스팟 · 3시간"(스팟 수·소요 시간)이지만
+ * 피드 응답(`CourseFeedResponse.Item`)에 해당 필드가 없어 저장 수로 대신한다.
+ * 서버가 필드를 내려주면 교체한다. [wiki-needed]
+ */
+@Composable
+private fun RecommendedCourseCard(
+    course: HomeCourseVO,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier =
+            Modifier
+                .width(280.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(color.bgDefaultLevel1)
+                .border(width = 1.dp, color = color.borderDefaultLevel0, shape = RoundedCornerShape(16.dp))
+                .clickable(onClick = onClick),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 10f)
+                    .background(color.imagePlaceholder),
+        ) {
+            if (course.coverImageUrl.isNotBlank()) {
+                AsyncImage(
+                    model = course.coverImageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+            // 카테고리가 없는 코스(theme 미선택)는 빈 알약이 뜨지 않도록 칩 자체를 생략한다.
+            if (course.categoryLabel.isNotBlank()) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(10.dp)
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(color.bgDefaultLevel1)
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                ) {
+                    DsText(
+                        text = course.categoryLabel,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel1,
+                    )
+                }
+            }
+        }
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+            DsText(
+                text = course.title,
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (course.saveCountText.isNotBlank()) {
+                DsText(
+                    text = "저장 ${course.saveCountText}",
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/** "근처 저장 장소" 섹션. 근처 저장 장소 API 연동 전이라 [HomeNearbyMockData] 로 그린다. */
+@Composable
+private fun NearbySavedSection(
+    onSeeMap: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(
+            title = "근처 저장 장소",
+            actionLabel = "지도에서 보기",
+            onAction = onSeeMap,
+        )
+        HomeNearbyMockData.places.forEach { place ->
+            NearbyPlaceCard(place = place)
+        }
+    }
+}
+
+/** 근처 저장 장소 카드: 썸네일 + 이름·평점·카테고리·도보 시간 + 방문 여부 칩. */
+@Composable
+private fun NearbyPlaceCard(
+    place: MapPlaceVO,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(color.bgDefaultLevel1)
+                .border(width = 1.dp, color = color.borderDefaultLevel0, shape = RoundedCornerShape(16.dp))
+                .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(color.imagePlaceholder),
+        ) {
+            if (!place.thumbnailUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = place.thumbnailUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            DsText(
+                text = place.name,
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = color.contentDefaultLevel0,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                DsRatingStar(starSize = 12.dp)
+                DsText(
+                    text = nearbyPlaceMeta(place),
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        // 방문 여부 API 가 없어 지금은 모두 "미방문"으로 표기한다(mock).
+        Box(
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(color.bgDefaultLevel0)
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+        ) {
+            DsText(
+                text = "미방문",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+        }
+    }
+}
+
+/** 평점·카테고리·도보 시간을 " · "로 이은 메타 한 줄(예: "4.8 · 카페 · 베이커리 · 도보 6분"). */
+private fun nearbyPlaceMeta(place: MapPlaceVO): String =
+    buildList {
+        add(place.rating.toString())
+        add(place.category)
+        place.subCategory?.let { add(it) }
+        place.walkingMinutes?.let { add("도보 ${it}분") }
+    }.joinToString(" · ")
+
+/** "테마별 둘러보기" 섹션: 2열 그리드 타일 4개. 탭하면 테마명 검색 결과로 보낸다. */
+@Composable
+private fun ThemeBrowseSection(
+    onThemeClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        DsText(
+            text = "테마별 둘러보기",
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+        )
+        // 항목이 4개로 고정이라 LazyVerticalGrid 대신 Row 두 줄로 그린다(LazyColumn 중첩 제약도 피한다).
+        themeTiles.chunked(2).forEach { rowTiles ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                rowTiles.forEach { theme ->
+                    ThemeTile(
+                        label = theme,
+                        onClick = { onThemeClick(theme) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 테마 타일. 테마 대표 이미지가 아직 없어 배경은 어두운 그라데이션으로 채운다
+ * — 흰 라벨이 어떤 상황에서도 읽히도록 콘텐츠 색 토큰의 알파 조합을 쓴다(raw hex 금지).
+ */
+@Composable
+private fun ThemeTile(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            modifier
+                .height(96.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            color.contentDefaultLevel2.copy(alpha = 0.85f),
+                            color.contentDefaultLevel0.copy(alpha = 0.95f),
+                        ),
+                    ),
+                ).clickable(onClick = onClick),
+    ) {
+        DsText(
+            text = label,
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentOnAccent,
+            modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
+        )
     }
 }

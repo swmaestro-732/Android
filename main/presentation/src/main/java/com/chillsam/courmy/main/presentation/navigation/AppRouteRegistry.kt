@@ -14,6 +14,8 @@ import com.chillsam.courmy.course.presentation.CourseDetailPageActions
 import com.chillsam.courmy.course.presentation.CourseDetailViewModel
 import com.chillsam.courmy.course.presentation.CourseEditPage
 import com.chillsam.courmy.course.presentation.CourseEditViewModel
+import com.chillsam.courmy.course.presentation.CourseFollowPage
+import com.chillsam.courmy.course.presentation.CourseFollowPageActions
 import com.chillsam.courmy.course.presentation.CourseReviewListPage
 import com.chillsam.courmy.course.presentation.CourseReviewListViewModel
 import com.chillsam.courmy.course.presentation.DraftListPage
@@ -21,6 +23,7 @@ import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.home.HomePage
+import com.chillsam.courmy.main.presentation.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.presentation.login.LoginPage
 import com.chillsam.courmy.main.presentation.login.OnboardingCompletePage
 import com.chillsam.courmy.main.presentation.login.ProfileSetupPage
@@ -48,9 +51,11 @@ import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRou
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
 import com.chillsam.courmy.course.domain.CourseEditPage as CourseEditRoute
+import com.chillsam.courmy.course.domain.CourseFollowPage as CourseFollowRoute
 import com.chillsam.courmy.course.domain.CourseReviewListPage as CourseReviewListRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
+import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage as RecommendedCoursesRoute
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
 import com.chillsam.courmy.main.domain.login.OnboardingCompletePage as CompleteRoute
 import com.chillsam.courmy.main.domain.login.ProfileSetupPage as ProfileSetupRoute
@@ -156,6 +161,11 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = HomeRoute.PATH,
             render = { HomePage() },
+        ),
+        // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다.
+        AppRoute(
+            path = RecommendedCoursesRoute.PATH,
+            render = { RecommendedCoursesPage() },
         ),
         // 통합 검색(FS-17 → FS-18). 결과의 전체·장소·코스 탭은 한 화면이라 라우트는 둘뿐이다.
         AppRoute(
@@ -321,6 +331,11 @@ val appRoutes: List<AppRoute> =
                                     navigationHelper.navigateByRoute(CourseCreateRoute.forkRoute(courseId))
                                 }
                             },
+                            onFollowCourse = {
+                                args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull()?.let { courseId ->
+                                    navigationHelper.navigateByRoute(CourseFollowRoute.route(courseId))
+                                }
+                            },
                             onEditCourse = {
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
                                 navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
@@ -342,6 +357,24 @@ val appRoutes: List<AppRoute> =
                     viewModel = hiltViewModel<CourseReviewListViewModel>(),
                     courseId = args[CourseReviewListRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
                     onBack = { navigationHelper.navigateToBack() },
+                )
+            },
+        ),
+        AppRoute(
+            path = CourseFollowRoute.PATH,
+            render = { args ->
+                val navigationHelper = LocalNavigationHelper.current
+                val courseId = args[CourseFollowRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L
+                CourseFollowPage(
+                    courseId = courseId,
+                    actions =
+                        CourseFollowPageActions(
+                            onBack = { navigationHelper.navigateToBack() },
+                            // 후기 작성은 후기 전체보기(FS-37) 위의 오버레이가 맡는다 — 그 화면으로 보낸다.
+                            onLeaveReview = {
+                                navigationHelper.navigateByRoute(CourseReviewListRoute.route(courseId.toString()))
+                            },
+                        ),
                 )
             },
         ),
