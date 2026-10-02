@@ -24,6 +24,7 @@ import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
@@ -32,6 +33,7 @@ import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.FollowListPage
+import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
@@ -124,6 +126,7 @@ private fun UserProfileContent(
     modifier: Modifier = Modifier,
 ) {
     val navigationHelper = LocalNavigationHelper.current
+    val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
     val shareProfile = { context.copyShareLink(UserProfileRoute.route(profile.handle)) }
@@ -198,10 +201,23 @@ private fun UserProfileContent(
             selectedTab = null,
             onTabSelected = { tab ->
                 when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
-                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
-                    MainTab.MY -> navigationHelper.navigateTo(MyPage)
+                    MainTab.HOME -> {
+                        navigationHelper.navigateTo(HomePage)
+                    }
+
+                    MainTab.MAP -> {
+                        navigationHelper.navigateTo(MapPage)
+                    }
+
+                    MainTab.SAVED -> {
+                        navigationHelper.navigateTo(SavedPage)
+                    }
+
+                    // 비로그인으로 MyPage 에 들어가면 프로필 조회가 401 로 떨어져 오류 화면만 남는다.
+                    // 그 화면에는 탭바가 없어 뒤로가기 말고는 빠져나갈 길도 없다.
+                    MainTab.MY -> {
+                        navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
+                    }
                 }
             },
         )

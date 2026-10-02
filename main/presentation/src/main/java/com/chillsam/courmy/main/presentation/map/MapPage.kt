@@ -12,8 +12,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.map.MapSearchResultPage
+import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
@@ -32,6 +34,7 @@ fun MapPage(
     viewModel: MapViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
+    val session = LocalSessionUiState.current
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -75,10 +78,23 @@ fun MapPage(
             selectedTab = MainTab.MAP,
             onTabSelected = { tab ->
                 when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
-                    MainTab.MY -> navigationHelper.navigateTo(MyPage)
-                    MainTab.MAP -> Unit
+                    MainTab.HOME -> {
+                        navigationHelper.navigateTo(HomePage)
+                    }
+
+                    MainTab.SAVED -> {
+                        navigationHelper.navigateTo(SavedPage)
+                    }
+
+                    // 비로그인으로 MyPage 에 들어가면 프로필 조회가 401 로 떨어져 오류 화면만 남는다.
+                    // 그 화면에는 탭바가 없어 뒤로가기 말고는 빠져나갈 길도 없다.
+                    MainTab.MY -> {
+                        navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
+                    }
+
+                    MainTab.MAP -> {
+                        Unit
+                    }
                 }
             },
         )
