@@ -88,6 +88,9 @@ fun HomePage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     var menuExpanded by remember { mutableStateOf(false) }
+
+    // FAB "계획하기" 로 여는 계획 생성 다이얼로그.
+    var showPlanDialog by remember { mutableStateOf(false) }
     // 공개 코스 피드(GET /service/v1/courses). 공개 엔드포인트라 게스트에서도 그대로 부른다.
     val feedViewModel: HomeFeedViewModel = hiltViewModel()
     val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
@@ -166,7 +169,14 @@ fun HomePage(modifier: Modifier = Modifier) {
                     menuExpanded = false
                     navigationHelper.navigateTo(DraftListPage)
                 },
+                onNewPlan = {
+                    menuExpanded = false
+                    showPlanDialog = true
+                },
             )
+        }
+        if (showPlanDialog) {
+            PlanCreateDialog(onDismiss = { showPlanDialog = false })
         }
     }
 }

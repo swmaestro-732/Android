@@ -3,7 +3,9 @@ package com.chillsam.courmy.main.presentation.my
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.course.domain.GetPlansUseCase
 import com.chillsam.courmy.main.domain.my.GetMyProfileUseCase
+import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.presentation.my.mock.ProfilePlanMockData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
@@ -28,11 +30,13 @@ class MyViewModel
     @Inject
     constructor(
         private val getMyProfileUseCase: GetMyProfileUseCase,
+        private val getPlansUseCase: GetPlansUseCase,
     ) : MviViewModel<MyProfileIntent, MyProfileUIState, MyProfileReducerEvent>(
             MyProfileUIState.empty,
         ) {
         private var loadJob: Job? = null
         private var moreJob: Job? = null
+        private var planJob: Job? = null
 
         override fun onIntent(intent: MyProfileIntent) {
             when (intent) {
@@ -103,8 +107,7 @@ class MyViewModel
 
         private fun load() {
             dispatch(MyProfileReducerEvent.LoadStarted)
-            // TODO(SCRUM-계획API): 계획 목록 API 가 붙으면 프로필과 함께 서버에서 받아 온다.
-            dispatch(MyProfileReducerEvent.PlanLoaded(ProfilePlanMockData.planCourses))
+            loadPlans()
             loadJob?.cancel()
             // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
             moreJob?.cancel()
@@ -117,6 +120,37 @@ class MyViewModel
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "마이 프로필 로드 실패", e)
                             dispatch(MyProfileReducerEvent.Failed("프로필을 불러오지 못했습니다."))
+                        }
+                }
+        }
+
+        /**
+         * 계획 탭 목록(`GET /api/v1/plans`). 프로필과 독립 호출이라 서로 막지 않는다.
+         *
+         * 실패하면 예시 데이터([ProfilePlanMockData])로 대체한다 — dev 서버에 계획이 없거나
+         * 비로그인(401)이어도 탭 레이아웃은 확인할 수 있어야 해서다. 빈 목록은 정상 응답이라 덮지 않는다.
+         */
+        private fun loadPlans() {
+            planJob?.cancel()
+            planJob =
+                viewModelScope.launch {
+                    runCatching { getPlansUseCase() }
+                        .onSuccess { list ->
+                            dispatch(
+                                MyProfileReducerEvent.PlanLoaded(
+                                    list.plans.map { plan ->
+                                        ProfileCourseVO(
+                                            // 코스 id 와 섞이지 않게 접두사를 유지한다(계획 탭은 상세 이동을 막는다).
+                                            id = "plan-${plan.planId}",
+                                            title = plan.title,
+                                        )
+                                    },
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "계획 목록 로드 실패 — 예시 데이터로 대체", e)
+                            dispatch(MyProfileReducerEvent.PlanLoaded(ProfilePlanMockData.planCourses))
                         }
                 }
         }
