@@ -245,6 +245,9 @@ fun CourseDetailScreen(
                     places = detail.places,
                 ),
             address = placeDetailState.place?.address.orEmpty(),
+            reviews = placeDetailState.reviews,
+            isSaved = placeDetailState.isSaved,
+            onToggleSave = { placeDetailViewModel.toggleSave() },
             onDismiss = dismiss,
             onSelectPlace = { target ->
                 selectedPlace = target
