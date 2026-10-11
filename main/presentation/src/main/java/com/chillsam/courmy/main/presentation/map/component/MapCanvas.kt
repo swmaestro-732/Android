@@ -8,8 +8,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.core.content.ContextCompat
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.naver.maps.geometry.LatLng
@@ -48,6 +51,7 @@ internal fun MapCanvas(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
     recenterSignal: Int = 0,
+    onBoundsChanged: ((MapBounds) -> Unit)? = null,
 ) {
     val cameraPositionState =
         rememberCameraPositionState {
@@ -67,9 +71,25 @@ internal fun MapCanvas(
         }
     }
 
+    fun reportBounds() {
+        val bounds = cameraPositionState.contentBounds ?: return
+        onBoundsChanged?.invoke(
+            MapBounds(
+                bounds.southWest.latitude,
+                bounds.southWest.longitude,
+                bounds.northEast.latitude,
+                bounds.northEast.longitude,
+            ),
+        )
+    }
+    LaunchedEffect(cameraPositionState.isMoving) {
+        if (!cameraPositionState.isMoving) reportBounds()
+    }
+
     NaverMap(
         modifier = modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
+        onMapLoaded = { reportBounds() },
         contentPadding = contentPadding,
         uiSettings =
             MapUiSettings(
@@ -108,6 +128,7 @@ private fun MapOverlays(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val density = LocalDensity.current.density
+    val context = LocalContext.current
 
     val myLocationDot =
         remember(density) {
@@ -147,21 +168,24 @@ private fun MapOverlays(
         val selected = place.id == selectedPlaceId
         val label = if (selected) place.markerLabel() else null
         val icon =
-            remember(place.id, selected, label, density) {
+            remember(place.category, selected, label, density, color, context) {
                 placePinIcon(
                     density = density,
-                    // 선택된 핀은 검은 테두리로 또렷하게, 나머지는 흰 테두리로 배경과 구분만 한다.
-                    fillArgb = color.imagePlaceholder.toArgb(),
-                    strokeArgb =
-                        if (selected) {
-                            color.contentDefaultLevel0.toArgb()
-                        } else {
-                            color.bgDefaultLevel1.toArgb()
-                        },
+                    style =
+                        PlacePinStyle(
+                            fillArgb = color.bgAccentSubtle.toArgb(),
+                            strokeArgb = if (selected) color.contentAccent.toArgb() else color.bgDefaultLevel1.toArgb(),
+                            labelBackgroundArgb = color.contentDefaultLevel0.toArgb(),
+                            labelTextArgb = color.contentOnAccent.toArgb(),
+                            categoryIcon =
+                                requireNotNull(
+                                    ContextCompat.getDrawable(context, placeCategoryIcon(place.category)),
+                                ).mutate().apply {
+                                    setTint(color.contentAccent.toArgb())
+                                },
+                        ),
                     selected = selected,
                     label = label,
-                    labelBackgroundArgb = color.contentDefaultLevel0.toArgb(),
-                    labelTextArgb = color.contentOnAccent.toArgb(),
                 )
             }
         Marker(

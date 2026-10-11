@@ -1,11 +1,16 @@
 package com.chillsam.courmy.main.presentation.map
 
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
+import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapSortOrder
 
 /** 지도 탭 메인 탐색(FS-10)의 사용자 입력. */
 sealed interface MapIntent : MviIntent {
+    data class BoundsChanged(
+        val bounds: MapBounds,
+    ) : MapIntent
+
     data object Load : MapIntent
 
     data object Retry : MapIntent

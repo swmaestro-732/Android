@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.map.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,26 +70,25 @@ private fun SheetHandle(
                     if (onExpandedChange == null) {
                         Modifier
                     } else {
-                        Modifier.pointerInput(expanded) {
-                            // 끌어 올리면 펼치고 내리면 접는다. 한 번의 드래그가 여러 번 전환을
-                            // 일으키지 않도록 제스처당 한 번만 통지한다.
-                            var handled = false
-                            detectVerticalDragGestures(
-                                onDragStart = { handled = false },
-                                onVerticalDrag = { _, dragAmount ->
-                                    if (handled) return@detectVerticalDragGestures
-                                    if (dragAmount < -DRAG_THRESHOLD_PX && !expanded) {
-                                        handled = true
-                                        onExpandedChange(true)
-                                    } else if (dragAmount > DRAG_THRESHOLD_PX && expanded) {
-                                        handled = true
-                                        onExpandedChange(false)
-                                    }
-                                },
-                            )
-                        }
+                        Modifier
+                            .clickable(onClickLabel = if (expanded) "목록 접기" else "목록 펼치기") {
+                                onExpandedChange(!expanded)
+                            }.pointerInput(expanded) {
+                                var dragDistance = 0f
+                                detectVerticalDragGestures(
+                                    onDragStart = { dragDistance = 0f },
+                                    onVerticalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragDistance += dragAmount
+                                    },
+                                    onDragEnd = {
+                                        if (dragDistance < -DRAG_THRESHOLD_PX && !expanded) onExpandedChange(true)
+                                        if (dragDistance > DRAG_THRESHOLD_PX && expanded) onExpandedChange(false)
+                                    },
+                                )
+                            }
                     },
-                ).padding(vertical = 10.dp),
+                ).padding(vertical = 18.dp),
         contentAlignment = Alignment.Center,
     ) {
         Box(

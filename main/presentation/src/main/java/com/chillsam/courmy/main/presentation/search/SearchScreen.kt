@@ -41,12 +41,14 @@ import com.chillsam.courmy.main.presentation.search.component.TrendingKeywordRow
 fun SearchScreen(
     uiState: SearchUIState,
     actions: SearchActions,
+    placeholder: String = "코스 검색",
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0).statusBarsPadding()) {
         SearchTopBar(
             query = uiState.query,
+            placeholder = placeholder,
             onQueryChange = actions.onQueryChange,
             onSubmit = { actions.onSubmit(uiState.query) },
             onClear = actions.onClearQuery,
@@ -75,7 +77,7 @@ fun SearchScreen(
                 )
                 Spacer(Modifier.height(28.dp))
             }
-            TrendingSection(uiState = uiState, actions = actions)
+            if (uiState.trendingKeywords.isNotEmpty()) TrendingSection(uiState = uiState, actions = actions)
             Spacer(Modifier.height(20.dp))
         }
     }
@@ -84,6 +86,7 @@ fun SearchScreen(
 @Composable
 private fun SearchTopBar(
     query: String,
+    placeholder: String,
     onQueryChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onClear: () -> Unit,
@@ -114,6 +117,7 @@ private fun SearchTopBar(
         )
         SearchInputBar(
             query = query,
+            placeholder = placeholder,
             onQueryChange = onQueryChange,
             onSubmit = onSubmit,
             onClear = onClear,

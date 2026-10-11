@@ -5,6 +5,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import androidx.core.graphics.createBitmap
 import com.naver.maps.map.overlay.OverlayImage
 
@@ -15,8 +16,7 @@ import com.naver.maps.map.overlay.OverlayImage
  * + 아래쪽 꼬리)과 선택 시 뜨는 말풍선을 여기서 직접 그린다. 말풍선은 별도 오버레이로 띄우면 지도를
  * 움직일 때 핀과 따로 놀아서, 핀과 **한 장의 비트맵**으로 합쳐 그린다.
  *
- * 장소 썸네일은 아직 채우지 않는다 — mock 단계라 이미지 URL 이 없고, 원격 이미지를 마커 비트맵에
- * 넣으려면 로딩 완료 시점에 아이콘을 다시 만들어야 해서 API 연동과 함께 다룬다.
+ * 지도 핀은 카테고리 아이콘으로 장소 종류를 표시한다. 원격 사진은 카드에서 표시한다.
  */
 
 /** 일반 핀의 원 지름(dp). */
@@ -50,17 +50,14 @@ private const val SHADOW_PAD_DP = 4f
  */
 internal fun placePinIcon(
     density: Float,
-    fillArgb: Int,
-    strokeArgb: Int,
+    style: PlacePinStyle,
     selected: Boolean,
     label: String? = null,
-    labelBackgroundArgb: Int = 0,
-    labelTextArgb: Int = 0,
 ): OverlayImage {
     val diameter = (if (selected) SELECTED_PIN_DIAMETER_DP else PIN_DIAMETER_DP) * density
     val tail = PIN_TAIL_HEIGHT_DP * density
     val shadowPad = SHADOW_PAD_DP * density
-    val labelBox = label?.let { LabelBox.measure(it, density, labelTextArgb) }
+    val labelBox = label?.let { LabelBox.measure(it, density, style.labelTextArgb) }
 
     val width = maxOf(diameter, labelBox?.width ?: 0f) + shadowPad * 2
     val height = (labelBox?.blockHeight(density) ?: 0f) + diameter + tail + shadowPad * 2
@@ -68,7 +65,7 @@ internal fun placePinIcon(
     val canvas = Canvas(bitmap)
     val centerX = width / 2f
 
-    labelBox?.draw(canvas, centerX, shadowPad, density, labelBackgroundArgb)
+    labelBox?.draw(canvas, centerX, shadowPad, density, style.labelBackgroundArgb)
     canvas.drawPin(
         spec =
             PinSpec(
@@ -79,13 +76,30 @@ internal fun placePinIcon(
                 shadowPad = shadowPad,
                 strokeWidth = PIN_STROKE_DP * density,
             ),
-        fillArgb = fillArgb,
-        strokeArgb = strokeArgb,
+        fillArgb = style.fillArgb,
+        strokeArgb = style.strokeArgb,
     )
+    val centerY = shadowPad + (labelBox?.blockHeight(density) ?: 0f) + diameter / 2f
+    val halfIcon = diameter * 0.24f
+    style.categoryIcon.setBounds(
+        (centerX - halfIcon).toInt(),
+        (centerY - halfIcon).toInt(),
+        (centerX + halfIcon).toInt(),
+        (centerY + halfIcon).toInt(),
+    )
+    style.categoryIcon.draw(canvas)
     return OverlayImage.fromBitmap(bitmap)
 }
 
-/** 핀 몸통의 치수 묶음. 파라미터가 길게 늘어지는 걸 막으려 홀더로 넘긴다(색은 따로 받는다). */
+/** 카드와 같은 카테고리 아이콘 및 테마 색상. */
+internal data class PlacePinStyle(
+    val fillArgb: Int,
+    val strokeArgb: Int,
+    val labelBackgroundArgb: Int,
+    val labelTextArgb: Int,
+    val categoryIcon: Drawable,
+)
+
 private class PinSpec(
     val centerX: Float,
     val top: Float,

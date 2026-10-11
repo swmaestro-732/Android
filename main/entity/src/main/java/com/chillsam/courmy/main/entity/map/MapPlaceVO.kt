@@ -24,4 +24,5 @@ data class MapPlaceVO(
     val openNow: Boolean = false,
     /** 영업 종료 시각 표기(예: "22:00"). 영업 정보가 없으면 null. */
     val closingTime: String? = null,
+    val address: String = "",
 )

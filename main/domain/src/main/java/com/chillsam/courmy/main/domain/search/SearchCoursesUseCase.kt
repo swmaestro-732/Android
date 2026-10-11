@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.domain.search
 
+import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.search.SearchCourseVO
 import javax.inject.Inject
 
@@ -17,7 +18,19 @@ class SearchCoursesUseCase
         suspend operator fun invoke(
             keyword: String,
             size: Int = DEFAULT_SIZE,
-        ): List<SearchCourseVO> = repository.searchCourses(keyword, size.coerceIn(MIN_SIZE, MAX_SIZE))
+            cursor: String? = null,
+        ): CursorPageVO<SearchCourseVO> {
+            val trimmed = keyword.trim()
+            return if (trimmed.isEmpty()) {
+                CursorPageVO()
+            } else {
+                repository.searchCourses(
+                    trimmed,
+                    size.coerceIn(MIN_SIZE, MAX_SIZE),
+                    cursor,
+                )
+            }
+        }
 
         companion object {
             const val DEFAULT_SIZE = 20

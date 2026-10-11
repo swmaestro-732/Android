@@ -20,4 +20,7 @@ data class SearchCourseVO(
     val authorName: String = "",
     /** 따라감 수 표시 문자열(예: "1.2k명"). */
     val followCountText: String = "",
+    /** 서버 집계 표시값. 미제공이면 빈 문자열로 숨긴다. */
+    val likeCountText: String = "",
+    val saveCountText: String = "",
 )

@@ -46,6 +46,7 @@ internal fun SearchInputBar(
     onClear: () -> Unit,
     modifier: Modifier = Modifier,
     autoFocus: Boolean = true,
+    placeholder: String = "코스 검색",
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val focusRequester = remember { FocusRequester() }
@@ -82,7 +83,7 @@ internal fun SearchInputBar(
             decorationBox = { innerTextField ->
                 if (query.isEmpty()) {
                     DsText(
-                        text = "장소 · 동네 · 테마 검색",
+                        text = placeholder,
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel3,
                     )

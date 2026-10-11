@@ -22,12 +22,7 @@ data class SearchResultActions(
     /** 검색어 바 탭 — 검색어를 고치러 입력 화면으로 되돌아간다. */
     val onQueryClick: () -> Unit,
     val onClearQuery: () -> Unit,
-    val onTabSelect: (SearchResultTab) -> Unit,
-    val onSortClick: () -> Unit,
-    val onPlaceClick: (Long) -> Unit,
-    val onPlaceSaveToggle: (Long) -> Unit,
     val onCourseClick: (SearchCourseVO) -> Unit,
-    val onShowAllPlaces: () -> Unit,
-    val onShowAllCourses: () -> Unit,
-    val onOpenMap: () -> Unit,
+    val onRetry: () -> Unit,
+    val onLoadMore: () -> Unit,
 )

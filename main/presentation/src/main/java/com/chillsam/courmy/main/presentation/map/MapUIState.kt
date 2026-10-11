@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.map
 
 import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
@@ -17,6 +18,7 @@ import kotlinx.collections.immutable.persistentListOf
  */
 data class MapUIState(
     val isLoading: Boolean = true,
+    val bounds: MapBounds? = null,
     val places: ImmutableList<MapPlaceVO> = persistentListOf(),
     val clusters: ImmutableList<MapClusterVO> = persistentListOf(),
     val totalCount: Int = 0,

@@ -1,7 +1,6 @@
 package com.chillsam.courmy.main.presentation.search
 
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
-import com.chillsam.courmy.main.presentation.search.mock.SearchMockData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import javax.inject.Inject
@@ -9,12 +8,7 @@ import javax.inject.Inject
 /** 최근 검색어로 남길 최대 개수. 오래된 것부터 밀어낸다. */
 private const val MAX_RECENT_KEYWORDS = 10
 
-/**
- * 검색어 입력 화면(FS-17).
- *
- * TODO(SCRUM-검색API): 최근 검색어는 기기에, 급상승 검색어는 서버에 있어야 한다. 지금은 둘 다
- * [SearchMockData] 를 읽고 메모리에만 들고 있어서 화면을 벗어나면 사라진다.
- */
+/** 검색어 입력과 현재 화면의 최근 검색어를 관리한다. */
 @HiltViewModel
 class SearchViewModel
     @Inject
@@ -31,16 +25,7 @@ class SearchViewModel
             }
         }
 
-        private fun load() {
-            if (currentState.trendingKeywords.isNotEmpty()) return
-            dispatch(
-                SearchReducerEvent.Loaded(
-                    recentKeywords = SearchMockData.recentKeywords,
-                    trendingKeywords = SearchMockData.trendingKeywords,
-                    trendingBaseTime = SearchMockData.TRENDING_BASE_TIME,
-                ),
-            )
-        }
+        private fun load() = Unit
 
         private fun removeRecent(keyword: String) {
             dispatch(SearchReducerEvent.RecentChanged(currentState.recentKeywords - keyword))

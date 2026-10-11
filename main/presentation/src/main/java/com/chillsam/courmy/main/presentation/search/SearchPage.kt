@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.main.domain.map.MapSearchResultPage
+import com.chillsam.courmy.main.domain.search.SearchPage as SearchRoute
 import com.chillsam.courmy.main.domain.search.SearchResultPage as SearchResultRoute
 
 /**
@@ -19,16 +21,21 @@ import com.chillsam.courmy.main.domain.search.SearchResultPage as SearchResultRo
  */
 @Composable
 fun SearchPage(
+    target: String = SearchRoute.TARGET_COURSE,
+    query: String = "",
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) { viewModel.onIntent(SearchIntent.Load) }
+    LaunchedEffect(query) {
+        viewModel.onIntent(SearchIntent.Load)
+        viewModel.onIntent(SearchIntent.ChangeQuery(query))
+    }
 
     val actions =
-        remember(viewModel, navigationHelper) {
+        remember(viewModel, navigationHelper, target) {
             SearchActions(
                 onQueryChange = { viewModel.onIntent(SearchIntent.ChangeQuery(it)) },
                 onClearQuery = { viewModel.onIntent(SearchIntent.ClearQuery) },
@@ -39,7 +46,13 @@ fun SearchPage(
                     if (trimmed.isNotEmpty()) {
                         viewModel.onIntent(SearchIntent.Submit(trimmed))
                         navigationHelper.navigateToBack()
-                        navigationHelper.navigateByRoute(SearchResultRoute.route(trimmed))
+                        navigationHelper.navigateByRoute(
+                            if (target == SearchRoute.TARGET_PLACE) {
+                                MapSearchResultPage.route(trimmed)
+                            } else {
+                                SearchResultRoute.route(trimmed)
+                            },
+                        )
                     }
                 },
                 onBack = { navigationHelper.navigateToBack() },
@@ -48,6 +61,7 @@ fun SearchPage(
 
     SearchScreen(
         uiState = uiState,
+        placeholder = if (target == SearchRoute.TARGET_PLACE) "장소 검색" else "코스 검색",
         actions = actions,
         modifier = modifier.fillMaxSize(),
     )

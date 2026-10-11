@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.map
 
 import androidx.compose.runtime.Immutable
+import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapSortOrder
 
@@ -12,6 +13,8 @@ import com.chillsam.courmy.main.entity.map.MapSortOrder
  */
 @Immutable
 data class MapActions(
+    val onBoundsChanged: (MapBounds) -> Unit,
+    val onRetry: () -> Unit,
     val onSearchClick: () -> Unit,
     val onFilterClick: () -> Unit,
     val onCategorySelect: (MapCategory) -> Unit,
@@ -26,11 +29,9 @@ data class MapSearchResultActions(
     val onBackClick: () -> Unit,
     val onQueryClick: () -> Unit,
     val onClearQuery: () -> Unit,
-    val onRefinementSelect: (String?) -> Unit,
     val onPlaceSelect: (Long?) -> Unit,
     val onSaveToggle: (Long) -> Unit,
-    val onSortSelect: (MapSortOrder) -> Unit,
-    val onToggleSheetMode: () -> Unit,
+    val onRetry: () -> Unit,
+    val onLoadMore: () -> Unit,
     val onSheetExpandedChange: (Boolean) -> Unit,
-    val onAddToCourse: (Long) -> Unit,
 )

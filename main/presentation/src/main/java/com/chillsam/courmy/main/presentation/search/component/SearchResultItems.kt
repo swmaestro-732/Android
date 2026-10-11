@@ -28,6 +28,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.search.SearchCourseVO
+import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 
 private val CardShape = RoundedCornerShape(14.dp)
 private val ThumbShape = RoundedCornerShape(10.dp)
@@ -142,13 +143,20 @@ internal fun SearchCourseCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            DsText(
-                text = course.summaryLine(),
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CourseLikeCount(count = course.likeCountText)
+                DsText(
+                    text = course.summaryLine(),
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -185,13 +193,20 @@ internal fun SearchCourseCompactCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            DsText(
-                text = course.summaryLine(),
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CourseLikeCount(count = course.likeCountText)
+                DsText(
+                    text = course.summaryLine(),
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -199,6 +214,7 @@ internal fun SearchCourseCompactCard(
 /** `4 스팟 · 3시간 · 지호님 · 1.2k명 따라감`. 비어 있는 값은 빼고 잇는다. */
 private fun SearchCourseVO.summaryLine(): String =
     listOfNotNull(
+        saveCountText.ifEmpty { null }?.let { "저장 $it" },
         spotCount.takeIf { it > 0 }?.let { "$it 스팟" },
         durationHours.takeIf { it > 0 }?.let { "${it}시간" },
         authorName.ifEmpty { null },

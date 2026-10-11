@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.map.mock
 import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import com.chillsam.courmy.main.presentation.location.DefaultLocation
 
 /**
  * 지도 화면(FS-10 계열)이 API 연동 전까지 쓰는 임시 데이터.
@@ -13,9 +14,9 @@ import com.chillsam.courmy.main.entity.map.MapPlaceVO
  * TODO(SCRUM-지도API): 장소 검색·주변 장소 API 가 붙으면 이 파일을 지우고 UseCase 로 교체한다.
  */
 internal object MapMockData {
-    /** 지도 첫 진입 시 카메라가 놓이는 지점(성수동 일대). */
-    const val DEFAULT_LATITUDE = 37.5443
-    const val DEFAULT_LONGITUDE = 127.0557
+    /** 지도 첫 진입 시 카메라가 놓이는 지점(성수동 일대). 정본은 [DefaultLocation] 이다. */
+    const val DEFAULT_LATITUDE = DefaultLocation.LATITUDE
+    const val DEFAULT_LONGITUDE = DefaultLocation.LONGITUDE
 
     /**
      * 지도 탭에서 검색으로 넘어갈 때 쓰는 임시 검색어.

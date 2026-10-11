@@ -26,6 +26,7 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapCategory
+import com.chillsam.courmy.main.presentation.home.FeedMessage
 import com.chillsam.courmy.main.presentation.map.component.MapBottomSheet
 import com.chillsam.courmy.main.presentation.map.component.MapCanvas
 import com.chillsam.courmy.main.presentation.map.component.MapChipRow
@@ -73,6 +74,7 @@ fun MapScreen(
             onMapClick = { actions.onPlaceSelect(null) },
             contentPadding = PaddingValues(bottom = MapBottomInset),
             recenterSignal = recenterSignal,
+            onBoundsChanged = actions.onBoundsChanged,
         )
 
         Column(
@@ -80,7 +82,7 @@ fun MapScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             MapSearchEntryBar(
-                placeholder = "성수동에서 찾기",
+                placeholder = "장소 검색",
                 onClick = actions.onSearchClick,
                 onFilterClick = actions.onFilterClick,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 8.dp),
@@ -145,7 +147,9 @@ private fun NearbySheet(
             )
             MapSortSelector(selected = uiState.sortOrder, onSelect = actions.onSortSelect)
         }
-        if (uiState.places.isEmpty()) {
+        if (uiState.errorMessage != null) {
+            FeedMessage(uiState.errorMessage, actions.onRetry)
+        } else if (uiState.places.isEmpty()) {
             EmptyPlaces(loading = uiState.isLoading)
         } else {
             LazyRow(

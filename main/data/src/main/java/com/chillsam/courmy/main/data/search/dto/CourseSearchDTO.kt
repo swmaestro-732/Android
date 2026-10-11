@@ -1,7 +1,8 @@
 package com.chillsam.courmy.main.data.search.dto
 
 import com.chillsam.courmy.common.entity.category.toCourseTagLabel
-import com.chillsam.courmy.main.data.profile.dto.formatCount
+import com.chillsam.courmy.common.entity.format.formatCount
+import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.search.SearchCourseVO
 import kotlinx.serialization.Serializable
 
@@ -21,7 +22,7 @@ data class CourseSearchEnvelope(
 @Serializable
 data class CourseSearchDTO(
     val courses: List<CourseSearchItemDTO>? = null,
-    /** 다음 페이지 커서. 마지막 페이지면 null 이다(화면이 첫 페이지만 써서 아직 매핑하지 않는다). */
+    /** 다음 페이지 커서. 마지막 페이지면 null 이다. */
     val nextCursor: String? = null,
     val hasNext: Boolean = false,
 )
@@ -56,7 +57,14 @@ internal fun CourseSearchDTO.toVOList(): List<SearchCourseVO> =
                     listOf(item.area.orEmpty(), item.theme.toCourseTagLabel())
                         .filter { it.isNotBlank() }
                         .joinToString(" · "),
-                // "따라감"은 저장 수로 집계한다 — 검색 응답에서 사용자 반응 수치는 저장이 가장 가깝다.
-                followCountText = "${formatCount(item.savesCnt ?: 0)}명",
+                saveCountText = item.savesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
+                likeCountText = item.likesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
             )
         }
+
+internal fun CourseSearchDTO.toPageVO(): CursorPageVO<SearchCourseVO> =
+    CursorPageVO(
+        items = toVOList(),
+        nextCursor = nextCursor?.takeIf { it.isNotBlank() },
+        hasNext = hasNext && !nextCursor.isNullOrBlank(),
+    )

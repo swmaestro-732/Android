@@ -2,59 +2,54 @@ package com.chillsam.courmy.main.presentation.map
 
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
-import com.chillsam.courmy.main.presentation.map.mock.MapMockData
+import com.chillsam.courmy.course.domain.SetPlaceSavedUseCase
+import com.chillsam.courmy.main.domain.map.SearchMapPlacesUseCase
+import com.chillsam.courmy.main.presentation.search.searchErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * 지도 검색 결과(FS-10-ResultMap / FS-10-List).
- *
- * TODO(SCRUM-지도API): 지금은 [MapMockData] 를 읽는다. 장소 검색 API 가 붙으면 UseCase 주입으로 바꾼다.
- */
 @HiltViewModel
 class MapSearchResultViewModel
     @Inject
-    constructor() :
-    MviViewModel<MapSearchResultIntent, MapSearchResultUIState, MapSearchResultReducerEvent>(
+    constructor(
+        private val searchPlaces: SearchMapPlacesUseCase,
+        private val setPlaceSaved: SetPlaceSavedUseCase,
+    ) : MviViewModel<MapSearchResultIntent, MapSearchResultUIState, MapSearchResultReducerEvent>(
             MapSearchResultUIState.empty,
         ) {
         private var loadJob: Job? = null
+        private val savingIds = mutableSetOf<Long>()
 
         override fun onIntent(intent: MapSearchResultIntent) {
             when (intent) {
                 is MapSearchResultIntent.Load -> {
-                    // 같은 검색어로 재진입(구성 변경·복귀)하면 이미 띄운 결과를 그대로 둔다.
-                    if (intent.query == currentState.query && currentState.places.isNotEmpty()) return
-                    load(intent.query)
-                }
-
-                MapSearchResultIntent.Retry -> {
-                    load(currentState.query)
-                }
-
-                is MapSearchResultIntent.SelectRefinement -> {
-                    dispatch(MapSearchResultReducerEvent.RefinementSelected(intent.refinement))
-                    load(currentState.query)
-                }
-
-                is MapSearchResultIntent.ChangeSortOrder -> {
-                    dispatch(MapSearchResultReducerEvent.SortOrderChanged(intent.order))
-                    load(currentState.query)
-                }
-
-                is MapSearchResultIntent.SelectPlace -> {
-                    // 핀을 고르면 그 장소를 봐야 하므로 시트를 카드 모드로 되돌린다.
-                    dispatch(MapSearchResultReducerEvent.PlaceSelected(intent.placeId))
-                    if (intent.placeId != null) {
-                        dispatch(MapSearchResultReducerEvent.SheetModeChanged(MapSheetMode.MARKER))
+                    if (intent.query != currentState.query ||
+                        currentState.isLoading
+                    ) {
+                        load(intent.query)
                     }
                 }
 
-                MapSearchResultIntent.ToggleSheetMode -> {
-                    toggleSheetMode()
+                MapSearchResultIntent.Retry -> {
+                    load(currentState.query, append = currentState.places.isNotEmpty())
+                }
+
+                MapSearchResultIntent.LoadMore -> {
+                    if (currentState.canLoadMore) {
+                        load(currentState.query, true)
+                    }
+                }
+
+                is MapSearchResultIntent.SelectPlace -> {
+                    dispatch(MapSearchResultReducerEvent.PlaceSelected(intent.placeId))
+                }
+
+                MapSearchResultIntent.ShowList -> {
+                    dispatch(MapSearchResultReducerEvent.SheetModeChanged(MapSheetMode.LIST))
                 }
 
                 is MapSearchResultIntent.SetSheetExpanded -> {
@@ -71,43 +66,47 @@ class MapSearchResultViewModel
             }
         }
 
-        private fun toggleSheetMode() {
-            val next =
-                if (currentState.sheetMode == MapSheetMode.LIST) MapSheetMode.MARKER else MapSheetMode.LIST
-            dispatch(MapSearchResultReducerEvent.SheetModeChanged(next))
-            // 리스트를 닫았다 다시 열면 항상 접힌 단계에서 시작한다(FS-10-List 기본형).
-            if (next == MapSheetMode.MARKER) {
-                dispatch(MapSearchResultReducerEvent.SheetExpandedChanged(false))
-            }
-        }
-
-        private fun load(query: String) {
+        private fun load(
+            query: String,
+            append: Boolean = false,
+        ) {
+            val cursor = if (append) currentState.nextCursor else null
             loadJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    dispatch(MapSearchResultReducerEvent.LoadStarted(query))
-                    val state = currentState
-                    val refinement = state.selectedRefinement
-                    val filtered =
-                        MapMockData.searchResultPlaces.filter { place ->
-                            refinement == null ||
-                                place.category == refinement ||
-                                place.subCategory == refinement
+                    dispatch(MapSearchResultReducerEvent.LoadStarted(query, append))
+                    runCatching { searchPlaces(query, cursor) }
+                        .onSuccess { page -> dispatch(MapSearchResultReducerEvent.Loaded(page, append)) }
+                        .onFailure { error ->
+                            if (error is CancellationException) throw error
+                            dispatch(
+                                MapSearchResultReducerEvent.Failed(
+                                    error.searchErrorMessage("장소 검색 결과를 불러오지 못했어요. 다시 시도해 주세요."),
+                                ),
+                            )
                         }
-                    dispatch(
-                        MapSearchResultReducerEvent.Loaded(
-                            places = filtered.sortedBy(state.sortOrder),
-                            clusters = MapMockData.searchClusters,
-                            refinements = MapMockData.searchRefinements,
-                            totalCount = MapMockData.SEARCH_TOTAL_COUNT,
-                        ),
-                    )
                 }
         }
 
-        private fun toggleSave(placeId: Long) {
-            val saved = currentState.places.firstOrNull { it.id == placeId }?.saved ?: return
-            dispatch(MapSearchResultReducerEvent.SaveToggled(placeId = placeId, saved = !saved))
+        private fun toggleSave(id: Long) {
+            val place = currentState.places.firstOrNull { it.id == id } ?: return
+            if (!savingIds.add(id)) return
+            viewModelScope.launch {
+                try {
+                    runCatching { setPlaceSaved(id, !place.saved) }
+                        .onSuccess { dispatch(MapSearchResultReducerEvent.SaveToggled(id, !place.saved)) }
+                        .onFailure { error ->
+                            if (error is CancellationException) throw error
+                            dispatch(
+                                MapSearchResultReducerEvent.ActionFailed(
+                                    error.searchErrorMessage("장소 저장을 변경하지 못했어요. 로그인 상태를 확인해 주세요."),
+                                ),
+                            )
+                        }
+                } finally {
+                    savingIds.remove(id)
+                }
+            }
         }
 
         override fun reduce(
@@ -116,29 +115,22 @@ class MapSearchResultViewModel
         ): MapSearchResultUIState =
             when (event) {
                 is MapSearchResultReducerEvent.LoadStarted -> {
-                    state.copy(query = event.query, isLoading = true, errorMessage = null)
+                    if (event.append) {
+                        state.copy(
+                            isLoadingMore = true,
+                            errorMessage = null,
+                        )
+                    } else {
+                        MapSearchResultUIState(query = event.query, sheetMode = state.sheetMode)
+                    }
                 }
 
                 is MapSearchResultReducerEvent.Loaded -> {
-                    state.copy(
-                        isLoading = false,
-                        places = event.places.toImmutableList(),
-                        clusters = event.clusters.toImmutableList(),
-                        refinements = event.refinements.toImmutableList(),
-                        totalCount = event.totalCount,
-                        // 첫 진입에는 1위 장소를 미리 골라 둔다 — 시안의 시트가 카드 상태로 시작한다.
-                        selectedPlaceId =
-                            state.selectedPlaceId?.takeIf { id -> event.places.any { it.id == id } }
-                                ?: event.places.firstOrNull()?.id,
-                    )
+                    loadedState(state, event)
                 }
 
                 is MapSearchResultReducerEvent.Failed -> {
-                    state.copy(isLoading = false, errorMessage = event.message)
-                }
-
-                is MapSearchResultReducerEvent.RefinementSelected -> {
-                    state.copy(selectedRefinement = event.refinement)
+                    state.copy(isLoading = false, isLoadingMore = false, errorMessage = event.message)
                 }
 
                 is MapSearchResultReducerEvent.PlaceSelected -> {
@@ -146,29 +138,59 @@ class MapSearchResultViewModel
                 }
 
                 is MapSearchResultReducerEvent.SheetModeChanged -> {
-                    state.copy(sheetMode = event.mode)
+                    state.copy(sheetMode = event.mode, sheetExpanded = false)
                 }
 
                 is MapSearchResultReducerEvent.SheetExpandedChanged -> {
-                    state.copy(sheetExpanded = event.expanded)
-                }
-
-                is MapSearchResultReducerEvent.SortOrderChanged -> {
-                    state.copy(sortOrder = event.order)
+                    state.copy(
+                        sheetExpanded = event.expanded,
+                        sheetMode = if (event.expanded) MapSheetMode.LIST else MapSheetMode.MARKER,
+                    )
                 }
 
                 is MapSearchResultReducerEvent.SaveToggled -> {
                     state.copy(
                         places =
                             state.places
-                                .map { place ->
-                                    if (place.id == event.placeId) place.copy(saved = event.saved) else place
+                                .map {
+                                    if (it.id ==
+                                        event.placeId
+                                    ) {
+                                        it.copy(saved = event.saved)
+                                    } else {
+                                        it
+                                    }
                                 }.toImmutableList(),
                     )
                 }
 
+                is MapSearchResultReducerEvent.ActionFailed -> {
+                    state.copy(actionErrorMessage = event.message)
+                }
+
                 MapSearchResultReducerEvent.ErrorConsumed -> {
-                    state.copy(errorMessage = null)
+                    state.copy(actionErrorMessage = null)
                 }
             }
+
+        private fun loadedState(
+            state: MapSearchResultUIState,
+            event: MapSearchResultReducerEvent.Loaded,
+        ): MapSearchResultUIState {
+            val places =
+                ((if (event.append) state.places else emptyList()) + event.page.items)
+                    .distinctBy {
+                        it.id
+                    }.toImmutableList()
+            return state.copy(
+                isLoading = false,
+                isLoadingMore = false,
+                places = places,
+                nextCursor = event.page.nextCursor,
+                hasNext = event.page.hasNext && event.page.nextCursor != state.nextCursor,
+                selectedPlaceId =
+                    state.selectedPlaceId?.takeIf { id -> places.any { it.id == id } }
+                        ?: places.firstOrNull()?.id,
+            )
+        }
     }

@@ -1,6 +1,5 @@
 package com.chillsam.courmy.main.presentation.map
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -27,18 +27,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
-import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
+import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.home.FeedLoading
+import com.chillsam.courmy.main.presentation.home.FeedMessage
 import com.chillsam.courmy.main.presentation.map.component.MapBottomSheet
 import com.chillsam.courmy.main.presentation.map.component.MapCanvas
-import com.chillsam.courmy.main.presentation.map.component.MapChipRow
 import com.chillsam.courmy.main.presentation.map.component.MapCircleIconButton
-import com.chillsam.courmy.main.presentation.map.component.MapPillButton
 import com.chillsam.courmy.main.presentation.map.component.MapPlaceDetailCard
 import com.chillsam.courmy.main.presentation.map.component.MapRankedPlaceRow
 import com.chillsam.courmy.main.presentation.map.component.MapSearchQueryBar
-import com.chillsam.courmy.main.presentation.map.component.MapSortSelector
 import com.chillsam.courmy.main.presentation.map.component.SheetHorizontalPadding
 import com.chillsam.courmy.main.presentation.map.mock.MapMockData
 import com.naver.maps.geometry.LatLng
@@ -47,7 +47,6 @@ private val ScreenHorizontalPadding = 16.dp
 private val ControlBottomGap = 12.dp
 
 /** 리스트 시트가 화면에서 차지하는 높이 비율. 접힘(FS-10-List) / 펼침(FS-10-ListAlt) 두 단계. */
-private const val LIST_SHEET_COLLAPSED_RATIO = 0.45f
 private const val LIST_SHEET_EXPANDED_RATIO = 0.62f
 
 /**
@@ -66,17 +65,12 @@ fun MapSearchResultScreen(
     var recenterSignal by remember { mutableIntStateOf(0) }
     val isList = uiState.sheetMode == MapSheetMode.LIST
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-    val listSheetHeight by animateDpAsState(
-        targetValue =
-            screenHeight *
-                if (uiState.sheetExpanded) LIST_SHEET_EXPANDED_RATIO else LIST_SHEET_COLLAPSED_RATIO,
-        label = "listSheetHeight",
-    )
+    val listSheetHeight = screenHeight * LIST_SHEET_EXPANDED_RATIO
 
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         MapCanvas(
             places = uiState.places,
-            clusters = uiState.clusters,
+            clusters = emptyList(),
             selectedPlaceId = uiState.selectedPlaceId,
             myLocation = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
             onPlaceClick = actions.onPlaceSelect,
@@ -99,23 +93,9 @@ fun MapSearchResultScreen(
                         .fillMaxWidth()
                         .padding(horizontal = ScreenHorizontalPadding, vertical = 8.dp),
             )
-            // 리스트를 펼치면 지도가 거의 안 보이므로 세분화 칩도 같이 접어 시트에 자리를 내준다.
-            if (!uiState.sheetExpanded) {
-                MapChipRow(
-                    labels = uiState.refinements,
-                    selectedIndex = uiState.refinements.indexOf(uiState.selectedRefinement),
-                    onSelect = { index ->
-                        val label = uiState.refinements[index]
-                        actions.onRefinementSelect(label.takeIf { it != uiState.selectedRefinement })
-                    },
-                    horizontalPadding = ScreenHorizontalPadding,
-                )
-            }
         }
 
         MapControlsRow(
-            isList = isList,
-            onToggleSheetMode = actions.onToggleSheetMode,
             onRecenter = { recenterSignal++ },
             modifier =
                 Modifier
@@ -124,7 +104,15 @@ fun MapSearchResultScreen(
                     .padding(horizontal = ScreenHorizontalPadding, vertical = ControlBottomGap),
         )
 
-        if (isList) {
+        if (uiState.places.isEmpty()) {
+            MapBottomSheet(modifier = Modifier.align(Alignment.BottomCenter)) {
+                if (uiState.isLoading) {
+                    FeedLoading()
+                } else {
+                    FeedMessage(uiState.errorMessage ?: "검색 결과가 없어요", uiState.errorMessage?.let { actions.onRetry })
+                }
+            }
+        } else if (isList) {
             ResultListSheet(
                 uiState = uiState,
                 actions = actions,
@@ -141,23 +129,15 @@ fun MapSearchResultScreen(
 }
 
 /** 선택 장소 카드 시트가 가리는 대략적인 높이. 지도·컨트롤을 그만큼 위로 밀어 준다. */
-private val MarkerSheetInset = 190.dp
+private val MarkerSheetInset = 130.dp
 
 /** `목록 보기` 알약과 내 위치 버튼이 같은 줄에 놓인다. 알약은 가운데, 버튼은 오른쪽 끝. */
 @Composable
 private fun MapControlsRow(
-    isList: Boolean,
-    onToggleSheetMode: () -> Unit,
     onRecenter: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        // 리스트가 떠 있는 동안에는 `지도 보기` 로 뒤집어 되돌아갈 길을 남긴다.
-        MapPillButton(
-            text = if (isList) "지도 보기" else "목록 보기",
-            iconRes = if (isList) R.drawable.ic_location_24 else R.drawable.ic_filter_list_24,
-            onClick = onToggleSheetMode,
-        )
         MapCircleIconButton(
             iconRes = R.drawable.ic_my_location_24,
             contentDescription = "내 위치",
@@ -167,26 +147,24 @@ private fun MapControlsRow(
     }
 }
 
-/** FS-10-ResultMap 시트: 고른 장소 카드 + `코스에 추가`. */
+/** 고른 장소 카드. 누르면 장소 상세 시트를 연다. */
 @Composable
 private fun SelectedPlaceSheet(
     uiState: MapSearchResultUIState,
     actions: MapSearchResultActions,
     modifier: Modifier = Modifier,
 ) {
-    val place = uiState.selectedPlace ?: return
-    MapBottomSheet(modifier = modifier) {
+    val place = uiState.selectedPlace ?: uiState.places.firstOrNull() ?: return
+    MapBottomSheet(
+        modifier = modifier,
+        expanded = false,
+        onExpandedChange = actions.onSheetExpandedChange,
+    ) {
         MapPlaceDetailCard(
             place = place,
             onClick = { actions.onPlaceSelect(place.id) },
             onSaveClick = { actions.onSaveToggle(place.id) },
             modifier = Modifier.padding(horizontal = SheetHorizontalPadding),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        DsButton(
-            text = "+ 코스에 추가",
-            onClick = { actions.onAddToCourse(place.id) },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = SheetHorizontalPadding),
         )
         Spacer(modifier = Modifier.height(12.dp))
         Box(modifier = Modifier.navigationBarsPadding())
@@ -200,10 +178,11 @@ private fun ResultListSheet(
     actions: MapSearchResultActions,
     modifier: Modifier = Modifier,
 ) {
-    val color = DesignSystemThemeImpl.designSystemColor
+    val listState = rememberLazyListState()
+    LoadMoreOnScrollEnd(listState, actions.onLoadMore)
     MapBottomSheet(
         modifier = modifier,
-        expanded = uiState.sheetExpanded,
+        expanded = true,
         onExpandedChange = actions.onSheetExpandedChange,
     ) {
         Row(
@@ -215,13 +194,13 @@ private fun ResultListSheet(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            ResultCountLabel(count = uiState.totalCount)
-            MapSortSelector(selected = uiState.sortOrder, onSelect = actions.onSortSelect)
+            ResultCountLabel(count = "${uiState.places.size}${if (uiState.hasNext) "+" else ""}")
         }
         if (uiState.places.isEmpty()) {
             EmptyResults(loading = uiState.isLoading)
         } else {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding =
                     PaddingValues(
@@ -235,10 +214,13 @@ private fun ResultListSheet(
                     MapRankedPlaceRow(
                         rank = index + 1,
                         place = place,
+                        isSelected = place.id == uiState.selectedPlaceId,
                         onClick = { actions.onPlaceSelect(place.id) },
                         onSaveClick = { actions.onSaveToggle(place.id) },
                     )
                 }
+                if (uiState.isLoadingMore) item { LoadingMoreFooter() }
+                if (uiState.errorMessage != null) item { FeedMessage(uiState.errorMessage, actions.onRetry) }
             }
         }
     }
@@ -247,7 +229,7 @@ private fun ResultListSheet(
 /** `검색 결과 24` — 숫자만 흐리게 두어 제목과 개수를 구분한다. */
 @Composable
 private fun ResultCountLabel(
-    count: Int,
+    count: String,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor

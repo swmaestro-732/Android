@@ -7,6 +7,7 @@ import com.chillsam.courmy.main.domain.map.GetMapPlacesUseCase
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapSortOrder
 import com.chillsam.courmy.main.presentation.map.mock.MapMockData
+import com.chillsam.courmy.main.presentation.search.searchErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -21,8 +22,7 @@ import javax.inject.Inject
  * 파라미터로 넘어가고(서버에 없는 디저트만 data 레이어가 클라이언트 필터), 정렬은 거리순만 서버가
  * 지원해 저장순·평점순은 여기서 계속 정렬한다.
  *
- * TODO(SCRUM-지도API): 조회 영역이 기본 진입 지점(성수동) 고정이다. 카메라 이동 시 재조회하려면
- * MapIntent 에 카메라 bounds 이벤트를 추가해야 한다.
+ * 지도 준비와 카메라 이동 종료 시 실제 화면 영역으로 조회한다.
  */
 @HiltViewModel
 class MapViewModel
@@ -34,6 +34,12 @@ class MapViewModel
 
         override fun onIntent(intent: MapIntent) {
             when (intent) {
+                is MapIntent.BoundsChanged -> {
+                    if (intent.bounds == currentState.bounds) return
+                    dispatch(MapReducerEvent.BoundsChanged(intent.bounds))
+                    load()
+                }
+
                 MapIntent.Load -> {
                     if (currentState.places.isEmpty()) load()
                 }
@@ -67,6 +73,7 @@ class MapViewModel
         }
 
         private fun load() {
+            val bounds = currentState.bounds ?: return
             // 카테고리를 연달아 누르면 앞선 조회는 의미가 없다. 항상 마지막 것만 살린다.
             loadJob?.cancel()
             loadJob =
@@ -75,10 +82,10 @@ class MapViewModel
                     val state = currentState
                     runCatching {
                         getMapPlacesUseCase(
-                            swLat = MapMockData.DEFAULT_LATITUDE - BOUNDS_DELTA_LAT,
-                            swLng = MapMockData.DEFAULT_LONGITUDE - BOUNDS_DELTA_LNG,
-                            neLat = MapMockData.DEFAULT_LATITUDE + BOUNDS_DELTA_LAT,
-                            neLng = MapMockData.DEFAULT_LONGITUDE + BOUNDS_DELTA_LNG,
+                            swLat = bounds.swLat,
+                            swLng = bounds.swLng,
+                            neLat = bounds.neLat,
+                            neLng = bounds.neLng,
                             category = state.category,
                             sortOrder = state.sortOrder,
                             // 위치 권한 연동 전이라 거리 기준점은 기본 진입 지점으로 둔다.
@@ -97,7 +104,7 @@ class MapViewModel
                         if (e is CancellationException) throw e
                         // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                         Log.w(TAG, "지도 장소 로드 실패", e)
-                        dispatch(MapReducerEvent.Failed("주변 장소를 불러오지 못했습니다."))
+                        dispatch(MapReducerEvent.Failed(e.searchErrorMessage("주변 장소를 불러오지 못했습니다.")))
                     }
                 }
         }
@@ -112,6 +119,10 @@ class MapViewModel
             event: MapReducerEvent,
         ): MapUIState =
             when (event) {
+                is MapReducerEvent.BoundsChanged -> {
+                    state.copy(bounds = event.bounds)
+                }
+
                 MapReducerEvent.LoadStarted -> {
                     state.copy(isLoading = true, errorMessage = null)
                 }
@@ -160,10 +171,6 @@ class MapViewModel
 
         private companion object {
             const val TAG = "MapViewModel"
-
-            // 카메라 bounds 연동 전까지 기본 진입 지점 주변 약 ±2km 를 조회 범위로 쓴다(파일 상단 TODO).
-            const val BOUNDS_DELTA_LAT = 0.018
-            const val BOUNDS_DELTA_LNG = 0.023
         }
     }
 

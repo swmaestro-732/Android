@@ -1,17 +1,20 @@
 package com.chillsam.courmy.main.presentation.map.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -19,12 +22,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 
@@ -56,6 +65,7 @@ internal fun MapPlaceCarouselCard(
         Box {
             PlaceImage(
                 url = place.thumbnailUrl,
+                category = place.category,
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -107,7 +117,12 @@ internal fun MapPlaceDetailCard(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        PlaceImage(url = place.thumbnailUrl, modifier = Modifier.size(72.dp), shape = ThumbShape)
+        PlaceImage(
+            url = place.thumbnailUrl,
+            category = place.category,
+            modifier = Modifier.size(72.dp),
+            shape = ThumbShape,
+        )
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -137,6 +152,7 @@ internal fun MapPlaceDetailCard(
 internal fun MapRankedPlaceRow(
     rank: Int,
     place: MapPlaceVO,
+    isSelected: Boolean,
     onClick: () -> Unit,
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -147,7 +163,9 @@ internal fun MapRankedPlaceRow(
             modifier
                 .fillMaxWidth()
                 .clip(CardShape)
-                .background(color.bgDefaultLevel1)
+                .background(if (isSelected) color.bgAccentSubtle else color.bgDefaultLevel1)
+                .border(1.dp, if (isSelected) color.borderAccent else color.bgDefaultLevel1, CardShape)
+                .semantics { selected = isSelected }
                 .clickable(onClick = onClick)
                 .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -158,7 +176,12 @@ internal fun MapRankedPlaceRow(
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel2,
         )
-        PlaceImage(url = place.thumbnailUrl, modifier = Modifier.size(54.dp), shape = ThumbShape)
+        PlaceImage(
+            url = place.thumbnailUrl,
+            category = place.category,
+            modifier = Modifier.size(54.dp),
+            shape = ThumbShape,
+        )
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -264,20 +287,42 @@ private fun SaveToggleIcon(
     )
 }
 
-/** 장소 사진. URL 이 없거나 못 불러오면 자리 지킴 색으로 남는다. */
+/** 사진 로딩 중·실패·미제공 시 카테고리 아이콘을 표시한다. */
 @Composable
 private fun PlaceImage(
     url: String?,
+    category: String,
     modifier: Modifier = Modifier,
     shape: RoundedCornerShape = RoundedCornerShape(0.dp),
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Box(modifier = modifier.clip(shape).background(color.imagePlaceholder)) {
-        if (url != null) {
+    Box(
+        modifier =
+            modifier
+                .clip(shape)
+                .background(
+                    Brush.linearGradient(listOf(color.bgAccentSubtle, color.bgDefaultLevel1)),
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(placeCategoryIcon(category)),
+            contentDescription = null,
+            tint = color.contentAccent,
+            modifier =
+                Modifier
+                    .background(
+                        color.bgDefaultLevel1.copy(alpha = 0.65f),
+                        CircleShape,
+                    ).padding(7.dp)
+                    .size(26.dp),
+        )
+        if (!url.isNullOrBlank()) {
             AsyncImage(
                 model = url,
                 contentDescription = null,
-                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
@@ -294,4 +339,16 @@ private fun MapPlaceVO.categoryAndWalk(prefixSeparator: Boolean = false): String
 private fun MapPlaceVO.openStatusText(): String {
     val status = if (openNow) "영업 중" else "영업 종료"
     return if (closingTime != null) "$status · $closingTime 종료" else status
+}
+
+@Preview
+@Composable
+private fun PlaceImagePreview() {
+    DesignSystemTheme {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf("카페", "음식점", "공원").forEach { category ->
+                PlaceImage(url = null, category = category, modifier = Modifier.size(72.dp), shape = ThumbShape)
+            }
+        }
+    }
 }
