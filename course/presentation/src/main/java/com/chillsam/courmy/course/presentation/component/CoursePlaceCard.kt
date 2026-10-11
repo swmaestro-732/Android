@@ -49,6 +49,8 @@ fun CoursePlaceCard(
     showRecord: Boolean = true,
     showDragHandle: Boolean = true,
     showRemove: Boolean = true,
+    showPhotos: Boolean = true,
+    noteMaxLength: Int = NOTE_MAX_LENGTH,
 ) {
     val shape = RoundedCornerShape(16.dp)
     val hasNote = place.note.isNotEmpty()
@@ -80,12 +82,18 @@ fun CoursePlaceCard(
                     ).padding(horizontal = 12.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            EditableNoteRow(note = place.note, onNoteChange = { onNoteChange(it.take(NOTE_MAX_LENGTH)) })
-            CoursePhotoRow(
-                photos = place.photoUrls,
-                maxPhotos = place.maxPhotos,
-                onPhotosChange = onPhotosChange,
+            EditableNoteRow(
+                note = place.note,
+                onNoteChange = { onNoteChange(it.take(noteMaxLength)) },
+                maxLength = noteMaxLength,
             )
+            if (showPhotos) {
+                CoursePhotoRow(
+                    photos = place.photoUrls,
+                    maxPhotos = place.maxPhotos,
+                    onPhotosChange = onPhotosChange,
+                )
+            }
         }
     }
 }
@@ -155,6 +163,7 @@ private fun PlaceHeader(
 private fun EditableNoteRow(
     note: String,
     onNoteChange: (String) -> Unit,
+    maxLength: Int,
 ) {
     val hasNote = note.isNotEmpty()
     val accent = DesignSystemThemeImpl.designSystemColor.contentAccent
@@ -189,7 +198,7 @@ private fun EditableNoteRow(
         )
         if (hasNote) {
             DsText(
-                text = "${note.length}/$NOTE_MAX_LENGTH",
+                text = "${note.length}/$maxLength",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = placeholderColor,
             )

@@ -166,7 +166,7 @@ data class PlaceSheetCourse(
 @Composable
 fun PlaceDetailSheet(
     coursePlace: CourseDetailPlaceVO,
-    course: PlaceSheetCourse,
+    course: PlaceSheetCourse? = null,
     address: String,
     reviews: CourseReviewListVO?,
     isSaved: Boolean,
@@ -177,7 +177,6 @@ fun PlaceDetailSheet(
     startInOverview: Boolean = false,
     onDeleteReview: (Long) -> Unit = {},
 ) {
-    val places = course.places
     val color = DesignSystemThemeImpl.designSystemColor
     val scope = rememberCoroutineScope()
     // 코스 전체 보기 모드. 켜면 카메라가 모든 핀을 담고, 몇 번째 장소로 갈지 고르는 줄이 나온다.
@@ -248,7 +247,7 @@ fun PlaceDetailSheet(
                     },
                     onTap = animatedDismiss,
                 )
-                if (overview) {
+                if (overview && course != null) {
                     // 전체 보기에서 핀·칩·토글을 누르면 overview 가 풀리며 아래 정보 모드로 내려간다.
                     FullMapLayout(
                         coursePlace = coursePlace,

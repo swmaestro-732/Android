@@ -32,10 +32,13 @@ data class CourseScreenData(
 @Serializable
 data class CourseViewerDTO(
     val hasSaved: Boolean = false,
+    /** 내가 이 코스에 좋아요를 눌렀는지. 집계(likesCnt)는 상세 응답에 없어 여부만 시딩한다. */
+    val hasLiked: Boolean = false,
 )
 
 @Serializable
 data class CourseScreenDTO(
+    val forkedFromId: Long? = null,
     val title: String? = null,
     val coverImageUrl: String? = null,
     /** 서버가 장소 구성에서 파생한 카테고리 코드. 읽기 전용이라 편집 요청으로 바꿀 수 없다. */
@@ -146,6 +149,7 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
     val stats = course.stats
     val summary = reviewSummary
     return CourseDetailVO(
+        forkedFromId = course.forkedFromId?.takeIf { it > 0 },
         title = course.title.orEmpty(),
         coverImageUrl = course.coverImageUrl.orEmpty(),
         // 화면에서 칩 하나씩 그리므로 합치지 않고 목록 그대로 넘긴다.
@@ -179,6 +183,7 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
         reviewCountText = "${summary?.totalCount ?: 0}개",
         reviews = summary?.previews.orEmpty().map { it.toVO(myUserId) },
         isSaved = course.viewer?.hasSaved ?: false,
+        isLiked = course.viewer?.hasLiked ?: false,
         isFollowingAuthor = course.author?.isFollowing ?: false,
         isMine = myUserId != null && myUserId == course.author?.id,
     )

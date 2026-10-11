@@ -60,6 +60,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
@@ -128,6 +129,7 @@ fun CourseDetailScreen(
                 isSaving = isSaving,
                 isDeleting = isDeleting,
                 isLiked = social.isLiked,
+                likeCount = social.likeCount,
                 actions = actions,
                 onBack = actions.onBack,
             )
@@ -280,6 +282,7 @@ private fun DetailHero(
     isSaving: Boolean,
     isDeleting: Boolean,
     isLiked: Boolean,
+    likeCount: Int?,
     actions: CourseDetailActions,
     onBack: () -> Unit,
 ) {
@@ -328,10 +331,9 @@ private fun DetailHero(
                 onClick = onBack,
             )
             Spacer(Modifier.weight(1f))
-            HeroCircleButton(
-                iconRes = if (isLiked) R.drawable.ic_like_on_24 else R.drawable.ic_like_off_24,
-                contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
-                tint = if (isLiked) color.contentAccent else color.contentDefaultLevel0,
+            HeroLikeButton(
+                isLiked = isLiked,
+                likeCount = likeCount,
                 onClick = actions.onToggleLike,
             )
             // 내 코스는 저장할 이유가 없다. 편집·삭제가 대신 ⋮ 에 붙는다.
@@ -382,6 +384,10 @@ private fun DetailHero(
                         color = color.contentDefaultLevel1,
                     )
                 }
+            }
+            if (detail.forkedFromId != null) {
+                CopyOriginBadge(text = "복제한 코스")
+                Spacer(Modifier.height(8.dp))
             }
             DsText(
                 text = detail.title,
@@ -472,6 +478,46 @@ private fun CourseSettingsMenuItem(
             )
         },
     )
+}
+
+/**
+ * 히어로의 좋아요 버튼. 집계를 알면([likeCount] != null) 숫자를 붙인 알약으로 넓어지고,
+ * 모르면 아이콘만 있는 원형으로 남는다 — 상세 응답에 집계가 없어 지어낸 수를 그리지 않는다
+ * ([CourseSocialUIState.likeCount] 주석 참고).
+ */
+@Composable
+private fun HeroLikeButton(
+    isLiked: Boolean,
+    likeCount: Int?,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(
+        modifier =
+            Modifier
+                .height(34.dp)
+                .clip(RoundedCornerShape(17.dp))
+                .background(color.bgDefaultLevel1)
+                .clickable(onClick = onClick)
+                .padding(horizontal = if (likeCount != null) 10.dp else 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            painter = painterResource(if (isLiked) R.drawable.ic_like_on_24 else R.drawable.ic_like_off_24),
+            contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
+            tint = if (isLiked) color.contentAccent else color.contentDefaultLevel0,
+            modifier = Modifier.size(22.dp),
+        )
+        if (likeCount != null) {
+            Spacer(Modifier.width(4.dp))
+            DsText(
+                text = formatCount(likeCount),
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = if (isLiked) color.contentAccent else color.contentDefaultLevel0,
+            )
+        }
+    }
 }
 
 /**
@@ -748,10 +794,11 @@ private val CourseMapHeight = 220.dp
  * 글자 버튼보다 지도 전체가 훨씬 큰 표적이다.
  */
 @Composable
-private fun CourseMapSection(
+internal fun CourseMapSection(
     places: List<CourseDetailPlaceVO>,
     onPlaceClick: (CourseDetailPlaceVO) -> Unit,
     onOpenDetail: (CourseDetailPlaceVO) -> Unit,
+    title: String = "코스 한눈에 보기",
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val points = remember(places) { places.toRoutePoints() }
@@ -761,7 +808,7 @@ private fun CourseMapSection(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         DsText(
-            text = "코스 한눈에 보기",
+            text = title,
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
         )
@@ -797,10 +844,12 @@ private fun CourseMapSection(
  * 접힘 목록은 장소 이름을 순서대로 훑게 해 주고, 자세히 볼 사람만 펼치면 된다.
  */
 @Composable
-private fun PlacesSection(
+internal fun PlacesSection(
     places: List<CourseDetailPlaceVO>,
     authorName: String,
     onPlaceClick: (CourseDetailPlaceVO) -> Unit,
+    title: String = "코스 속 장소",
+    expandedPlaceContent: (@Composable (CourseDetailPlaceVO) -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val color = DesignSystemThemeImpl.designSystemColor
@@ -816,7 +865,7 @@ private fun PlacesSection(
             // "코스 속 장소" 는 기본색, 개수("N곳") 만 accent 로 강조한다.
             Row(modifier = Modifier.weight(1f)) {
                 DsText(
-                    text = "코스 속 장소 ",
+                    text = "$title ",
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                 )
@@ -835,7 +884,11 @@ private fun PlacesSection(
         }
         if (expanded) {
             places.forEach { place ->
-                DetailPlaceItem(place = place, authorName = authorName, onClick = { onPlaceClick(place) })
+                if (expandedPlaceContent != null) {
+                    expandedPlaceContent(place)
+                } else {
+                    DetailPlaceItem(place = place, authorName = authorName, onClick = { onPlaceClick(place) })
+                }
                 place.walkToNextText?.let { RouteConnector(text = it) }
             }
         } else {
@@ -927,7 +980,7 @@ private val TIMELINE_GAP = 20.dp
 
 /** 콤팩트 장소 행: 펼침 상태 [DetailPlaceItem] 의 헤더(번호·이름/카테고리·›)와 동일한 레이아웃. */
 @Composable
-private fun CompactPlaceRow(
+internal fun CompactPlaceRow(
     place: CourseDetailPlaceVO,
     onClick: () -> Unit,
     badgeModifier: Modifier = Modifier,

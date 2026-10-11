@@ -116,7 +116,13 @@ class CourseDetailViewModel
                 }
 
                 is CourseDetailReducerEvent.Loaded -> {
-                    state.copy(isLoading = false, detail = event.detail, errorMessage = null)
+                    state.copy(
+                        isLoading = false,
+                        detail = event.detail,
+                        errorMessage = null,
+                        // 좋아요 여부는 상세 응답(viewer.hasLiked)이 진실이다. 재조회 때도 서버 값으로 맞춘다.
+                        social = state.social.copy(isLiked = event.detail.isLiked),
+                    )
                 }
 
                 is CourseDetailReducerEvent.Failed -> {
@@ -221,9 +227,11 @@ class CourseDetailViewModel
                         social =
                             state.social.copy(
                                 isLiked = liked,
+                                // 집계를 모르는 상태(null)에서는 ±1 할 기준이 없다 — 숫자는 서버 응답을 기다린다.
                                 likeCount =
-                                    (state.social.likeCount + if (liked) 1 else -1)
-                                        .coerceAtLeast(0),
+                                    state.social.likeCount
+                                        ?.plus(if (liked) 1 else -1)
+                                        ?.coerceAtLeast(0),
                             ),
                     )
                 }

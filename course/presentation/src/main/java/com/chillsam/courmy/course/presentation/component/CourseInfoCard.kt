@@ -1,7 +1,9 @@
 package com.chillsam.courmy.course.presentation.component
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,12 +21,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.collections.immutable.ImmutableList
+import java.time.LocalDate
 
 /** ① 코스 정보 카드 — 이름/설명 인라인 입력 · 썸네일 사진. */
 @Composable
@@ -122,4 +126,66 @@ private fun InlineField(
             innerTextField()
         },
     )
+}
+
+/** 계획의 선택 입력. 공개 코스 전용 사진·태그·공개범위는 받지 않는다. */
+@Composable
+fun PlanInfoCard(
+    title: String,
+    memo: String,
+    plannedDate: String,
+    onTitleChange: (String) -> Unit,
+    onMemoChange: (String) -> Unit,
+    onDateChange: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier.fillMaxWidth().cardShadow(RoundedCornerShape(18.dp)).padding(17.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FieldLabel("계획 제목 (선택 · ${title.length}/200)")
+        InlineField(
+            value = title,
+            onValueChange = { onTitleChange(it.take(200)) },
+            placeholder = "계획 제목을 입력하세요",
+            textStyle = DesignSystemThemeImpl.typeScale.textStrongM,
+        )
+        Divider()
+        FieldLabel("전체 메모 (선택 · ${memo.length}/500)")
+        InlineField(
+            value = memo,
+            onValueChange = { onMemoChange(it.take(500)) },
+            placeholder = "기억할 내용을 남겨 보세요",
+            textStyle = DesignSystemThemeImpl.typeScale.textRegularS,
+            singleLine = false,
+        )
+        Divider()
+        FieldLabel("가려는 날 (선택)")
+        DsText(
+            text = plannedDate.ifEmpty { "미정 · 날짜 선택" },
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = DesignSystemThemeImpl.designSystemColor.contentAccent,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        val initialDate = runCatching { LocalDate.parse(plannedDate) }.getOrDefault(LocalDate.now())
+                        DatePickerDialog(
+                            context,
+                            { _, year, month, day -> onDateChange(LocalDate.of(year, month + 1, day).toString()) },
+                            initialDate.year,
+                            initialDate.monthValue - 1,
+                            initialDate.dayOfMonth,
+                        ).show()
+                    }.padding(vertical = 12.dp),
+        )
+        if (plannedDate.isNotEmpty()) {
+            DsText(
+                text = "날짜 미정으로 변경",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+                modifier = Modifier.clickable { onDateChange("") }.padding(vertical = 12.dp),
+            )
+        }
+    }
 }

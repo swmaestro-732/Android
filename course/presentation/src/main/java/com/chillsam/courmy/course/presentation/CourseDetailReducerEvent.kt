@@ -53,7 +53,8 @@ sealed interface CourseDetailReducerEvent : ReducerEvent {
     data class LikeFailed(
         val message: String,
         val liked: Boolean,
-        val likeCount: Int,
+        /** 토글 전 집계. 아직 서버 집계를 받은 적이 없으면 null(숫자 미표시 상태로 복귀). */
+        val likeCount: Int?,
     ) : CourseDetailReducerEvent
 
     /** 같은 ViewModel 인스턴스로 다른 코스를 열 때 로컬 소셜 상태를 비운다. */
