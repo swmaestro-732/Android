@@ -56,18 +56,21 @@ import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.search.SearchPage
 import com.chillsam.courmy.main.domain.search.SearchResultPage
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
-import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import com.chillsam.courmy.main.entity.home.HomeNearbyPlaceVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
+import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.MainTab
-import com.chillsam.courmy.main.presentation.home.mock.HomeNearbyMockData
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
+
+/** 헤더 보조줄의 위치·날씨. 위치·날씨 연동 전까지 시안 고정값을 쓴다. */
+private const val LOCATION_WEATHER_MOCK = "성수동 · 흐림 18°"
 
 /** 테마별 둘러보기 타일. 탭하면 테마명을 검색어로 하는 검색 결과로 보낸다. */
 private val themeTiles: List<String> =
@@ -77,10 +80,11 @@ private val themeTiles: List<String> =
  * 앱의 기본 시작 화면(FS-09). 새 시안 기준으로 섹션형 홈으로 개편했다.
  *
  * 헤더(위치·날씨 mock + 인사) → 검색바 → 오늘의 추천 코스(가로 미리보기)
- * → 근처 저장 장소(mock) → 테마별 둘러보기 순서다.
+ * → 근처 저장 장소 → 테마별 둘러보기 순서다.
  *
- * 추천 코스는 기존 홈 피드와 같은 `GET /service/v1/courses`(공개 엔드포인트)를 쓰고,
- * 세로 피드 전체는 [RecommendedCoursesPage] 로 옮겼다 — 홈은 앞쪽 몇 건만 미리 보여준다.
+ * 추천 코스·근처 저장 장소는 `GET /service/v2/home`(공개 엔드포인트) 한 번으로 받는다.
+ * 세로 피드 전체는 [RecommendedCoursesPage] 로 옮겼다(`GET /service/v1/home` 페이지네이션 유지)
+ * — 홈은 앞쪽 몇 건만 미리 보여준다.
  * "커미 AI" 배너·"진행 중인 코스" 띠는 이번 범위에서 제외했다. [wiki-needed]
  */
 @Composable
@@ -89,16 +93,14 @@ fun HomePage(modifier: Modifier = Modifier) {
     val session = LocalSessionUiState.current
     var menuExpanded by remember { mutableStateOf(false) }
 
-    // FAB "계획하기" 로 여는 계획 생성 다이얼로그.
-    var showPlanDialog by remember { mutableStateOf(false) }
-    // 공개 코스 피드(GET /service/v1/courses). 공개 엔드포인트라 게스트에서도 그대로 부른다.
-    val feedViewModel: HomeFeedViewModel = hiltViewModel()
-    val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
+    // 홈 화면 조합(GET /service/v2/home). 공개 엔드포인트라 게스트에서도 그대로 부른다.
+    val homeViewModel: HomeViewModel = hiltViewModel()
+    val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
     // 헤더 인사말·아바타는 내 프로필에서 가져온다.
     val profile = if (session.isLoggedIn) myProfileForHeader() else null
 
-    // 코스를 만들고 돌아오면 추천 미리보기가 바뀌어 있을 수 있어 다시 불러온다.
-    RefreshOnResume { feedViewModel.onIntent(HomeFeedIntent.Retry) }
+    // 코스를 만들거나 장소를 저장하고 돌아오면 섹션이 바뀌어 있을 수 있어 다시 불러온다.
+    RefreshOnResume { homeViewModel.onIntent(HomeIntent.Retry) }
 
     Box(
         modifier =
@@ -129,17 +131,21 @@ fun HomePage(modifier: Modifier = Modifier) {
             }
             item {
                 RecommendedCoursesSection(
-                    feedState = feedState,
+                    homeState = homeState,
                     onSeeAll = { navigationHelper.navigateTo(RecommendedCoursesPage) },
                     onCourseClick = { id -> navigationHelper.navigateByRoute(CourseDetailPage.route(id)) },
-                    onRetry = { feedViewModel.onIntent(HomeFeedIntent.Retry) },
+                    onRetry = { homeViewModel.onIntent(HomeIntent.Retry) },
                 )
             }
-            item {
-                NearbySavedSection(
-                    onSeeMap = { navigationHelper.navigateTo(MapPage) },
-                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
-                )
+            // 비로그인이거나 근처에 저장한 곳이 없으면 섹션째 숨긴다(빈 헤더만 뜨지 않게).
+            if (homeState.nearbyPlaces.isNotEmpty()) {
+                item {
+                    NearbySavedSection(
+                        places = homeState.nearbyPlaces,
+                        onSeeMap = { navigationHelper.navigateTo(MapPage) },
+                        modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                    )
+                }
             }
             item {
                 ThemeBrowseSection(
@@ -171,12 +177,9 @@ fun HomePage(modifier: Modifier = Modifier) {
                 },
                 onNewPlan = {
                     menuExpanded = false
-                    showPlanDialog = true
+                    navigationHelper.navigateByRoute(CourseCreatePage.planRoute())
                 },
             )
-        }
-        if (showPlanDialog) {
-            PlanCreateDialog(onDismiss = { showPlanDialog = false })
         }
     }
 }
@@ -211,7 +214,7 @@ private fun HomeSearchBar(
             modifier = Modifier.size(18.dp),
         )
         DsText(
-            text = "장소 · 동네 · 테마 검색",
+            text = "코스 검색",
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel3,
         )
@@ -262,7 +265,7 @@ private fun myProfileForHeader(): MyProfileVO? {
 /**
  * 홈 헤더: 위치·날씨 보조줄 → 인사 타이틀 + 우상단 아바타.
  *
- * 위치·날씨는 연동 전이라 시안 고정값([HomeNearbyMockData.LOCATION_WEATHER])을 쓴다.
+ * 위치·날씨는 연동 전이라 시안 고정값([LOCATION_WEATHER_MOCK])을 쓴다.
  * 로그인했으면 닉네임을 넣어 부르고, 게스트는 닉네임 없는 기존 문구를 유지한다.
  */
 @Composable
@@ -280,7 +283,7 @@ private fun HomeHeader(
     Row(modifier = modifier, verticalAlignment = Alignment.Top) {
         Column(modifier = Modifier.weight(1f)) {
             DsText(
-                text = HomeNearbyMockData.LOCATION_WEATHER,
+                text = LOCATION_WEATHER_MOCK,
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
             )
@@ -340,7 +343,7 @@ private fun SectionHeader(
  */
 @Composable
 private fun RecommendedCoursesSection(
-    feedState: HomeFeedUIState,
+    homeState: HomeUIState,
     onSeeAll: () -> Unit,
     onCourseClick: (String) -> Unit,
     onRetry: () -> Unit,
@@ -354,13 +357,13 @@ private fun RecommendedCoursesSection(
         )
         // 헤더·다른 섹션은 늘 보여야 하므로, 로딩·에러는 카드 자리에서만 분기한다.
         when {
-            feedState.courses.isNotEmpty() -> {
+            homeState.courses.isNotEmpty() -> {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(
-                        feedState.courses.take(RECOMMENDED_PREVIEW_COUNT),
+                        homeState.courses.take(RECOMMENDED_PREVIEW_COUNT),
                         key = { it.id },
                     ) { course ->
                         RecommendedCourseCard(
@@ -371,14 +374,14 @@ private fun RecommendedCoursesSection(
                 }
             }
 
-            feedState.isLoading -> {
+            homeState.isLoading -> {
                 FeedLoading()
             }
 
             else -> {
                 FeedMessage(
-                    message = feedState.errorMessage ?: "아직 공개된 코스가 없어요.",
-                    onRetry = feedState.errorMessage?.let { { onRetry() } },
+                    message = homeState.errorMessage ?: "아직 공개된 코스가 없어요.",
+                    onRetry = homeState.errorMessage?.let { { onRetry() } },
                 )
             }
         }
@@ -447,25 +450,45 @@ private fun RecommendedCourseCard(
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
                 maxLines = 2,
+                // 제목이 한 줄이어도 두 줄 높이를 확보한다 — 가로 카드끼리 높이가 들쭉날쭉하지 않게.
+                minLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (course.saveCountText.isNotBlank()) {
-                DsText(
-                    text = "저장 ${course.saveCountText}",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel3,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            Row(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CourseLikeCount(count = course.likeCountText)
+                if (course.saveCountText.isNotBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_tab_bookmark_24),
+                            contentDescription = "저장",
+                            tint = color.contentDefaultLevel3,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        DsText(
+                            text = course.saveCountText,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel2,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-/** "근처 저장 장소" 섹션. 근처 저장 장소 API 연동 전이라 [HomeNearbyMockData] 로 그린다. */
+/** "근처 저장 장소" 섹션. `GET /service/v2/home` 의 `nearbySavedPlaces` 를 그대로 그린다. */
 @Composable
 private fun NearbySavedSection(
+    places: List<HomeNearbyPlaceVO>,
     onSeeMap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -475,7 +498,7 @@ private fun NearbySavedSection(
             actionLabel = "지도에서 보기",
             onAction = onSeeMap,
         )
-        HomeNearbyMockData.places.forEach { place ->
+        places.forEach { place ->
             NearbyPlaceCard(place = place)
         }
     }
@@ -484,7 +507,7 @@ private fun NearbySavedSection(
 /** 근처 저장 장소 카드: 썸네일 + 이름·평점·카테고리·도보 시간 + 방문 여부 칩. */
 @Composable
 private fun NearbyPlaceCard(
-    place: MapPlaceVO,
+    place: HomeNearbyPlaceVO,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -506,7 +529,7 @@ private fun NearbyPlaceCard(
                     .clip(RoundedCornerShape(12.dp))
                     .background(color.imagePlaceholder),
         ) {
-            if (!place.thumbnailUrl.isNullOrBlank()) {
+            if (place.thumbnailUrl.isNotBlank()) {
                 AsyncImage(
                     model = place.thumbnailUrl,
                     contentDescription = null,
@@ -528,7 +551,10 @@ private fun NearbyPlaceCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(3.dp),
             ) {
-                DsRatingStar(starSize = 12.dp)
+                // 평가가 없는 장소는 별 아이콘째 숨긴다("0.0"이 뜨지 않게).
+                if (place.ratingText.isNotBlank()) {
+                    DsRatingStar(starSize = 12.dp)
+                }
                 DsText(
                     text = nearbyPlaceMeta(place),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -538,7 +564,6 @@ private fun NearbyPlaceCard(
                 )
             }
         }
-        // 방문 여부 API 가 없어 지금은 모두 "미방문"으로 표기한다(mock).
         Box(
             modifier =
                 Modifier
@@ -547,7 +572,7 @@ private fun NearbyPlaceCard(
                     .padding(horizontal = 10.dp, vertical = 5.dp),
         ) {
             DsText(
-                text = "미방문",
+                text = if (place.visited) "방문" else "미방문",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -555,12 +580,11 @@ private fun NearbyPlaceCard(
     }
 }
 
-/** 평점·카테고리·도보 시간을 " · "로 이은 메타 한 줄(예: "4.8 · 카페 · 베이커리 · 도보 6분"). */
-private fun nearbyPlaceMeta(place: MapPlaceVO): String =
+/** 평점·카테고리·도보 시간을 " · "로 이은 메타 한 줄(예: "4.8 · 카페·디저트 · 도보 6분"). */
+private fun nearbyPlaceMeta(place: HomeNearbyPlaceVO): String =
     buildList {
-        add(place.rating.toString())
-        add(place.category)
-        place.subCategory?.let { add(it) }
+        if (place.ratingText.isNotBlank()) add(place.ratingText)
+        if (place.categoryLabel.isNotBlank()) add(place.categoryLabel)
         place.walkingMinutes?.let { add("도보 ${it}분") }
     }.joinToString(" · ")
 
