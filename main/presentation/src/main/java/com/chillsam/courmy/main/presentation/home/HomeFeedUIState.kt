@@ -15,6 +15,7 @@ import kotlinx.collections.immutable.persistentSetOf
  */
 data class HomeFeedUIState(
     val isLoading: Boolean = true,
+    val selectedCategory: String? = null,
     val courses: ImmutableList<HomeCourseVO> = persistentListOf(),
     val errorMessage: String? = null,
     /**
@@ -33,6 +34,9 @@ data class HomeFeedUIState(
     /** 다음 페이지를 받는 중. 목록 아래 로딩 표시에 쓴다. */
     val isLoadingMore: Boolean = false,
 ) : UiState {
+    val visibleCourses: List<HomeCourseVO>
+        get() = courses.filter { selectedCategory == null || it.categoryLabel == selectedCategory }
+
     companion object {
         val empty: HomeFeedUIState = HomeFeedUIState()
     }

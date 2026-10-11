@@ -1,10 +1,10 @@
 package com.chillsam.courmy.main.data.profile
 
 import com.chillsam.courmy.common.data.auth.TokenStore
+import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.main.data.profile.dto.MyPageEnvelope
 import com.chillsam.courmy.main.data.profile.dto.MyPageScreenDTO
 import com.chillsam.courmy.main.data.profile.dto.UpdateProfileRequest
-import com.chillsam.courmy.main.data.profile.dto.formatCount
 import com.chillsam.courmy.main.data.profile.dto.toMyProfileVO
 import com.chillsam.courmy.main.data.profile.dto.toUserProfileVO
 import com.chillsam.courmy.main.domain.profile.ProfileRepository

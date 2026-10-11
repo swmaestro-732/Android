@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.profile.dto
 
+import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
@@ -58,7 +59,7 @@ data class MyPageProfileDTO(
 )
 
 /**
- * 코스 카드. `likesCnt`·`savesCnt`·`theme`·`createdAt` 은 현재 화면에서 쓰지 않는다
+ * 코스 카드. `savesCnt`·`theme`·`createdAt` 은 현재 화면에서 쓰지 않는다
  * (Figma 의 "따라감"·"스팟" 수가 응답에 없어 배지·부제를 렌더하지 않기로 함 — [ProfileCourseVO] 주석 참고).
  */
 @Serializable
@@ -144,23 +145,8 @@ private fun MyPageCourseDTO.toVO(): ProfileCourseVO =
         id = id.orEmpty(),
         title = title.orEmpty(),
         thumbnailUrl = coverImageUrl.orEmpty(),
+        likeCountText = likesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
     )
-
-/**
- * 통계 숫자 표시 포맷(Figma FS-15: 1400 → "1.4k", 312 → "312").
- * 소수점 첫째 자리에서 버리며, 정확한 값보다 자릿수 안정성을 우선한다.
- */
-internal fun formatCount(value: Int): String =
-    when {
-        value >= 1_000_000 -> "${trimTrailingZero(value / 1_000_000.0)}m"
-        value >= 1_000 -> "${trimTrailingZero(value / 1_000.0)}k"
-        else -> value.toString()
-    }
-
-private fun trimTrailingZero(value: Double): String {
-    val truncated = (value * 10).toInt() / 10.0
-    return if (truncated % 1.0 == 0.0) truncated.toInt().toString() else truncated.toString()
-}
 
 /**
  * `PATCH /api/v1/users` 요청. null 인 필드는 서버가 건드리지 않는다(부분 수정).

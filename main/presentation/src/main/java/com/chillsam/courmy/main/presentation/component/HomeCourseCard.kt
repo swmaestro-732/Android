@@ -18,16 +18,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
+import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 
@@ -35,7 +36,7 @@ import com.chillsam.courmy.main.entity.home.HomeCourseVO
  * 홈(FS-09) 공개 코스 카드: 커버(카테고리 칩·북마크·제목) + 저장 수.
  *
  * TODO-API-SPEC: Figma 는 커버 아래에 작성자(아바타·이름·따라감 수), 코스 속 장소 사진 썸네일,
- * 장소명 요약을 보여주지만 `GET /service/v1/courses` 응답에는 `authorId` 만 있고 나머지 필드가 없다.
+ * 장소명 요약을 보여주지만 `GET /service/v1/home` 응답에는 `authorId` 만 있고 나머지 필드가 없다.
  * 채울 값이 없는 영역을 빈 placeholder 로 렌더하지 않고 생략한다.
  * 서버 `CourseFeedResponse.Item` 에 필드가 추가되면 이 영역을 되살린다. [wiki-needed]
  */
@@ -61,6 +62,10 @@ fun HomeCourseCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            CourseLikeCount(
+                count = course.likeCountText,
+                modifier = Modifier.padding(end = 8.dp),
+            )
             Icon(
                 painter = painterResource(R.drawable.ic_tab_bookmark_24),
                 contentDescription = null,
@@ -90,7 +95,7 @@ private fun CourseCover(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(170.dp)
                 .background(color.imagePlaceholder),
     ) {
         if (course.coverImageUrl.isNotBlank()) {
@@ -110,7 +115,8 @@ private fun CourseCover(
                         Brush.verticalGradient(
                             listOf(
                                 color.contentDefaultLevel0.copy(alpha = 0f),
-                                color.contentDefaultLevel0.copy(alpha = 0.55f),
+                                color.contentDefaultLevel0.copy(alpha = 0f),
+                                color.contentDefaultLevel0.copy(alpha = 0.78f),
                             ),
                         ),
                     ),
@@ -138,7 +144,7 @@ private fun CourseCover(
                 Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp)
-                    .size(34.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(color.bgDefaultLevel1)
                     .clickable(onClick = onBookmarkClick),
@@ -150,17 +156,38 @@ private fun CourseCover(
                         if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
                     ),
                 contentDescription = if (isSaved) "저장 취소" else "저장",
-                tint = color.contentDefaultLevel0,
+                tint = color.contentAccent,
                 modifier = Modifier.size(18.dp),
             )
         }
         DsText(
             text = course.title,
             modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
-            style = DesignSystemThemeImpl.typeScale.titleExtraL,
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentOnAccent,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 390)
+@Composable
+private fun HomeCourseCardPreview() {
+    DesignSystemTheme {
+        HomeCourseCard(
+            course =
+                HomeCourseVO(
+                    id = "preview",
+                    title = "비 오는 날 성수 감성 카페 코스",
+                    categoryLabel = "데이트",
+                    saveCountText = "342",
+                    likeCountText = "128",
+                ),
+            isSaved = true,
+            onClick = {},
+            onBookmarkClick = {},
+            modifier = Modifier.padding(16.dp),
         )
     }
 }

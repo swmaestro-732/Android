@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.home
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,31 +12,42 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
@@ -50,6 +62,7 @@ import com.chillsam.courmy.main.presentation.component.HomeCourseCard
  */
 @Composable
 fun RecommendedCoursesPage(modifier: Modifier = Modifier) {
+    StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
     val context = LocalContext.current
     val feedViewModel: HomeFeedViewModel = hiltViewModel()
@@ -60,6 +73,8 @@ fun RecommendedCoursesPage(modifier: Modifier = Modifier) {
 
     val listState = rememberLazyListState()
     LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
+
+    LaunchedEffect(feedState.selectedCategory) { listState.scrollToItem(0) }
 
     // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
     LaunchedEffect(feedState.actionErrorMessage) {
@@ -73,10 +88,15 @@ fun RecommendedCoursesPage(modifier: Modifier = Modifier) {
         modifier =
             modifier
                 .fillMaxSize()
-                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0)
-                .statusBarsPadding(),
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
+                .statusBarsPadding()
+                .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
-        RecommendedTopBar(onBack = { navigationHelper.navigateToBack() })
+        RecommendedTopBar(
+            selectedCategory = feedState.selectedCategory,
+            onSelectCategory = { feedViewModel.onIntent(HomeFeedIntent.SelectCategory(it)) },
+            onBack = { navigationHelper.navigateToBack() },
+        )
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -84,23 +104,36 @@ fun RecommendedCoursesPage(modifier: Modifier = Modifier) {
                 PaddingValues(
                     start = ScreenHorizontalPadding,
                     end = ScreenHorizontalPadding,
-                    top = 8.dp,
+                    top = 16.dp,
                     bottom = 40.dp,
                 ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    DsText(
+                        text = "불러온 ${feedState.selectedCategory ?: "추천"} 코스",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+                    )
+                    if (!feedState.isLoading) {
+                        DsText(
+                            text = "${feedState.visibleCourses.size}",
+                            style = DesignSystemThemeImpl.typeScale.textStrongS,
+                            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
+                        )
+                    }
+                }
+            }
             when {
-                feedState.courses.isNotEmpty() -> {
-                    items(feedState.courses, key = { it.id }) { course ->
+                feedState.visibleCourses.isNotEmpty() -> {
+                    items(feedState.visibleCourses, key = { it.id }) { course ->
                         HomeCourseCard(
                             course = course,
                             isSaved = course.id in feedState.savedCourseIds,
                             onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
                             onBookmarkClick = { feedViewModel.onIntent(HomeFeedIntent.ToggleSave(course.id)) },
                         )
-                    }
-                    if (feedState.isLoadingMore) {
-                        item { LoadingMoreFooter() }
                     }
                 }
 
@@ -111,9 +144,26 @@ fun RecommendedCoursesPage(modifier: Modifier = Modifier) {
                 else -> {
                     item {
                         FeedMessage(
-                            message = feedState.errorMessage ?: "아직 공개된 코스가 없어요.",
+                            message =
+                                feedState.errorMessage
+                                    ?: if (feedState.selectedCategory == null) {
+                                        "아직 공개된 코스가 없어요."
+                                    } else {
+                                        "불러온 코스에 해당 테마가 없어요."
+                                    },
                             onRetry = feedState.errorMessage?.let { { feedViewModel.onIntent(HomeFeedIntent.Retry) } },
                         )
+                    }
+                }
+            }
+            if (feedState.isLoadingMore) {
+                item { LoadingMoreFooter() }
+            } else if (feedState.hasNext && !feedState.isLoading) {
+                item {
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        TextButton(onClick = { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }) {
+                            DsText(text = "코스 더 불러오기", style = DesignSystemThemeImpl.typeScale.textRegularS)
+                        }
                     }
                 }
             }
@@ -121,35 +171,75 @@ fun RecommendedCoursesPage(modifier: Modifier = Modifier) {
     }
 }
 
-/** 뒤로가기 + 화면 제목. 홈에서 "전체보기"로 들어오는 화면이라 홈과 같은 섹션명을 쓴다. */
+private val recommendedCategories =
+    listOf(null to "추천순", "데이트" to "데이트", "카페투어" to "카페", "힐링" to "산책", "문화·전시" to "전시")
+
 @Composable
-private fun RecommendedTopBar(onBack: () -> Unit) {
+private fun RecommendedTopBar(
+    selectedCategory: String?,
+    onSelectCategory: (String?) -> Unit,
+    onBack: () -> Unit,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Box(
+    var filterExpanded by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_left_24),
+                    contentDescription = "뒤로가기",
+                    tint = color.contentDefaultLevel0,
+                )
+            }
+            DsText(
+                text = "오늘의 추천 코스",
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                color = color.contentDefaultLevel0,
+                modifier = Modifier.weight(1f),
+            )
+            Box {
+                IconButton(onClick = { filterExpanded = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_filter_list_24),
+                        contentDescription = "테마 필터",
+                        tint = color.contentDefaultLevel0,
+                    )
+                }
+                DropdownMenu(expanded = filterExpanded, onDismissRequest = { filterExpanded = false }) {
+                    recommendedCategories.forEach { (category, label) ->
+                        DropdownMenuItem(
+                            text = { DsText(text = label, style = DesignSystemThemeImpl.typeScale.textRegularS) },
+                            modifier = Modifier.semantics { selected = selectedCategory == category },
+                            onClick = {
+                                onSelectCategory(category)
+                                filterExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
+        }
+        Row(
             modifier =
                 Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = onBack),
-            contentAlignment = Alignment.Center,
+                    .horizontalScroll(
+                        rememberScrollState(),
+                    ).padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_chevron_left_24),
-                contentDescription = "뒤로가기",
-                tint = color.contentDefaultLevel0,
-                modifier = Modifier.size(24.dp),
-            )
+            recommendedCategories.forEach { (category, label) ->
+                DsChip(
+                    text = label,
+                    selected = selectedCategory == category,
+                    modifier = Modifier.semantics { selected = selectedCategory == category },
+                    onClick = { onSelectCategory(category) },
+                )
+            }
         }
-        DsText(
-            text = "오늘의 추천 코스",
-            style = DesignSystemThemeImpl.typeScale.textStrongM,
-            color = color.contentDefaultLevel0,
-        )
+        HorizontalDivider(color = color.borderDefaultLevel0)
     }
 }
 
@@ -180,6 +270,9 @@ internal fun FeedMessage(
             text = message,
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel2,
+            maxLines = Int.MAX_VALUE,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
         if (onRetry != null) {
             DsText(

@@ -16,5 +16,9 @@ sealed interface HomeFeedIntent : MviIntent {
         val courseId: String,
     ) : HomeFeedIntent
 
+    data class SelectCategory(
+        val category: String?,
+    ) : HomeFeedIntent
+
     data object ConsumeError : HomeFeedIntent
 }

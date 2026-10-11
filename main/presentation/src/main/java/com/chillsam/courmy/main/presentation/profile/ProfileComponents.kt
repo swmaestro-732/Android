@@ -40,6 +40,7 @@ import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
+import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 
 // 마이(FS-15)·타유저(FS-15 OtherUserPage) 프로필이 공유하는 구성요소.
 // 두 화면은 상단 프로필·코스 그리드가 같고, 상단 좌우 버튼(뒤로 가기·공유·설정)과 소개 유무,
@@ -372,6 +373,10 @@ private fun ProfileCourseCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        )
+        CourseLikeCount(
+            count = course.likeCountText,
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
         )
     }
 }

@@ -1,7 +1,7 @@
 package com.chillsam.courmy.main.entity.home
 
 /**
- * 홈 화면(FS-09) 공개 코스 피드 카드 1건. `GET /service/v1/courses` 응답을 변환한 결과다.
+ * 홈 화면(FS-09) 공개 코스 피드 카드 1건. `GET /service/v1/home` 응답을 변환한 결과다.
  *
  * - [id]             코스 식별자(상세 이동에 사용)
  * - [title]          커버 위 코스 제목
@@ -19,4 +19,6 @@ data class HomeCourseVO(
     val coverImageUrl: String = "",
     val categoryLabel: String = "",
     val saveCountText: String = "",
+    /** 서버 집계 표시값. 미제공이면 빈 문자열로 숨긴다. */
+    val likeCountText: String = "",
 )

@@ -1,15 +1,15 @@
 package com.chillsam.courmy.main.data.home.dto
 
 import com.chillsam.courmy.common.entity.category.toCourseTagLabel
+import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
-import com.chillsam.courmy.main.data.profile.dto.formatCount
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import kotlinx.serialization.Serializable
 
 /**
- * `GET /service/v1/courses`(공개 코스 피드) 응답 DTO. 봉투는 공통 계약 `{ code, message, data }`.
+ * `GET /service/v1/home`(공개 코스 피드) 응답 DTO. 봉투는 공통 계약 `{ code, message, data }`.
  *
- * 응답에는 `authorId`·`likesCnt`·`createdAt` 도 오지만 화면이 쓰지 않아 매핑하지 않는다
+ * 응답에는 `authorId`·`createdAt` 도 오지만 화면이 쓰지 않아 매핑하지 않는다
  * (작성자 표시에 필요한 이름·아바타가 응답에 없어 작성자 영역 자체를 렌더하지 않는다 —
  * [HomeCourseVO] 주석 참고).
  */
@@ -36,6 +36,7 @@ data class CourseFeedItemDTO(
     /** 서버 `CourseCategory` enum 이름. 미선택 코스(draft 유래)는 null 로 온다. */
     val theme: String? = null,
     val savesCnt: Int? = null,
+    val likesCnt: Int? = null,
 )
 
 fun CourseFeedDTO.toPageVO(): CursorPageVO<HomeCourseVO> =
@@ -59,5 +60,6 @@ internal fun CourseFeedDTO.toVOList(): List<HomeCourseVO> =
                 coverImageUrl = item.coverImageUrl.orEmpty(),
                 categoryLabel = item.theme.toCourseTagLabel(),
                 saveCountText = formatCount(item.savesCnt ?: 0),
+                likeCountText = item.likesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
             )
         }
