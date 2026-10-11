@@ -4,6 +4,22 @@ import com.chillsam.courmy.common.presentation.mvi.MviIntent
 
 /** 저장함 · 코스 탭(FS-14) 사용자 입력. */
 sealed interface SavedCoursesIntent : MviIntent {
+    data class SelectFolder(
+        val id: Long?,
+    ) : SavedCoursesIntent
+
+    data class SelectCompleted(
+        val completed: Boolean,
+    ) : SavedCoursesIntent
+
+    data object ShowCreateFolder : SavedCoursesIntent
+
+    data object DismissCreateFolder : SavedCoursesIntent
+
+    data class CreateFolder(
+        val name: String,
+    ) : SavedCoursesIntent
+
     data object Load : SavedCoursesIntent
 
     data object Retry : SavedCoursesIntent

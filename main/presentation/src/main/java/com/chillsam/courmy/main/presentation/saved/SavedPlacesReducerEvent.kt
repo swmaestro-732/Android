@@ -5,6 +5,14 @@ import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
 
 /** 저장함 · 장소 탭의 내부 상태 변경 이벤트. */
 sealed interface SavedPlacesReducerEvent : ReducerEvent {
+    data class CategorySelected(
+        val category: String?,
+    ) : SavedPlacesReducerEvent
+
+    data class VisitedSelected(
+        val visited: Boolean,
+    ) : SavedPlacesReducerEvent
+
     data object LoadStarted : SavedPlacesReducerEvent
 
     data class Loaded(

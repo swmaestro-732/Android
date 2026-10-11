@@ -35,6 +35,14 @@ class SavedPlacesViewModel
 
         override fun onIntent(intent: SavedPlacesIntent) {
             when (intent) {
+                is SavedPlacesIntent.SelectCategory -> {
+                    dispatch(SavedPlacesReducerEvent.CategorySelected(intent.category))
+                }
+
+                is SavedPlacesIntent.SelectVisited -> {
+                    dispatch(SavedPlacesReducerEvent.VisitedSelected(intent.visited))
+                }
+
                 SavedPlacesIntent.Load,
                 SavedPlacesIntent.Retry,
                 -> {
@@ -60,6 +68,14 @@ class SavedPlacesViewModel
             event: SavedPlacesReducerEvent,
         ): SavedPlacesUIState =
             when (event) {
+                is SavedPlacesReducerEvent.CategorySelected -> {
+                    state.copy(selectedCategory = event.category)
+                }
+
+                is SavedPlacesReducerEvent.VisitedSelected -> {
+                    state.copy(showVisited = event.visited)
+                }
+
                 SavedPlacesReducerEvent.LoadStarted -> {
                     state.copy(isLoading = true, loadErrorMessage = null)
                 }

@@ -12,6 +12,8 @@ import kotlinx.collections.immutable.persistentListOf
  */
 data class SavedPlacesUIState(
     val isLoading: Boolean = true,
+    val selectedCategory: String? = null,
+    val showVisited: Boolean = false,
     val places: ImmutableList<SavedPlaceVO> = persistentListOf(),
     val loadErrorMessage: String? = null,
     val errorMessage: String? = null,
@@ -20,6 +22,12 @@ data class SavedPlacesUIState(
     val hasNext: Boolean = false,
     val isLoadingMore: Boolean = false,
 ) : UiState {
+    val categoryPlaces: List<SavedPlaceVO>
+        get() = places.filter { selectedCategory == null || it.categoryLabel == selectedCategory }
+
+    val visiblePlaces: List<SavedPlaceVO>
+        get() = categoryPlaces.filter { it.visited == showVisited }
+
     companion object {
         val empty: SavedPlacesUIState = SavedPlacesUIState()
     }

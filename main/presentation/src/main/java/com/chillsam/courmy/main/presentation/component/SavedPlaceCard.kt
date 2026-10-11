@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
-import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
 
@@ -43,7 +43,9 @@ fun SavedPlaceCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .cardShadow(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(16.dp))
+                .background(color.bgDefaultLevel1)
+                .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(16.dp))
                 .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -94,7 +96,7 @@ fun SavedPlaceCard(
         Box(
             modifier =
                 Modifier
-                    .size(32.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(color.bgDefaultLevel1)
                     .clickable(onClick = onBookmarkClick),
@@ -104,7 +106,7 @@ fun SavedPlaceCard(
                 painter = painterResource(R.drawable.ic_bookmark_filled_24),
                 contentDescription = "저장 취소",
                 tint = color.contentAccent,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(18.dp),
             )
         }
     }

@@ -4,6 +4,14 @@ import com.chillsam.courmy.common.presentation.mvi.MviIntent
 
 /** 저장함 · 장소 탭 사용자 입력. */
 sealed interface SavedPlacesIntent : MviIntent {
+    data class SelectCategory(
+        val category: String?,
+    ) : SavedPlacesIntent
+
+    data class SelectVisited(
+        val visited: Boolean,
+    ) : SavedPlacesIntent
+
     data object Load : SavedPlacesIntent
 
     data object Retry : SavedPlacesIntent

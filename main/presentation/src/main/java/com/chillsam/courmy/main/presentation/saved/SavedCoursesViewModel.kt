@@ -3,8 +3,10 @@ package com.chillsam.courmy.main.presentation.saved
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.course.domain.CreateCourseFolderUseCase
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.main.domain.saved.GetSavedCoursesUseCase
+import com.chillsam.courmy.main.entity.saved.SavedCourseFolderVO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -27,6 +29,7 @@ class SavedCoursesViewModel
     constructor(
         private val getSavedCoursesUseCase: GetSavedCoursesUseCase,
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
+        private val createCourseFolderUseCase: CreateCourseFolderUseCase,
     ) : MviViewModel<SavedCoursesIntent, SavedCoursesUIState, SavedCoursesReducerEvent>(
             SavedCoursesUIState.empty,
         ) {
@@ -36,6 +39,30 @@ class SavedCoursesViewModel
 
         override fun onIntent(intent: SavedCoursesIntent) {
             when (intent) {
+                is SavedCoursesIntent.SelectFolder -> {
+                    dispatch(SavedCoursesReducerEvent.FilterChanged(intent.id, currentState.completed))
+                    load()
+                }
+
+                is SavedCoursesIntent.SelectCompleted -> {
+                    dispatch(SavedCoursesReducerEvent.FilterChanged(currentState.selectedFolderId, intent.completed))
+                    load()
+                }
+
+                SavedCoursesIntent.ShowCreateFolder -> {
+                    dispatch(SavedCoursesReducerEvent.FolderDialog(true))
+                }
+
+                SavedCoursesIntent.DismissCreateFolder -> {
+                    if (!currentState.isCreatingFolder) {
+                        dispatch(SavedCoursesReducerEvent.FolderDialog(false))
+                    }
+                }
+
+                is SavedCoursesIntent.CreateFolder -> {
+                    createFolder(intent.name)
+                }
+
                 SavedCoursesIntent.Load,
                 SavedCoursesIntent.Retry,
                 -> {
@@ -61,8 +88,47 @@ class SavedCoursesViewModel
             event: SavedCoursesReducerEvent,
         ): SavedCoursesUIState =
             when (event) {
+                is SavedCoursesReducerEvent.FilterChanged -> {
+                    state.copy(
+                        selectedFolderId = event.folderId,
+                        completed = event.completed,
+                        courses = kotlinx.collections.immutable.persistentListOf(),
+                        nextCursor = null,
+                        hasNext = false,
+                    )
+                }
+
+                is SavedCoursesReducerEvent.FolderDialog -> {
+                    state.copy(showCreateFolder = event.visible, folderError = null)
+                }
+
+                SavedCoursesReducerEvent.FolderCreating -> {
+                    state.copy(isCreatingFolder = true, folderError = null)
+                }
+
+                is SavedCoursesReducerEvent.FolderFailed -> {
+                    state.copy(isCreatingFolder = false, folderError = event.message)
+                }
+
+                is SavedCoursesReducerEvent.FolderCreated -> {
+                    state.copy(
+                        isCreatingFolder = false,
+                        showCreateFolder = false,
+                        folders = (state.folders + event.folder).distinctBy { it.id }.toImmutableList(),
+                    )
+                }
+
+                is SavedCoursesReducerEvent.SummaryLoaded -> {
+                    state.copy(
+                        totalCount = if (state.selectedFolderId == null) event.result.totalCount else state.totalCount,
+                        uncompletedCount = event.result.uncompletedCount,
+                        completedCount = event.result.completedCount,
+                        folders = event.result.folders.toImmutableList(),
+                    )
+                }
+
                 SavedCoursesReducerEvent.LoadStarted -> {
-                    state.copy(isLoading = true, loadErrorMessage = null)
+                    state.copy(isLoading = true, isLoadingMore = false, loadErrorMessage = null)
                 }
 
                 is SavedCoursesReducerEvent.Loaded -> {
@@ -101,6 +167,7 @@ class SavedCoursesViewModel
                 is SavedCoursesReducerEvent.Unsaved -> {
                     state.copy(
                         courses = state.courses.filterNot { it.id == event.courseId }.toImmutableList(),
+                        totalCount = (state.totalCount - 1).coerceAtLeast(0),
                     )
                 }
 
@@ -120,21 +187,27 @@ class SavedCoursesViewModel
             moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getSavedCoursesUseCase() }
-                        .onSuccess { page ->
-                            dispatch(
-                                SavedCoursesReducerEvent.Loaded(
-                                    courses = page.items,
-                                    nextCursor = page.nextCursor,
-                                    hasNext = page.hasNext,
-                                ),
-                            )
-                        }.onFailure { e ->
-                            if (e is CancellationException) throw e
-                            // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
-                            Log.w(TAG, "저장 코스 로드 실패", e)
-                            dispatch(SavedCoursesReducerEvent.LoadFailed("저장한 코스를 불러오지 못했습니다."))
-                        }
+                    runCatching {
+                        getSavedCoursesUseCase(
+                            folderId = currentState.selectedFolderId,
+                            completed = currentState.completed,
+                        )
+                    }.onSuccess { result ->
+                        val page = result.page
+                        dispatch(SavedCoursesReducerEvent.SummaryLoaded(result))
+                        dispatch(
+                            SavedCoursesReducerEvent.Loaded(
+                                courses = page.items,
+                                nextCursor = page.nextCursor,
+                                hasNext = page.hasNext,
+                            ),
+                        )
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
+                        Log.w(TAG, "저장 코스 로드 실패", e)
+                        dispatch(SavedCoursesReducerEvent.LoadFailed("저장한 코스를 불러오지 못했습니다."))
+                    }
                 }
         }
 
@@ -147,20 +220,26 @@ class SavedCoursesViewModel
             moreJob?.cancel()
             moreJob =
                 viewModelScope.launch {
-                    runCatching { getSavedCoursesUseCase(cursor = cursor) }
-                        .onSuccess { page ->
-                            dispatch(
-                                SavedCoursesReducerEvent.MoreLoaded(
-                                    courses = page.items,
-                                    nextCursor = page.nextCursor,
-                                    hasNext = page.hasNext,
-                                ),
-                            )
-                        }.onFailure { e ->
-                            if (e is CancellationException) throw e
-                            Log.w(TAG, "저장 코스 다음 페이지 로드 실패", e)
-                            dispatch(SavedCoursesReducerEvent.MoreFailed("더 불러오지 못했어요."))
-                        }
+                    runCatching {
+                        getSavedCoursesUseCase(
+                            cursor = cursor,
+                            folderId = state.selectedFolderId,
+                            completed = state.completed,
+                        )
+                    }.onSuccess { result ->
+                        val page = result.page
+                        dispatch(
+                            SavedCoursesReducerEvent.MoreLoaded(
+                                courses = page.items,
+                                nextCursor = page.nextCursor,
+                                hasNext = page.hasNext,
+                            ),
+                        )
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        Log.w(TAG, "저장 코스 다음 페이지 로드 실패", e)
+                        dispatch(SavedCoursesReducerEvent.MoreFailed("더 불러오지 못했어요."))
+                    }
                 }
         }
 
@@ -183,8 +262,10 @@ class SavedCoursesViewModel
                 viewModelScope.launch {
                     try {
                         runCatching { setCourseSavedUseCase(courseId = id, saved = false) }
-                            .onSuccess { dispatch(SavedCoursesReducerEvent.Unsaved(courseId)) }
-                            .onFailure { e ->
+                            .onSuccess {
+                                dispatch(SavedCoursesReducerEvent.Unsaved(courseId))
+                                load()
+                            }.onFailure { e ->
                                 if (e is CancellationException) throw e
                                 Log.w(TAG, "저장 취소 실패: courseId=$courseId", e)
                                 dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
@@ -193,6 +274,30 @@ class SavedCoursesViewModel
                         unsaveJobs.remove(courseId)
                     }
                 }
+        }
+
+        private fun createFolder(name: String) {
+            if (currentState.isCreatingFolder) return
+            dispatch(SavedCoursesReducerEvent.FolderCreating)
+            viewModelScope.launch {
+                runCatching { createCourseFolderUseCase(name) }
+                    .onSuccess { id ->
+                        dispatch(SavedCoursesReducerEvent.FolderCreated(SavedCourseFolderVO(id, name.trim(), 0)))
+                        load()
+                    }.onFailure { error ->
+                        if (error is CancellationException) throw error
+                        Log.w(TAG, "폴더 생성 실패", error)
+                        dispatch(
+                            SavedCoursesReducerEvent.FolderFailed(
+                                if (error is IllegalArgumentException) {
+                                    error.message.orEmpty()
+                                } else {
+                                    "폴더를 만들지 못했어요. 다시 시도해 주세요."
+                                },
+                            ),
+                        )
+                    }
+            }
         }
 
         private companion object {
