@@ -15,6 +15,7 @@ import com.chillsam.courmy.common.domain.navigation.Page
  */
 object CourseCreatePage : Page {
     const val PATH = "/courseCreate"
+    const val ARG_IS_PLAN = "isPlan"
     const val ARG_DRAFT_ID = "draftId"
     const val ARG_FORK_FROM_ID = "forkFromId"
 
@@ -24,6 +25,16 @@ object CourseCreatePage : Page {
         NavRoute(
             path = PATH,
             args = mapOf(ARG_DRAFT_ID to draftId.toString()),
+        )
+
+    fun planRoute(sourceCourseId: Long? = null): NavRoute =
+        NavRoute(
+            path = PATH,
+            args =
+                buildMap {
+                    put(ARG_IS_PLAN, "true")
+                    sourceCourseId?.let { put(ARG_FORK_FROM_ID, it.toString()) }
+                },
         )
 
     /** [forkFromId] 코스를 포크해 새로 작성한다. 초안 이어쓰기([route])와 달리 새 코스를 만든다. */

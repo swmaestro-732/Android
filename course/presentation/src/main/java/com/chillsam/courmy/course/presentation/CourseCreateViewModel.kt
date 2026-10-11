@@ -3,8 +3,8 @@ package com.chillsam.courmy.course.presentation
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
-import com.chillsam.courmy.course.domain.CompleteCourseUseCase
 import com.chillsam.courmy.course.domain.CreateCourseUseCase
+import com.chillsam.courmy.course.domain.CreatePlanUseCase
 import com.chillsam.courmy.course.domain.GetCourseDraftUseCase
 import com.chillsam.courmy.course.domain.GetCourseForkSourceUseCase
 import com.chillsam.courmy.course.domain.GetRecommendedTagsUseCase
@@ -30,8 +30,8 @@ class CourseCreateViewModel
         private val getCourseDraftUseCase: GetCourseDraftUseCase,
         private val getCourseForkSourceUseCase: GetCourseForkSourceUseCase,
         private val saveDraftUseCase: SaveDraftUseCase,
-        private val completeCourseUseCase: CompleteCourseUseCase,
         private val createCourseUseCase: CreateCourseUseCase,
+        private val createPlanUseCase: CreatePlanUseCase,
         private val getRecommendedTagsUseCase: GetRecommendedTagsUseCase,
         private val getWalkingMinutesUseCase: GetWalkingMinutesUseCase,
     ) : MviViewModel<CourseCreateIntent, CourseCreateUIState, CourseCreateReducerEvent>(
@@ -48,7 +48,11 @@ class CourseCreateViewModel
         override fun onIntent(intent: CourseCreateIntent) {
             when (intent) {
                 is CourseCreateIntent.Load -> {
-                    load(intent.draftCourseId, intent.forkFromCourseId)
+                    load(intent.draftCourseId, intent.forkFromCourseId, intent.isPlan)
+                }
+
+                is CourseCreateIntent.ChangePlannedDate -> {
+                    dispatch(CourseCreateReducerEvent.PlannedDateChanged(intent.date))
                 }
 
                 is CourseCreateIntent.ChangeName -> {
@@ -146,14 +150,14 @@ class CourseCreateViewModel
 
                 CourseCreateIntent.NextStep -> {
                     // 조건을 못 채웠으면 넘어가지 않는다(버튼도 비활성이지만 상태 쪽에서도 막는다).
-                    if (currentState.canGoNext && currentState.step < CourseCreateUIState.LAST_STEP) {
+                    if (currentState.canGoNext && currentState.step < currentState.lastStep) {
                         val next = currentState.step + 1
                         dispatch(CourseCreateReducerEvent.StepChanged(next))
                         // 장소를 다 담고 넘어가는 시점에 한 번만 구간 도보 시간을 구한다
                         // (장소를 담을 때마다 부르면 같은 계산을 여러 번 하게 된다).
                         if (next == CourseCreateUIState.STEP_PLACE_RECORDS) refreshWalkingMinutes()
                         // 태그 단계에 들어설 때, 확정된 장소들로 추천을 받는다.
-                        if (next == CourseCreateUIState.LAST_STEP) loadRecommendedTags()
+                        if (!currentState.isPlan && next == CourseCreateUIState.LAST_STEP) loadRecommendedTags()
                     }
                 }
 
@@ -172,6 +176,24 @@ class CourseCreateViewModel
             event: CourseCreateReducerEvent,
         ): CourseCreateUIState =
             when (event) {
+                is CourseCreateReducerEvent.PlanLoaded -> {
+                    CourseCreateUIState(
+                        isLoading = false,
+                        isPlan = true,
+                        places = event.places.map { it.copy(note = "", photoUrls = emptyList()) }.toImmutableList(),
+                        sourceCourseId = event.sourceCourseId,
+                        forkAuthorName = event.authorName,
+                    )
+                }
+
+                is CourseCreateReducerEvent.PlannedDateChanged -> {
+                    state.copy(plannedDate = event.date)
+                }
+
+                is CourseCreateReducerEvent.WalkingLoadingChanged -> {
+                    state.copy(isCalculatingWalking = event.loading)
+                }
+
                 is CourseCreateReducerEvent.LoadFailed -> {
                     state.copy(isLoading = false, errorMessage = event.message)
                 }
@@ -333,6 +355,7 @@ class CourseCreateViewModel
          */
         private fun refreshWalkingMinutes() {
             walkJob?.cancel()
+            dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(false))
             val places = currentState.places
             if (places.size < MIN_WALK_POINTS || places.any { !it.hasLocation }) {
                 places.clearedWalkTexts()?.let { dispatch(CourseCreateReducerEvent.PlacesChanged(it)) }
@@ -340,21 +363,35 @@ class CourseCreateViewModel
             }
             val points =
                 places.map { CoursePlaceCoordinate(latitude = it.latitude!!, longitude = it.longitude!!) }
+            dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(true))
             walkJob =
                 viewModelScope.launch {
                     runCatching { getWalkingMinutesUseCase(points) }
                         .onSuccess { segments ->
-                            val applied = places.withWalkTexts(segments)
+                            dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(false))
+                            if (currentState.places.map { it.id } != places.map { it.id }) return@onSuccess
+                            val applied = currentState.places.withWalkTexts(segments)
                             if (applied == null) {
                                 Log.w(TAG, "도보 구간 수 불일치: 장소 ${places.size}곳 / 구간 ${segments.size}개")
-                                places.clearedWalkTexts()?.let { dispatch(CourseCreateReducerEvent.PlacesChanged(it)) }
+                                currentState.places.clearedWalkTexts()?.let {
+                                    dispatch(
+                                        CourseCreateReducerEvent.PlacesChanged(it),
+                                    )
+                                }
                             } else {
                                 dispatch(CourseCreateReducerEvent.PlacesChanged(applied))
                             }
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
+                            dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(false))
                             Log.w(TAG, "도보 시간 조회 실패: 장소 ${places.size}곳", e)
-                            places.clearedWalkTexts()?.let { dispatch(CourseCreateReducerEvent.PlacesChanged(it)) }
+                            if (currentState.places.map { it.id } == places.map { it.id }) {
+                                currentState.places.clearedWalkTexts()?.let {
+                                    dispatch(
+                                        CourseCreateReducerEvent.PlacesChanged(it),
+                                    )
+                                }
+                            }
                         }
                 }
         }
@@ -374,19 +411,24 @@ class CourseCreateViewModel
          * 서버 저장이 끝나기 전에는 완성 화면으로 넘기지 않는다(실패했는데 성공처럼 보이지 않게).
          */
         private fun createCourse(completed: CourseCompleteVO?) {
-            if (currentState.isSaving) return
+            val state = currentState
+            if (state.isSaving || (state.isPlan && !state.canSave)) return
             dispatch(CourseCreateReducerEvent.SaveStarted)
             saveJob?.cancel()
             saveJob =
                 viewModelScope.launch {
                     runCatching {
-                        createCourseUseCase(
-                            draft = currentState.toDraftVO(),
-                            thumbnailUris = currentState.thumbnailPhotos,
-                            published = true,
-                        )
+                        if (state.isPlan) {
+                            savePlan(state, createPlanUseCase, getWalkingMinutesUseCase)
+                        } else {
+                            createCourseUseCase(
+                                draft = state.toDraftVO(),
+                                thumbnailUris = state.thumbnailPhotos,
+                                published = true,
+                                completed = completed,
+                            )
+                        }
                     }.onSuccess { result ->
-                        completeCourseUseCase(completed)
                         dispatch(
                             CourseCreateReducerEvent.SaveSucceeded(
                                 courseId = result.courseId,
@@ -397,7 +439,15 @@ class CourseCreateViewModel
                         if (e is CancellationException) throw e
                         // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                         Log.w(TAG, "코스 생성 실패", e)
-                        dispatch(CourseCreateReducerEvent.SaveFailed("코스 저장에 실패했어요. 잠시 후 다시 시도해 주세요."))
+                        dispatch(
+                            CourseCreateReducerEvent.SaveFailed(
+                                if (state.isPlan) {
+                                    "계획 저장에 실패했어요. 장소와 도보 경로를 확인한 뒤 다시 시도해 주세요."
+                                } else {
+                                    "코스 저장에 실패했어요. 잠시 후 다시 시도해 주세요."
+                                },
+                            ),
+                        )
                     }
                 }
         }
@@ -432,15 +482,25 @@ class CourseCreateViewModel
         private fun load(
             draftCourseId: Long?,
             forkFromCourseId: Long?,
+            isPlan: Boolean,
         ) {
             loadJob?.cancel()
+            walkJob?.cancel()
+            if (isPlan) dispatch(CourseCreateReducerEvent.PlanLoaded())
             val loadEvent: (suspend () -> CourseCreateReducerEvent)? =
                 when {
                     forkFromCourseId != null -> {
-                        { CourseCreateReducerEvent.ForkSourceLoaded(getCourseForkSourceUseCase(forkFromCourseId)) }
+                        {
+                            val source = getCourseForkSourceUseCase(forkFromCourseId)
+                            if (isPlan) {
+                                CourseCreateReducerEvent.PlanLoaded(source.places, source.courseId, source.authorName)
+                            } else {
+                                CourseCreateReducerEvent.ForkSourceLoaded(source)
+                            }
+                        }
                     }
 
-                    draftCourseId != null -> {
+                    !isPlan && draftCourseId != null -> {
                         { CourseCreateReducerEvent.DraftLoaded(getCourseDraftUseCase(draftCourseId), draftCourseId) }
                     }
 
@@ -449,7 +509,7 @@ class CourseCreateViewModel
                     }
                 }
             if (loadEvent == null) {
-                dispatch(CourseCreateReducerEvent.DraftLoaded(CourseDraftVO.empty, courseId = null))
+                if (!isPlan) dispatch(CourseCreateReducerEvent.DraftLoaded(CourseDraftVO.empty, courseId = null))
                 return
             }
             dispatch(CourseCreateReducerEvent.LoadStarted)
@@ -489,6 +549,7 @@ class CourseCreateViewModel
          * 화면 이동은 [CourseCreateUIState.draftSaved] 신호를 받은 뒤에 한다.
          */
         private fun saveDraft() {
+            if (currentState.isPlan) return
             if (currentState.isSavingDraft) return
             if (!currentState.canSaveDraft) {
                 dispatch(

@@ -19,6 +19,11 @@ sealed interface CourseCreateIntent : MviIntent {
     data class Load(
         val draftCourseId: Long?,
         val forkFromCourseId: Long? = null,
+        val isPlan: Boolean = false,
+    ) : CourseCreateIntent
+
+    data class ChangePlannedDate(
+        val date: String,
     ) : CourseCreateIntent
 
     data class ChangeName(

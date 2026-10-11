@@ -10,6 +10,20 @@ import com.chillsam.courmy.course.entity.CourseVisibility
  * reduce() 에 입력되는 내부 이벤트. ViewModel 이 Intent/코루틴 결과를 이 이벤트로 변환한다.
  */
 sealed interface CourseCreateReducerEvent : ReducerEvent {
+    data class PlanLoaded(
+        val places: List<CoursePlaceVO> = emptyList(),
+        val sourceCourseId: Long? = null,
+        val authorName: String = "",
+    ) : CourseCreateReducerEvent
+
+    data class PlannedDateChanged(
+        val date: String,
+    ) : CourseCreateReducerEvent
+
+    data class WalkingLoadingChanged(
+        val loading: Boolean,
+    ) : CourseCreateReducerEvent
+
     data object LoadStarted : CourseCreateReducerEvent
 
     /** 초안 로드 실패. 스피너를 걷고 안내를 띄운다(빈 초안으로 계속 쓸 수 있게 한다). */

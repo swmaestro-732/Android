@@ -52,6 +52,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -68,6 +69,7 @@ import com.chillsam.courmy.course.presentation.component.CourseTagCard
 import com.chillsam.courmy.course.presentation.component.CourseTopBar
 import com.chillsam.courmy.course.presentation.component.CourseVisibilitySegment
 import com.chillsam.courmy.course.presentation.component.PlaceSearchOverlay
+import com.chillsam.courmy.course.presentation.component.PlanInfoCard
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 import kotlinx.coroutines.isActive
 
@@ -89,6 +91,7 @@ fun CourseCreatePage(
     onSaveCourse: (Long) -> Unit,
     draftCourseId: Long? = null,
     forkFromCourseId: Long? = null,
+    isPlan: Boolean = false,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -98,8 +101,8 @@ fun CourseCreatePage(
     // 어떤 경로로 엔트리가 살아남더라도 "새로 만들기"가 이전 입력을 되살리지 않도록 보장한다.
     // 이 화면에는 하단 탭바가 없고 화면도 세로 고정이라, 편집 도중 컴포지션만 다시 만들어져
     // 입력이 날아갈 경로는 없다.
-    LaunchedEffect(draftCourseId, forkFromCourseId) {
-        viewModel.onIntent(CourseCreateIntent.Load(draftCourseId, forkFromCourseId))
+    LaunchedEffect(draftCourseId, forkFromCourseId, isPlan) {
+        viewModel.onIntent(CourseCreateIntent.Load(draftCourseId, forkFromCourseId, isPlan = isPlan))
     }
 
     // 임시저장은 서버 왕복이라, 저장이 끝난 뒤에 화면을 빠져나간다. 먼저 나가면 ViewModel 이
@@ -121,6 +124,7 @@ fun CourseCreatePage(
             if (uiState.imagesMissing) {
                 Toast.makeText(context, "사진은 저장되지 않았어요. 편집에서 다시 올려 주세요.", Toast.LENGTH_LONG).show()
             }
+            if (uiState.isPlan) Toast.makeText(context, "계획을 저장했어요", Toast.LENGTH_SHORT).show()
             onSaveCourse(courseId)
             // 이동을 끝냈으면 신호를 지운다. 남겨 두면 이 화면이 다시 보일 때 곧바로 또 이동한다.
             viewModel.onIntent(CourseCreateIntent.ConsumeSaved)
@@ -178,21 +182,34 @@ private fun CourseCreateContent(
         LaunchedEffect(uiState.step) { scrollState.scrollTo(0) }
 
         // 첫 단계가 아니면 시스템 뒤로가기는 화면을 닫지 않고 이전 단계로 돌아간다.
-        BackHandler(enabled = uiState.step > CourseCreateUIState.FIRST_STEP) {
-            onIntent(CourseCreateIntent.PrevStep)
+        BackHandler {
+            if (uiState.isSaving) return@BackHandler
+            if (uiState.step > CourseCreateUIState.FIRST_STEP) {
+                onIntent(CourseCreateIntent.PrevStep)
+            } else if (uiState.hasContent) {
+                showExitConfirm = true
+            } else {
+                onClose()
+            }
         }
 
         // 전반적인 화면: 상단바·진행바와 하단 버튼은 고정하고 가운데 단계 내용만 스크롤한다.
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             CourseTopBar(
-                onClose = { if (uiState.hasContent) showExitConfirm = true else onClose() },
+                onClose = {
+                    if (!uiState.isSaving) {
+                        if (uiState.hasContent) showExitConfirm = true else onClose()
+                    }
+                },
                 onSaveDraft = onSaveDraft,
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
                 savingDraft = uiState.isSavingDraft,
+                title = if (uiState.isPlan) "계획하기" else "새 코스 만들기",
+                showDraft = !uiState.isPlan,
             )
             StepProgressBar(
                 step = uiState.step,
-                total = CourseCreateUIState.LAST_STEP,
+                total = uiState.lastStep,
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
             )
 
@@ -258,6 +275,7 @@ private fun CourseCreateContent(
         placeToRemove?.let { place ->
             RemovePlaceConfirmSheet(
                 placeName = place.name,
+                isPlan = uiState.isPlan,
                 onConfirm = {
                     onIntent(CourseCreateIntent.RemovePlace(place.id))
                     placeToRemove = null
@@ -266,26 +284,53 @@ private fun CourseCreateContent(
             )
         }
 
-        if (showExitConfirm) {
-            ExitConfirmDialog(
-                onSaveAndExit = {
-                    // 저장이 끝나면 화면이 알아서 빠져나가므로(draftSaved 신호) 별도 onClose 는 부르지 않는다.
-                    showExitConfirm = false
-                    onSaveDraft()
-                },
-                onDiscard = {
-                    showExitConfirm = false
-                    onClose()
-                },
-                onCancel = { showExitConfirm = false },
-            )
-        }
+        CreateExitConfirmation(
+            visible = showExitConfirm,
+            isPlan = uiState.isPlan,
+            onSaveDraft = {
+                showExitConfirm = false
+                onSaveDraft()
+            },
+            onDiscard = {
+                showExitConfirm = false
+                onClose()
+            },
+            onCancel = { showExitConfirm = false },
+        )
+    }
+}
+
+@Composable
+private fun CreateExitConfirmation(
+    visible: Boolean,
+    isPlan: Boolean,
+    onSaveDraft: () -> Unit,
+    onDiscard: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    if (!visible) return
+    if (isPlan) {
+        DsConfirmDialog(
+            title = "계획 작성을 그만둘까요?",
+            description = "저장하지 않은 내용은 사라져요.",
+            destructive = true,
+            onConfirm = onDiscard,
+            onDismiss = onCancel,
+        )
+    } else {
+        ExitConfirmDialog(
+            onSaveAndExit = onSaveDraft,
+            onDiscard = onDiscard,
+            onCancel = onCancel,
+        )
     }
 }
 
 /** 미저장 변경(입력한 값)이 있는지. ✕ 로 나갈 때 확인 다이얼로그를 띄울지 판단한다. */
 private val CourseCreateUIState.hasContent: Boolean
-    get() = name.isNotBlank() || description.isNotBlank() || tags.isNotEmpty() || places.isNotEmpty()
+    get() =
+        name.isNotBlank() || description.isNotBlank() || plannedDate.isNotEmpty() || tags.isNotEmpty() ||
+            places.isNotEmpty()
 
 /**
  * 입력값 → 코스 완성(FS-34-Done) 데이터 매핑. 이름/장소가 비어 있으면 null 을 반환해
@@ -315,7 +360,26 @@ private fun InfoSection(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
 ) {
-    CourseSectionHeader(number = CourseCreateUIState.STEP_COURSE_INFO, title = "코스 정보")
+    CourseSectionHeader(number = CourseCreateUIState.STEP_COURSE_INFO, title = if (uiState.isPlan) "계획 정보" else "코스 정보")
+    if (uiState.isPlan) {
+        Spacer(Modifier.height(10.dp))
+        DsText(
+            text = "나만 볼 수 있는 계획이에요. 제목과 메모, 날짜는 비워도 괜찮아요.",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+            maxLines = Int.MAX_VALUE,
+        )
+        Spacer(Modifier.height(10.dp))
+        PlanInfoCard(
+            title = uiState.name,
+            memo = uiState.description,
+            plannedDate = uiState.plannedDate,
+            onTitleChange = { onIntent(CourseCreateIntent.ChangeName(it)) },
+            onMemoChange = { onIntent(CourseCreateIntent.ChangeDescription(it)) },
+            onDateChange = { onIntent(CourseCreateIntent.ChangePlannedDate(it)) },
+        )
+        return
+    }
     Spacer(Modifier.height(10.dp))
     CourseInfoCard(
         name = uiState.name,
@@ -342,10 +406,13 @@ private fun PlaceRecordSection(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
 ) {
-    CourseSectionHeader(number = CourseCreateUIState.STEP_PLACE_RECORDS, title = "장소별 기록")
+    CourseSectionHeader(
+        number = CourseCreateUIState.STEP_PLACE_RECORDS,
+        title = if (uiState.isPlan) "장소별 메모" else "장소별 기록",
+    )
     Spacer(Modifier.height(6.dp))
     DsText(
-        text = "장소마다 사진 1장은 꼭 필요해요. 한마디는 남기지 않아도 괜찮아요.",
+        text = if (uiState.isPlan) "장소별 메모는 남기지 않아도 괜찮아요." else "장소마다 사진 1장은 꼭 필요해요. 한마디는 남기지 않아도 괜찮아요.",
         style = DesignSystemThemeImpl.typeScale.textRegularXS,
         color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
     )
@@ -357,6 +424,9 @@ private fun PlaceRecordSection(
             onNoteChange = { onIntent(CourseCreateIntent.ChangePlaceNote(place.id, it)) },
             onPhotosChange = { onIntent(CourseCreateIntent.ChangePlacePhotos(place.id, it)) },
             showDragHandle = false,
+            showRemove = false,
+            showPhotos = !uiState.isPlan,
+            noteMaxLength = if (uiState.isPlan) 500 else 40,
         )
         // 다음 장소로의 도보 시간. 마지막 장소이거나 계산이 안 된 구간은 빈 문자열이라 자리만 띄운다.
         if (place.walkText.isNotEmpty()) {
@@ -369,48 +439,21 @@ private fun PlaceRecordSection(
     }
 }
 
-/**
- * 포크로 들어왔음을 알리는 배너.
- *
- * 장소가 이미 담긴 채로 열리기 때문에, 안내가 없으면 사용자가 이전 작성분이 남은 것으로 오해한다.
- * 사진·한마디는 승계하지 않는다는 것도 여기서 함께 알려, 다음 단계에서 빈 카드를 보고 당황하지 않게 한다.
- *
- * [keepRuleText] 는 원본 장소 유지 규칙이다. 못 빼는 장소는 삭제 버튼이 아예 없는데, 그 이유를
- * 카드마다 반복하지 않고 여기 한 곳에서만 말한다.
- */
+/** 복제 중인 원본 코스의 작성자를 표시한다. */
 @Composable
-private fun ForkSourceBanner(
-    authorName: String,
-    keepRuleText: String?,
-) {
+private fun ForkSourceBanner(authorName: String) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Column(
+    DsText(
+        text = authorName.ifBlank { "다른 사람" } + "의 코스를 복제하는 중이에요",
+        style = DesignSystemThemeImpl.typeScale.textStrongS,
+        color = color.contentAccent,
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .background(color.bgAccentSubtle)
                 .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        DsText(
-            text = authorName.ifBlank { "다른 사람" } + "의 코스를 복제하는 중이에요",
-            style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = color.contentAccent,
-        )
-        DsText(
-            text = "장소 구성만 가져왔어요. 사진과 한마디는 직접 채워 주세요.",
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = color.contentDefaultLevel2,
-        )
-        keepRuleText?.let {
-            DsText(
-                text = it,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-            )
-        }
-    }
+    )
 }
 
 // 드래그 재정렬(제스처 콜백 + 자동 스크롤 + make-room) 핸들러라 분기가 많다. UI 이벤트 처리 복잡도.
@@ -427,10 +470,9 @@ private fun PlaceSection(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val haptics = LocalHapticFeedback.current
-    if (uiState.isForking) {
+    if (uiState.isForking || uiState.sourceCourseId != null) {
         ForkSourceBanner(
             authorName = uiState.forkAuthorName,
-            keepRuleText = uiState.forkKeepRuleText,
         )
         Spacer(Modifier.height(16.dp))
     }
@@ -679,7 +721,7 @@ private fun StepBottomBar(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val isLast = uiState.step == CourseCreateUIState.LAST_STEP
+    val isLast = uiState.step == uiState.lastStep
     Column(
         modifier =
             modifier
@@ -697,9 +739,19 @@ private fun StepBottomBar(
             Box(modifier = Modifier.weight(NEXT_BUTTON_WEIGHT)) {
                 DsButton(
                     // 못 넘어가는 상태면 버튼 자리에 그 이유를 띄운다(별도 안내 문구 없이).
-                    text = uiState.stepBlockedReason ?: if (isLast) "코스 저장하기" else "다음",
+                    text =
+                        uiState.stepBlockedReason
+                            ?: if (isLast && uiState.isPlan &&
+                                uiState.isCalculatingWalking
+                            ) {
+                                "도보 시간 계산 중…"
+                            } else if (isLast) {
+                                if (uiState.isPlan) "계획 저장하기" else "코스 저장하기"
+                            } else {
+                                "다음"
+                            },
                     // 저장 중에는 중복 탭을 막는다(업로드 + 생성이라 왕복이 길다).
-                    enabled = uiState.canGoNext && !uiState.isSaving,
+                    enabled = uiState.canGoNext && (!isLast || uiState.canSave) && !uiState.isSaving,
                     loading = isLast && uiState.isSaving,
                     onClick = if (isLast) onSave else onNext,
                 )

@@ -30,7 +30,11 @@ sealed interface MyProfileReducerEvent : ReducerEvent {
         val tab: ProfileTab,
     ) : MyProfileReducerEvent
 
-    /** 계획 목록을 채운다. 지금은 mock 이라 로딩 단계 없이 한 번에 들어온다. */
+    data class PlanFailed(
+        val message: String,
+    ) : MyProfileReducerEvent
+
+    /** 서버에서 가져온 계획 목록을 채운다. */
     data class PlanLoaded(
         val courses: List<ProfileCourseVO>,
     ) : MyProfileReducerEvent

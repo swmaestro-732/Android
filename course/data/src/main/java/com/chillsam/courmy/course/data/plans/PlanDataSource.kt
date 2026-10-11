@@ -3,11 +3,14 @@ package com.chillsam.courmy.course.data.plans
 import com.chillsam.courmy.common.data.BaseRemoteDataSource
 import com.chillsam.courmy.course.data.plans.dto.CreatePlanEnvelope
 import com.chillsam.courmy.course.data.plans.dto.CreatePlanRequest
+import com.chillsam.courmy.course.data.plans.dto.PlanDetailEnvelope
 import com.chillsam.courmy.course.data.plans.dto.PlanListEnvelope
 
 class PlanDataSource(
     private val apiService: PlanApiService,
 ) : BaseRemoteDataSource() {
+    suspend fun getPlanDetail(planId: Long): PlanDetailEnvelope = checkResponse(apiService.getPlanDetail(planId))
+
     suspend fun getPlans(
         cursor: String?,
         size: Int,

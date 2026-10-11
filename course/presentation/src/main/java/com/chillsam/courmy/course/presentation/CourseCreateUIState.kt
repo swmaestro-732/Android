@@ -14,6 +14,10 @@ import kotlinx.collections.immutable.persistentSetOf
  */
 data class CourseCreateUIState(
     val isLoading: Boolean = true,
+    val isPlan: Boolean = false,
+    val plannedDate: String = "",
+    val sourceCourseId: Long? = null,
+    val isCalculatingWalking: Boolean = false,
     /** 현재 단계(1..[LAST_STEP]). 1 장소 고르기 · 2 장소별 기록 · 3 코스 정보 · 4 설정. */
     val step: Int = FIRST_STEP,
     val name: String = "",
@@ -49,6 +53,9 @@ data class CourseCreateUIState(
     /** 포크 원본 작성자 이름. 안내 배너 문구에만 쓴다. */
     val forkAuthorName: String = "",
 ) : UiState {
+    val lastStep: Int
+        get() = if (isPlan) STEP_COURSE_INFO else LAST_STEP
+
     /** 남의 코스를 포크해 작성 중인지. */
     val isForking: Boolean
         get() = forkFromCourseId != null
@@ -86,16 +93,20 @@ data class CourseCreateUIState(
      */
     val canSave: Boolean
         get() =
-            name.isNotBlank() &&
-                places.size >= MIN_PLACES &&
-                places.all { it.photoUrls.isNotEmpty() }
+            if (isPlan) {
+                placesReason == null && infoReason == null && !isCalculatingWalking
+            } else {
+                name.isNotBlank() &&
+                    places.size >= MIN_PLACES &&
+                    places.all { it.photoUrls.isNotEmpty() }
+            }
 
     /**
      * 임시저장 가능 조건은 **장소 [MIN_PLACES]곳 이상 하나뿐**이다(서버가 그 아래를 400 으로 거절한다).
      * 제목·설명·커버·장소 사진·태그는 발행할 때만 필요하므로 여기서 보지 않는다.
      */
     val canSaveDraft: Boolean
-        get() = places.size >= MIN_PLACES
+        get() = !isPlan && places.size >= MIN_PLACES
 
     /**
      * 현재 단계를 넘어가지 못하게 막는 이유. 통과 상태면 null. 버튼 문구로 그대로 쓴다.
@@ -111,7 +122,7 @@ data class CourseCreateUIState(
             when (step) {
                 STEP_PLACES -> placesReason
                 STEP_PLACE_RECORDS -> recordsReason
-                STEP_COURSE_INFO -> infoReason
+                STEP_COURSE_INFO -> if (isPlan) placesReason ?: infoReason else infoReason
                 else -> placesReason ?: recordsReason ?: infoReason
             }
 
@@ -120,13 +131,27 @@ data class CourseCreateUIState(
         get() = stepBlockedReason == null
 
     private val placesReason: String?
-        get() = if (places.size < MIN_PLACES) "장소를 ${MIN_PLACES}곳 이상 담아 주세요." else null
+        get() =
+            if (places.size !in
+                (if (isPlan) 1 else MIN_PLACES)..MAX_PLACES
+            ) {
+                "장소를 ${if (isPlan) 1 else MIN_PLACES}~${MAX_PLACES}곳 담아 주세요."
+            } else {
+                null
+            }
 
     private val recordsReason: String?
-        get() = if (places.any { it.photoUrls.isEmpty() }) "사진을 추가해주세요" else null
+        get() = if (!isPlan && places.any { it.photoUrls.isEmpty() }) "사진을 추가해주세요" else null
 
     private val infoReason: String?
-        get() = if (name.isBlank()) "코스 이름을 입력해 주세요." else null
+        get() =
+            when {
+                !isPlan && name.isBlank() -> "코스 이름을 입력해 주세요."
+                isPlan && name.length > 200 -> "계획 제목은 200자까지 입력해 주세요."
+                isPlan && (description.length > 500 || places.any { it.note.length > 500 }) -> "메모는 500자까지 입력해 주세요."
+                isPlan && plannedDate.isNotBlank() && !isValidPlanDate(plannedDate) -> "날짜를 yyyy-MM-dd 형식으로 입력해 주세요."
+                else -> null
+            }
 
     companion object {
         val empty: CourseCreateUIState = CourseCreateUIState()
@@ -149,3 +174,6 @@ data class CourseCreateUIState(
         const val LAST_STEP = STEP_SETTINGS
     }
 }
+
+private fun isValidPlanDate(value: String): Boolean =
+    value.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) && runCatching { java.time.LocalDate.parse(value) }.isSuccess

@@ -6,7 +6,6 @@ import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.GetPlansUseCase
 import com.chillsam.courmy.main.domain.my.GetMyProfileUseCase
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
-import com.chillsam.courmy.main.presentation.my.mock.ProfilePlanMockData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -100,8 +99,12 @@ class MyViewModel
                     state.copy(selectedTab = event.tab)
                 }
 
+                is MyProfileReducerEvent.PlanFailed -> {
+                    state.copy(planError = event.message)
+                }
+
                 is MyProfileReducerEvent.PlanLoaded -> {
-                    state.copy(planCourses = event.courses.toImmutableList())
+                    state.copy(planCourses = event.courses.toImmutableList(), planError = null)
                 }
             }
 
@@ -127,8 +130,7 @@ class MyViewModel
         /**
          * 계획 탭 목록(`GET /api/v1/plans`). 프로필과 독립 호출이라 서로 막지 않는다.
          *
-         * 실패하면 예시 데이터([ProfilePlanMockData])로 대체한다 — dev 서버에 계획이 없거나
-         * 비로그인(401)이어도 탭 레이아웃은 확인할 수 있어야 해서다. 빈 목록은 정상 응답이라 덮지 않는다.
+         * 실패는 재시도 안내로 표시한다. 예시 계획을 실제 저장 데이터처럼 표시하지 않는다.
          */
         private fun loadPlans() {
             planJob?.cancel()
@@ -140,17 +142,17 @@ class MyViewModel
                                 MyProfileReducerEvent.PlanLoaded(
                                     list.plans.map { plan ->
                                         ProfileCourseVO(
-                                            // 코스 id 와 섞이지 않게 접두사를 유지한다(계획 탭은 상세 이동을 막는다).
+                                            // 코스 id 와 섞이지 않게 접두사를 유지한다(상세 이동 시 접두사를 제거한다).
                                             id = "plan-${plan.planId}",
-                                            title = plan.title,
+                                            title = plan.title.ifBlank { "제목 없는 계획" },
                                         )
                                     },
                                 ),
                             )
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
-                            Log.w(TAG, "계획 목록 로드 실패 — 예시 데이터로 대체", e)
-                            dispatch(MyProfileReducerEvent.PlanLoaded(ProfilePlanMockData.planCourses))
+                            Log.w(TAG, "계획 목록 로드 실패", e)
+                            dispatch(MyProfileReducerEvent.PlanFailed("계획을 불러오지 못했어요. 다시 시도해 주세요."))
                         }
                 }
         }

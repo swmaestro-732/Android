@@ -32,13 +32,22 @@ data class PlanSummaryDTO(
     val updatedAt: String? = null,
 )
 
-/** 생성 요청. 홈 FAB "계획하기"는 제목만 싣는다 — 장소는 계획 상세에서 붙인다. */
+/** 공개범위·태그·사진 없이 장소와 메모만 저장하는 비공개 계획. */
 @Serializable
 data class CreatePlanRequest(
     val title: String,
     val memo: String? = null,
     val plannedDate: String? = null,
     val sourceCourseId: Long? = null,
+    val places: List<PlanPlaceRequest>,
+)
+
+@Serializable
+data class PlanPlaceRequest(
+    val placeId: Long,
+    val orderNo: Int,
+    val memo: String? = null,
+    val walkingMinutes: Int? = null,
 )
 
 @Serializable

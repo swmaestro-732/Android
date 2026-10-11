@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.domain.telemetry.AppFailure
 import com.chillsam.courmy.common.domain.telemetry.AppFlow
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.common.domain.telemetry.track
+import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CreateCourseResultVO
 import javax.inject.Inject
@@ -26,11 +27,13 @@ class CreateCourseUseCase
         private val repository: CourseRepository,
         private val mediaRepository: MediaRepository,
         private val telemetry: Telemetry,
+        private val completeCourseUseCase: CompleteCourseUseCase,
     ) {
         suspend operator fun invoke(
             draft: CourseDraftVO,
             thumbnailUris: List<String> = emptyList(),
             published: Boolean = true,
+            completed: CourseCompleteVO? = null,
         ): CreateCourseResultVO =
             telemetry.track(AppFlow.CourseCreate) {
                 val uploader = CourseImageUploader(mediaRepository)
@@ -49,6 +52,7 @@ class CreateCourseUseCase
                         AppFailure(area = AppFlow.CourseCreate.eventName, kind = "image_upload"),
                     )
                 }
+                if (published) completeCourseUseCase(completed)
                 CreateCourseResultVO(courseId = courseId, imagesUploaded = uploader.allSucceeded)
             }
     }

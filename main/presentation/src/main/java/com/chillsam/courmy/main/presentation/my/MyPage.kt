@@ -36,6 +36,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.course.domain.PlanDetailPage
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.map.MapPage
@@ -68,8 +69,12 @@ import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 fun MyPage(
     modifier: Modifier = Modifier,
     viewModel: MyViewModel = hiltViewModel(),
+    showPlans: Boolean = false,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(showPlans) {
+        if (showPlans) viewModel.onIntent(MyProfileIntent.SelectTab(ProfileTab.PLAN))
+    }
     val profile = uiState.profile
     // 프로필 편집에서 돌아왔을 때 수정된 값이 보이도록 다시 보일 때마다 새로 불러온다.
     RefreshOnResume { viewModel.onIntent(MyProfileIntent.Retry) }
@@ -79,6 +84,7 @@ fun MyPage(
                 profile = profile,
                 uiState = uiState,
                 onLoadMore = { viewModel.onIntent(MyProfileIntent.LoadMore) },
+                onRetryPlans = { viewModel.onIntent(MyProfileIntent.Retry) },
                 onSelectTab = { viewModel.onIntent(MyProfileIntent.SelectTab(it)) },
                 modifier = modifier,
             )
@@ -176,6 +182,7 @@ private fun MyContent(
     profile: MyProfileVO,
     uiState: MyProfileUIState,
     onLoadMore: () -> Unit,
+    onRetryPlans: () -> Unit,
     onSelectTab: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -247,14 +254,18 @@ private fun MyContent(
             )
             val visibleCourses = uiState.visibleCourses
             when {
+                uiState.selectedTab == ProfileTab.PLAN && uiState.planError != null -> {
+                    ProfileError(message = uiState.planError, onRetry = onRetryPlans)
+                }
+
                 visibleCourses.isNotEmpty() -> {
                     ProfileCoursesGrid(
                         courses = visibleCourses,
-                        // 계획은 아직 mock 이라 서버에 없는 id 다. 상세를 열면 실패하므로 눌러도 넘기지 않는다.
-                        // TODO(SCRUM-계획API): 계획 목록 API 가 붙으면 코스와 똑같이 상세로 보낸다.
                         onCourseClick = { courseId ->
                             if (uiState.selectedTab == ProfileTab.COURSES) {
                                 navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                            } else {
+                                navigationHelper.navigateByRoute(PlanDetailPage.route(courseId.removePrefix("plan-")))
                             }
                         },
                     )

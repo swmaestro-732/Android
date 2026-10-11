@@ -8,7 +8,6 @@ import javax.inject.Inject
  *
  * 이름 제약(1~10자)은 서버 계약이라 요청 전에 걸러 400 왕복을 줄인다.
  *
- * TODO: 폴더 생성 UI 가 생기면 거기서 호출한다. 지금은 데이터 계층만 연결돼 있다.
  */
 class CreateCourseFolderUseCase
     @Inject

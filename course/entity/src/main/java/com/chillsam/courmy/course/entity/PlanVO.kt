@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 /**
  * 계획 요약 1건(`GET /api/v1/plans`). 프로필 "계획" 탭 그리드가 그린다.
  *
- * - [planId]          계획 식별자. 상세(`/service/v1/my/plans/{planId}`)·수정·삭제 요청 키다.
+ * - [planId]          계획 식별자. 상세(`/api/v1/plans/{planId}`)·수정·삭제 요청 키다.
  * - [title]           계획 이름
  * - [plannedDateText] 계획한 날짜 표시값(예: "2026-10-10"). 날짜를 안 정했으면 빈 문자열.
  * - [placeCount]      담아 둔 장소 수

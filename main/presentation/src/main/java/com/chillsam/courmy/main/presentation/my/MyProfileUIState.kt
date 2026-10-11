@@ -24,6 +24,7 @@ data class MyProfileUIState(
      * 처음 열었을 때 보여 줄 탭. 계획이 탭 줄에서는 앞이지만 기본값은 코스다 —
      * 계획은 아직 mock 이라, 마이를 열자마자 가짜 목록이 첫 화면이 되면 안 된다.
      */
+    val planError: String? = null,
     val selectedTab: ProfileTab = ProfileTab.COURSES,
     /** 계획 목록. 페이징이 없어 [courses] 와 달리 한 번에 다 들고 있는다. */
     val planCourses: ImmutableList<ProfileCourseVO> = persistentListOf(),
