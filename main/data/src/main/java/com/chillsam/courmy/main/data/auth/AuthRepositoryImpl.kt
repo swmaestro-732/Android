@@ -21,9 +21,17 @@ class AuthRepositoryImpl(
         provider: SocialProvider,
         idToken: String,
     ): SocialLoginResult {
+        // 네이버만 OIDC 미지원이라 accessToken 필드로 보낸다. 서버는 provider 에 맞는 필드
+        // 하나만 허용한다(SocialLoginRequest 주석 참고).
+        val request =
+            if (provider == SocialProvider.NAVER) {
+                SocialLoginRequest(provider = provider.name, accessToken = idToken)
+            } else {
+                SocialLoginRequest(provider = provider.name, idToken = idToken)
+            }
         val data =
             requireNotNull(
-                dataSource.socialLogin(SocialLoginRequest(provider = provider.name, idToken = idToken)).data,
+                dataSource.socialLogin(request).data,
             ) { "social-login 응답에 data 가 없습니다." }
 
         if (data.newUser) {

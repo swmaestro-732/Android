@@ -3,11 +3,19 @@ package com.chillsam.courmy.main.data.auth.dto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** POST /api/v1/auth/social-login 요청. provider 는 서버 enum 문자열("KAKAO" 등)과 일치. */
+/**
+ * POST /api/v1/auth/social-login 요청. provider 는 서버 enum 문자열("KAKAO" 등)과 일치.
+ *
+ * 서버는 provider 별로 **토큰 필드 하나만** 받는다(`tokenShapeValid` 검증, 2026-10-18 실호출 확인):
+ * - KAKAO·GOOGLE: OIDC 라 [idToken]
+ * - NAVER: OIDC 미지원이라 [accessToken]
+ * 둘 다 채우거나 어긋난 필드에 넣으면 400(4002) 이다.
+ */
 @Serializable
 data class SocialLoginRequest(
     val provider: String,
-    val idToken: String,
+    val idToken: String? = null,
+    val accessToken: String? = null,
 )
 
 /** POST /api/v1/auth/logout 요청. */
