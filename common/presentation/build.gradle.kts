@@ -60,6 +60,8 @@ composeCompiler {
 }
 
 dependencies {
+    testImplementation(libs.junit)
+
     api(project(":common:domain"))
     api(project(":tti"))
 

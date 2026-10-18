@@ -128,11 +128,11 @@ android {
                 .toInt()
         // Play 는 versionCode 로만 버전 순서를 판단한다. 업로드할 때마다 반드시 올려야 하고,
         // 한 번 쓴 값은 재사용할 수 없다(같은 값으로 올리면 중복으로 거부된다).
-        versionCode = 4
+        versionCode = 8
         // 사용자에게 보이는 표시용 문자열. 정식 출시 전이라 0.x 로 둔다.
         // SemVer 만 쓰고 빌드 번호를 접미사로 붙이지 않는다 — Play Console 과 Crashlytics 가
         // versionName 과 versionCode 를 이미 함께 보여주므로 중복이다. 정식 출시 때 1.0.0.
-        versionName = "0.1.2"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -209,6 +209,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -239,6 +240,7 @@ composeCompiler {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(project(":common:presentation"))
     implementation(project(":common:domain"))
     implementation(project(":common:data"))
