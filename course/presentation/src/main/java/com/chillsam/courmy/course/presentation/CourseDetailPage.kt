@@ -53,6 +53,14 @@ fun CourseDetailPage(
         if (uiState.isDeleted) actions.onBack()
     }
 
+    // 로그인 확인을 통과한 뒤에만 포크(코스 만들기)로 넘어간다.
+    LaunchedEffect(uiState.isForkRequested) {
+        if (uiState.isForkRequested) {
+            actions.onForkCourse()
+            viewModel.onIntent(CourseDetailIntent.ConsumeForkRequest)
+        }
+    }
+
     // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
     LaunchedEffect(uiState.actionErrorMessage) {
         uiState.actionErrorMessage?.let { message ->
@@ -63,9 +71,11 @@ fun CourseDetailPage(
     when {
         detail != null -> {
             CourseDetailScreen(
+                courseId = courseId,
                 detail = detail,
                 isSaving = uiState.isSaving,
                 isDeleting = uiState.isDeleting,
+                social = uiState.social,
                 actions =
                     CourseDetailActions(
                         onBack = actions.onBack,
@@ -84,8 +94,12 @@ fun CourseDetailPage(
                         onFollowAuthor = { viewModel.onIntent(CourseDetailIntent.ToggleFollowAuthor) },
                         onShare = actions.onShare,
                         onSaveCourse = { viewModel.onIntent(CourseDetailIntent.ToggleSave) },
+                        onForkCourse = { viewModel.onIntent(CourseDetailIntent.ForkCourse) },
+                        onFollowCourse = actions.onFollowCourse,
                         onEditCourse = actions.onEditCourse,
                         onDeleteCourse = { showDeleteConfirm = true },
+                        onToggleLike = { viewModel.onIntent(CourseDetailIntent.ToggleLike) },
+                        onSeeAllReviews = actions.onSeeAllReviews,
                     ),
                 modifier = modifier,
             )

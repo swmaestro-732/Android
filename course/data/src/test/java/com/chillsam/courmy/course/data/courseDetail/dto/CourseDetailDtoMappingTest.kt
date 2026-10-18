@@ -2,12 +2,47 @@ package com.chillsam.courmy.course.data.courseDetail.dto
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * [CourseScreenData.toVO] 매핑 검증 — 표시용 문자열 포맷팅·순서 정렬·null 처리.
  */
 class CourseDetailDtoMappingTest {
+    @Test
+    fun `코스 상세 테마는 장소 카테고리 10종과 같은 라벨을 사용한다`() {
+        val codes =
+            listOf(
+                "cafe",
+                "restaurant",
+                "bar",
+                "shopping",
+                "culture",
+                "experience",
+                "nature",
+                "landmark",
+                "entertainment",
+                "wellness",
+            )
+        val labels =
+            listOf(
+                "카페·디저트",
+                "음식점",
+                "술집·바",
+                "쇼핑·상점",
+                "문화·전시",
+                "체험·클래스",
+                "자연·아웃도어",
+                "역사·명소",
+                "여가·놀거리",
+                "웰니스·힐링",
+            )
+        val vo = fullData().copy(course = fullData().course!!.copy(themes = codes)).toVO(myUserId = null)
+
+        assertEquals(codes, vo.themes)
+        assertEquals(labels, vo.themeLabels)
+    }
+
     @Test
     fun `course 필드를 화면 표시용 VO 로 포맷팅한다`() {
         val vo = fullData().toVO(myUserId = null)
@@ -60,7 +95,7 @@ class CourseDetailDtoMappingTest {
                                         author = null,
                                         rating = 5,
                                         content = "좋아요",
-                                        relativeTime = "1일 전",
+                                        createdAt = "2026-09-18T00:00:00Z",
                                         photoUrls = listOf("a", "b"),
                                     ),
                                 ),
@@ -69,7 +104,8 @@ class CourseDetailDtoMappingTest {
 
         assertEquals("익명", vo.reviews[0].author)
         assertEquals(listOf("a", "b"), vo.reviews[0].photoUrls)
-        assertEquals("1일 전", vo.reviews[0].dateText)
+        // 서버가 주는 것은 createdAt(UTC) 뿐이라 상대 시각은 앱이 만든다. 고정 시각이 없어 형식만 확인한다.
+        assertTrue(vo.reviews[0].dateText.endsWith("전"))
     }
 
     /** 서버가 isMine 을 주지 않아 작성자 id 와 세션 id 비교로 판정한다. 잘못되면 남의 코스에 삭제 버튼이 뜬다. */
@@ -147,10 +183,10 @@ class CourseDetailDtoMappingTest {
                         previews =
                             listOf(
                                 ReviewPreviewDTO(
-                                    author = ReviewAuthorDTO("성수러버", "rv.jpg"),
+                                    author = ReviewAuthorDTO(id = 2, nickname = "성수러버", profileImageUrl = "rv.jpg"),
                                     rating = 5,
                                     content = "좋아요",
-                                    relativeTime = "1일 전",
+                                    createdAt = "2026-09-18T00:00:00Z",
                                     photoUrls = listOf("rp.jpg"),
                                 ),
                             ),
