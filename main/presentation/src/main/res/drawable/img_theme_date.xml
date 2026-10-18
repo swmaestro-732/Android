@@ -1,20 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?><!-- 테마 타일 일러스트: 데이트 — 큰 하트 + 뒤에 연한 하트. 타일 우하단에 걸쳐 잘리게 배치된다. -->
+<?xml version="1.0" encoding="utf-8"?><!-- 테마 타일 일러스트: 데이트(디자이너 SVG theme_date.svg 변환). 타일 전체를 덮는 320x240 캔버스. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="120dp"
-    android:height="120dp"
-    android:viewportWidth="120"
-    android:viewportHeight="120">
-    <!-- 뒤 연핑크 하트(살짝 회전) -->
-    <group
-        android:rotation="18"
-        android:pivotX="78"
-        android:pivotY="42">
-        <path
-            android:fillColor="#FFD9DF"
-            android:pathData="M78,66 C60,51 51,39 51,30 C51,21 58,16 65,16 C71,16 75,19 78,24 C81,19 85,16 91,16 C98,16 105,21 105,30 C105,39 96,51 78,66Z" />
-    </group>
-    <!-- 앞 진한 핑크 하트 -->
+    android:width="320dp"
+    android:height="240dp"
+    android:viewportWidth="320"
+    android:viewportHeight="240">
     <path
-        android:fillColor="#F76D83"
-        android:pathData="M52,108 C24,85 10,67 10,53 C10,39 21,31 31,31 C40,31 47,36 52,44 C57,36 64,31 73,31 C83,31 94,39 94,53 C94,67 80,85 52,108Z" />
+        android:fillColor="#FFFFD4D7"
+        android:pathData="M149,240 C174,196 248,147 320,118 L320,240 Z" />
+    <path
+        android:fillColor="#FFFFD0D4"
+        android:pathData="M257,156 C245,145 213,121 213,99 C213,79 238,69 254,88 C268,68 295,77 297,96 C299,118 276,142 257,156Z" />
+    <path
+        android:fillColor="#FFFF6B83"
+        android:pathData="M173,254 C150,236 102,209 98,180 C94,153 109,136 132,135 C149,134 164,144 173,157 C184,142 200,135 216,139 C240,144 251,165 241,188 C230,214 194,239 173,254Z" />
 </vector>

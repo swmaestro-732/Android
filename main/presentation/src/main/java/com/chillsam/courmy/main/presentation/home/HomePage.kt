@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -85,7 +84,7 @@ private data class ThemeTileSpec(
 
 /**
  * 테마별 둘러보기 타일. 탭하면 테마명을 검색어로 하는 검색 결과로 보낸다.
- * 일러스트는 시안의 플랫 벡터 스타일을 drawable 로 그린 것이라 별도 이미지 에셋이 없다.
+ * 일러스트는 디자이너 SVG(courmy_theme_svg)를 VectorDrawable 로 변환한 것이다.
  */
 private val themeTiles: List<ThemeTileSpec> =
     listOf(
@@ -637,8 +636,9 @@ private fun ThemeBrowseSection(
 }
 
 /**
- * 테마 타일(시안: 흰 카드). 좌상단 라벨 + 우하단 일러스트가 카드 모서리에 걸쳐 잘린다 —
- * offset 으로 일부러 카드 밖까지 밀고, 카드의 clip 이 잘라낸다.
+ * 테마 타일(시안: 흰 카드). 좌상단 라벨 + 우하단에 타일을 덮는 일러스트.
+ * 일러스트(320x240)는 우하단 블롭과 바닥 넘침(bleed)이 포함된 디자이너 SVG 변환본이라,
+ * 왜곡 없이(Fit) 우하단에 붙이기만 하면 시안 배치가 된다.
  */
 @Composable
 private fun ThemeTile(
@@ -659,11 +659,9 @@ private fun ThemeTile(
         Image(
             painter = painterResource(spec.imageRes),
             contentDescription = null,
-            modifier =
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = 10.dp, y = 12.dp)
-                    .size(104.dp),
+            contentScale = ContentScale.Fit,
+            alignment = Alignment.BottomEnd,
+            modifier = Modifier.fillMaxSize(),
         )
         DsText(
             text = spec.label,

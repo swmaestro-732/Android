@@ -1,40 +1,47 @@
-<?xml version="1.0" encoding="utf-8"?><!-- 테마 타일 일러스트: 카페 투어 — 복숭아색 받침 원 위 커피잔과 김. -->
+<?xml version="1.0" encoding="utf-8"?><!-- 테마 타일 일러스트: 카페 투어(디자이너 SVG theme_cafe.svg 변환). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="120dp"
-    android:height="120dp"
-    android:viewportWidth="120"
-    android:viewportHeight="120">
-    <!-- 뒤 복숭아 원(받침) -->
+    android:width="320dp"
+    android:height="240dp"
+    android:viewportWidth="320"
+    android:viewportHeight="240">
     <path
-        android:fillColor="#F6C9A4"
-        android:pathData="M64,120 m-56,0 a56,56 0 1,1 112,0 a56,56 0 1,1 -112,0" />
-    <!-- 잔 받침(소서) -->
+        android:fillColor="#FFFFD0AC"
+        android:pathData="M49,240 C62,193 113,144 174,110 C222,83 277,77 320,92 L320,240 Z" />
+    <group
+        android:rotation="-9"
+        android:pivotX="235"
+        android:pivotY="223">
+        <path
+            android:fillColor="#FF8EB497"
+            android:pathData="M130,223 a105,35 0 1,0 210,0 a105,35 0 1,0 -210,0" />
+    </group>
     <path
-        android:fillColor="#FDF3E7"
-        android:pathData="M62,98 C86,98 102,102 102,107 C102,112 86,116 62,116 C38,116 22,112 22,107 C22,102 38,98 62,98Z" />
-    <!-- 잔 몸통 -->
+        android:fillColor="#FFFFF7DF"
+        android:fillType="evenOdd"
+        android:pathData="M280,159 C299,151 317,159 318,176 C320,194 304,210 283,209 L280,198 C295,198 307,188 306,177 C305,168 295,166 282,171 Z" />
     <path
-        android:fillColor="#FDF6EC"
-        android:pathData="M30,56 L94,56 C94,88 82,104 62,104 C42,104 30,88 30,56Z" />
-    <!-- 손잡이 -->
-    <path
-        android:fillColor="#FDF6EC"
-        android:pathData="M92,62 C104,62 110,68 110,76 C110,84 103,90 92,90 L90,82 C97,82 101,80 101,76 C101,72 97,70 92,70Z" />
-    <!-- 커피 표면 -->
-    <path
-        android:fillColor="#8A5A3B"
-        android:pathData="M62,50 C80,50 94,53 94,57 C94,61 80,64 62,64 C44,64 30,61 30,57 C30,53 44,50 62,50Z" />
-    <!-- 김 두 줄 -->
+        android:fillColor="#FFFFF9E6"
+        android:pathData="M165,164 L289,164 L283,200 C280,229 260,242 231,242 C200,242 180,226 173,200 Z" />
+    <group
+        android:rotation="-4"
+        android:pivotX="227"
+        android:pivotY="163">
+        <path
+            android:fillColor="#FFFFFCEC"
+            android:pathData="M165,163 a62,15 0 1,0 124,0 a62,15 0 1,0 -124,0" />
+    </group>
+    <group
+        android:rotation="-4"
+        android:pivotX="227"
+        android:pivotY="164">
+        <path
+            android:fillColor="#FF8B623D"
+            android:pathData="M178,164 a49,7 0 1,0 98,0 a49,7 0 1,0 -98,0" />
+    </group>
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#E8B98F"
-        android:strokeWidth="6"
+        android:strokeColor="#FFDED6CC"
+        android:strokeWidth="8"
         android:strokeLineCap="round"
-        android:pathData="M48,38 C44,30 50,26 46,16" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#E8B98F"
-        android:strokeWidth="6"
-        android:strokeLineCap="round"
-        android:pathData="M70,40 C66,32 72,28 68,18" />
+        android:pathData="M208,135 C226,113 194,108 211,86 M235,135 C253,113 221,108 238,86" />
 </vector>
