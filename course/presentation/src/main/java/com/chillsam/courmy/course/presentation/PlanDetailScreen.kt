@@ -106,7 +106,6 @@ internal fun PlanDetailScreen(
             initialAddress =
                 detail.places
                     .firstOrNull { it.placeId == place.placeId }
-                    ?.detail
                     ?.address
                     .orEmpty(),
             onDismiss = {
@@ -224,7 +223,7 @@ private fun PlanPlaceNotes(
     val color = DesignSystemThemeImpl.designSystemColor
     val place = detail.places[index]
     Column(Modifier.padding(start = 36.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        place.detail?.address?.takeIf { it.isNotBlank() }?.let {
+        place.address.takeIf { it.isNotBlank() }?.let {
             DsText(
                 it,
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -294,12 +293,12 @@ private fun PlanDetailVO.toDisplayPlaces(): List<CourseDetailPlaceVO> =
         CourseDetailPlaceVO(
             placeId = place.placeId,
             order = index + 1,
-            name = place.detail?.name ?: "장소 정보를 불러오지 못했어요",
-            category = place.detail?.category.orEmpty(),
+            name = place.name.ifBlank { "장소 정보를 불러오지 못했어요" },
+            category = place.categoryLabel,
             photoCountText = "",
             tip = place.memo,
-            latitude = place.detail?.latitude,
-            longitude = place.detail?.longitude,
+            latitude = place.latitude,
+            longitude = place.longitude,
             walkingMinutesToNext = place.walkingMinutesToNext,
             walkToNextText =
                 place.walkingMinutesToNext?.takeIf { index < places.lastIndex }?.let {

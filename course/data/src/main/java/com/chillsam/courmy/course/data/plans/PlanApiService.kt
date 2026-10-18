@@ -12,7 +12,11 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface PlanApiService {
-    @GET("api/v1/plans/{planId}")
+    /**
+     * 계획 상세 화면 조합(BFF). raw `api/v1/plans/{planId}` 와 달리 장소의 이름·카테고리·주소·좌표를
+     * 함께 내려줘 장소별 상세 N+1 조회가 필요 없다. 스펙의 `userId` 쿼리는 springdoc 오표기(JWT 정본).
+     */
+    @GET("service/v1/my/plans/{planId}")
     suspend fun getPlanDetail(
         @Path("planId") planId: Long,
     ): Response<PlanDetailEnvelope>
