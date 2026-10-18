@@ -5,7 +5,7 @@
     android:viewportWidth="320"
     android:viewportHeight="240">
     <path
-        android:fillColor="#FFDFF0D8"
+        android:fillColor="#FFDDF2E0"
         android:pathData="M78,240 C47,214 78,188 121,162 C174,130 253,102 320,114 L320,240 Z" />
     <group
         android:rotation="-13"
@@ -21,7 +21,7 @@
             android:fillColor="#FFDFF3FA"
             android:pathData="M155,98 L275,98 L275,229 L155,229 Z" />
         <path
-            android:fillColor="#FFFFD765"
+            android:fillColor="#FFF2D06B"
             android:pathData="M251,124 m-14,0 a14,14 0 1,1 28,0 a14,14 0 1,1 -28,0" />
         <path
             android:fillColor="#FF88BE9F"
