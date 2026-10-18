@@ -1,5 +1,7 @@
 package com.chillsam.courmy.main.presentation.home
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,6 +69,7 @@ import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
@@ -75,10 +77,10 @@ private const val RECOMMENDED_PREVIEW_COUNT = 5
 /** 헤더 보조줄의 위치·날씨. 위치·날씨 연동 전까지 시안 고정값을 쓴다. */
 private const val LOCATION_WEATHER_MOCK = "성수동 · 흐림 18°"
 
-/** 테마별 둘러보기 타일 한 장: 라벨 + 파스텔 배경 + 우하단 일러스트(이모지). */
+/** 테마별 둘러보기 타일 한 장: 라벨 + 파스텔 배경 + 우하단 3D 일러스트. */
 private data class ThemeTileSpec(
     val label: String,
-    val emoji: String,
+    @param:DrawableRes val imageRes: Int,
     val container: Color,
 )
 
@@ -87,14 +89,14 @@ private data class ThemeTileSpec(
  *
  * 배경은 시안의 테마별 파스텔 고정색이다 — 디자인 시스템 시맨틱 색이 아니라 이 섹션 전용
  * 장식색이라 화면 로컬에 둔다(로그인 화면 KakaoYellow 와 같은 선택). 팔레트 승격은 토큰
- * 정책대로 디자이너 확인 후 한다. 일러스트는 3D 에셋이 아직 없어 시스템 이모지로 대신한다.
+ * 정책대로 디자이너 확인 후 한다.
  */
 private val themeTiles: List<ThemeTileSpec> =
     listOf(
-        ThemeTileSpec("데이트 코스", "❤️", Color(0xFFFBE2E2)),
-        ThemeTileSpec("혼술 · 회식", "🍷", Color(0xFFEFE4F3)),
-        ThemeTileSpec("전시 · 산책", "🏛️", Color(0xFFDFEDDF)),
-        ThemeTileSpec("카페 투어", "☕", Color(0xFFF4ECDE)),
+        ThemeTileSpec("데이트 코스", MainR.drawable.img_theme_date, Color(0xFFFBE2E2)),
+        ThemeTileSpec("혼술 · 회식", MainR.drawable.img_theme_drinks, Color(0xFFEFE4F3)),
+        ThemeTileSpec("전시 · 산책", MainR.drawable.img_theme_culture, Color(0xFFDFEDDF)),
+        ThemeTileSpec("카페 투어", MainR.drawable.img_theme_cafe, Color(0xFFF4ECDE)),
     )
 
 /**
@@ -638,12 +640,7 @@ private fun ThemeBrowseSection(
     }
 }
 
-/**
- * 테마 타일(시안: 파스텔 카드). 좌상단 라벨 + 우하단 큼직한 일러스트(이모지).
- *
- * 이모지 크기는 sp 대신 dp 를 변환해 쓴다 — 글자가 아니라 일러스트 대용이라, 시스템 글꼴
- * 배율을 따라 커지면 타일 밖으로 넘친다.
- */
+/** 테마 타일(시안: 파스텔 카드). 좌상단 라벨 + 우하단 큼직한 3D 일러스트. */
 @Composable
 private fun ThemeTile(
     spec: ThemeTileSpec,
@@ -651,7 +648,6 @@ private fun ThemeTile(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val emojiSize = with(LocalDensity.current) { 44.dp.toSp() }
     Box(
         modifier =
             modifier
@@ -666,11 +662,14 @@ private fun ThemeTile(
             color = color.contentDefaultLevel0,
             modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 14.dp),
         )
-        DsText(
-            text = spec.emoji,
-            style = DesignSystemThemeImpl.typeScale.titleExtraL.copy(fontSize = emojiSize, lineHeight = emojiSize),
-            color = color.contentDefaultLevel0,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 4.dp),
+        Image(
+            painter = painterResource(spec.imageRes),
+            contentDescription = null,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 10.dp, bottom = 8.dp)
+                    .size(56.dp),
         )
     }
 }
