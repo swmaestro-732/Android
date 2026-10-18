@@ -63,6 +63,7 @@ import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
@@ -144,6 +145,11 @@ fun HomePage(modifier: Modifier = Modifier) {
                     NearbySavedSection(
                         places = homeState.nearbyPlaces,
                         onSeeMap = { navigationHelper.navigateTo(MapPage) },
+                        onPlaceClick = { placeId ->
+                            // 지도 탭이 장소 목록을 받은 뒤 이 장소를 선택해(시트·카메라) 보여준다.
+                            MapFocusRequestStore.request(placeId)
+                            navigationHelper.navigateTo(MapPage)
+                        },
                         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                     )
                 }
@@ -491,6 +497,7 @@ private fun RecommendedCourseCard(
 private fun NearbySavedSection(
     places: List<HomeNearbyPlaceVO>,
     onSeeMap: () -> Unit,
+    onPlaceClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -500,15 +507,19 @@ private fun NearbySavedSection(
             onAction = onSeeMap,
         )
         places.forEach { place ->
-            NearbyPlaceCard(place = place)
+            NearbyPlaceCard(
+                place = place,
+                onClick = { onPlaceClick(place.id) },
+            )
         }
     }
 }
 
-/** 근처 저장 장소 카드: 썸네일 + 이름·평점·카테고리·도보 시간 + 방문 여부 칩. */
+/** 근처 저장 장소 카드: 썸네일 + 이름·평점·카테고리·도보 시간 + 방문 여부 칩. 탭하면 지도에서 그 장소를 보여준다. */
 @Composable
 private fun NearbyPlaceCard(
     place: HomeNearbyPlaceVO,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -519,6 +530,7 @@ private fun NearbyPlaceCard(
                 .clip(RoundedCornerShape(16.dp))
                 .background(color.bgDefaultLevel1)
                 .border(width = 1.dp, color = color.borderDefaultLevel0, shape = RoundedCornerShape(16.dp))
+                .clickable(onClick = onClick)
                 .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

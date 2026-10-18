@@ -32,6 +32,12 @@ class MapViewModel
     ) : MviViewModel<MapIntent, MapUIState, MapReducerEvent>(MapUIState.empty) {
         private var loadJob: Job? = null
 
+        /**
+         * 홈 근처 저장 장소 카드가 [MapFocusRequestStore] 로 넘긴, 진입 직후 선택할 장소.
+         * 목록이 아직 없으면(첫 진입) 첫 조회가 끝난 뒤 적용한다.
+         */
+        private var pendingFocusPlaceId: Long? = null
+
         override fun onIntent(intent: MapIntent) {
             when (intent) {
                 is MapIntent.BoundsChanged -> {
@@ -41,7 +47,11 @@ class MapViewModel
                 }
 
                 MapIntent.Load -> {
-                    if (currentState.places.isEmpty()) load()
+                    MapFocusRequestStore.consume()?.let { pendingFocusPlaceId = it }
+                    applyPendingFocus(currentState.places)
+                    // 캐시에 focus 장소가 없으면 재조회한다 — 그 조회의 onSuccess 가 적용하거나
+                    // 포기해서, 잔류한 요청이 한참 뒤 팬 조회에서 불쑥 선택되는 일을 막는다.
+                    if (currentState.places.isEmpty() || pendingFocusPlaceId != null) load()
                 }
 
                 MapIntent.Retry -> {
@@ -100,6 +110,9 @@ class MapViewModel
                                 totalCount = result.totalCount,
                             ),
                         )
+                        applyPendingFocus(result.places)
+                        // 첫 조회에 없으면 포기한다 — 화면 밖 장소를 한참 뒤 로드에서 불쑥 선택하지 않게.
+                        pendingFocusPlaceId = null
                     }.onFailure { e ->
                         if (e is CancellationException) throw e
                         // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
@@ -107,6 +120,15 @@ class MapViewModel
                         dispatch(MapReducerEvent.Failed(e.searchErrorMessage("주변 장소를 불러오지 못했습니다.")))
                     }
                 }
+        }
+
+        /** [pendingFocusPlaceId] 가 [places] 안에 있으면 선택하고 요청을 지운다(선택 시 카메라도 따라간다). */
+        private fun applyPendingFocus(places: List<MapPlaceVO>) {
+            val focus = pendingFocusPlaceId ?: return
+            if (places.any { it.id == focus }) {
+                pendingFocusPlaceId = null
+                dispatch(MapReducerEvent.PlaceSelected(focus))
+            }
         }
 
         private fun toggleSave(placeId: Long) {
