@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 /**
@@ -39,6 +40,8 @@ fun CourseReviewListPage(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 상단 바("따라간 후기")가 흰색이라 상태바도 같은 색으로 이어 붙인다. 기본 회색이면 띠만 분리돼 보인다.
+    StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     LaunchedEffect(courseId) { viewModel.onIntent(CourseReviewListIntent.Load(courseId)) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var isWriting by rememberSaveable { mutableStateOf(false) }
