@@ -12,8 +12,7 @@ import kotlin.coroutines.resumeWithException
  * 네이버 로그인 진입점. 네이버앱이 있으면 앱 로그인, 없으면 커스텀탭 웹 로그인으로 **accessToken** 을
  * 돌려준다.
  *
- * TODO-API-SPEC: 네이버는 OIDC(idToken)를 제공하지 않아, 서버 social-login 의 `idToken` 필드에
- * accessToken 을 싣는 계약이다. 서버가 NAVER 검증(프로필 API 조회)을 붙일 때 함께 확정한다. [wiki-needed]
+ * 네이버는 OIDC(idToken)를 제공하지 않아 서버 social-login 의 `accessToken` 필드로 전송한다.
  */
 object NaverLoginClient {
     /** 사용자가 로그인을 취소한 경우. 호출부는 이걸로 "조용히 앱 복귀"를 판단한다. */

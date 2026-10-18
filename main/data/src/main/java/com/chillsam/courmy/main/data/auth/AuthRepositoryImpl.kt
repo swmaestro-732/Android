@@ -1,7 +1,6 @@
 package com.chillsam.courmy.main.data.auth
 
 import com.chillsam.courmy.common.data.auth.TokenStore
-import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
 import com.chillsam.courmy.main.data.auth.dto.LogoutRequest
 import com.chillsam.courmy.main.data.auth.dto.SignupRequest
 import com.chillsam.courmy.main.data.auth.dto.SocialLoginRequest
@@ -63,11 +62,7 @@ class AuthRepositoryImpl(
                             handle = profile.handle,
                             profileImageUrl = profile.profileImageUrl,
                             areaCodes = profile.areaCodes.ifEmpty { null },
-                            likeThemes =
-                                profile.likeThemes
-                                    .map { requireNotNull(PlaceCategoryVO.fromCode(it)) { "알 수 없는 관심 테마: $it" }.code }
-                                    .distinct()
-                                    .ifEmpty { null },
+                            likeThemes = profile.likeThemes.ifEmpty { null },
                         ),
                     ).data,
             ) { "signup 응답에 data 가 없습니다." }

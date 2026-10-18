@@ -99,7 +99,7 @@ class LoginViewModel
         /**
          * 소셜 SDK 단계. 실패·취소는 여기서 상태로 반영하고 null 을 돌려 흐름을 끊는다.
          *
-         * 네이버는 OIDC 미지원이라 accessToken 을 돌려준다 — 서버 social-login 의 idToken 필드에
+         * 네이버는 OIDC 미지원이라 accessToken 을 돌려준다 — 서버 social-login 의 accessToken 필드에
          * 그대로 싣는 계약이다([NaverLoginClient] 참고).
          */
         private suspend fun obtainSocialToken(
