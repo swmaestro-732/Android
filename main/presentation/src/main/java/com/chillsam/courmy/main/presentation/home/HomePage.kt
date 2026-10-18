@@ -62,6 +62,7 @@ import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
@@ -522,22 +523,12 @@ private fun NearbyPlaceCard(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(color.imagePlaceholder),
-        ) {
-            if (place.thumbnailUrl.isNotBlank()) {
-                AsyncImage(
-                    model = place.thumbnailUrl,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-        }
+        PlaceThumbnail(
+            url = place.thumbnailUrl,
+            category = place.categoryLabel,
+            modifier = Modifier.size(56.dp),
+            shape = RoundedCornerShape(12.dp),
+        )
         Column(modifier = Modifier.weight(1f)) {
             DsText(
                 text = place.name,

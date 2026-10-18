@@ -8,13 +8,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -22,20 +20,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import com.chillsam.courmy.main.presentation.component.PlaceThumbnail
 
 private val CardShape = RoundedCornerShape(12.dp)
 private val ThumbShape = RoundedCornerShape(10.dp)
@@ -63,7 +59,7 @@ internal fun MapPlaceCarouselCard(
                 .clickable(onClick = onClick),
     ) {
         Box {
-            PlaceImage(
+            PlaceThumbnail(
                 url = place.thumbnailUrl,
                 category = place.category,
                 modifier =
@@ -117,7 +113,7 @@ internal fun MapPlaceDetailCard(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        PlaceImage(
+        PlaceThumbnail(
             url = place.thumbnailUrl,
             category = place.category,
             modifier = Modifier.size(72.dp),
@@ -176,7 +172,7 @@ internal fun MapRankedPlaceRow(
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel2,
         )
-        PlaceImage(
+        PlaceThumbnail(
             url = place.thumbnailUrl,
             category = place.category,
             modifier = Modifier.size(54.dp),
@@ -287,47 +283,6 @@ private fun SaveToggleIcon(
     )
 }
 
-/** 사진 로딩 중·실패·미제공 시 카테고리 아이콘을 표시한다. */
-@Composable
-private fun PlaceImage(
-    url: String?,
-    category: String,
-    modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(0.dp),
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier =
-            modifier
-                .clip(shape)
-                .background(
-                    Brush.linearGradient(listOf(color.bgAccentSubtle, color.bgDefaultLevel1)),
-                ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painter = painterResource(placeCategoryIcon(category)),
-            contentDescription = null,
-            tint = color.contentAccent,
-            modifier =
-                Modifier
-                    .background(
-                        color.bgDefaultLevel1.copy(alpha = 0.65f),
-                        CircleShape,
-                    ).padding(7.dp)
-                    .size(26.dp),
-        )
-        if (!url.isNullOrBlank()) {
-            AsyncImage(
-                model = url,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-    }
-}
-
 /** `카페 · 베이커리 · 도보 6분`. [prefixSeparator] 면 앞에 붙는 평점과 잇도록 구분점으로 시작한다. */
 private fun MapPlaceVO.categoryAndWalk(prefixSeparator: Boolean = false): String {
     val parts = listOfNotNull(category, subCategory, walkingMinutes?.let { "도보 ${it}분" })
@@ -347,7 +302,7 @@ private fun PlaceImagePreview() {
     DesignSystemTheme {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             listOf("카페", "음식점", "공원").forEach { category ->
-                PlaceImage(url = null, category = category, modifier = Modifier.size(72.dp), shape = ThumbShape)
+                PlaceThumbnail(url = null, category = category, modifier = Modifier.size(72.dp), shape = ThumbShape)
             }
         }
     }
