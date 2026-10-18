@@ -95,6 +95,7 @@ import com.chillsam.courmy.course.presentation.component.toRoutePoints
  */
 @Composable
 fun CourseDetailScreen(
+    courseId: Long,
     detail: CourseDetailVO,
     isSaving: Boolean,
     isDeleting: Boolean,
@@ -217,9 +218,7 @@ fun CourseDetailScreen(
     }
     if (showComments) {
         CourseCommentSheet(
-            state = social,
-            onCommentChange = actions.onCommentChange,
-            onSubmitComment = actions.onSubmitComment,
+            courseId = courseId,
             onDismiss = { showComments = false },
         )
     }
@@ -1492,6 +1491,7 @@ private fun RowScope.BottomBarButton(
 private fun CourseDetailScreenPreview() {
     DesignSystemTheme {
         CourseDetailScreen(
+            courseId = 1L,
             detail = courseDetailSample,
             isSaving = false,
             isDeleting = false,
@@ -1499,7 +1499,6 @@ private fun CourseDetailScreenPreview() {
                 CourseSocialUIState(
                     isLiked = true,
                     likeCount = 128,
-                    comments = listOf(CourseCommentItem(1L, "코스러버", "주말에 꼭 가보고 싶어요!", "방금 전")),
                 ),
             actions =
                 CourseDetailActions(
@@ -1513,8 +1512,6 @@ private fun CourseDetailScreenPreview() {
                     onEditCourse = {},
                     onDeleteCourse = {},
                     onToggleLike = {},
-                    onCommentChange = {},
-                    onSubmitComment = {},
                     onSeeAllReviews = {},
                 ),
         )

@@ -18,8 +18,6 @@ data class CourseDetailActions(
     val onEditCourse: () -> Unit,
     val onDeleteCourse: () -> Unit,
     val onToggleLike: () -> Unit,
-    val onCommentChange: (String) -> Unit,
-    val onSubmitComment: () -> Unit,
     /** 리뷰 섹션의 "전체보기" → 후기 전체보기 화면(FS-37). */
     val onSeeAllReviews: () -> Unit,
 )

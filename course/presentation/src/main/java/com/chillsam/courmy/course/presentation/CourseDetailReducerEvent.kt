@@ -60,14 +60,6 @@ sealed interface CourseDetailReducerEvent : ReducerEvent {
     /** 같은 ViewModel 인스턴스로 다른 코스를 열 때 로컬 소셜 상태를 비운다. */
     data object SocialStateReset : CourseDetailReducerEvent
 
-    data class CommentDraftChanged(
-        val value: String,
-    ) : CourseDetailReducerEvent
-
-    data class CommentAdded(
-        val comment: CourseCommentItem,
-    ) : CourseDetailReducerEvent
-
     data object ErrorConsumed : CourseDetailReducerEvent
 
     /** 비로그인 상태로 로그인이 필요한 동작을 눌렀다. 화면이 안내 다이얼로그를 띄운다. */

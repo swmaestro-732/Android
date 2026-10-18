@@ -71,6 +71,7 @@ fun CourseDetailPage(
     when {
         detail != null -> {
             CourseDetailScreen(
+                courseId = courseId,
                 detail = detail,
                 isSaving = uiState.isSaving,
                 isDeleting = uiState.isDeleting,
@@ -98,8 +99,6 @@ fun CourseDetailPage(
                         onEditCourse = actions.onEditCourse,
                         onDeleteCourse = { showDeleteConfirm = true },
                         onToggleLike = { viewModel.onIntent(CourseDetailIntent.ToggleLike) },
-                        onCommentChange = { viewModel.onIntent(CourseDetailIntent.ChangeCommentDraft(it)) },
-                        onSubmitComment = { viewModel.onIntent(CourseDetailIntent.SubmitComment) },
                         onSeeAllReviews = actions.onSeeAllReviews,
                     ),
                 modifier = modifier,

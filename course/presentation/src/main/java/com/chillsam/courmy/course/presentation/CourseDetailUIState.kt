@@ -36,20 +36,9 @@ data class CourseDetailUIState(
  * [likeCount] 가 null 이면 **집계를 아직 모르는 상태**다 — 상세 조회(BFF)가 좋아요 수를 주지 않아
  * 토글 응답(likesCnt)을 받기 전까지는 숫자를 그리지 않는다. 지어낸 수를 보여주지 않기 위해서다.
  * TODO-API-SPEC: 상세 응답에 좋아요 집계가 생기면 진입 시점에 시딩한다. [wiki-needed]
- *
- * 댓글은 아직 서버 계약 전이라 화면 세션 상태로만 유지한다.
+
  */
 data class CourseSocialUIState(
     val isLiked: Boolean = false,
     val likeCount: Int? = null,
-    val commentDraft: String = "",
-    val comments: List<CourseCommentItem> = emptyList(),
-)
-
-/** 코스 상세 댓글 표시 모델. API 계약 확정 전 presentation 상태에만 둔다. */
-data class CourseCommentItem(
-    val id: Long,
-    val author: String,
-    val body: String,
-    val dateText: String,
 )

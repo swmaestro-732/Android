@@ -70,14 +70,6 @@ class CourseDetailViewModel
                     handleSocialIntent(intent)
                 }
 
-                is CourseDetailIntent.ChangeCommentDraft -> {
-                    dispatch(CourseDetailReducerEvent.CommentDraftChanged(intent.value.take(MAX_COMMENT_LENGTH)))
-                }
-
-                CourseDetailIntent.SubmitComment -> {
-                    handleSocialIntent(intent)
-                }
-
                 CourseDetailIntent.ForkCourse -> {
                     // 팔로우와 같은 이유로 누르기 전에 가린다 — 포크는 장소를 고르고 사진까지 다 올린
                     // 뒤에야 저장이 401 로 막히므로, 그때 알리면 작성한 것을 통째로 잃는다.
@@ -133,8 +125,6 @@ class CourseDetailViewModel
                 is CourseDetailReducerEvent.LikeConfirmed,
                 is CourseDetailReducerEvent.LikeFailed,
                 CourseDetailReducerEvent.SocialStateReset,
-                is CourseDetailReducerEvent.CommentDraftChanged,
-                is CourseDetailReducerEvent.CommentAdded,
                 -> {
                     reduceSocial(state, event)
                 }
@@ -261,20 +251,6 @@ class CourseDetailViewModel
                     state.copy(social = CourseSocialUIState())
                 }
 
-                is CourseDetailReducerEvent.CommentDraftChanged -> {
-                    state.copy(social = state.social.copy(commentDraft = event.value))
-                }
-
-                is CourseDetailReducerEvent.CommentAdded -> {
-                    state.copy(
-                        social =
-                            state.social.copy(
-                                commentDraft = "",
-                                comments = listOf(event.comment) + state.social.comments,
-                            ),
-                    )
-                }
-
                 else -> {
                     state
                 }
@@ -289,21 +265,6 @@ class CourseDetailViewModel
             when (intent) {
                 CourseDetailIntent.ToggleLike -> {
                     toggleLike()
-                }
-
-                CourseDetailIntent.SubmitComment -> {
-                    val body = currentState.social.commentDraft.trim()
-                    if (body.isEmpty()) return
-                    dispatch(
-                        CourseDetailReducerEvent.CommentAdded(
-                            CourseCommentItem(
-                                id = nextLocalCommentId++,
-                                author = "나",
-                                body = body,
-                                dateText = "방금 전",
-                            ),
-                        ),
-                    )
                 }
 
                 else -> {
@@ -468,8 +429,5 @@ class CourseDetailViewModel
 
         private companion object {
             const val TAG = "CourseDetail"
-            const val MAX_COMMENT_LENGTH = 300
         }
-
-        private var nextLocalCommentId: Long = 1L
     }

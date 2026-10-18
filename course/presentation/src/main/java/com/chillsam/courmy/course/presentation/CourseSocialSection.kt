@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.presentation
 
+import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -26,28 +27,47 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
+import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
+import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
+import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.course.entity.CourseCommentVO
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -85,11 +105,26 @@ private val SUBMIT_BUTTON_SIZE = 44.dp
  */
 @Composable
 internal fun CourseCommentSheet(
-    state: CourseSocialUIState,
-    onCommentChange: (String) -> Unit,
-    onSubmitComment: () -> Unit,
+    courseId: Long,
     onDismiss: () -> Unit,
 ) {
+    // 시트가 자기 ViewModel 을 들고 서버 댓글(/api/v1/courses/{id}/comments)을 직접 다룬다 —
+    // 상세 ViewModel 에 섞으면 좋아요·저장과 생명주기가 엉킨다(시트 전용 상태라서).
+    val viewModel: CourseCommentsViewModel = hiltViewModel()
+    LaunchedEffect(courseId) { viewModel.onIntent(CourseCommentsIntent.Load(courseId)) }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val session = LocalSessionUiState.current
+
+    val context = LocalContext.current
+    LaunchedEffect(state.message) {
+        val message = state.message ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        viewModel.onIntent(CourseCommentsIntent.ConsumeMessage)
+    }
+
+    var editTarget by remember { mutableStateOf<CourseCommentVO?>(null) }
+    var deleteTargetId by remember { mutableStateOf<Long?>(null) }
+
     val color = DesignSystemThemeImpl.designSystemColor
     val scope = rememberCoroutineScope()
     // 슬라이드 거리는 화면 높이로 잡는다. 측정값에 묶으면 갱신 때 애니메이션이 끊긴다(장소 시트 선례).
@@ -152,23 +187,91 @@ internal fun CourseCommentSheet(
                     },
                     onTap = animatedDismiss,
                 )
+                // 더 받을 페이지가 남았으면 수에 +를 붙인다 — 전체 집계는 응답에 없다.
+                val countSuffix = if (state.hasNext) "+" else ""
                 DsText(
-                    text = "댓글 ${state.comments.size}",
+                    text = if (state.comments.isEmpty()) "댓글" else "댓글 ${state.comments.size}$countSuffix",
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
                 CommentList(
-                    comments = state.comments,
+                    state = state,
+                    onRetry = { viewModel.onIntent(CourseCommentsIntent.Retry) },
+                    onLoadMore = { viewModel.onIntent(CourseCommentsIntent.LoadMore) },
+                    onEdit = { editTarget = it },
+                    onDelete = { deleteTargetId = it.id },
                     modifier = Modifier.weight(1f),
                 )
-                CommentInputBar(
-                    draft = state.commentDraft,
-                    onCommentChange = onCommentChange,
-                    onSubmitComment = onSubmitComment,
-                )
+                if (session.isLoggedIn) {
+                    CommentInputBar(
+                        draft = state.draft,
+                        enabled = !state.isSubmitting,
+                        onCommentChange = { viewModel.onIntent(CourseCommentsIntent.ChangeDraft(it)) },
+                        onSubmitComment = { viewModel.onIntent(CourseCommentsIntent.Write) },
+                    )
+                } else {
+                    DsText(
+                        text = "로그인하면 댓글을 쓸 수 있어요.",
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel3,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 12.dp),
+                    )
+                }
             }
         }
+    }
+
+    editTarget?.let { target ->
+        EditCommentDialog(
+            initialContent = target.content,
+            isSaving = state.isSubmitting,
+            onSave = { content ->
+                editTarget = null
+                viewModel.onIntent(CourseCommentsIntent.Edit(target.id, content))
+            },
+            onDismiss = { editTarget = null },
+        )
+    }
+    deleteTargetId?.let { targetId ->
+        DsConfirmDialog(
+            title = "댓글을 삭제할까요?",
+            description = "삭제한 댓글은 되돌릴 수 없어요.",
+            confirmText = "삭제",
+            dismissText = "취소",
+            destructive = true,
+            onConfirm = {
+                deleteTargetId = null
+                viewModel.onIntent(CourseCommentsIntent.Delete(targetId))
+            },
+            onDismiss = { deleteTargetId = null },
+        )
+    }
+}
+
+/** 내 댓글 수정 다이얼로그. */
+@Composable
+private fun EditCommentDialog(
+    initialContent: String,
+    isSaving: Boolean,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var content by remember { mutableStateOf(initialContent) }
+    DsDialogScaffold(
+        title = "댓글 수정",
+        description = "댓글은 1000자까지 쓸 수 있어요.",
+        onDismiss = onDismiss,
+    ) {
+        DsTextField(value = content, onValueChange = { content = it }, placeholder = "댓글 내용")
+        DsButton(
+            text = "저장",
+            enabled = content.isNotBlank() && !isSaving,
+            loading = isSaving,
+            onClick = { onSave(content) },
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -209,34 +312,79 @@ private fun CommentSheetDragHandle(
 /** 댓글 목록. 입력줄이 하단에 고정되므로 목록만 스크롤된다. */
 @Composable
 private fun CommentList(
-    comments: List<CourseCommentItem>,
+    state: CourseCommentsUIState,
+    onRetry: () -> Unit,
+    onLoadMore: () -> Unit,
+    onEdit: (CourseCommentVO) -> Unit,
+    onDelete: (CourseCommentVO) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    if (comments.isEmpty()) {
-        // 비었을 때 목록 영역 가운데 안내 한 줄. 목록 머리에 붙이면 빈 공간이 고장처럼 보인다.
-        Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            DsText(
-                text = "첫 댓글을 남겨 보세요.",
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = color.contentDefaultLevel3,
-            )
+    when {
+        state.isLoading -> {
+            Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = color.contentAccent)
+            }
+            return
         }
-        return
+
+        state.errorMessage != null -> {
+            Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    DsText(
+                        text = state.errorMessage,
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel2,
+                    )
+                    DsText(
+                        text = "다시 시도",
+                        style = DesignSystemThemeImpl.typeScale.textRegularM,
+                        color = color.contentAccent,
+                        modifier =
+                            Modifier
+                                .clickable(onClick = onRetry)
+                                .padding(8.dp),
+                    )
+                }
+            }
+            return
+        }
+
+        state.comments.isEmpty() -> {
+            // 비었을 때 목록 영역 가운데 안내 한 줄. 목록 머리에 붙이면 빈 공간이 고장처럼 보인다.
+            Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                DsText(
+                    text = "첫 댓글을 남겨 보세요.",
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = color.contentDefaultLevel3,
+                )
+            }
+            return
+        }
     }
+    val listState = rememberLazyListState()
+    LoadMoreOnScrollEnd(listState, onLoadMore = onLoadMore)
     LazyColumn(
+        state = listState,
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        items(comments, key = { it.id }) { comment ->
-            CommentRow(comment)
+        items(state.comments, key = { it.id }) { comment ->
+            CommentRow(comment = comment, onEdit = { onEdit(comment) }, onDelete = { onDelete(comment) })
+        }
+        if (state.isLoadingMore) {
+            item { LoadingMoreFooter() }
         }
     }
 }
 
 @Composable
-private fun CommentRow(comment: CourseCommentItem) {
+private fun CommentRow(
+    comment: CourseCommentVO,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row {
         // 서버 계약 전이라 프로필 사진이 없다. 이미지 자리의 기본 배경 톤(imagePlaceholder)에 사람 아이콘.
@@ -256,10 +404,11 @@ private fun CommentRow(comment: CourseCommentItem) {
             )
         }
         Spacer(Modifier.width(10.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 DsText(
-                    text = comment.author,
+                    // 응답에 작성자 프로필이 없어 임시 표기를 쓴다(CourseCommentVO 주석 참고).
+                    text = if (comment.isMine) "나" else "작성자 ${comment.authorId}",
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = color.contentDefaultLevel0,
                 )
@@ -271,10 +420,65 @@ private fun CommentRow(comment: CourseCommentItem) {
                 )
             }
             DsText(
-                text = comment.body,
+                text = comment.content,
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel1,
                 maxLines = Int.MAX_VALUE,
+            )
+        }
+        if (comment.isMine) {
+            MyCommentMenu(onEdit = onEdit, onDelete = onDelete)
+        }
+    }
+}
+
+/** 내 댓글 우측 ⋮ — 수정·삭제. */
+@Composable
+private fun MyCommentMenu(
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }, modifier = Modifier.size(28.dp)) {
+            Icon(
+                painter = painterResource(R.drawable.ic_more_vert_24),
+                contentDescription = "내 댓글 메뉴",
+                tint = color.contentDefaultLevel3,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            containerColor = color.bgDefaultLevel1,
+        ) {
+            DropdownMenuItem(
+                text = {
+                    DsText(
+                        "수정",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel0,
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    onEdit()
+                },
+            )
+            DropdownMenuItem(
+                text = {
+                    DsText(
+                        "삭제",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDanger,
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    onDelete()
+                },
             )
         }
     }
@@ -284,11 +488,12 @@ private fun CommentRow(comment: CourseCommentItem) {
 @Composable
 private fun CommentInputBar(
     draft: String,
+    enabled: Boolean,
     onCommentChange: (String) -> Unit,
     onSubmitComment: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val canSubmit = draft.isNotBlank()
+    val canSubmit = draft.isNotBlank() && enabled
     Column(modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier =
@@ -309,6 +514,7 @@ private fun CommentInputBar(
                 value = draft,
                 onValueChange = onCommentChange,
                 placeholder = "댓글을 남겨 주세요",
+                enabled = enabled,
                 modifier = Modifier.weight(1f),
             )
             Spacer(Modifier.width(8.dp))

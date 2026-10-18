@@ -22,14 +22,6 @@ sealed interface CourseDetailIntent : MviIntent {
     /** 코스 좋아요 토글. 화면에 먼저 반영하고 서버(`POST/DELETE /api/v1/courses/{id}/likes`)로 확정한다. */
     data object ToggleLike : CourseDetailIntent
 
-    /** 댓글 입력값 변경. */
-    data class ChangeCommentDraft(
-        val value: String,
-    ) : CourseDetailIntent
-
-    /** 현재 입력한 댓글 등록. */
-    data object SubmitComment : CourseDetailIntent
-
     /**
      * 하단 "복제" 탭 — 이 코스를 포크해 코스 만들기로 간다(서버 용어는 fork, 화면 문구는 "복제").
      * 화면 이동 전에 로그인 여부만 가린다(포크 저장은 토큰이 필요하다).
