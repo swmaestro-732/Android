@@ -3,6 +3,11 @@ package com.chillsam.courmy.course.presentation
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,6 +38,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,8 +55,10 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -64,6 +72,7 @@ import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.modifier.cardElevation
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -113,107 +122,131 @@ fun CourseDetailScreen(
     val placeDetailState by placeDetailViewModel.uiState.collectAsStateWithLifecycle()
     // 댓글은 본문에 깔지 않고 하단 시트로 띄운다([CourseCommentSheet]).
     var showComments by remember { mutableStateOf(false) }
-    Column(
+    // 히어로(커버·제목)가 스크롤로 가려지면 상단 고정 바가 제목·요약을 대신 보여준다.
+    val scrollState = rememberScrollState()
+    var heroHeightPx by remember { mutableStateOf(0) }
+    val pinnedBarAppearPx = with(LocalDensity.current) { PinnedBarHeight.toPx() }
+    val showPinnedBar by remember {
+        derivedStateOf {
+            // 제목은 히어로 하단에 있으므로, 히어로가 고정 바 높이만 남기고 지나가면 제목이 가려진 것이다.
+            heroHeightPx > 0 && scrollState.value >= heroHeightPx - pinnedBarAppearPx
+        }
+    }
+    // 고정 바가 떠 있는 동안은 상태바도 바와 같은 흰색으로 잇는다(히어로 위에서는 커버가 비친다).
+    if (showPinnedBar) {
+        StatusBarColor(color.bgDefaultLevel1)
+    }
+    Box(
         modifier =
             modifier
                 .fillMaxSize()
                 .background(color.bgDefaultLevel0),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-        ) {
-            DetailHero(
-                detail = detail,
-                isSaving = isSaving,
-                isDeleting = isDeleting,
-                isLiked = social.isLiked,
-                likeCount = social.likeCount,
-                actions = actions,
-                onBack = actions.onBack,
-            )
-            if (!LayoutVariants.AUTHOR_AT_BOTTOM) {
-                // 밴드는 화면 가로 전체를 채우므로 본문 좌우 패딩 밖에 둔다.
-                // 위 배치에서는 히어로 이미지에 바로 붙고 아래쪽으로 요약 스탯과 끊는다.
-                AuthorBand(
-                    detail = detail,
-                    onAuthorClick = actions.onAuthorClick,
-                    onToggleFollow = actions.onFollowAuthor,
-                    dividerBelow = true,
-                )
-            }
+        Column(Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .verticalScroll(scrollState),
             ) {
-                StatsRow(detail = detail)
-                DsText(
-                    text = detail.description,
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel1,
-                    maxLines = Int.MAX_VALUE,
-                )
-                // 작성자가 직접 단 해시태그. 서버가 파생한 카테고리(themeLabels)와 달리 소개 아래에 둔다.
-                if (detail.tags.isNotEmpty()) {
-                    DsText(
-                        text = detail.tags.joinToString(" ") { "#$it" },
-                        style = DesignSystemThemeImpl.typeScale.textRegularS,
-                        color = color.contentAccent,
-                        maxLines = Int.MAX_VALUE,
+                Box(Modifier.onSizeChanged { heroHeightPx = it.height }) {
+                    DetailHero(
+                        detail = detail,
+                        isSaving = isSaving,
+                        isDeleting = isDeleting,
+                        isLiked = social.isLiked,
+                        likeCount = social.likeCount,
+                        actions = actions,
+                        onBack = actions.onBack,
                     )
                 }
-                // 코스 소개(제목·스탯·설명)와 장소 목록을 가르는 선.
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(color.borderDefaultLevel0),
-                )
-                PlacesSection(
-                    places = detail.places,
-                    authorName = detail.authorName,
-                    onPlaceClick = { place ->
-                        openSheetInOverview = false
-                        selectedPlace = place
-                        placeDetailViewModel.open(placeId = place.placeId)
-                    },
-                )
-                // 장소를 다 훑은 뒤 전체 동선을 확인하는 자리다.
-                CourseMapSection(
-                    places = detail.places,
-                    onPlaceClick = { place ->
-                        openSheetInOverview = false
-                        selectedPlace = place
-                        placeDetailViewModel.open(placeId = place.placeId)
-                    },
-                    onOpenDetail = { place ->
-                        openSheetInOverview = true
-                        selectedPlace = place
-                        placeDetailViewModel.open(placeId = place.placeId)
-                    },
-                )
-                // Figma FS-11 에서 리뷰는 장소·동선을 다 본 뒤(= 코스 자체 정보의 끝) 오는 남의 평가다.
-                CourseReviewSection(detail = detail, onSeeAll = actions.onSeeAllReviews)
+                if (!LayoutVariants.AUTHOR_AT_BOTTOM) {
+                    // 밴드는 화면 가로 전체를 채우므로 본문 좌우 패딩 밖에 둔다.
+                    // 위 배치에서는 히어로 이미지에 바로 붙고 아래쪽으로 요약 스탯과 끊는다.
+                    AuthorBand(
+                        detail = detail,
+                        onAuthorClick = actions.onAuthorClick,
+                        onToggleFollow = actions.onFollowAuthor,
+                        dividerBelow = true,
+                    )
+                }
+                Column(
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    StatsRow(detail = detail)
+                    DsText(
+                        text = detail.description,
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel1,
+                        maxLines = Int.MAX_VALUE,
+                    )
+                    // 작성자가 직접 단 해시태그. 서버가 파생한 카테고리(themeLabels)와 달리 소개 아래에 둔다.
+                    if (detail.tags.isNotEmpty()) {
+                        DsText(
+                            text = detail.tags.joinToString(" ") { "#$it" },
+                            style = DesignSystemThemeImpl.typeScale.textRegularS,
+                            color = color.contentAccent,
+                            maxLines = Int.MAX_VALUE,
+                        )
+                    }
+                    // 코스 소개(제목·스탯·설명)와 장소 목록을 가르는 선.
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(color.borderDefaultLevel0),
+                    )
+                    PlacesSection(
+                        places = detail.places,
+                        authorName = detail.authorName,
+                        onPlaceClick = { place ->
+                            openSheetInOverview = false
+                            selectedPlace = place
+                            placeDetailViewModel.open(placeId = place.placeId)
+                        },
+                    )
+                    // 장소를 다 훑은 뒤 전체 동선을 확인하는 자리다.
+                    CourseMapSection(
+                        places = detail.places,
+                        onPlaceClick = { place ->
+                            openSheetInOverview = false
+                            selectedPlace = place
+                            placeDetailViewModel.open(placeId = place.placeId)
+                        },
+                        onOpenDetail = { place ->
+                            openSheetInOverview = true
+                            selectedPlace = place
+                            placeDetailViewModel.open(placeId = place.placeId)
+                        },
+                    )
+                    // Figma FS-11 에서 리뷰는 장소·동선을 다 본 뒤(= 코스 자체 정보의 끝) 오는 남의 평가다.
+                    CourseReviewSection(detail = detail, onSeeAll = actions.onSeeAllReviews)
+                }
+                if (LayoutVariants.AUTHOR_AT_BOTTOM) {
+                    // 아래 배치에서는 위쪽으로 본문과 끊고 아래는 스크롤 끝까지 열어 둔다.
+                    AuthorBand(
+                        detail = detail,
+                        onAuthorClick = actions.onAuthorClick,
+                        onToggleFollow = actions.onFollowAuthor,
+                        dividerBelow = false,
+                    )
+                }
+                Spacer(Modifier.height(14.dp))
             }
-            if (LayoutVariants.AUTHOR_AT_BOTTOM) {
-                // 아래 배치에서는 위쪽으로 본문과 끊고 아래는 스크롤 끝까지 열어 둔다.
-                AuthorBand(
-                    detail = detail,
-                    onAuthorClick = actions.onAuthorClick,
-                    onToggleFollow = actions.onFollowAuthor,
-                    dividerBelow = false,
-                )
-            }
-            Spacer(Modifier.height(14.dp))
+            DetailBottomBar(
+                isMine = detail.isMine,
+                onCommentClick = { showComments = true },
+                onForkClick = actions.onForkCourse,
+                onFollowClick = actions.onFollowCourse,
+            )
         }
-        DetailBottomBar(
-            isMine = detail.isMine,
-            onCommentClick = { showComments = true },
-            onForkClick = actions.onForkCourse,
-            onFollowClick = actions.onFollowCourse,
+        DetailPinnedBar(
+            visible = showPinnedBar,
+            detail = detail,
+            onBack = actions.onBack,
+            modifier = Modifier.align(Alignment.TopCenter),
         )
     }
     if (showComments) {
@@ -263,6 +296,77 @@ fun CourseDetailScreen(
             placeDetailState.errorMessage?.let { message ->
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+}
+
+/** 상단 고정 바 높이(상태바 제외). 등장 시점 계산에도 쓴다. */
+private val PinnedBarHeight = 56.dp
+
+/**
+ * 스크롤로 히어로가 가려졌을 때 상단에 남는 요약 바 — 뒤로가기 + 제목 + "4곳 · 도보 20분".
+ * 히어로 위에서는 커버 위 버튼들이 그 역할을 하므로 숨긴다.
+ */
+@Composable
+private fun DetailPinnedBar(
+    visible: Boolean,
+    detail: CourseDetailVO,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn() + slideInVertically { -it },
+        exit = fadeOut() + slideOutVertically { -it },
+    ) {
+        Column(Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .height(PinnedBarHeight)
+                        .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_left_24),
+                    contentDescription = "뒤로",
+                    tint = color.contentDefaultLevel0,
+                    modifier =
+                        Modifier
+                            .clip(CircleShape)
+                            .clickable(onClick = onBack)
+                            .padding(8.dp)
+                            .size(24.dp),
+                )
+                Column(Modifier.weight(1f).padding(horizontal = 4.dp)) {
+                    DsText(
+                        text = detail.title,
+                        style = DesignSystemThemeImpl.typeScale.textStrongS,
+                        color = color.contentDefaultLevel0,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val meta =
+                        listOf(
+                            detail.placeCountText,
+                            detail.walkText,
+                        ).filter { it.isNotBlank() }.joinToString(" · ")
+                    if (meta.isNotBlank()) {
+                        DsText(
+                            text = meta,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel3,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            Box(Modifier.fillMaxWidth().height(1.dp).background(color.borderDefaultLevel0))
         }
     }
 }
