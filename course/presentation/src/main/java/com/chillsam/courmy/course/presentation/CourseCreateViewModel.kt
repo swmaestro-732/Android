@@ -412,7 +412,8 @@ class CourseCreateViewModel
          */
         private fun createCourse(completed: CourseCompleteVO?) {
             val state = currentState
-            if (state.isSaving || (state.isPlan && !state.canSave)) return
+            // 버튼 비활성화를 우회해 들어와도(뒤로 가서 값을 지운 경우 등) 서버 400 전에 여기서 거른다.
+            if (state.isSaving || !state.canSave) return
             dispatch(CourseCreateReducerEvent.SaveStarted)
             saveJob?.cancel()
             saveJob =

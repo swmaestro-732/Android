@@ -88,17 +88,16 @@ data class CourseCreateUIState(
         get() = "원본 장소는 ${requiredKeptOriginPlaceCount}곳 이상 유지해야 해요".takeIf { isForking }
 
     /**
-     * 코스 저장 가능 최소 조건: 코스 이름 有 · 장소 [MIN_PLACES]곳 이상 · 각 장소마다 사진 1장 이상.
-     * 미충족 시 저장 버튼을 비활성화한다.
+     * 저장 가능 여부. 단계별 차단 사유([placesReason]·[recordsReason]·[infoReason])가 모두 통과
+     * 상태일 때만 저장할 수 있다 — 조건을 사유 프로퍼티 한 곳에만 두어, 저장 버튼 활성 조건과
+     * 버튼에 띄우는 문구가 서로 어긋나지 않게 한다.
      */
     val canSave: Boolean
         get() =
             if (isPlan) {
                 placesReason == null && infoReason == null && !isCalculatingWalking
             } else {
-                name.isNotBlank() &&
-                    places.size >= MIN_PLACES &&
-                    places.all { it.photoUrls.isNotEmpty() }
+                placesReason == null && recordsReason == null && infoReason == null
             }
 
     /**
@@ -147,9 +146,16 @@ data class CourseCreateUIState(
         get() =
             when {
                 !isPlan && name.isBlank() -> "코스 이름을 입력해 주세요."
+
+                // 커버(썸네일)는 서버 발행 필수값 — 없으면 400 "코스를 발행하려면 커버 이미지가 필요합니다".
+                !isPlan && thumbnailPhotos.isEmpty() -> "썸네일 이미지를 추가해 주세요."
+
                 isPlan && name.length > 200 -> "계획 제목은 200자까지 입력해 주세요."
+
                 isPlan && (description.length > 500 || places.any { it.note.length > 500 }) -> "메모는 500자까지 입력해 주세요."
+
                 isPlan && plannedDate.isNotBlank() && !isValidPlanDate(plannedDate) -> "날짜를 yyyy-MM-dd 형식으로 입력해 주세요."
+
                 else -> null
             }
 
