@@ -662,14 +662,15 @@ private fun ThemeTile(
             color = color.contentDefaultLevel0,
             modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 14.dp),
         )
+        // 시안처럼 일러스트를 큼직하게, 바닥에 붙여 안착시킨다(에셋에 그림자가 포함돼 있다).
         Image(
             painter = painterResource(spec.imageRes),
             contentDescription = null,
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 10.dp, bottom = 8.dp)
-                    .size(56.dp),
+                    .padding(end = 8.dp, bottom = 2.dp)
+                    .size(72.dp),
         )
     }
 }
