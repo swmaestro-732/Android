@@ -1,6 +1,5 @@
 package com.chillsam.courmy.main.presentation.home
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -31,8 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -69,7 +68,6 @@ import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
-import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
@@ -77,19 +75,26 @@ private const val RECOMMENDED_PREVIEW_COUNT = 5
 /** 헤더 보조줄의 위치·날씨. 위치·날씨 연동 전까지 시안 고정값을 쓴다. */
 private const val LOCATION_WEATHER_MOCK = "성수동 · 흐림 18°"
 
-/** 테마별 둘러보기 타일 한 장: 라벨 + 테마를 대표하는 아이콘. */
+/** 테마별 둘러보기 타일 한 장: 라벨 + 파스텔 배경 + 우하단 일러스트(이모지). */
 private data class ThemeTileSpec(
     val label: String,
-    @param:DrawableRes val iconRes: Int,
+    val emoji: String,
+    val container: Color,
 )
 
-/** 테마별 둘러보기 타일. 탭하면 테마명을 검색어로 하는 검색 결과로 보낸다. */
+/**
+ * 테마별 둘러보기 타일. 탭하면 테마명을 검색어로 하는 검색 결과로 보낸다.
+ *
+ * 배경은 시안의 테마별 파스텔 고정색이다 — 디자인 시스템 시맨틱 색이 아니라 이 섹션 전용
+ * 장식색이라 화면 로컬에 둔다(로그인 화면 KakaoYellow 와 같은 선택). 팔레트 승격은 토큰
+ * 정책대로 디자이너 확인 후 한다. 일러스트는 3D 에셋이 아직 없어 시스템 이모지로 대신한다.
+ */
 private val themeTiles: List<ThemeTileSpec> =
     listOf(
-        ThemeTileSpec("데이트 코스", R.drawable.ic_heart_24),
-        ThemeTileSpec("혼술 · 회식", MainR.drawable.ic_place_bar_24),
-        ThemeTileSpec("전시 · 산책", MainR.drawable.ic_place_culture_24),
-        ThemeTileSpec("카페 투어", MainR.drawable.ic_place_cafe_24),
+        ThemeTileSpec("데이트 코스", "❤️", Color(0xFFFBE2E2)),
+        ThemeTileSpec("혼술 · 회식", "🍷", Color(0xFFEFE4F3)),
+        ThemeTileSpec("전시 · 산책", "🏛️", Color(0xFFDFEDDF)),
+        ThemeTileSpec("카페 투어", "☕", Color(0xFFF4ECDE)),
     )
 
 /**
@@ -634,10 +639,10 @@ private fun ThemeBrowseSection(
 }
 
 /**
- * 테마 타일. 대표 이미지 없이 아이콘으로 테마를 표현한다 —
- * 장소 썸네일 placeholder([com.chillsam.courmy.main.presentation.component.PlaceThumbnail])와
- * 같은 모티프(밝은 강조색 그라데이션 + 아이콘)라 앱 안에서 톤이 이어진다.
- * 우상단에는 큰 워터마크 아이콘, 좌하단에는 라벨 옆 작은 아이콘 배지를 둔다(raw hex 금지, 토큰 알파 조합만).
+ * 테마 타일(시안: 파스텔 카드). 좌상단 라벨 + 우하단 큼직한 일러스트(이모지).
+ *
+ * 이모지 크기는 sp 대신 dp 를 변환해 쓴다 — 글자가 아니라 일러스트 대용이라, 시스템 글꼴
+ * 배율을 따라 커지면 타일 밖으로 넘친다.
  */
 @Composable
 private fun ThemeTile(
@@ -646,52 +651,26 @@ private fun ThemeTile(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val emojiSize = with(LocalDensity.current) { 44.dp.toSp() }
     Box(
         modifier =
             modifier
                 .height(96.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    Brush.linearGradient(
-                        listOf(color.bgAccentSubtle, color.bgDefaultLevel1),
-                    ),
-                ).border(width = 1.dp, color = color.borderDefaultLevel0, shape = RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(18.dp))
+                .background(spec.container)
                 .clickable(onClick = onClick),
     ) {
-        // 우상단 워터마크: 테마 아이콘을 크게, 은은하게 깔아 빈 느낌을 지운다.
-        Icon(
-            painter = painterResource(spec.iconRes),
-            contentDescription = null,
-            tint = color.contentAccent.copy(alpha = 0.14f),
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 6.dp, end = 6.dp)
-                    .size(56.dp),
+        DsText(
+            text = spec.label,
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+            modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 14.dp),
         )
-        Row(
-            modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .background(color.bgDefaultLevel1.copy(alpha = 0.65f), CircleShape)
-                        .padding(5.dp),
-            ) {
-                Icon(
-                    painter = painterResource(spec.iconRes),
-                    contentDescription = null,
-                    tint = color.contentAccent,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-            DsText(
-                text = spec.label,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentDefaultLevel0,
-            )
-        }
+        DsText(
+            text = spec.emoji,
+            style = DesignSystemThemeImpl.typeScale.titleExtraL.copy(fontSize = emojiSize, lineHeight = emojiSize),
+            color = color.contentDefaultLevel0,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 4.dp),
+        )
     }
 }
