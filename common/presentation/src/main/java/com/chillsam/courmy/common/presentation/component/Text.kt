@@ -35,7 +35,7 @@ fun DsText(
         textAlign = textAlign,
         overflow = overflow,
         softWrap = softWrap,
-        maxLines = maxLines,
+        maxLines = maxLines.coerceAtLeast(minLines),
         minLines = minLines,
         onTextLayout = onTextLayout,
         style = style,

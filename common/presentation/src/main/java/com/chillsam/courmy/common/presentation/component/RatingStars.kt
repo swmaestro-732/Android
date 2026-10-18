@@ -2,8 +2,10 @@ package com.chillsam.courmy.common.presentation.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -14,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -83,15 +86,23 @@ fun DsRatingInput(
     ) {
         repeat(MAX_RATING) { index ->
             val value = index + 1
-            DsRatingStar(
-                starSize = starSize,
-                tint = if (index < filled) color.contentRating else color.contentDefaultLevel3,
+            Box(
                 modifier =
                     Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                         .clip(CircleShape)
                         .clickable(enabled = enabled) { onRatingChange(value) }
-                        .semantics { contentDescription = "별점 ${value}점 주기" },
-            )
+                        .semantics {
+                            contentDescription = "별점 ${value}점 주기"
+                            selected = value == filled
+                        },
+                contentAlignment = Alignment.Center,
+            ) {
+                DsRatingStar(
+                    starSize = starSize,
+                    tint = if (index < filled) color.contentRating else color.contentDefaultLevel3,
+                )
+            }
         }
     }
 }
