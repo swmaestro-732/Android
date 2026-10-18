@@ -55,7 +55,6 @@ import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.search.SearchPage
-import com.chillsam.courmy.main.domain.search.SearchResultPage
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.entity.home.HomeNearbyPlaceVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
@@ -76,22 +75,25 @@ private const val RECOMMENDED_PREVIEW_COUNT = 5
 /** 헤더 보조줄의 위치·날씨. 위치·날씨 연동 전까지 시안 고정값을 쓴다. */
 private const val LOCATION_WEATHER_MOCK = "성수동 · 흐림 18°"
 
-/** 테마별 둘러보기 타일 한 장: 라벨 + 우하단 플랫 일러스트(벡터). */
+/** 테마별 둘러보기 타일 한 장: 라벨 + 우하단 플랫 일러스트(벡터) + 연결할 코스 카테고리 라벨. */
 private data class ThemeTileSpec(
     val label: String,
     @param:DrawableRes val imageRes: Int,
+    /** 탭 시 전체보기에 선택해 둘 [com.chillsam.courmy.common.entity.category.CourseCategoryVO] 라벨. */
+    val category: String,
 )
 
 /**
- * 테마별 둘러보기 타일. 탭하면 테마명을 검색어로 하는 검색 결과로 보낸다.
+ * 테마별 둘러보기 타일. 탭하면 추천 코스 전체보기를 해당 카테고리 필터가 선택된 채 연다.
  * 일러스트는 디자이너 SVG(courmy_theme_svg)를 VectorDrawable 로 변환한 것이다.
  */
 private val themeTiles: List<ThemeTileSpec> =
     listOf(
-        ThemeTileSpec("데이트 코스", MainR.drawable.img_theme_date),
-        ThemeTileSpec("혼술 · 회식", MainR.drawable.img_theme_drinks),
-        ThemeTileSpec("전시 · 산책", MainR.drawable.img_theme_culture),
-        ThemeTileSpec("카페 투어", MainR.drawable.img_theme_cafe),
+        ThemeTileSpec("데이트 코스", MainR.drawable.img_theme_date, category = "데이트"),
+        // 혼술·회식 전용 코스 카테고리가 없어 가장 가까운 "맛집"으로 보낸다.
+        ThemeTileSpec("혼술 · 회식", MainR.drawable.img_theme_drinks, category = "맛집"),
+        ThemeTileSpec("전시 · 산책", MainR.drawable.img_theme_culture, category = "문화·전시"),
+        ThemeTileSpec("카페 투어", MainR.drawable.img_theme_cafe, category = "카페투어"),
     )
 
 /**
@@ -171,9 +173,10 @@ fun HomePage(modifier: Modifier = Modifier) {
                 }
             }
             item {
+                // 테마 타일은 검색이 아니라 추천 코스 전체보기의 해당 카테고리 필터로 보낸다.
                 ThemeBrowseSection(
-                    onThemeClick = { theme ->
-                        navigationHelper.navigateByRoute(SearchResultPage.route(theme))
+                    onThemeClick = { category ->
+                        navigationHelper.navigateByRoute(RecommendedCoursesPage.route(category))
                     },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
@@ -626,7 +629,7 @@ private fun ThemeBrowseSection(
                 rowTiles.forEach { theme ->
                     ThemeTile(
                         spec = theme,
-                        onClick = { onThemeClick(theme.label) },
+                        onClick = { onThemeClick(theme.category) },
                         modifier = Modifier.weight(1f),
                     )
                 }

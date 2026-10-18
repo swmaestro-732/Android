@@ -173,7 +173,9 @@ val appRoutes: List<AppRoute> =
         // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다.
         AppRoute(
             path = RecommendedCoursesRoute.PATH,
-            render = { RecommendedCoursesPage() },
+            render = { args ->
+                RecommendedCoursesPage(initialCategory = args[RecommendedCoursesRoute.ARG_CATEGORY])
+            },
         ),
         // 입력 화면은 공유하며 홈은 코스 결과, 지도는 장소 결과로 이동한다.
         AppRoute(

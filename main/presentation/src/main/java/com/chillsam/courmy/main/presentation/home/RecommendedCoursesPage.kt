@@ -61,12 +61,19 @@ import com.chillsam.courmy.main.presentation.component.HomeCourseCard
  * 라우트가 달라 ViewModel 인스턴스는 분리되지만, 같은 공개 엔드포인트라 상태를 공유할 필요가 없다.
  */
 @Composable
-fun RecommendedCoursesPage(modifier: Modifier = Modifier) {
+fun RecommendedCoursesPage(
+    modifier: Modifier = Modifier,
+    initialCategory: String? = null,
+) {
     StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
     val context = LocalContext.current
     val feedViewModel: HomeFeedViewModel = hiltViewModel()
     val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
+
+    // 홈 테마 타일로 들어오면 그 카테고리가 선택된 채 시작한다.
+    // 최초 1회만 적용한다 — 이후에는 사용자가 고른 칩이 기준이다.
+    LaunchedEffect(Unit) { initialCategory?.let { feedViewModel.onIntent(HomeFeedIntent.SelectCategory(it)) } }
 
     // 코스를 만들거나 저장한 뒤 돌아오면 목록이 바뀌어 있을 수 있어 다시 불러온다(홈과 동일).
     RefreshOnResume { feedViewModel.onIntent(HomeFeedIntent.Retry) }

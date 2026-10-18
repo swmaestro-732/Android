@@ -40,7 +40,7 @@
     </group>
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#FFDED6CC"
+        android:strokeColor="#FFB08A64"
         android:strokeWidth="8"
         android:strokeLineCap="round"
         android:pathData="M208,135 C226,113 194,108 211,86 M235,135 C253,113 221,108 238,86" />

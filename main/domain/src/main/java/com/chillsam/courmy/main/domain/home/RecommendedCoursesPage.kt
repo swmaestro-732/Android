@@ -13,5 +13,15 @@ import com.chillsam.courmy.common.domain.navigation.Page
 object RecommendedCoursesPage : Page {
     const val PATH = "/home/recommended"
 
+    /** 진입 시 선택해 둘 카테고리 라벨(예: "데이트"). 없으면 전체. */
+    const val ARG_CATEGORY = "category"
+
     override fun toRoute(): NavRoute = NavRoute(PATH)
+
+    /** 홈 테마 타일에서 특정 카테고리가 선택된 상태로 진입할 때 쓴다. */
+    fun route(category: String): NavRoute =
+        NavRoute(
+            path = PATH,
+            args = mapOf(ARG_CATEGORY to category),
+        )
 }
