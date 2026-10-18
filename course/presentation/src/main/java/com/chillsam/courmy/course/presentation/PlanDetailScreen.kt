@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -35,7 +37,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsButtonVariant
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
+import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
@@ -48,14 +55,24 @@ internal fun PlanDetailScreen(
     detail: PlanDetailVO,
     onBack: () -> Unit,
     onSourceCourse: (Long) -> Unit,
+    onEdit: (title: String, memo: String, plannedDate: String) -> Unit,
+    onDelete: () -> Unit,
+    isMutating: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val places = remember(detail) { detail.toDisplayPlaces() }
     var selectedPlace by remember(detail.planId) { mutableStateOf<CourseDetailPlaceVO?>(null) }
     var openSheetInOverview by remember(detail.planId) { mutableStateOf(false) }
+    var editing by remember(detail.planId) { mutableStateOf(false) }
+    var confirmingDelete by remember(detail.planId) { mutableStateOf(false) }
     Column(modifier.fillMaxSize().background(color.bgDefaultLevel0).verticalScroll(rememberScrollState())) {
-        PlanHeader(onBack)
+        PlanHeader(
+            onBack = onBack,
+            isMutating = isMutating,
+            onEdit = { editing = true },
+            onDelete = { confirmingDelete = true },
+        )
         Column(
             Modifier.padding(horizontal = 20.dp, vertical = 24.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(24.dp),
@@ -115,10 +132,84 @@ internal fun PlanDetailScreen(
             onSelectPlace = { selectedPlace = it },
         )
     }
+
+    if (editing) {
+        EditPlanDialog(
+            initialTitle = detail.title,
+            initialMemo = detail.memo,
+            initialDate = detail.plannedDate,
+            isSaving = isMutating,
+            onSave = { title, memo, date ->
+                editing = false
+                onEdit(title, memo, date)
+            },
+            onDismiss = { editing = false },
+        )
+    }
+    if (confirmingDelete) {
+        DsConfirmDialog(
+            title = "계획을 삭제할까요?",
+            description = "삭제한 계획은 되돌릴 수 없어요.",
+            confirmText = "삭제",
+            dismissText = "취소",
+            destructive = true,
+            onConfirm = {
+                confirmingDelete = false
+                onDelete()
+            },
+            onDismiss = { confirmingDelete = false },
+        )
+    }
+}
+
+/**
+ * 계획 수정 다이얼로그 — 제목·메모·방문 날짜만 고친다.
+ * 장소 구성 변경은 작성 화면의 계획 편집 모드가 생기면 그쪽이 맡는다.
+ */
+@Composable
+private fun EditPlanDialog(
+    initialTitle: String,
+    initialMemo: String,
+    initialDate: String,
+    isSaving: Boolean,
+    onSave: (title: String, memo: String, plannedDate: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var title by remember { mutableStateOf(initialTitle) }
+    var memo by remember { mutableStateOf(initialMemo) }
+    var date by remember { mutableStateOf(initialDate) }
+    DsDialogScaffold(
+        title = "계획 수정",
+        description = "장소 구성은 그대로 두고 제목·메모·방문 날짜를 바꿔요.",
+        onDismiss = onDismiss,
+    ) {
+        DsTextField(value = title, onValueChange = { title = it }, placeholder = "계획 이름")
+        DsTextField(value = memo, onValueChange = { memo = it }, placeholder = "메모 (선택)")
+        DsTextField(value = date, onValueChange = { date = it }, placeholder = "방문 날짜 YYYY-MM-DD (선택)")
+        DsButton(
+            text = "저장",
+            enabled = title.isNotBlank() && !isSaving,
+            loading = isSaving,
+            onClick = { onSave(title, memo, date) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        DsButton(
+            text = "취소",
+            variant = DsButtonVariant.Secondary,
+            enabled = !isSaving,
+            onClick = onDismiss,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 @Composable
-private fun PlanHeader(onBack: () -> Unit) {
+private fun PlanHeader(
+    onBack: () -> Unit,
+    isMutating: Boolean = false,
+    onEdit: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
         Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -131,7 +222,70 @@ private fun PlanHeader(onBack: () -> Unit) {
                 tint = color.contentDefaultLevel0,
             )
         }
-        DsText("계획 상세", style = DesignSystemThemeImpl.typeScale.textStrongM, color = color.contentDefaultLevel0)
+        DsText(
+            "계획 상세",
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+            modifier = Modifier.weight(1f),
+        )
+        // 계획은 항상 내 것이라(비공개) 코스 상세와 달리 소유 분기 없이 메뉴를 노출한다.
+        if (onEdit != null && onDelete != null) {
+            PlanSettingsMenu(isMutating = isMutating, onEdit = onEdit, onDelete = onDelete)
+        }
+    }
+}
+
+/** 헤더 우측 설정(⋮) 메뉴 — 수정·삭제. */
+@Composable
+private fun PlanSettingsMenu(
+    isMutating: Boolean,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                painterResource(R.drawable.ic_more_vert_24),
+                contentDescription = "계획 설정",
+                tint = color.contentDefaultLevel0,
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            containerColor = color.bgDefaultLevel1,
+        ) {
+            DropdownMenuItem(
+                text = {
+                    DsText(
+                        "계획 수정",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel0,
+                    )
+                },
+                enabled = !isMutating,
+                onClick = {
+                    expanded = false
+                    onEdit()
+                },
+            )
+            DropdownMenuItem(
+                text = {
+                    DsText(
+                        if (isMutating) "처리 중…" else "계획 삭제",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDanger,
+                    )
+                },
+                enabled = !isMutating,
+                onClick = {
+                    expanded = false
+                    onDelete()
+                },
+            )
+        }
     }
 }
 

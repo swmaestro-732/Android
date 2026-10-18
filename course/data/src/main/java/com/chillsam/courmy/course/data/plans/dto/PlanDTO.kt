@@ -50,6 +50,18 @@ data class PlanPlaceRequest(
     val walkingMinutes: Int? = null,
 )
 
+/**
+ * 계획 수정 요청(`PATCH /api/v1/plans/{planId}`). 생성과 달리 sourceCourseId 는 바꿀 수 없다.
+ * places 는 전체 교체라, 일부 필드만 고칠 때도 기존 장소 구성을 그대로 실어 보낸다.
+ */
+@Serializable
+data class EditPlanRequest(
+    val title: String,
+    val memo: String? = null,
+    val plannedDate: String? = null,
+    val places: List<PlanPlaceRequest>,
+)
+
 @Serializable
 data class CreatePlanEnvelope(
     val code: Int? = null,

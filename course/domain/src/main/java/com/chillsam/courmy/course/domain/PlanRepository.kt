@@ -21,6 +21,18 @@ interface PlanRepository {
     /** 장소 1~10곳을 담은 비공개 계획을 만들고 planId를 돌려준다(`POST /api/v1/plans`). */
     suspend fun createPlan(plan: PlanInputVO): Long
 
+    /**
+     * 계획 수정(`PATCH /api/v1/plans/{planId}`). places 는 전체 교체라 호출부가 기존 장소 구성을
+     * 그대로 담아 보낸다. [plan] 의 sourceCourseId 는 수정할 수 없어 무시된다.
+     */
+    suspend fun editPlan(
+        planId: Long,
+        plan: PlanInputVO,
+    )
+
+    /** 계획 삭제(`DELETE /api/v1/plans/{planId}`). */
+    suspend fun deletePlan(planId: Long)
+
     companion object {
         const val DEFAULT_PAGE_SIZE: Int = 20
     }

@@ -2,6 +2,7 @@ package com.chillsam.courmy.course.data.plans
 
 import com.chillsam.courmy.course.data.plans.dto.CreatePlanEnvelope
 import com.chillsam.courmy.course.data.plans.dto.CreatePlanRequest
+import com.chillsam.courmy.course.data.plans.dto.EditPlanRequest
 import com.chillsam.courmy.course.data.plans.dto.PlanDetailEnvelope
 import com.chillsam.courmy.course.data.plans.dto.PlanIdData
 import com.chillsam.courmy.course.data.plans.dto.PlanListEnvelope
@@ -88,5 +89,12 @@ class PlanRepositoryImplTest {
             this.request = request
             return Response.success(CreatePlanEnvelope(data = PlanIdData(planId = 42)))
         }
+
+        override suspend fun editPlan(
+            planId: Long,
+            request: EditPlanRequest,
+        ): Response<CreatePlanEnvelope> = error("계획 생성 중 수정을 요청하면 안 됩니다")
+
+        override suspend fun deletePlan(planId: Long): Response<CreatePlanEnvelope> = error("계획 생성 중 삭제를 요청하면 안 됩니다")
     }
 }

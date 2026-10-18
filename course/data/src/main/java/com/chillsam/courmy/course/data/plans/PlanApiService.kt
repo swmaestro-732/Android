@@ -2,11 +2,14 @@ package com.chillsam.courmy.course.data.plans
 
 import com.chillsam.courmy.course.data.plans.dto.CreatePlanEnvelope
 import com.chillsam.courmy.course.data.plans.dto.CreatePlanRequest
+import com.chillsam.courmy.course.data.plans.dto.EditPlanRequest
 import com.chillsam.courmy.course.data.plans.dto.PlanDetailEnvelope
 import com.chillsam.courmy.course.data.plans.dto.PlanListEnvelope
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -32,5 +35,18 @@ interface PlanApiService {
     @POST("api/v1/plans")
     suspend fun createPlan(
         @Body request: CreatePlanRequest,
+    ): Response<CreatePlanEnvelope>
+
+    /** 계획 수정. places 는 전체 교체 계약이다. 응답은 생성과 같은 { planId } 봉투. */
+    @PATCH("api/v1/plans/{planId}")
+    suspend fun editPlan(
+        @Path("planId") planId: Long,
+        @Body request: EditPlanRequest,
+    ): Response<CreatePlanEnvelope>
+
+    /** 계획 삭제. 응답 data 는 null 이라 봉투만 확인한다. */
+    @DELETE("api/v1/plans/{planId}")
+    suspend fun deletePlan(
+        @Path("planId") planId: Long,
     ): Response<CreatePlanEnvelope>
 }

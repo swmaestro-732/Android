@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.data.plans
 
 import com.chillsam.courmy.course.data.plans.dto.CreatePlanRequest
+import com.chillsam.courmy.course.data.plans.dto.EditPlanRequest
 import com.chillsam.courmy.course.data.plans.dto.PlanPlaceRequest
 import com.chillsam.courmy.course.data.plans.dto.toVO
 import com.chillsam.courmy.course.domain.PlanRepository
@@ -43,5 +44,34 @@ class PlanRepositoryImpl(
                 ),
             )
         return requireNotNull(envelope.data?.planId) { "계획 생성 응답에 planId 가 없습니다" }
+    }
+
+    override suspend fun editPlan(
+        planId: Long,
+        plan: PlanInputVO,
+    ) {
+        dataSource.editPlan(
+            planId = planId,
+            request =
+                EditPlanRequest(
+                    title = plan.title.trim(),
+                    // 생성과 같은 규칙: 공백만 있는 메모는 보내지 않는다.
+                    memo = plan.memo?.trim()?.takeIf { it.isNotEmpty() },
+                    plannedDate = plan.plannedDate,
+                    places =
+                        plan.places.mapIndexed { index, place ->
+                            PlanPlaceRequest(
+                                placeId = place.placeId,
+                                orderNo = index,
+                                memo = place.memo?.trim()?.takeIf { it.isNotEmpty() },
+                                walkingMinutes = place.walkingMinutes.takeUnless { index == plan.places.lastIndex },
+                            )
+                        },
+                ),
+        )
+    }
+
+    override suspend fun deletePlan(planId: Long) {
+        dataSource.deletePlan(planId)
     }
 }
