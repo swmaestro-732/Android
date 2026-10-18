@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.entity.auth
 /** 소셜 로그인 제공자. 서버 계약(social-login provider enum)의 문자열 값과 정확히 일치시킨다. */
 enum class SocialProvider {
     KAKAO,
+    NAVER,
     GOOGLE,
     APPLE,
 }

@@ -85,6 +85,11 @@ dependencies {
 
     // 카카오 로그인 SDK — UserApiClient 로 카카오 로그인(idToken 획득)
     implementation(libs.kakao.user)
+    // 네이버 로그인(OAuth accessToken)·구글 로그인(Credential Manager, OIDC idToken)
+    implementation(libs.naver.oauth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
 
     // Hilt
     implementation(libs.hilt.android)
