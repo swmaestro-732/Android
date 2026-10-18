@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -31,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -77,26 +77,22 @@ private const val RECOMMENDED_PREVIEW_COUNT = 5
 /** 헤더 보조줄의 위치·날씨. 위치·날씨 연동 전까지 시안 고정값을 쓴다. */
 private const val LOCATION_WEATHER_MOCK = "성수동 · 흐림 18°"
 
-/** 테마별 둘러보기 타일 한 장: 라벨 + 파스텔 배경 + 우하단 3D 일러스트. */
+/** 테마별 둘러보기 타일 한 장: 라벨 + 우하단 플랫 일러스트(벡터). */
 private data class ThemeTileSpec(
     val label: String,
     @param:DrawableRes val imageRes: Int,
-    val container: Color,
 )
 
 /**
  * 테마별 둘러보기 타일. 탭하면 테마명을 검색어로 하는 검색 결과로 보낸다.
- *
- * 배경은 시안의 테마별 파스텔 고정색이다 — 디자인 시스템 시맨틱 색이 아니라 이 섹션 전용
- * 장식색이라 화면 로컬에 둔다(로그인 화면 KakaoYellow 와 같은 선택). 팔레트 승격은 토큰
- * 정책대로 디자이너 확인 후 한다.
+ * 일러스트는 시안의 플랫 벡터 스타일을 drawable 로 그린 것이라 별도 이미지 에셋이 없다.
  */
 private val themeTiles: List<ThemeTileSpec> =
     listOf(
-        ThemeTileSpec("데이트 코스", MainR.drawable.img_theme_date, Color(0xFFFBE2E2)),
-        ThemeTileSpec("혼술 · 회식", MainR.drawable.img_theme_drinks, Color(0xFFEFE4F3)),
-        ThemeTileSpec("전시 · 산책", MainR.drawable.img_theme_culture, Color(0xFFDFEDDF)),
-        ThemeTileSpec("카페 투어", MainR.drawable.img_theme_cafe, Color(0xFFF4ECDE)),
+        ThemeTileSpec("데이트 코스", MainR.drawable.img_theme_date),
+        ThemeTileSpec("혼술 · 회식", MainR.drawable.img_theme_drinks),
+        ThemeTileSpec("전시 · 산책", MainR.drawable.img_theme_culture),
+        ThemeTileSpec("카페 투어", MainR.drawable.img_theme_cafe),
     )
 
 /**
@@ -640,7 +636,10 @@ private fun ThemeBrowseSection(
     }
 }
 
-/** 테마 타일(시안: 파스텔 카드). 좌상단 라벨 + 우하단 큼직한 3D 일러스트. */
+/**
+ * 테마 타일(시안: 흰 카드). 좌상단 라벨 + 우하단 일러스트가 카드 모서리에 걸쳐 잘린다 —
+ * offset 으로 일부러 카드 밖까지 밀고, 카드의 clip 이 잘라낸다.
+ */
 @Composable
 private fun ThemeTile(
     spec: ThemeTileSpec,
@@ -653,24 +652,24 @@ private fun ThemeTile(
             modifier
                 .height(96.dp)
                 .clip(RoundedCornerShape(18.dp))
-                .background(spec.container)
+                .background(color.bgDefaultLevel1)
+                .border(width = 1.dp, color = color.borderDefaultLevel0, shape = RoundedCornerShape(18.dp))
                 .clickable(onClick = onClick),
     ) {
-        DsText(
-            text = spec.label,
-            style = DesignSystemThemeImpl.typeScale.textStrongM,
-            color = color.contentDefaultLevel0,
-            modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 14.dp),
-        )
-        // 시안처럼 일러스트를 큼직하게, 바닥에 붙여 안착시킨다(에셋에 그림자가 포함돼 있다).
         Image(
             painter = painterResource(spec.imageRes),
             contentDescription = null,
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 8.dp, bottom = 2.dp)
-                    .size(72.dp),
+                    .offset(x = 10.dp, y = 12.dp)
+                    .size(104.dp),
+        )
+        DsText(
+            text = spec.label,
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+            modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 14.dp),
         )
     }
 }

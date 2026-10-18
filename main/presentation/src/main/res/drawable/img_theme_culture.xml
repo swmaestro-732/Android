@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><!-- 테마 타일 일러스트: 전시·산책 — 민트 블롭 위 기울어진 사진 액자(산·해). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- 뒤 민트 블롭 -->
+    <path
+        android:fillColor="#CDE6CF"
+        android:pathData="M120,120 L28,120 C22,96 36,74 62,68 C90,62 116,80 120,108Z" />
+    <group
+        android:rotation="-10"
+        android:pivotX="60"
+        android:pivotY="62">
+        <!-- 액자(흰 테두리) -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M18,26 L102,26 L102,94 L18,94 Z" />
+        <!-- 사진: 하늘 -->
+        <path
+            android:fillColor="#CBE7F6"
+            android:pathData="M26,34 L94,34 L94,86 L26,86 Z" />
+        <!-- 해 -->
+        <path
+            android:fillColor="#F7D154"
+            android:pathData="M78,46 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0" />
+        <!-- 산 두 개 -->
+        <path
+            android:fillColor="#8FBF8F"
+            android:pathData="M26,86 L48,56 L66,86 Z" />
+        <path
+            android:fillColor="#6FA573"
+            android:pathData="M50,86 L74,62 L94,86 Z" />
+    </group>
+</vector>

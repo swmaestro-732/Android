@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?><!-- 테마 타일 일러스트: 혼술·회식 — 연보라 블롭 위 와인잔. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- 뒤 연보라 블롭 -->
+    <path
+        android:fillColor="#E2DEF6"
+        android:pathData="M120,120 L34,120 C30,94 44,72 70,66 C96,60 120,76 120,104Z" />
+    <!-- 잔 볼(유리) -->
+    <path
+        android:fillColor="#EFEDF9"
+        android:pathData="M32,8 L92,8 C92,46 78,62 62,62 C46,62 32,46 32,8Z" />
+    <!-- 와인 -->
+    <path
+        android:fillColor="#9B3D63"
+        android:pathData="M35,20 L89,20 C88,46 76,58 62,58 C48,58 36,46 35,20Z" />
+    <!-- 다리·받침 -->
+    <path
+        android:fillColor="#E5E2F4"
+        android:pathData="M59,62 L65,62 L65,92 L59,92 Z" />
+    <path
+        android:fillColor="#DCD8F0"
+        android:pathData="M62,88 C74,88 82,91 82,95 C82,99 74,102 62,102 C50,102 42,99 42,95 C42,91 50,88 62,88Z" />
+</vector>
