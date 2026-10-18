@@ -7,11 +7,11 @@ import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import kotlinx.serialization.Serializable
 
 /**
- * `GET /service/v1/home`(공개 코스 피드) 응답 DTO. 봉투는 공통 계약 `{ code, message, data }`.
+ * `GET /service/v2/home/recommended-courses`(추천 코스 전체보기) 응답 DTO.
+ * 봉투는 공통 계약 `{ code, message, data }`.
  *
- * 응답에는 `authorId`·`createdAt` 도 오지만 화면이 쓰지 않아 매핑하지 않는다
- * (작성자 표시에 필요한 이름·아바타가 응답에 없어 작성자 영역 자체를 렌더하지 않는다 —
- * [HomeCourseVO] 주석 참고).
+ * 응답에는 `area`·`placeCount`·`walkingMinutes` 도 오지만 화면이 쓰지 않아 매핑하지 않는다
+ * (카드 메타를 "N 스팟 · 시간" 으로 바꿀 때 함께 싣는다 — [HomeCourseVO] 주석 참고).
  */
 @Serializable
 data class CourseFeedEnvelope(

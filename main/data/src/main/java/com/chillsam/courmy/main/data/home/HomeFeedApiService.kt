@@ -8,10 +8,11 @@ import retrofit2.http.Query
 
 interface HomeFeedApiService {
     /**
-     * 공개 코스 피드 화면 조합(BFF). 저장수 내림차순·최신순으로 랭킹된 목록을 준다.
+     * 추천 코스 전체 목록 v2(BFF). 홈 미리보기(`service/v2/home`)와 같은 추천 랭킹을 커서로 이어 받는다.
      * 비로그인도 조회할 수 있는 공개 엔드포인트다. 세로 피드 전체(전체보기)가 쓴다.
+     * 응답 모양은 구 `service/v1/home` 과 같아(courses·nextCursor·hasNext) DTO 를 공유한다.
      */
-    @GET("service/v1/home")
+    @GET("service/v2/home/recommended-courses")
     suspend fun getCourseFeed(
         @Query("size") size: Int,
         /** 이전 응답의 `nextCursor`. 첫 페이지면 null 이며, null 이면 Retrofit 이 파라미터를 뺀다. */

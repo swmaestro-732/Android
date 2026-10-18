@@ -5,7 +5,7 @@ import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.entity.home.HomeVO
 
 /**
- * 홈 공개 코스 피드 계약(`GET /service/v1/home`). 구현은 data 레이어이며 실패 시 예외를 throw 한다.
+ * 홈 추천 코스 피드 계약(`GET /service/v2/home/recommended-courses`). 구현은 data 레이어이며 실패 시 예외를 throw 한다.
  *
  * 비로그인도 조회할 수 있는 공개 엔드포인트라 세션이 없어도 호출한다.
  */
