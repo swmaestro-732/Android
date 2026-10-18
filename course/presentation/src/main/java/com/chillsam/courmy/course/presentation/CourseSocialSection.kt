@@ -369,6 +369,9 @@ private fun CommentList(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
+        // 서버는 최신순으로 주지만 화면은 채팅처럼 아래로 쌓는다 — 새 댓글이 입력줄 바로 위에 생기고,
+        // 위로 스크롤하면 이전 댓글을 이어 받는다(reverseLayout 이라 목록 "끝" = 화면 맨 위).
+        reverseLayout = true,
     ) {
         items(state.comments, key = { it.id }) { comment ->
             CommentRow(comment = comment, onEdit = { onEdit(comment) }, onDelete = { onDelete(comment) })
