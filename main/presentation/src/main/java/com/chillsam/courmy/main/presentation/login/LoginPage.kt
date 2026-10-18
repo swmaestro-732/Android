@@ -45,6 +45,9 @@ import com.chillsam.courmy.main.domain.login.ProfileSetupPage
 
 private val KakaoYellow = Color(0xFFFEE500)
 
+/** 네이버 브랜드 고정색. 디자인 토큰이 아니라 브랜드 가이드 값이라 raw hex 를 쓴다(카카오와 동일). */
+private val NaverGreen = Color(0xFF03C75A)
+
 /**
  * 로그인·시작하기 화면(FS-03). "카카오로 시작하기" → 카카오 SDK 로그인(idToken) → 서버 social-login.
  * 기존 회원이면 홈으로, 신규 회원이면 회원가입 플로우(프로필→…→완료)로 진입한다.
@@ -118,6 +121,23 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     textColor = color.contentDefaultLevel0,
                     enabled = !uiState.isLoading,
                     onClick = { viewModel.onIntent(LoginIntent.KakaoLogin(context)) },
+                )
+                SocialButton(
+                    text = "네이버로 시작하기",
+                    iconRes = R.drawable.ic_naver_24,
+                    background = NaverGreen,
+                    textColor = color.contentOnAccent,
+                    enabled = !uiState.isLoading,
+                    onClick = { viewModel.onIntent(LoginIntent.NaverLogin(context)) },
+                )
+                SocialButton(
+                    text = "Google로 시작하기",
+                    iconRes = R.drawable.ic_google_24,
+                    background = color.bgDefaultLevel1,
+                    textColor = color.contentDefaultLevel0,
+                    border = color.borderDefaultLevel0,
+                    enabled = !uiState.isLoading,
+                    onClick = { viewModel.onIntent(LoginIntent.GoogleLogin(context)) },
                 )
                 SocialButton(
                     text = "게스트로 돌아가기",

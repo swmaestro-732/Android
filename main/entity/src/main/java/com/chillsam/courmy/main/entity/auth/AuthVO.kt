@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.entity.auth
 /** 소셜 로그인 제공자. 서버 계약(social-login provider enum)의 문자열 값과 정확히 일치시킨다. */
 enum class SocialProvider {
     KAKAO,
+    NAVER,
     GOOGLE,
     APPLE,
 }
@@ -20,7 +21,7 @@ data class SocialLoginResult(
  * 신규 회원가입 입력값(가입 완료 화면에서 모아 전달).
  * - [nickname] 닉네임(최대 20자) · [handle] 핸들 · [profileImageUrl] 프로필 이미지 URL(선택)
  * - [areaCodes] 관심 지역 법정동코드 목록
- * - [likeThemes] 관심 테마. 코스 카테고리와 같은 값이라 `CourseCategoryVO` 의 **코드**를 담는다
+ * - [likeThemes] 관심 테마. 코스 카테고리와 같은 값이라 `PlaceCategoryVO` 의 **코드**를 담는다
  *   (라벨을 보내면 서버가 `400 "존재하지 않는 관심 테마"` 로 거부한다)
  */
 data class SignupProfile(

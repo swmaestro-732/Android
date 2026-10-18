@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.data.auth
 
 import com.chillsam.courmy.common.data.auth.TokenStore
+import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
 import com.chillsam.courmy.main.data.auth.dto.LogoutRequest
 import com.chillsam.courmy.main.data.auth.dto.SignupRequest
 import com.chillsam.courmy.main.data.auth.dto.SocialLoginRequest
@@ -21,9 +22,17 @@ class AuthRepositoryImpl(
         provider: SocialProvider,
         idToken: String,
     ): SocialLoginResult {
+        // 네이버만 OIDC 미지원이라 accessToken 필드로 보낸다. 서버는 provider 에 맞는 필드
+        // 하나만 허용한다(SocialLoginRequest 주석 참고).
+        val request =
+            if (provider == SocialProvider.NAVER) {
+                SocialLoginRequest(provider = provider.name, accessToken = idToken)
+            } else {
+                SocialLoginRequest(provider = provider.name, idToken = idToken)
+            }
         val data =
             requireNotNull(
-                dataSource.socialLogin(SocialLoginRequest(provider = provider.name, idToken = idToken)).data,
+                dataSource.socialLogin(request).data,
             ) { "social-login 응답에 data 가 없습니다." }
 
         if (data.newUser) {
@@ -54,7 +63,11 @@ class AuthRepositoryImpl(
                             handle = profile.handle,
                             profileImageUrl = profile.profileImageUrl,
                             areaCodes = profile.areaCodes.ifEmpty { null },
-                            likeThemes = profile.likeThemes.ifEmpty { null },
+                            likeThemes =
+                                profile.likeThemes
+                                    .map { requireNotNull(PlaceCategoryVO.fromCode(it)) { "알 수 없는 관심 테마: $it" }.code }
+                                    .distinct()
+                                    .ifEmpty { null },
                         ),
                     ).data,
             ) { "signup 응답에 data 가 없습니다." }
