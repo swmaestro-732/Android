@@ -135,21 +135,26 @@ class SavedPlacesViewModel
             moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getSavedPlacesUseCase() }
-                        .onSuccess { page ->
-                            dispatch(
-                                SavedPlacesReducerEvent.Loaded(
-                                    places = page.items,
-                                    nextCursor = page.nextCursor,
-                                    hasNext = page.hasNext,
-                                ),
-                            )
-                        }.onFailure { e ->
-                            if (e is CancellationException) throw e
-                            // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
-                            Log.w(TAG, "저장 장소 로드 실패", e)
-                            dispatch(SavedPlacesReducerEvent.LoadFailed("저장한 장소를 불러오지 못했습니다."))
-                        }
+                    // 복귀 재로드가 1페이지로 줄이면 깊이 스크롤한 위치가 잘린다(SCRUM-631).
+                    // 이미 보여 준 개수만큼 다시 받아 위치를 보존한다(UseCase 상한으로 캡).
+                    runCatching {
+                        getSavedPlacesUseCase(
+                            size = maxOf(GetSavedPlacesUseCase.DEFAULT_SIZE, currentState.places.size),
+                        )
+                    }.onSuccess { page ->
+                        dispatch(
+                            SavedPlacesReducerEvent.Loaded(
+                                places = page.items,
+                                nextCursor = page.nextCursor,
+                                hasNext = page.hasNext,
+                            ),
+                        )
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
+                        Log.w(TAG, "저장 장소 로드 실패", e)
+                        dispatch(SavedPlacesReducerEvent.LoadFailed("저장한 장소를 불러오지 못했습니다."))
+                    }
                 }
         }
 

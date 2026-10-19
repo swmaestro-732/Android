@@ -90,31 +90,9 @@ fun DraftListPage(
 
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when {
-                    uiState.isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center),
-                            color = color.contentAccent,
-                        )
-                    }
-
-                    uiState.loadFailed -> {
-                        DraftListRetry(
-                            message = uiState.errorMessage ?: "임시저장한 코스를 불러오지 못했어요.",
-                            onRetry = { viewModel.onIntent(DraftListIntent.Load) },
-                            modifier = Modifier.align(Alignment.Center),
-                        )
-                    }
-
-                    uiState.isEmpty -> {
-                        DsText(
-                            text = "임시저장한 코스가 없어요",
-                            modifier = Modifier.align(Alignment.Center),
-                            style = DesignSystemThemeImpl.typeScale.textRegularS,
-                            color = color.contentDefaultLevel2,
-                        )
-                    }
-
-                    else -> {
+                    // 복귀 재로드 중에도 기존 목록을 유지한다 — 스피너로 바꾸면 목록이 내려갔다가
+                    // 다시 그려지며 스크롤이 최상단으로 튄다(SCRUM-631).
+                    uiState.drafts.isNotEmpty() -> {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -136,6 +114,30 @@ fun DraftListPage(
                                 )
                             }
                         }
+                    }
+
+                    uiState.isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = color.contentAccent,
+                        )
+                    }
+
+                    uiState.loadFailed -> {
+                        DraftListRetry(
+                            message = uiState.errorMessage ?: "임시저장한 코스를 불러오지 못했어요.",
+                            onRetry = { viewModel.onIntent(DraftListIntent.Load) },
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+
+                    else -> {
+                        DsText(
+                            text = "임시저장한 코스가 없어요",
+                            modifier = Modifier.align(Alignment.Center),
+                            style = DesignSystemThemeImpl.typeScale.textRegularS,
+                            color = color.contentDefaultLevel2,
+                        )
                     }
                 }
             }
