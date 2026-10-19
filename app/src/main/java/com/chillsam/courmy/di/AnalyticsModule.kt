@@ -47,12 +47,8 @@ object AnalyticsModule {
                 ),
             )
         val client = SdkAmplitudeClient(amplitude)
-        // 설치 직후 대시보드에서 수신을 확인하기 위한 로드 타임 이벤트(1회).
-        client.track(
-            eventName = "app_opened",
-            // 설치 검증용 속성 — 대시보드에서 수신 확인 후 제거해도 된다
-            properties = mapOf("prompt_version" to "BA400.4"),
-        )
+        // 앱 실행을 알리는 로드 타임 이벤트(세션 시작 확인용).
+        client.track(eventName = "app_opened")
         return client
     }
 
