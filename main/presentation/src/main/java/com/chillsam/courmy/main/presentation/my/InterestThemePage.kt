@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chillsam.courmy.common.entity.category.CourseCategoryVO
+import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -36,12 +36,12 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 
 /**
- * 선택지는 서버 코스 카테고리와 같은 목록이다([CourseCategoryVO]).
+ * 선택지는 장소·코스 테마와 같은 10종 목록이다([PlaceCategoryVO]).
  *
- * 선택 상태·저장은 코드(`CAFETOUR` …)로 하고 칩에는 라벨을 보여준다 — 서버가 `likeThemes` 를
+ * 선택 상태·저장은 소문자 코드(`cafe` …)로 하고 칩에는 라벨을 보여준다 — 서버가 `likeThemes` 를
  * enum 으로 검증해서, 라벨을 보내면 `400 "존재하지 않는 관심 테마가 포함되어 있습니다"` 로 거부한다.
  */
-private val THEME_OPTIONS = CourseCategoryVO.entries
+private val THEME_OPTIONS = PlaceCategoryVO.entries
 private const val MIN_THEME_COUNT = 3
 
 /** 관심 테마 편집 화면(FS-06). 최소 [MIN_THEME_COUNT]개 이상 칩을 선택한다. */
@@ -61,7 +61,9 @@ fun InterestThemePage(
     val editState by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(editing) { if (editing) viewModel.onIntent(InterestEditIntent.Load) }
     // 회원가입은 빈 선택으로 시작하고, 편집은 불러온 값이 도착하면 그 값으로 다시 채운다.
-    var selected by remember(editState.loaded) { mutableStateOf(editState.themes.toSet()) }
+    var selected by remember(editState.loaded) {
+        mutableStateOf(editState.themes.mapNotNull { PlaceCategoryVO.fromCode(it)?.code }.toSet())
+    }
     LaunchedEffect(editState.saved) { if (editState.saved) navigationHelper.navigateToBack() }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
@@ -155,8 +157,8 @@ private fun ThemeChips(
             // 선택 상태는 서버 코드로 관리하고 화면에는 라벨만 보여준다.
             DsChip(
                 text = theme.label,
-                selected = theme.name in selected,
-                onClick = { onToggle(theme.name) },
+                selected = theme.code in selected,
+                onClick = { onToggle(theme.code) },
             )
         }
     }

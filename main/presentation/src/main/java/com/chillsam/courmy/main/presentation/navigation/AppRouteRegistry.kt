@@ -30,6 +30,7 @@ import com.chillsam.courmy.course.presentation.PlanDetailPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.home.HomePage
+import com.chillsam.courmy.main.presentation.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.presentation.login.LoginPage
 import com.chillsam.courmy.main.presentation.login.OnboardingCompletePage
 import com.chillsam.courmy.main.presentation.login.ProfileSetupPage
@@ -62,6 +63,7 @@ import com.chillsam.courmy.course.domain.CourseReviewListPage as CourseReviewLis
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.course.domain.PlanDetailPage as PlanDetailRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
+import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage as RecommendedCoursesRoute
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
 import com.chillsam.courmy.main.domain.login.OnboardingCompletePage as CompleteRoute
 import com.chillsam.courmy.main.domain.login.ProfileSetupPage as ProfileSetupRoute
@@ -169,6 +171,12 @@ val appRoutes: List<AppRoute> =
             render = { HomePage() },
         ),
         // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다.
+        AppRoute(
+            path = RecommendedCoursesRoute.PATH,
+            render = { args ->
+                RecommendedCoursesPage(initialCategory = args[RecommendedCoursesRoute.ARG_CATEGORY])
+            },
+        ),
         // 입력 화면은 공유하며 홈은 코스 결과, 지도는 장소 결과로 이동한다.
         AppRoute(
             path = SearchRoute.PATH,

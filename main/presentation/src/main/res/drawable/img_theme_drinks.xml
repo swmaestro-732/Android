@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?><!-- 테마 타일 일러스트: 혼술·회식(디자이너 SVG theme_drinks.svg 변환). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="240dp"
+    android:viewportWidth="320"
+    android:viewportHeight="240">
+    <path
+        android:fillColor="#FFDEDCEE"
+        android:pathData="M66,240 C90,185 147,146 210,128 C254,115 293,117 320,125 L320,240 Z" />
+    <group
+        android:rotation="-6"
+        android:pivotX="226"
+        android:pivotY="140">
+        <path
+            android:fillColor="#FFEAE8F4"
+            android:pathData="M178,42 L271,42 C277,62 285,85 284,109 C283,140 259,160 229,160 C199,160 174,140 172,111 C170,89 174,63 178,42Z" />
+        <path
+            android:fillColor="#FF94465F"
+            android:pathData="M179,105 C207,111 248,111 278,105 C278,133 257,153 229,153 C201,153 181,134 179,105Z" />
+        <path
+            android:fillColor="#FFEFEDF6"
+            android:pathData="M223,158 L235,158 L235,225 L223,225 Z" />
+        <path
+            android:fillColor="#FFEFEDF6"
+            android:pathData="M185,240 C185,229 204,221 229,221 C254,221 273,229 273,240 Z" />
+    </group>
+</vector>

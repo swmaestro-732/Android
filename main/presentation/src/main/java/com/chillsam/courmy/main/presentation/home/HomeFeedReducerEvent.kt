@@ -48,5 +48,9 @@ sealed interface HomeFeedReducerEvent : ReducerEvent {
         val message: String,
     ) : HomeFeedReducerEvent
 
+    data class CategorySelected(
+        val category: String?,
+    ) : HomeFeedReducerEvent
+
     data object ErrorConsumed : HomeFeedReducerEvent
 }
