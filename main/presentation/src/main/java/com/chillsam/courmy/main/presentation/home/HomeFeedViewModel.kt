@@ -43,6 +43,8 @@ class HomeFeedViewModel
 
                 HomeFeedIntent.LoadMore -> loadMore()
 
+                HomeFeedIntent.SyncSavedIds -> syncSavedIds()
+
                 is HomeFeedIntent.ToggleSave -> toggleSave(intent.courseId)
 
                 is HomeFeedIntent.SelectCategory -> dispatch(HomeFeedReducerEvent.CategorySelected(intent.category))
@@ -70,6 +72,10 @@ class HomeFeedViewModel
                         hasNext = event.hasNext,
                         isLoadingMore = false,
                     )
+                }
+
+                is HomeFeedReducerEvent.SavedIdsSynced -> {
+                    state.copy(savedCourseIds = event.savedCourseIds.toImmutableSet())
                 }
 
                 HomeFeedReducerEvent.LoadMoreStarted -> {
@@ -206,6 +212,23 @@ class HomeFeedViewModel
                             dispatch(HomeFeedReducerEvent.MoreFailed("더 불러오지 못했어요."))
                         }
                 }
+        }
+
+        /**
+         * 복귀 시 저장 상태만 동기화한다(SCRUM-631). 첫 로드가 진행 중이면 [load] 가 어차피
+         * 최신 집합을 싣고 오므로 건너뛴다.
+         */
+        private fun syncSavedIds() {
+            if (currentState.isLoading) return
+            viewModelScope.launch {
+                runCatching { getSavedCourseIdsUseCase() }
+                    .onSuccess { dispatch(HomeFeedReducerEvent.SavedIdsSynced(it)) }
+                    .onFailure { e ->
+                        if (e is CancellationException) throw e
+                        // 실패하면 덮어쓰지 않는다 — 빈 집합으로 바꾸면 저장 아이콘이 일괄 꺼져 보인다.
+                        Log.d(TAG, "저장 코스 id 동기화 실패(기존 표시 유지): ${e.message}")
+                    }
+            }
         }
 
         /**
