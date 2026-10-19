@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.data.saved
 
 import com.chillsam.courmy.main.domain.saved.SavedCourseRepository
+import com.chillsam.courmy.main.domain.saved.SavedPlaceRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,4 +26,18 @@ object SavedDataModule {
     @Singleton
     fun provideSavedCourseRepository(dataSource: SavedCourseDataSource): SavedCourseRepository =
         SavedCourseRepositoryImpl(dataSource)
+
+    @Provides
+    @Singleton
+    fun provideSavedPlaceApiService(retrofit: Retrofit): SavedPlaceApiService = retrofit.create()
+
+    @Provides
+    @Singleton
+    fun provideSavedPlaceDataSource(apiService: SavedPlaceApiService): SavedPlaceDataSource =
+        SavedPlaceDataSource(apiService)
+
+    @Provides
+    @Singleton
+    fun provideSavedPlaceRepository(dataSource: SavedPlaceDataSource): SavedPlaceRepository =
+        SavedPlaceRepositoryImpl(dataSource)
 }

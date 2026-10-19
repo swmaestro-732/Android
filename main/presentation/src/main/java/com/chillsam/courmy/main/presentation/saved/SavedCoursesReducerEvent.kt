@@ -5,6 +5,29 @@ import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 
 /** 저장함 · 코스 탭의 내부 상태 변경 이벤트. */
 sealed interface SavedCoursesReducerEvent : ReducerEvent {
+    data class FilterChanged(
+        val folderId: Long?,
+        val completed: Boolean,
+    ) : SavedCoursesReducerEvent
+
+    data class FolderDialog(
+        val visible: Boolean,
+    ) : SavedCoursesReducerEvent
+
+    data object FolderCreating : SavedCoursesReducerEvent
+
+    data class FolderCreated(
+        val folder: com.chillsam.courmy.main.entity.saved.SavedCourseFolderVO,
+    ) : SavedCoursesReducerEvent
+
+    data class FolderFailed(
+        val message: String,
+    ) : SavedCoursesReducerEvent
+
+    data class SummaryLoaded(
+        val result: com.chillsam.courmy.main.entity.saved.SavedCoursesVO,
+    ) : SavedCoursesReducerEvent
+
     data object LoadStarted : SavedCoursesReducerEvent
 
     data class Loaded(
