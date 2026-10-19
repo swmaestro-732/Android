@@ -45,6 +45,7 @@ import kotlinx.coroutines.delay
 @Composable
 internal fun RemovePlaceConfirmSheet(
     placeName: String,
+    isPlan: Boolean = false,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -74,13 +75,13 @@ internal fun RemovePlaceConfirmSheet(
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = "이 장소를 코스에서 뺄까요?",
+                text = if (isPlan) "이 장소를 계획에서 뺄까요?" else "이 장소를 코스에서 뺄까요?",
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel2,
             )
             Spacer(Modifier.height(10.dp))
             SheetActionButton(
-                text = "코스에서 빼기",
+                text = if (isPlan) "계획에서 빼기" else "코스에서 빼기",
                 textColor = color.contentDanger,
                 background = color.bgDefaultLevel1,
                 onClick = onConfirm,

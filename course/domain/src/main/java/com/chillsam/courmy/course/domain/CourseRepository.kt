@@ -72,6 +72,8 @@ interface CourseRepository {
 
     /**
      * 초안을 서버에 코스로 생성하고(`POST /api/v1/courses`) 서버가 매긴 courseId 를 돌려준다.
+     * 포크로 시작한 초안(`forkedFromId != null`)은 포크 API(`POST /api/v1/courses/{id}/forks`)로
+     * 생성해 서버에 포크 기록을 남긴다 — 호출부는 구분할 필요 없이 이 함수 하나만 부른다.
      * 실패 시 예외를 throw 한다.
      */
     suspend fun createCourse(

@@ -9,10 +9,15 @@ import com.chillsam.courmy.common.domain.navigation.Page
  * 인자 없이 들어오면 빈 코스로 시작하고, 임시저장 목록에서 [route] 로 초안의 코스 id 를 실어 오면
  * 그 초안을 불러와 이어서 작성한다. 초안 id 를 화면 밖(공유 상태)에 두지 않고 라우트로 넘기는 이유는,
  * 어느 초안을 편집 중인지가 이 화면 한 번의 진입에만 유효한 값이기 때문이다.
+ *
+ * 코스 상세에서 [forkRoute] 로 들어오면 그 코스를 포크한다 — 원본의 장소 구성만 채운 상태로 열린다.
+ * 포크도 결국 "게시물 만들기"(기능 정의서 7.2.1)라 별도 화면을 두지 않고 이 화면을 재사용한다.
  */
 object CourseCreatePage : Page {
     const val PATH = "/courseCreate"
+    const val ARG_IS_PLAN = "isPlan"
     const val ARG_DRAFT_ID = "draftId"
+    const val ARG_FORK_FROM_ID = "forkFromId"
 
     override fun toRoute(): NavRoute = NavRoute(PATH)
 
@@ -20,5 +25,22 @@ object CourseCreatePage : Page {
         NavRoute(
             path = PATH,
             args = mapOf(ARG_DRAFT_ID to draftId.toString()),
+        )
+
+    fun planRoute(sourceCourseId: Long? = null): NavRoute =
+        NavRoute(
+            path = PATH,
+            args =
+                buildMap {
+                    put(ARG_IS_PLAN, "true")
+                    sourceCourseId?.let { put(ARG_FORK_FROM_ID, it.toString()) }
+                },
+        )
+
+    /** [forkFromId] 코스를 포크해 새로 작성한다. 초안 이어쓰기([route])와 달리 새 코스를 만든다. */
+    fun forkRoute(forkFromId: Long): NavRoute =
+        NavRoute(
+            path = PATH,
+            args = mapOf(ARG_FORK_FROM_ID to forkFromId.toString()),
         )
 }

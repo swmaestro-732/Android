@@ -18,6 +18,15 @@ import org.junit.Test
  */
 class DraftContentDtoMappingTest {
     @Test
+    fun `복제한 초안은 원본 코스 id를 복원한다`() {
+        val draft =
+            CourseScreenData(course = CourseScreenDTO(forkedFromId = 42L))
+                .toDraftVO(CourseVisibility.PRIVATE)
+
+        assertEquals(42L, draft.forkedFromId)
+    }
+
+    @Test
     fun `장소를 orderNo 순으로 정렬하고 place id 를 그대로 넘긴다`() {
         val draft =
             data(

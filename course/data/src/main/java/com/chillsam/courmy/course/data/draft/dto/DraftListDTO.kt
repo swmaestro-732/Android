@@ -1,10 +1,8 @@
 package com.chillsam.courmy.course.data.draft.dto
 
+import com.chillsam.courmy.common.entity.time.parseIsoUtcMillis
 import com.chillsam.courmy.course.entity.DraftSummaryVO
 import kotlinx.serialization.Serializable
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
 
 /**
  * `GET /api/v1/courses/drafts` 응답 DTO.
@@ -45,32 +43,10 @@ fun DraftListEnvelope.toVOList(): List<DraftSummaryVO> =
             id = id,
             // 임시저장은 제목 없이도 만들 수 있어 서버가 빈 문자열을 준다. 목록이 빈 줄로 보이지 않게 채운다.
             title = dto.title?.takeIf { it.isNotBlank() } ?: DEFAULT_TITLE,
-            savedAtMillis = dto.createdAt.toEpochMillis(),
+            // 못 읽으면 0 이라 화면이 시각 표시만 포기한다(초안 자체는 보여 줘야 한다).
+            savedAtMillis = parseIsoUtcMillis(dto.createdAt) ?: 0L,
         )
     }
-
-/**
- * ISO-8601 UTC(`2026-08-08T12:14:07.923816Z`) → epoch millis. 못 읽으면 0 을 돌려 화면이
- * 시각 표시만 포기하게 한다(초안 자체는 보여 줘야 한다).
- *
- * `java.time.Instant.parse` 를 쓰지 않는 이유는 minSdk 가 24 이기 때문이다(`java.time` 은 API 26+,
- * 이 프로젝트는 core library desugaring 을 켜지 않았다 — `formatCreatedAt` 도 같은 이유로
- * `SimpleDateFormat` 을 쓴다).
- *
- * 소수 이하 초는 잘라내고 파싱한다. 서버가 마이크로초(6자리)를 주는데 `SimpleDateFormat` 의 `S` 는
- * 자릿수를 세지 않고 전부 밀리초로 읽어 923816ms(≈15분) 만큼 시각이 밀린다.
- */
-private fun String?.toEpochMillis(): Long {
-    val raw = this?.substringBefore('.')?.removeSuffix("Z") ?: return 0L
-    val format =
-        SimpleDateFormat(ISO_PATTERN, Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-            isLenient = false
-        }
-    return runCatching { format.parse(raw)?.time ?: 0L }.getOrDefault(0L)
-}
-
-private const val ISO_PATTERN = "yyyy-MM-dd'T'HH:mm:ss"
 
 /** 제목 없이 저장한 초안의 목록 표시용 기본 제목. */
 private const val DEFAULT_TITLE = "제목 없는 코스"
