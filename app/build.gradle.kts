@@ -49,6 +49,11 @@ val naverLoginClientSecret: String =
 val googleServerClientId: String =
     (localProps.getProperty("GOOGLE_SERVER_CLIENT_ID") ?: System.getenv("GOOGLE_SERVER_CLIENT_ID")).orEmpty()
 
+// Amplitude 제품 분석 API 키. 분석은 없어도 출시 가능한 부가 기능이라 릴리스 가드를 걸지 않는다.
+// 키가 비면 AnalyticsModule 이 no-op 구현을 바인딩해 초기화를 건너뛴다.
+val amplitudeApiKey: String =
+    (localProps.getProperty("AMPLITUDE_API_KEY") ?: System.getenv("AMPLITUDE_API_KEY")).orEmpty()
+
 // Firebase Crashlytics — google-services.json 이 있을 때만 플러그인을 붙인다.
 // 이 파일이 없는데 플러그인을 적용하면 빌드가 통째로 깨지므로, keystore·카카오 키와 같은 방식으로
 // "없으면 크래시 리포팅만 빠지고 빌드는 진행" 하게 둔다(릴리스에서는 아래에서 하드 실패).
@@ -157,6 +162,9 @@ android {
         buildConfigField("String", "NAVER_LOGIN_CLIENT_ID", "\"$naverLoginClientId\"")
         buildConfigField("String", "NAVER_LOGIN_CLIENT_SECRET", "\"$naverLoginClientSecret\"")
         buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleServerClientId\"")
+
+        // Amplitude 제품 분석. 키가 비면 AnalyticsModule 이 no-op 으로 폴백한다.
+        buildConfigField("String", "AMPLITUDE_API_KEY", "\"$amplitudeApiKey\"")
     }
 
     signingConfigs {
@@ -287,6 +295,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
+
+    // Amplitude — 제품 분석. SDK 는 app 에만 두고 data 레이어에는 AmplitudeClient 인터페이스로 노출한다.
+    implementation(libs.amplitude.analytics)
 
     // Baseline Profile: 설치 시점에 dump 된 프로필을 ART 에 등록해 주는 런타임 라이브러리.
     // minSdk 24 ~ 27 백포트를 위해 필수.
