@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-19",
+  "versionCode": 8,
+  "versionName": "1.0.0",
+  "commit": "99c7ea474f0325967ba70aeb2fd3986e28773773",
+  "state": "guest",
+  "device": "Pixel 9 emulator-5554",
+  "files": {
+    "login.png": "e79b0f233e120c45222defd6cb8e0effca594c1eb3ed43cb29a7aa3dfadda1ac",
+    "course-detail.png": "90a2ecf2b0f94e4bd669358e82968b5efa02570e73c8ce3b33e6d603084a29ac",
+    "follow.png": "cf46d17270af88e452dfe48c111006e06124e1b7ace0c2ff136d7d3706fb430d",
+    "home.png": "7064c05b6f772303dee70eadd9569e7edda1dc06cc6fd8c4e48809dafa07633d",
+    "saved.png": "ee19d9f2c6e9082e327da45d6a2e0a14d9be654da5d512561fec3c7ddd080a33",
+    "plan-create.png": "912db233eb7c0dd1afb64b9e69cb4d4ead18f25d5426c25b4b0500f0efa72c95",
+    "reviews.png": "c413d78267ccb119e639aa350a52c267a9935155395735fca8bd75ae56394d76",
+    "map.png": "414f5efdbcc20bd29c42263f47ceb05bdd7bde654ce8f8d1a0ca5a4fe6eaf552"
+  }
+}
