@@ -9,7 +9,7 @@ import org.junit.Test
 class ClusterMapPlacesUseCaseTest {
     private val useCase = ClusterMapPlacesUseCase()
 
-    /** 성수동 근방 1도 × 1도 뷰포트. 셀 크기는 경도 1/6 · 위도 1/10. */
+    /** 1도 × 1도 뷰포트. 이웃 반경은 경도 0.1 · 위도 약 0.056. */
     private val bounds = MapBounds(swLat = 37.0, swLng = 127.0, neLat = 38.0, neLng = 128.0)
 
     private fun place(
@@ -19,7 +19,7 @@ class ClusterMapPlacesUseCaseTest {
     ) = MapPlaceVO(id = id, name = "p$id", category = "CAFE", latitude = lat, longitude = lng)
 
     @Test
-    fun `같은 칸에 3개 이상 몰리면 개수와 중심 좌표로 묶는다`() {
+    fun `반경 안에 3개 이상 몰리면 개수와 중심 좌표로 묶는다`() {
         val packed =
             listOf(
                 place(1, 37.01, 127.01),
@@ -36,16 +36,31 @@ class ClusterMapPlacesUseCaseTest {
     }
 
     @Test
-    fun `두 개까지는 묶지 않는다`() {
+    fun `두 개만 겹쳐도 묶는다`() {
         val pair = listOf(place(1, 37.01, 127.01), place(2, 37.02, 127.02))
         val result = useCase(pair, bounds)
 
-        assertEquals(pair, result.singles)
-        assertTrue(result.clusters.isEmpty())
+        assertTrue(result.singles.isEmpty())
+        assertEquals(2, result.clusters.single().count)
     }
 
     @Test
-    fun `선택된 장소가 든 칸은 묶지 않는다 - 말풍선이 가려지면 안 된다`() {
+    fun `겹침이 사슬로 이어지면 전부 한 묶음이 된다`() {
+        // 1-2 겹침, 2-3 겹침이지만 1-3 은 반경(0.1) 밖 — 연결 요소로 셋 다 묶여야 한다.
+        val chained =
+            listOf(
+                place(1, 37.01, 127.01),
+                place(2, 37.01, 127.09),
+                place(3, 37.01, 127.17),
+            )
+        val result = useCase(chained, bounds)
+
+        assertTrue(result.singles.isEmpty())
+        assertEquals(3, result.clusters.single().count)
+    }
+
+    @Test
+    fun `선택된 장소가 든 묶음은 만들지 않는다 - 말풍선이 가려지면 안 된다`() {
         val packed =
             listOf(
                 place(1, 37.01, 127.01),
@@ -59,7 +74,7 @@ class ClusterMapPlacesUseCaseTest {
     }
 
     @Test
-    fun `칸이 다르면 각자 단독 핀으로 남는다`() {
+    fun `반경 밖이면 각자 단독 핀으로 남는다`() {
         val spread =
             listOf(
                 place(1, 37.05, 127.05),

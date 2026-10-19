@@ -77,6 +77,10 @@ fun MapScreen(
     var trackingModeName by rememberSaveable { mutableStateOf(LocationTrackingMode.None.name) }
     val trackingMode = remember(trackingModeName) { LocationTrackingMode.valueOf(trackingModeName) }
 
+    // 첫 진입은 지도 전체 화면이다(사용자 결정, 2026-10-19). 시트는 핀을 고르거나
+    // 카테고리로 거르기 시작했을 때만 띄운다.
+    val sheetVisible = uiState.selectedPlaceId != null || uiState.category != MapCategory.ALL
+
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         MapCanvas(
             places = uiState.markerPlaces,
@@ -88,7 +92,8 @@ fun MapScreen(
                 if (id == uiState.selectedPlaceId) actions.onPlaceDetail(id) else actions.onPlaceSelect(id)
             },
             onMapClick = { actions.onPlaceSelect(null) },
-            contentPadding = PaddingValues(bottom = MapBottomInset),
+            // 시트가 없을 때도 여백을 고정하면 네이버 로고·저작권 표기가 허공에 뜬다.
+            contentPadding = PaddingValues(bottom = if (sheetVisible) MapBottomInset else 0.dp),
             onBoundsChanged = actions.onBoundsChanged,
             locationSource = locationSource,
             locationTrackingMode = trackingMode,
@@ -132,9 +137,7 @@ fun MapScreen(
                         .align(Alignment.End)
                         .padding(end = ScreenHorizontalPadding, bottom = ControlBottomGap),
             )
-            // 첫 진입은 지도 전체 화면이다(사용자 결정, 2026-10-19). 시트는 핀을 고르거나
-            // 카테고리로 거르기 시작했을 때만 띄운다.
-            if (uiState.selectedPlaceId != null || uiState.category != MapCategory.ALL) {
+            if (sheetVisible) {
                 NearbySheet(
                     uiState = uiState,
                     actions = actions,

@@ -5,16 +5,17 @@ import com.chillsam.courmy.main.entity.map.MapClusterResult
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import javax.inject.Inject
-import kotlin.math.floor
+import kotlin.math.abs
 
 /**
- * 뷰포트를 격자로 나눠 같은 칸에 몰린 핀을 숫자 묶음으로 바꾼다(SCRUM-633).
+ * 화면에서 서로 겹치는 핀을 전부 하나의 숫자 묶음으로 합친다(SCRUM-633).
  *
- * 격자 크기가 화면 폭 기준이라 줌을 당기면 칸이 좁아져 자연히 풀린다. 서버 클러스터와 별개로
- * 화면에 실제로 겹치는 핀만 정리하는 표시용 규칙이므로 도메인 데이터는 바꾸지 않는다.
+ * "겹침"은 핀 중심 간 거리가 핀 지름(뷰포트 폭 비례) 이내인 것이고, A-B 가 겹치고 B-C 가 겹치면
+ * A·B·C 를 한 묶음으로 본다(연결 요소). 기준 핀 반경만 보는 방식은 묶음 바로 옆에 겹친 쌍이
+ * 남는 비일관이 있어 이렇게 계산한다. 줌을 당기면 반경이 지리적으로 좁아져 자연히 풀린다.
  *
  * - 좌표 없는 장소는 핀을 못 찍으므로 그대로 단독 목록에 남긴다(지도 쪽에서 걸러진다).
- * - 선택된 장소가 든 칸은 묶지 않는다 — 말풍선이 숫자 배지 뒤로 사라지면 안 된다.
+ * - 선택된 장소가 든 묶음은 만들지 않는다 — 말풍선이 숫자 배지 뒤로 사라지면 안 된다.
  */
 class ClusterMapPlacesUseCase
     @Inject
@@ -24,51 +25,62 @@ class ClusterMapPlacesUseCase
             bounds: MapBounds?,
             selectedPlaceId: Long? = null,
         ): MapClusterResult {
-            val cellWidth = bounds?.let { (it.neLng - it.swLng) / LNG_CELLS } ?: 0.0
-            val cellHeight = bounds?.let { (it.neLat - it.swLat) / LAT_CELLS } ?: 0.0
-            if (bounds == null || cellWidth <= 0.0 || cellHeight <= 0.0) {
+            val lngRadius = bounds?.let { (it.neLng - it.swLng) / LNG_DIVISOR } ?: 0.0
+            val latRadius = bounds?.let { (it.neLat - it.swLat) / LAT_DIVISOR } ?: 0.0
+            if (bounds == null || lngRadius <= 0.0 || latRadius <= 0.0) {
                 return MapClusterResult(singles = places, clusters = emptyList())
             }
 
             val singles = mutableListOf<MapPlaceVO>()
+            val pinned = places.filter { it.latitude != null && it.longitude != null }
+            singles += places.filterNot { it.latitude != null && it.longitude != null }
+
+            fun overlaps(
+                a: MapPlaceVO,
+                b: MapPlaceVO,
+            ): Boolean =
+                abs(requireNotNull(a.latitude) - requireNotNull(b.latitude)) <= latRadius &&
+                    abs(requireNotNull(a.longitude) - requireNotNull(b.longitude)) <= lngRadius
+
             val clusters = mutableListOf<MapClusterVO>()
-            places
-                .groupBy { place ->
-                    val lat = place.latitude
-                    val lng = place.longitude
-                    if (lat == null || lng == null) {
-                        null
-                    } else {
-                        floor((lat - bounds.swLat) / cellHeight).toInt() to
-                            floor((lng - bounds.swLng) / cellWidth).toInt()
-                    }
-                }.forEach { (cell, group) ->
-                    val keepApart =
-                        cell == null ||
-                            group.size < MIN_CLUSTER_SIZE ||
-                            group.any { it.id == selectedPlaceId }
-                    if (keepApart) {
-                        singles += group
-                    } else {
-                        clusters +=
-                            MapClusterVO(
-                                latitude = group.mapNotNull { it.latitude }.average(),
-                                longitude = group.mapNotNull { it.longitude }.average(),
-                                count = group.size,
-                            )
+            val visited = HashSet<Long>()
+            pinned.forEach { seed ->
+                if (seed.id in visited) return@forEach
+                // BFS 로 겹침이 이어지는 핀을 전부 모은다.
+                val component = mutableListOf(seed)
+                visited += seed.id
+                var index = 0
+                while (index < component.size) {
+                    val current = component[index++]
+                    pinned.forEach { other ->
+                        if (other.id !in visited && overlaps(current, other)) {
+                            visited += other.id
+                            component += other
+                        }
                     }
                 }
+                if (component.size < MIN_CLUSTER_SIZE || component.any { it.id == selectedPlaceId }) {
+                    singles += component
+                } else {
+                    clusters +=
+                        MapClusterVO(
+                            latitude = component.mapNotNull { it.latitude }.average(),
+                            longitude = component.mapNotNull { it.longitude }.average(),
+                            count = component.size,
+                        )
+                }
+            }
             return MapClusterResult(singles = singles, clusters = clusters)
         }
 
         private companion object {
-            /** 뷰포트 가로를 나누는 칸 수. 핀 지름(~40dp)이 한 칸에 들어오는 정도. */
-            const val LNG_CELLS = 6
+            /** 겹침 반경 = 뷰포트 가로폭 / 10. 핀 지름(~40dp)이 화면 폭의 1/10 수준이다. */
+            const val LNG_DIVISOR = 10
 
-            /** 세로 칸 수. 화면 비율(약 1:2)에 맞춰 가로보다 촘촘히 나눈다. */
-            const val LAT_CELLS = 10
+            /** 세로 반경 비율. 화면 비율(약 1:2)만큼 더 촘촘하다. */
+            const val LAT_DIVISOR = 18
 
-            /** 이 수 이상 몰렸을 때만 묶는다. 둘 정도는 겹쳐도 각자 탭할 수 있다. */
-            const val MIN_CLUSTER_SIZE = 3
+            /** 겹치면 둘부터 묶는다 — 겹친 심볼이 따로 남아 있으면 안 된다(사용자 결정). */
+            const val MIN_CLUSTER_SIZE = 2
         }
     }
