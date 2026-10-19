@@ -171,11 +171,15 @@ private fun NearbySheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(uiState.places, key = { it.id }) { place ->
+                    val selected = place.id == uiState.selectedPlaceId
                     MapPlaceCarouselCard(
                         place = place,
-                        selected = place.id == uiState.selectedPlaceId,
-                        // 카드 탭이 상세 진입점이다(핀 탭은 선택·포커스만).
-                        onClick = { actions.onPlaceDetail(place.id) },
+                        selected = selected,
+                        // 비활성 카드는 먼저 지도 이동·핀 활성화만 한다. 상세 시트는
+                        // 이미 활성화된 카드를 다시 탭했을 때 연다(SCRUM-632).
+                        onClick = {
+                            if (selected) actions.onPlaceDetail(place.id) else actions.onPlaceSelect(place.id)
+                        },
                     )
                 }
             }
