@@ -100,6 +100,28 @@ class HomeFeedViewModel
                     state.copy(isLoading = false, errorMessage = event.message)
                 }
 
+                is HomeFeedReducerEvent.SaveStarted,
+                is HomeFeedReducerEvent.SaveFinished,
+                is HomeFeedReducerEvent.SaveFailed,
+                -> {
+                    reduceSave(state, event)
+                }
+
+                is HomeFeedReducerEvent.CategorySelected -> {
+                    state.copy(selectedCategory = event.category)
+                }
+
+                HomeFeedReducerEvent.ErrorConsumed -> {
+                    state.copy(actionErrorMessage = null)
+                }
+            }
+
+        /** 저장 토글 관련 상태 변경. [reduce] 의 60줄 상한을 지키기 위해 분리한다. */
+        private fun reduceSave(
+            state: HomeFeedUIState,
+            event: HomeFeedReducerEvent,
+        ): HomeFeedUIState =
+            when (event) {
                 is HomeFeedReducerEvent.SaveStarted -> {
                     state.copy(savingCourseIds = (state.savingCourseIds + event.courseId).toImmutableSet())
                 }
@@ -123,12 +145,8 @@ class HomeFeedViewModel
                     )
                 }
 
-                is HomeFeedReducerEvent.CategorySelected -> {
-                    state.copy(selectedCategory = event.category)
-                }
-
-                HomeFeedReducerEvent.ErrorConsumed -> {
-                    state.copy(actionErrorMessage = null)
+                else -> {
+                    state
                 }
             }
 
