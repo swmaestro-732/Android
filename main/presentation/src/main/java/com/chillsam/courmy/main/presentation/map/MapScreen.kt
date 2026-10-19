@@ -73,7 +73,10 @@ fun MapScreen(
             clusters = uiState.clusters,
             selectedPlaceId = uiState.selectedPlaceId,
             myLocation = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
-            onPlaceClick = actions.onPlaceSelect,
+            // 핀도 카드와 같은 2단계 — 비활성 핀은 선택·포커스, 활성 핀 재탭은 상세 시트.
+            onPlaceClick = { id ->
+                if (id == uiState.selectedPlaceId) actions.onPlaceDetail(id) else actions.onPlaceSelect(id)
+            },
             onMapClick = { actions.onPlaceSelect(null) },
             contentPadding = PaddingValues(bottom = MapBottomInset),
             recenterSignal = recenterSignal,
