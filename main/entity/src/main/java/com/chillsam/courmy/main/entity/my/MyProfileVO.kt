@@ -14,8 +14,8 @@ import kotlinx.serialization.Serializable
  * 내려오지 않아, 조회는 기기 캐시(InterestPreferencesDataStore)로 대신한다.
  * 응답에 실리면 병합과 로컬 캐시를 함께 지운다. [wiki-needed]
  *
- * [interestThemes] 는 서버 코스 카테고리 **코드**(`CAFETOUR` …)다 — 표시할 때
- * `CourseCategoryVO.labelOf` 로 라벨을 얻는다.
+ * [interestThemes] 는 공통 카테고리 **코드**(`cafe` …)다 — 표시할 때
+ * `PlaceCategoryVO.labelOf` 로 라벨을 얻는다.
  */
 @Serializable
 data class MyProfileVO(

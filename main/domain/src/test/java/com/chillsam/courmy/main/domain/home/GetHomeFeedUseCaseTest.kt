@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.domain.home
 
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.entity.home.HomeVO
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -23,6 +24,11 @@ class GetHomeFeedUseCaseTest {
             requestedCursor = cursor
             return CursorPageVO()
         }
+
+        override suspend fun getHome(
+            userLat: Double?,
+            userLng: Double?,
+        ): HomeVO = HomeVO()
     }
 
     @Test

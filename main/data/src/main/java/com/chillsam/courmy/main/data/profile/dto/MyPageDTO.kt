@@ -1,5 +1,7 @@
 package com.chillsam.courmy.main.data.profile.dto
 
+import com.chillsam.courmy.common.entity.category.toCourseTagLabel
+import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
@@ -58,7 +60,7 @@ data class MyPageProfileDTO(
 )
 
 /**
- * 코스 카드. `likesCnt`·`savesCnt`·`theme`·`createdAt` 은 현재 화면에서 쓰지 않는다
+ * 코스 카드. `savesCnt`·`createdAt` 은 현재 화면에서 쓰지 않는다
  * (Figma 의 "따라감"·"스팟" 수가 응답에 없어 배지·부제를 렌더하지 않기로 함 — [ProfileCourseVO] 주석 참고).
  */
 @Serializable
@@ -144,29 +146,15 @@ private fun MyPageCourseDTO.toVO(): ProfileCourseVO =
         id = id.orEmpty(),
         title = title.orEmpty(),
         thumbnailUrl = coverImageUrl.orEmpty(),
+        categoryLabel = theme.toCourseTagLabel(),
+        likeCountText = likesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
     )
-
-/**
- * 통계 숫자 표시 포맷(Figma FS-15: 1400 → "1.4k", 312 → "312").
- * 소수점 첫째 자리에서 버리며, 정확한 값보다 자릿수 안정성을 우선한다.
- */
-internal fun formatCount(value: Int): String =
-    when {
-        value >= 1_000_000 -> "${trimTrailingZero(value / 1_000_000.0)}m"
-        value >= 1_000 -> "${trimTrailingZero(value / 1_000.0)}k"
-        else -> value.toString()
-    }
-
-private fun trimTrailingZero(value: Double): String {
-    val truncated = (value * 10).toInt() / 10.0
-    return if (truncated % 1.0 == 0.0) truncated.toInt().toString() else truncated.toString()
-}
 
 /**
  * `PATCH /api/v1/users` 요청. null 인 필드는 서버가 건드리지 않는다(부분 수정).
  *
  * [areaCodes]·[likeThemes] 는 **전체 치환**이다 — 빈 배열이면 전부 해제, null 이면 유지.
- * [likeThemes] 는 코스 카테고리 이름(`CAFETOUR` …)이고 서버가 enum 으로 검증해 모르는 값은
+ * [likeThemes] 는 공통 카테고리 코드(`cafe` …)이고 서버가 enum 으로 검증해 모르는 값은
  * `400 "존재하지 않는 관심 테마가 포함되어 있습니다"` 로 거부한다(라벨을 보내면 안 된다).
  *
  * 주의: 이 엔드포인트는 **모르는 필드를 400 없이 조용히 무시**한다. 필드명을 틀리면 200 을 받고도

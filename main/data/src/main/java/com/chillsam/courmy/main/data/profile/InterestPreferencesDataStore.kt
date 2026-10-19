@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
 import com.chillsam.courmy.main.entity.area.AreaVO
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -30,7 +31,14 @@ class InterestPreferencesDataStore(
 ) {
     private val dataStore = context.interestDataStore
 
-    suspend fun getThemes(): List<String> = dataStore.data.map { it[KEY_THEMES].decodeOrEmpty<String>() }.first()
+    suspend fun getThemes(): List<String> =
+        dataStore.data
+            .map { preferences ->
+                preferences[KEY_THEMES]
+                    .decodeOrEmpty<String>()
+                    .mapNotNull { PlaceCategoryVO.fromCode(it)?.code }
+                    .distinct()
+            }.first()
 
     suspend fun setThemes(themes: List<String>) {
         dataStore.edit { it[KEY_THEMES] = json.encodeToString(themes) }

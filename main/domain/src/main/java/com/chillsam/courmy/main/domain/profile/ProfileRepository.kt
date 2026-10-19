@@ -37,7 +37,7 @@ interface ProfileRepository {
     /**
      * 관심 테마 저장. 서버에 보내고(전체 치환) 기기 캐시도 함께 갱신한다.
      *
-     * [themes] 는 코스 카테고리 **코드**여야 한다(`CourseCategoryVO.name`) — 서버가 enum 으로 검증한다.
+     * [themes] 는 코스 카테고리 **코드**여야 한다(`PlaceCategoryVO.code`) — 서버가 enum 으로 검증한다.
      *
      * TODO-API-SPEC: 저장은 서버가 받지만 **되읽을 조회 경로가 없다** — 마이페이지 응답에
      * `likeThemes` 가 없어 표시는 기기 캐시로 한다. 응답에 실리면 캐시를 지운다. [wiki-needed]

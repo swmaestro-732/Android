@@ -45,6 +45,8 @@ class HomeFeedViewModel
 
                 is HomeFeedIntent.ToggleSave -> toggleSave(intent.courseId)
 
+                is HomeFeedIntent.SelectCategory -> dispatch(HomeFeedReducerEvent.CategorySelected(intent.category))
+
                 HomeFeedIntent.ConsumeError -> dispatch(HomeFeedReducerEvent.ErrorConsumed)
             }
         }
@@ -97,14 +99,13 @@ class HomeFeedViewModel
                 }
 
                 is HomeFeedReducerEvent.SaveFinished -> {
-                    val saved =
-                        if (event.saved) {
-                            state.savedCourseIds + event.courseId
-                        } else {
-                            state.savedCourseIds - event.courseId
-                        }
                     state.copy(
-                        savedCourseIds = saved.toImmutableSet(),
+                        savedCourseIds =
+                            if (event.saved) {
+                                (state.savedCourseIds + event.courseId).toImmutableSet()
+                            } else {
+                                (state.savedCourseIds - event.courseId).toImmutableSet()
+                            },
                         savingCourseIds = (state.savingCourseIds - event.courseId).toImmutableSet(),
                     )
                 }
@@ -114,6 +115,10 @@ class HomeFeedViewModel
                         savingCourseIds = (state.savingCourseIds - event.courseId).toImmutableSet(),
                         actionErrorMessage = event.message,
                     )
+                }
+
+                is HomeFeedReducerEvent.CategorySelected -> {
+                    state.copy(selectedCategory = event.category)
                 }
 
                 HomeFeedReducerEvent.ErrorConsumed -> {
