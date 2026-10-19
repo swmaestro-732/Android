@@ -39,6 +39,9 @@ android {
         buildConfig = true
         compose = true
     }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 kotlin {
@@ -61,6 +64,9 @@ composeCompiler {
 }
 
 dependencies {
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(project(":course:domain"))
     implementation(project(":course:entity"))

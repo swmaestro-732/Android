@@ -14,6 +14,8 @@ import com.chillsam.courmy.course.presentation.CourseDetailPageActions
 import com.chillsam.courmy.course.presentation.CourseDetailViewModel
 import com.chillsam.courmy.course.presentation.CourseEditPage
 import com.chillsam.courmy.course.presentation.CourseEditViewModel
+import com.chillsam.courmy.course.presentation.CourseReviewListPage
+import com.chillsam.courmy.course.presentation.CourseReviewListViewModel
 import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
@@ -42,6 +44,7 @@ import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRou
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
 import com.chillsam.courmy.course.domain.CourseEditPage as CourseEditRoute
+import com.chillsam.courmy.course.domain.CourseReviewListPage as CourseReviewListRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
@@ -146,8 +149,14 @@ val appRoutes: List<AppRoute> =
             path = HomeRoute.PATH,
             render = { HomePage() },
         ),
+        // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다.
+        // 입력 화면은 공유하며 홈은 코스 결과, 지도는 장소 결과로 이동한다.
+        // 지도 탭(FS-10). 검색 결과는 시트만 갈아 끼우는 한 화면이라 라우트도 하나다.
         // 코스 만들기: course 모듈의 실제 MVI 화면(SCRUM-234).
         // 상단바·저장바 네비게이션은 대상 화면(홈/코스 완성)이 main 모듈이라 여기서 주입한다.
+        //
+        // 이 화면은 세 가지로 열린다 — 빈 코스(인자 없음), 임시저장 이어쓰기(draftId),
+        // 남의 코스 포크(forkFromId). 어느 쪽인지는 라우트 인자로만 구분되므로 여기서 읽어 넘긴다.
         AppRoute(
             path = CourseCreateRoute.PATH,
             render = {
@@ -271,12 +280,29 @@ val appRoutes: List<AppRoute> =
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
                                 context.copyShareLink(CourseDetailRoute.route(courseId))
                             },
+                            onForkCourse = {},
+                            onFollowCourse = {},
                             onEditCourse = {
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
                                 navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
                             },
                             onLogin = { navigationHelper.navigateTo(LoginRoute) },
+                            onSeeAllReviews = {
+                                val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
+                                navigationHelper.navigateByRoute(CourseReviewListRoute.route(courseId))
+                            },
                         ),
+                )
+            },
+        ),
+        AppRoute(
+            path = CourseReviewListRoute.PATH,
+            render = { args ->
+                val navigationHelper = LocalNavigationHelper.current
+                CourseReviewListPage(
+                    viewModel = hiltViewModel<CourseReviewListViewModel>(),
+                    courseId = args[CourseReviewListRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
+                    onBack = { navigationHelper.navigateToBack() },
                 )
             },
         ),

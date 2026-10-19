@@ -2,6 +2,7 @@ package com.chillsam.courmy.course.data.courseDetail.dto
 
 import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
+import com.chillsam.courmy.common.entity.time.toRelativeTimeText
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -31,10 +32,13 @@ data class CourseScreenData(
 @Serializable
 data class CourseViewerDTO(
     val hasSaved: Boolean = false,
+    /** 내가 이 코스에 좋아요를 눌렀는지. 집계(likesCnt)는 상세 응답에 없어 여부만 시딩한다. */
+    val hasLiked: Boolean = false,
 )
 
 @Serializable
 data class CourseScreenDTO(
+    val forkedFromId: Long? = null,
     val title: String? = null,
     val coverImageUrl: String? = null,
     /** 서버가 장소 구성에서 파생한 카테고리 코드. 읽기 전용이라 편집 요청으로 바꿀 수 없다. */
@@ -112,17 +116,25 @@ data class ReviewSummaryDTO(
     val previews: List<ReviewPreviewDTO>? = null,
 )
 
+/**
+ * 상세에 딸린 리뷰 미리보기 1건.
+ *
+ * 후기 전체보기(`CourseReviewItemDTO`)와 같은 모양이다. [createdAt] 은 ISO-8601 UTC 이며,
+ * 서버는 "3분 전" 같은 상대 시각 문구를 주지 않으므로 앱이 변환한다.
+ */
 @Serializable
 data class ReviewPreviewDTO(
+    val id: Long? = null,
     val author: ReviewAuthorDTO? = null,
     val rating: Int? = null,
     val content: String? = null,
-    val relativeTime: String? = null,
+    val createdAt: String? = null,
     val photoUrls: List<String>? = null,
 )
 
 @Serializable
 data class ReviewAuthorDTO(
+    val id: Long? = null,
     val nickname: String? = null,
     val profileImageUrl: String? = null,
 )
@@ -137,6 +149,7 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
     val stats = course.stats
     val summary = reviewSummary
     return CourseDetailVO(
+        forkedFromId = course.forkedFromId?.takeIf { it > 0 },
         title = course.title.orEmpty(),
         coverImageUrl = course.coverImageUrl.orEmpty(),
         // 화면에서 칩 하나씩 그리므로 합치지 않고 목록 그대로 넘긴다.
@@ -168,8 +181,9 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
                 .map { it.toVO() },
         rating = (summary?.averageRating ?: 0.0).toString(),
         reviewCountText = "${summary?.totalCount ?: 0}개",
-        reviews = summary?.previews.orEmpty().map { it.toVO() },
+        reviews = summary?.previews.orEmpty().map { it.toVO(myUserId) },
         isSaved = course.viewer?.hasSaved ?: false,
+        isLiked = course.viewer?.hasLiked ?: false,
         isFollowingAuthor = course.author?.isFollowing ?: false,
         isMine = myUserId != null && myUserId == course.author?.id,
     )
@@ -238,14 +252,17 @@ private fun Int.toWalkText(): String =
 
 private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
 
-private fun ReviewPreviewDTO.toVO(): CourseReviewVO =
+private fun ReviewPreviewDTO.toVO(myUserId: Long?): CourseReviewVO =
     CourseReviewVO(
+        id = id ?: 0L,
+        authorId = author?.id ?: 0L,
         author = author?.nickname ?: "익명",
         authorImageUrl = author?.profileImageUrl.orEmpty(),
         rating = rating ?: 0,
-        dateText = relativeTime.orEmpty(),
+        dateText = createdAt.toRelativeTimeText(),
         body = content.orEmpty(),
         photoUrls = photoUrls.orEmpty(),
+        isMine = myUserId != null && author?.id != null && author.id == myUserId,
     )
 
 private const val SEPARATOR = " · "

@@ -115,6 +115,8 @@ fun CourseTopBar(
     onSaveDraft: () -> Unit,
     modifier: Modifier = Modifier,
     savingDraft: Boolean = false,
+    title: String = "새 코스 만들기",
+    showDraft: Boolean = true,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -137,22 +139,24 @@ fun CourseTopBar(
             )
         }
         DsText(
-            text = "새 코스 만들기",
+            text = title,
             modifier = Modifier.weight(1f),
             style = DesignSystemThemeImpl.typeScale.titleExtraL,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
         )
-        DsText(
-            text = if (savingDraft) "저장 중…" else "임시저장",
-            modifier = Modifier.clickable(enabled = !savingDraft, onClick = onSaveDraft).padding(6.dp),
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color =
-                if (savingDraft) {
-                    DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
-                } else {
-                    DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2
-                },
-        )
+        if (showDraft) {
+            DsText(
+                text = if (savingDraft) "저장 중…" else "임시저장",
+                modifier = Modifier.clickable(enabled = !savingDraft, onClick = onSaveDraft).padding(6.dp),
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color =
+                    if (savingDraft) {
+                        DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
+                    } else {
+                        DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2
+                    },
+            )
+        }
     }
 }
 
