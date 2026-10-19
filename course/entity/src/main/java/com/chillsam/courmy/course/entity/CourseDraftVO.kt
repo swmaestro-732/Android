@@ -13,6 +13,8 @@ import kotlinx.serialization.Serializable
  * - [visibility]    공개 범위
  * - [thumbnailUrl]  코스 대표 사진. 임시저장이 서버에 남게 되면서 초안도 커버를 들고 있어야
  *                   이어서 작성할 때 되살아난다. 저장 전에는 로컬 URI(content://), 서버에서 되읽으면 공개 URL
+ * - [forkedFromId]  이 초안이 남의 코스를 포크해 시작한 것이면 그 원본 코스 id. 생성 요청에 실려
+ *                   서버가 `courses.forked_from_id` 로 출처를 남긴다. 직접 만든 코스는 null
  */
 @Serializable
 data class CourseDraftVO(
@@ -23,6 +25,7 @@ data class CourseDraftVO(
     val places: List<CoursePlaceVO> = emptyList(),
     val visibility: CourseVisibility = CourseVisibility.PUBLIC,
     val thumbnailUrl: String = "",
+    val forkedFromId: Long? = null,
 ) {
     companion object {
         val empty: CourseDraftVO = CourseDraftVO()

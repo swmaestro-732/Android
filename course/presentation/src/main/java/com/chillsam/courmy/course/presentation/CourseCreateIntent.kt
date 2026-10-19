@@ -12,9 +12,18 @@ sealed interface CourseCreateIntent : MviIntent {
     /**
      * 화면 진입. [draftCourseId] 가 있으면 그 임시저장 초안을 서버에서 불러와 이어서 작성하고,
      * 없으면 빈 코스로 시작한다.
+     *
+     * [forkFromCourseId] 가 있으면 그 코스를 포크한다 — 원본의 장소 구성만 채운 새 코스로 시작한다.
+     * 둘 다 오면 포크를 따른다(포크는 새 코스라 이어쓸 초안이 있을 수 없다).
      */
     data class Load(
         val draftCourseId: Long?,
+        val forkFromCourseId: Long? = null,
+        val isPlan: Boolean = false,
+    ) : CourseCreateIntent
+
+    data class ChangePlannedDate(
+        val date: String,
     ) : CourseCreateIntent
 
     data class ChangeName(

@@ -2,6 +2,7 @@ package com.chillsam.courmy.course.presentation
 
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
 import com.chillsam.courmy.course.entity.CourseDraftVO
+import com.chillsam.courmy.course.entity.CourseForkSourceVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseVisibility
 
@@ -9,6 +10,20 @@ import com.chillsam.courmy.course.entity.CourseVisibility
  * reduce() 에 입력되는 내부 이벤트. ViewModel 이 Intent/코루틴 결과를 이 이벤트로 변환한다.
  */
 sealed interface CourseCreateReducerEvent : ReducerEvent {
+    data class PlanLoaded(
+        val places: List<CoursePlaceVO> = emptyList(),
+        val sourceCourseId: Long? = null,
+        val authorName: String = "",
+    ) : CourseCreateReducerEvent
+
+    data class PlannedDateChanged(
+        val date: String,
+    ) : CourseCreateReducerEvent
+
+    data class WalkingLoadingChanged(
+        val loading: Boolean,
+    ) : CourseCreateReducerEvent
+
     data object LoadStarted : CourseCreateReducerEvent
 
     /** 초안 로드 실패. 스피너를 걷고 안내를 띄운다(빈 초안으로 계속 쓸 수 있게 한다). */
@@ -23,6 +38,15 @@ sealed interface CourseCreateReducerEvent : ReducerEvent {
     data class DraftLoaded(
         val draft: CourseDraftVO,
         val courseId: Long?,
+        val forkSource: CourseForkSourceVO? = null,
+    ) : CourseCreateReducerEvent
+
+    /**
+     * 포크할 원본을 불러왔다. 장소 구성만 채운 새 코스로 화면을 연다.
+     * 이어쓰는 초안이 아니므로 [DraftLoaded] 와 달리 초안 id 를 남기지 않는다.
+     */
+    data class ForkSourceLoaded(
+        val source: CourseForkSourceVO,
     ) : CourseCreateReducerEvent
 
     data class NameChanged(

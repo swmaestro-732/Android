@@ -172,6 +172,7 @@ private fun SummaryCard(course: CourseCompleteVO) {
         ) {
             DsText(
                 text = course.category,
+                maxLines = Int.MAX_VALUE,
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -273,16 +274,16 @@ private fun StopRail(
  */
 fun sampleCourseComplete(title: String = "성수 종일 나들이 코스"): CourseCompleteVO =
     CourseCompleteVO(
-        category = "성수 · 하루 코스",
+        category = "카페·디저트 · 문화·전시",
         title = title,
         summaryText = "6 스팟",
         stops =
             listOf(
-                CourseStopVO(1, "어니언 성수", "카페 · 베이커리"),
-                CourseStopVO(2, "대림창고 갤러리", "전시 · 카페"),
-                CourseStopVO(3, "센터커피 로스터리", "카페 · 디저트"),
-                CourseStopVO(4, "서울숲 산책로", "공원 · 산책"),
-                CourseStopVO(5, "글로우 서울", "디저트 · 포토존"),
-                CourseStopVO(6, "소월길 와인바", "와인 · 다이닝"),
+                CourseStopVO(1, "어니언 성수", "카페·디저트"),
+                CourseStopVO(2, "대림창고 갤러리", "문화·전시 · 카페·디저트"),
+                CourseStopVO(3, "센터커피 로스터리", "카페·디저트"),
+                CourseStopVO(4, "서울숲 산책로", "자연·아웃도어"),
+                CourseStopVO(5, "글로우 서울", "카페·디저트"),
+                CourseStopVO(6, "소월길 와인바", "술집·바"),
             ),
     )

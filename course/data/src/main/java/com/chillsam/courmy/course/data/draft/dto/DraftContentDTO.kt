@@ -31,6 +31,7 @@ fun CourseScreenData.toDraftVO(visibility: CourseVisibility?): CourseDraftVO {
                 .map { it.toDraftPlaceVO() },
         visibility = visibility ?: CourseVisibility.PUBLIC,
         thumbnailUrl = course.coverImageUrl.orEmpty(),
+        forkedFromId = course.forkedFromId?.takeIf { it > 0 },
     )
 }
 
