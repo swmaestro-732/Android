@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,16 +74,35 @@ fun RecommendedCoursesPage(
     val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
 
     // 홈 테마 타일로 들어오면 그 카테고리가 선택된 채 시작한다.
-    // 최초 1회만 적용한다 — 이후에는 사용자가 고른 칩이 기준이다.
-    LaunchedEffect(Unit) { initialCategory?.let { feedViewModel.onIntent(HomeFeedIntent.SelectCategory(it)) } }
+    // 최초 1회만 적용한다 — 상세에서 돌아왔을 때 다시 적용하면 사용자가 바꾼 칩이 되돌아간다(SCRUM-631).
+    var initialCategoryApplied by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!initialCategoryApplied) {
+            initialCategoryApplied = true
+            initialCategory?.let { feedViewModel.onIntent(HomeFeedIntent.SelectCategory(it)) }
+        }
+    }
 
-    // 코스를 만들거나 저장한 뒤 돌아오면 목록이 바뀌어 있을 수 있어 다시 불러온다(홈과 동일).
-    RefreshOnResume { feedViewModel.onIntent(HomeFeedIntent.Retry) }
+    // 무한 스크롤 피드라 복귀 시 전체 재로드(Retry)를 하지 않는다 — 쌓아둔 페이지와 스크롤 위치가
+    // 전부 날아가 최상단으로 튄다(SCRUM-631). 최초 1회만 로드하고, 상세에서 바뀔 수 있는
+    // 저장 상태만 복귀마다 동기화한다.
+    LaunchedEffect(Unit) {
+        if (feedState.courses.isEmpty()) feedViewModel.onIntent(HomeFeedIntent.Load)
+    }
+    RefreshOnResume { feedViewModel.onIntent(HomeFeedIntent.SyncSavedIds) }
 
     val listState = rememberLazyListState()
     LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
 
-    LaunchedEffect(feedState.selectedCategory) { listState.scrollToItem(0) }
+    // 칩이 실제로 바뀐 경우에만 상단으로 이동한다. 키 기반 LaunchedEffect 를 그대로 쓰면
+    // 복귀 재컴포지션에서도 실행돼 저장된 스크롤 위치를 지워 버린다(SCRUM-631).
+    var scrolledForCategory by rememberSaveable { mutableStateOf(feedState.selectedCategory) }
+    LaunchedEffect(feedState.selectedCategory) {
+        if (scrolledForCategory != feedState.selectedCategory) {
+            scrolledForCategory = feedState.selectedCategory
+            listState.scrollToItem(0)
+        }
+    }
 
     // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
     LaunchedEffect(feedState.actionErrorMessage) {

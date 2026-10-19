@@ -16,6 +16,12 @@ sealed interface HomeFeedIntent : MviIntent {
         val courseId: String,
     ) : HomeFeedIntent
 
+    /**
+     * 복귀 시 저장 상태만 동기화한다. 전체 재로드([Retry])는 무한 스크롤로 쌓은 페이지와
+     * 스크롤 위치를 날리므로(SCRUM-631), 상세에서 바뀔 수 있는 저장 여부만 새로 받는다.
+     */
+    data object SyncSavedIds : HomeFeedIntent
+
     data class SelectCategory(
         val category: String?,
     ) : HomeFeedIntent
