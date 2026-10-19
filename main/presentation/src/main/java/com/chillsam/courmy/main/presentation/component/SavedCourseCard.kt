@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,7 +43,7 @@ fun SavedCourseCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .cardShadow(RoundedCornerShape(16.dp))
+                .cardShadow(RoundedCornerShape(18.dp))
                 .clickable(onClick = onClick),
     ) {
         Box(
@@ -63,20 +62,24 @@ fun SavedCourseCard(
                 )
             }
             // 상단 좌측: 지역·카테고리 태그 칩(흰 배경).
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .padding(12.dp)
-                        .clip(RoundedCornerShape(9999.dp))
-                        .background(color.bgDefaultLevel1)
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-            ) {
-                DsText(
-                    text = course.tagLabel,
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel1,
-                )
+            if (course.tagLabel.isNotBlank()) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(start = 12.dp, top = 12.dp, end = 64.dp)
+                            .clip(RoundedCornerShape(9999.dp))
+                            .background(if (course.isMine) color.bgAccent else color.bgDefaultLevel1)
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                ) {
+                    DsText(
+                        text = course.tagLabel,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = if (course.isMine) color.contentOnAccent else color.contentDefaultLevel1,
+                    )
+                }
             }
             // 상단 우측: 저장(북마크) 배지.
             Box(
@@ -84,30 +87,43 @@ fun SavedCourseCard(
                     Modifier
                         .align(Alignment.TopEnd)
                         .padding(12.dp)
-                        .size(32.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(color.bgDefaultLevel1)
+                        .background(color.contentDefaultLevel0.copy(alpha = 0.42f))
                         .clickable(onClick = onBookmarkClick),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_bookmark_filled_24),
                     contentDescription = "저장 취소",
-                    tint = color.contentDefaultLevel0,
-                    modifier = Modifier.size(16.dp),
+                    tint = color.contentOnAccent,
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
             DsText(
                 text = course.title,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             DsText(
-                text = "${course.placeLabel} · @${course.authorHandle}",
+                text =
+                    listOf(
+                        if (course.isMine) "내가 만든 코스" else "",
+                        course.placeLabel,
+                        course.durationText,
+                        if (course.completedAt.isNotBlank()) {
+                            "${course.completedAt} 완주"
+                        } else {
+                            course.authorHandle
+                                .takeIf { it.isNotBlank() }
+                                ?.let { "@${it.removePrefix("@")}" }
+                                .orEmpty()
+                        },
+                    ).filter { it.isNotBlank() }.joinToString(" · "),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
                 modifier = Modifier.padding(top = 6.dp),

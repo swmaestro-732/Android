@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,30 +54,43 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
+import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
+import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.SavedCourseCard
+import com.chillsam.courmy.main.presentation.component.SavedPlaceCard
+
+/** 저장함의 콘텐츠 탭 인덱스. 화면 이탈 후 복귀에도 유지되도록 rememberSaveable 로 든다. */
+internal const val SAVED_TAB_COURSES = 0
+internal const val SAVED_TAB_PLACES = 1
 
 /**
  * 저장(북마크) 화면(FS-14). 세션 로그인 여부에 따라
- * 저장한 코스 리스트([SavedCourseList]) / 게스트 잠금([GuestSaved]) 을 분기한다.
+ * 저장한 코스/장소 리스트([SavedCourseList]·[SavedPlaceList]) / 게스트 잠금([GuestSaved]) 을 분기한다.
  */
 @Composable
 fun SavedPage(modifier: Modifier = Modifier) {
     val session = LocalSessionUiState.current
     if (session.isLoggedIn) {
-        SavedCourseList(modifier = modifier)
+        var selectedTab by rememberSaveable { mutableStateOf(SAVED_TAB_PLACES) }
+        if (selectedTab == SAVED_TAB_COURSES) {
+            SavedCourseList(modifier = modifier, onSelectTab = { selectedTab = it })
+        } else {
+            SavedPlaceList(modifier = modifier, onSelectTab = { selectedTab = it })
+        }
     } else {
         GuestSaved(modifier = modifier)
     }
 }
 
-/** 로그인 상태: 저장한 코스 카드 리스트(`GET /service/v1/my/saved-courses`). */
+/** 로그인 상태 · 코스 탭: 저장한 코스 카드 리스트(`GET /service/v1/my/saved-courses`). */
 @Composable
 private fun SavedCourseList(
+    onSelectTab: (Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SavedCoursesViewModel = hiltViewModel(),
 ) {
@@ -109,12 +124,8 @@ private fun SavedCourseList(
                     .statusBarsPadding()
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
-            DsText(
-                text = "저장한 코스",
-                style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                color = color.contentDefaultLevel0,
-                modifier = Modifier.padding(top = 12.dp, bottom = 16.dp),
-            )
+            SavedHeader(selectedTab = SAVED_TAB_COURSES, onSelectTab = onSelectTab)
+            SavedCourseFilters(state = uiState, onIntent = viewModel::onIntent)
             when {
                 uiState.courses.isNotEmpty() -> {
                     uiState.courses.forEach { course ->
@@ -136,7 +147,7 @@ private fun SavedCourseList(
 
                 else -> {
                     SavedListMessage(
-                        message = uiState.loadErrorMessage ?: "아직 저장한 코스가 없어요.",
+                        message = uiState.loadErrorMessage ?: "조건에 맞는 저장 코스가 없어요.",
                         onRetry =
                             uiState.loadErrorMessage?.let {
                                 { viewModel.onIntent(SavedCoursesIntent.Retry) }
@@ -151,6 +162,7 @@ private fun SavedCourseList(
             onTabSelected = { tab ->
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
+                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
                     MainTab.MY -> navigationHelper.navigateTo(MyPage)
                     else -> Unit
                 }
@@ -169,6 +181,119 @@ private fun SavedCourseList(
             },
             onDismiss = { pendingRemoval = null },
         )
+    }
+}
+
+/**
+ * 로그인 상태 · 장소 탭: 저장한 장소 카드 리스트(`GET /service/v1/my/saved-places`).
+ * 구조는 [SavedCourseList] 와 같다.
+ *
+ * 방문 여부와 카테고리 필터는 불러온 장소 목록에 적용한다.
+ */
+@Composable
+private fun SavedPlaceList(
+    onSelectTab: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: SavedPlacesViewModel = hiltViewModel(),
+) {
+    val navigationHelper = LocalNavigationHelper.current
+    val color = DesignSystemThemeImpl.designSystemColor
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var pendingRemoval by remember { mutableStateOf<SavedPlaceVO?>(null) }
+
+    // 다른 화면(장소 시트)에서 저장한 장소가 반영되도록 다시 보일 때마다 새로 불러온다.
+    RefreshOnResume { viewModel.onIntent(SavedPlacesIntent.Retry) }
+
+    // 저장 취소 실패는 화면을 바꾸지 않고 토스트로만 알린다.
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.onIntent(SavedPlacesIntent.ConsumeError)
+        }
+    }
+
+    val scrollState = rememberScrollState()
+    LoadMoreOnScrollEnd(scrollState) { viewModel.onIntent(SavedPlacesIntent.LoadMore) }
+
+    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
+        Column(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .statusBarsPadding()
+                    .padding(horizontal = ScreenHorizontalPadding),
+        ) {
+            SavedHeader(selectedTab = SAVED_TAB_PLACES, onSelectTab = onSelectTab)
+            SavedPlaceFilters(state = uiState, onIntent = viewModel::onIntent)
+            when {
+                uiState.visiblePlaces.isNotEmpty() -> {
+                    uiState.visiblePlaces.forEach { place ->
+                        SavedPlaceCard(
+                            place = place,
+                            onBookmarkClick = { pendingRemoval = place },
+                            modifier = Modifier.padding(bottom = 12.dp),
+                        )
+                    }
+                }
+
+                uiState.isLoading -> {
+                    SavedListLoading()
+                }
+
+                else -> {
+                    SavedListMessage(
+                        message = uiState.loadErrorMessage ?: "조건에 맞는 저장 장소가 없어요.",
+                        onRetry =
+                            uiState.loadErrorMessage?.let {
+                                { viewModel.onIntent(SavedPlacesIntent.Retry) }
+                            },
+                    )
+                }
+            }
+            SavedPlacesFooter(state = uiState, onLoadMore = { viewModel.onIntent(SavedPlacesIntent.LoadMore) })
+        }
+
+        CourmyBottomBar(
+            selectedTab = MainTab.SAVED,
+            onTabSelected = { tab ->
+                when (tab) {
+                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
+                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
+                    MainTab.MY -> navigationHelper.navigateTo(MyPage)
+                    else -> Unit
+                }
+            },
+        )
+    }
+
+    pendingRemoval?.let { place ->
+        DsConfirmDialog(
+            title = "저장을 취소할까요?",
+            description = "저장을 취소하면 이 장소가 저장함에서 사라져요.",
+            destructive = true,
+            onConfirm = {
+                viewModel.onIntent(SavedPlacesIntent.Unsave(place.placeId))
+                pendingRemoval = null
+            },
+            onDismiss = { pendingRemoval = null },
+        )
+    }
+}
+
+@Composable
+private fun SavedPlacesFooter(
+    state: SavedPlacesUIState,
+    onLoadMore: () -> Unit,
+) {
+    if (state.isLoadingMore) {
+        LoadingMoreFooter()
+    } else if (state.hasNext && !state.isLoading) {
+        androidx.compose.material3.TextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth()) {
+            DsText(text = "장소 더 불러오기", style = DesignSystemThemeImpl.typeScale.textRegularS)
+        }
     }
 }
 
@@ -227,7 +352,7 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
             DsText(
-                text = "저장",
+                text = "저장함",
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = color.contentDefaultLevel0,
                 modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
@@ -282,6 +407,7 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
             onTabSelected = { tab ->
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
+                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
                     MainTab.MY -> navigationHelper.navigateTo(GuestMyPage)
                     else -> Unit
                 }

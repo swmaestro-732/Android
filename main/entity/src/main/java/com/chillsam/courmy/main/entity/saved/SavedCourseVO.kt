@@ -14,4 +14,7 @@ data class SavedCourseVO(
     val placeLabel: String,
     val authorHandle: String,
     val thumbnailUrl: String = "",
+    val durationText: String = "",
+    val isMine: Boolean = false,
+    val completedAt: String = "",
 )

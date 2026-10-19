@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.saved
 
 import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.main.entity.saved.SavedCourseFolderVO
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -12,6 +13,15 @@ import kotlinx.collections.immutable.persistentListOf
  */
 data class SavedCoursesUIState(
     val isLoading: Boolean = true,
+    val selectedFolderId: Long? = null,
+    val completed: Boolean = false,
+    val totalCount: Int = 0,
+    val uncompletedCount: Int = 0,
+    val completedCount: Int = 0,
+    val folders: ImmutableList<SavedCourseFolderVO> = persistentListOf(),
+    val showCreateFolder: Boolean = false,
+    val isCreatingFolder: Boolean = false,
+    val folderError: String? = null,
     val courses: ImmutableList<SavedCourseVO> = persistentListOf(),
     val loadErrorMessage: String? = null,
     val errorMessage: String? = null,
