@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -409,12 +410,18 @@ fun ProfileLoading(modifier: Modifier = Modifier) {
     }
 }
 
-/** 프로필 로드 실패 시 안내 + 재시도. */
+/**
+ * 프로필 로드 실패 시 안내 + 재시도.
+ *
+ * @param onGoHome 딥링크처럼 뒤로 갈 곳이 없는 진입에서 막다른 화면이 되지 않도록 홈 이동을
+ *   제공할 때만 넘긴다. 하단 탭이 있는 화면(마이)은 null 로 둔다.
+ */
 @Composable
 fun ProfileError(
     message: String?,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    onGoHome: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(
@@ -430,5 +437,9 @@ fun ProfileError(
         )
         Spacer(Modifier.height(16.dp))
         DsButton(text = "다시 시도", onClick = onRetry)
+        if (onGoHome != null) {
+            Spacer(Modifier.height(8.dp))
+            DsButton(text = "홈으로 돌아가기", variant = DsButtonVariant.Secondary, onClick = onGoHome)
+        }
     }
 }

@@ -111,6 +111,9 @@ fun UserProfilePage(
                 message = uiState.errorMessage,
                 onRetry = { viewModel.onIntent(UserProfileIntent.Retry) },
                 modifier = modifier,
+                // 공유 링크·딥링크로 바로 들어오면 뒤로 갈 화면이 없어 "다시 시도"만으로는 막다른
+                // 화면이 된다. 현재 화면을 홈으로 바꿔 끼워 탈출구를 만든다.
+                onGoHome = { navigationHelper.navigateReplace(HomePage) },
             )
         }
     }
