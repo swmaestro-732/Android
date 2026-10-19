@@ -76,6 +76,8 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     // 프로필 이미지: 시스템 Photo Picker 로 고른 이미지 렌더(Coil).
     implementation(libs.coil.compose)
+    // 지도 탭(FS-10): 네이버 지도 렌더·마커 오버레이.
+    implementation(libs.naver.map.compose)
     // 상세화면 Fragment 호스팅(FragmentActivity, FragmentContainerView).
     implementation(libs.androidx.fragment.ktx)
     api(libs.androidx.navigation3.runtime)

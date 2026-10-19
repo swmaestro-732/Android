@@ -174,7 +174,7 @@ fun HomePage(modifier: Modifier = Modifier) {
 
 /** 피드 로딩 자리. 헤더 아래 카드 영역만 차지한다. */
 @Composable
-private fun FeedLoading() {
+internal fun FeedLoading() {
     Box(
         modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
         contentAlignment = Alignment.Center,
@@ -185,7 +185,7 @@ private fun FeedLoading() {
 
 /** 피드가 비었거나 실패했을 때의 안내. [onRetry] 가 있으면 재시도를 노출한다. */
 @Composable
-private fun FeedMessage(
+internal fun FeedMessage(
     message: String,
     onRetry: (() -> Unit)?,
 ) {
