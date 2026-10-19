@@ -13,6 +13,11 @@ sealed interface MapReducerEvent : ReducerEvent {
         val bounds: MapBounds,
     ) : MapReducerEvent
 
+    data class MyLocationChanged(
+        val lat: Double,
+        val lng: Double,
+    ) : MapReducerEvent
+
     data object LoadStarted : MapReducerEvent
 
     data class Loaded(

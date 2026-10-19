@@ -72,7 +72,7 @@ fun MapSearchResultScreen(
             places = uiState.places,
             clusters = emptyList(),
             selectedPlaceId = uiState.selectedPlaceId,
-            myLocation = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
+            initialPosition = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
             onPlaceClick = actions.onPlaceSelect,
             onMapClick = { actions.onPlaceSelect(null) },
             contentPadding = PaddingValues(bottom = if (isList) listSheetHeight else MarkerSheetInset),

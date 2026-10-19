@@ -19,7 +19,11 @@ import com.chillsam.courmy.main.presentation.component.placeCategoryIcon
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
+import com.naver.maps.map.LocationSource
+import com.naver.maps.map.compose.CameraUpdateReason
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.LocationTrackingMode
+import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
@@ -46,17 +50,21 @@ internal fun MapCanvas(
     places: List<MapPlaceVO>,
     clusters: List<MapClusterVO>,
     selectedPlaceId: Long?,
-    myLocation: LatLng,
+    initialPosition: LatLng,
     onPlaceClick: (Long) -> Unit,
     onMapClick: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
     recenterSignal: Int = 0,
     onBoundsChanged: ((MapBounds) -> Unit)? = null,
+    locationSource: LocationSource? = null,
+    locationTrackingMode: LocationTrackingMode = LocationTrackingMode.None,
+    onLocationChange: ((android.location.Location) -> Unit)? = null,
+    onCameraGesture: (() -> Unit)? = null,
 ) {
     val cameraPositionState =
         rememberCameraPositionState {
-            position = CameraPosition(myLocation, EXPLORE_ZOOM)
+            position = CameraPosition(initialPosition, EXPLORE_ZOOM)
         }
     val selectedPosition = places.firstOrNull { it.id == selectedPlaceId }?.latLngOrNull()
     LaunchedEffect(selectedPlaceId, selectedPosition) {
@@ -68,7 +76,7 @@ internal fun MapCanvas(
     // 누른 횟수를 키로 삼아 "같은 곳으로 다시" 를 표현한다. 0 은 첫 구성이라 건너뛴다.
     LaunchedEffect(recenterSignal) {
         if (recenterSignal > 0) {
-            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(myLocation, EXPLORE_ZOOM))
+            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(initialPosition, EXPLORE_ZOOM))
         }
     }
 
@@ -84,7 +92,12 @@ internal fun MapCanvas(
         )
     }
     LaunchedEffect(cameraPositionState.isMoving) {
-        if (!cameraPositionState.isMoving) reportBounds()
+        if (cameraPositionState.isMoving) {
+            // 사용자가 지도를 끌면 추적(Follow)을 해제할 수 있도록 상위에 알린다(SCRUM-634).
+            if (cameraPositionState.cameraUpdateReason == CameraUpdateReason.GESTURE) onCameraGesture?.invoke()
+        } else {
+            reportBounds()
+        }
     }
 
     NaverMap(
@@ -92,6 +105,10 @@ internal fun MapCanvas(
         cameraPositionState = cameraPositionState,
         onMapLoaded = { reportBounds() },
         contentPadding = contentPadding,
+        // 현위치 추적(SCRUM-634). 권한 요청은 FusedLocationSource 가 활성화 시점에 처리한다.
+        locationSource = locationSource,
+        properties = MapProperties(locationTrackingMode = locationTrackingMode),
+        onLocationChange = { location -> onLocationChange?.invoke(location) },
         uiSettings =
             MapUiSettings(
                 // 주변을 둘러보는 화면이라 이동·확대는 열고, 길 파악에 도움 안 되는 기울이기·회전은 막는다.
@@ -111,7 +128,6 @@ internal fun MapCanvas(
             places = places,
             clusters = clusters,
             selectedPlaceId = selectedPlaceId,
-            myLocation = myLocation,
             onPlaceClick = onPlaceClick,
         )
     }
@@ -124,27 +140,11 @@ private fun MapOverlays(
     places: List<MapPlaceVO>,
     clusters: List<MapClusterVO>,
     selectedPlaceId: Long?,
-    myLocation: LatLng,
     onPlaceClick: (Long) -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val density = LocalDensity.current.density
     val context = LocalContext.current
-
-    val myLocationDot =
-        remember(density) {
-            myLocationIcon(
-                density = density,
-                dotArgb = color.contentLocation.toArgb(),
-                ringArgb = color.bgDefaultLevel1.toArgb(),
-            )
-        }
-    Marker(
-        state = rememberUpdatedMarkerState(position = myLocation),
-        icon = myLocationDot,
-        anchor = Offset(0.5f, 0.5f),
-        zIndex = MY_LOCATION_Z,
-    )
 
     clusters.forEach { cluster ->
         val icon =
@@ -205,7 +205,6 @@ private fun MapOverlays(
 }
 
 private const val PIN_Z = 0
-private const val MY_LOCATION_Z = 1
 private const val CLUSTER_Z = 2
 private const val SELECTED_PIN_Z = 3
 
