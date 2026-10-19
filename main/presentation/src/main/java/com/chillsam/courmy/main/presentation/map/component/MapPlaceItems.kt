@@ -56,8 +56,8 @@ internal fun MapPlaceCarouselCard(
             modifier
                 .width(CarouselCardWidth)
                 .clip(CardShape)
-                // 지도에서 고른 핀과 같은 장소임을 알리는 하이라이트(검색 결과 선택 카드와 같은 조합).
-                .background(if (selected) color.bgAccentSubtle else color.bgDefaultLevel1)
+                .background(color.bgDefaultLevel1)
+                // 지도에서 고른 핀과 같은 장소임을 알리는 하이라이트. 배경은 그대로 두고 테두리만 쓴다.
                 .then(
                     if (selected) Modifier.border(1.dp, color.contentAccent, CardShape) else Modifier,
                 ).clickable(onClick = onClick),
