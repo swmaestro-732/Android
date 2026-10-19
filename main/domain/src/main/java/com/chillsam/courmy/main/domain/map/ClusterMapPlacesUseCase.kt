@@ -25,52 +25,70 @@ class ClusterMapPlacesUseCase
             bounds: MapBounds?,
             selectedPlaceId: Long? = null,
         ): MapClusterResult {
-            val lngRadius = bounds?.let { (it.neLng - it.swLng) / LNG_DIVISOR } ?: 0.0
-            val latRadius = bounds?.let { (it.neLat - it.swLat) / LAT_DIVISOR } ?: 0.0
-            if (bounds == null || lngRadius <= 0.0 || latRadius <= 0.0) {
-                return MapClusterResult(singles = places, clusters = emptyList())
-            }
+            val radius = bounds?.overlapRadius() ?: return MapClusterResult(places, emptyList())
+            val (pinned, unpinned) = places.partition { it.latitude != null && it.longitude != null }
 
-            val singles = mutableListOf<MapPlaceVO>()
-            val pinned = places.filter { it.latitude != null && it.longitude != null }
-            singles += places.filterNot { it.latitude != null && it.longitude != null }
-
-            fun overlaps(
-                a: MapPlaceVO,
-                b: MapPlaceVO,
-            ): Boolean =
-                abs(requireNotNull(a.latitude) - requireNotNull(b.latitude)) <= latRadius &&
-                    abs(requireNotNull(a.longitude) - requireNotNull(b.longitude)) <= lngRadius
-
+            val singles = unpinned.toMutableList()
             val clusters = mutableListOf<MapClusterVO>()
             val visited = HashSet<Long>()
             pinned.forEach { seed ->
                 if (seed.id in visited) return@forEach
-                // BFS 로 겹침이 이어지는 핀을 전부 모은다.
-                val component = mutableListOf(seed)
-                visited += seed.id
-                var index = 0
-                while (index < component.size) {
-                    val current = component[index++]
-                    pinned.forEach { other ->
-                        if (other.id !in visited && overlaps(current, other)) {
-                            visited += other.id
-                            component += other
-                        }
-                    }
-                }
+                val component = collectOverlapping(seed, pinned, visited, radius)
                 if (component.size < MIN_CLUSTER_SIZE || component.any { it.id == selectedPlaceId }) {
                     singles += component
                 } else {
-                    clusters +=
-                        MapClusterVO(
-                            latitude = component.mapNotNull { it.latitude }.average(),
-                            longitude = component.mapNotNull { it.longitude }.average(),
-                            count = component.size,
-                        )
+                    clusters += component.toCluster()
                 }
             }
             return MapClusterResult(singles = singles, clusters = clusters)
+        }
+
+        /** [seed] 에서 시작해 겹침이 이어지는 핀을 BFS 로 전부 모은다. 모은 핀은 [visited] 에 기록된다. */
+        private fun collectOverlapping(
+            seed: MapPlaceVO,
+            pinned: List<MapPlaceVO>,
+            visited: MutableSet<Long>,
+            radius: OverlapRadius,
+        ): List<MapPlaceVO> {
+            val component = mutableListOf(seed)
+            visited += seed.id
+            var index = 0
+            while (index < component.size) {
+                val current = component[index++]
+                pinned.forEach { other ->
+                    if (other.id !in visited && radius.overlaps(current, other)) {
+                        visited += other.id
+                        component += other
+                    }
+                }
+            }
+            return component
+        }
+
+        private fun List<MapPlaceVO>.toCluster(): MapClusterVO =
+            MapClusterVO(
+                latitude = mapNotNull { it.latitude }.average(),
+                longitude = mapNotNull { it.longitude }.average(),
+                count = size,
+            )
+
+        /** 겹침 판정 반경. 위경도 단위라 뷰포트가 바뀔 때마다 새로 만든다. */
+        private data class OverlapRadius(
+            val lat: Double,
+            val lng: Double,
+        ) {
+            fun overlaps(
+                a: MapPlaceVO,
+                b: MapPlaceVO,
+            ): Boolean =
+                abs(requireNotNull(a.latitude) - requireNotNull(b.latitude)) <= lat &&
+                    abs(requireNotNull(a.longitude) - requireNotNull(b.longitude)) <= lng
+        }
+
+        private fun MapBounds.overlapRadius(): OverlapRadius? {
+            val lng = (neLng - swLng) / LNG_DIVISOR
+            val lat = (neLat - swLat) / LAT_DIVISOR
+            return if (lat > 0.0 && lng > 0.0) OverlapRadius(lat = lat, lng = lng) else null
         }
 
         private companion object {
