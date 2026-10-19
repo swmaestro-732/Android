@@ -20,7 +20,12 @@ data class MapUIState(
     val isLoading: Boolean = true,
     val bounds: MapBounds? = null,
     val places: ImmutableList<MapPlaceVO> = persistentListOf(),
+    /** 지도에 단독 핀으로 찍는 장소(클러스터로 묶인 것 제외). 캐러셀은 [places] 전체를 쓴다. */
+    val markerPlaces: ImmutableList<MapPlaceVO> = persistentListOf(),
+    /** 지도에 그릴 숫자 묶음 = 서버 클러스터 + 뷰포트 클러스터링 결과. */
     val clusters: ImmutableList<MapClusterVO> = persistentListOf(),
+    /** 서버가 내려준 클러스터 원본. 선택이 바뀔 때 재계산 입력으로 쓴다. */
+    val serverClusters: ImmutableList<MapClusterVO> = persistentListOf(),
     val totalCount: Int = 0,
     val category: MapCategory = MapCategory.ALL,
     val sortOrder: MapSortOrder = MapSortOrder.SAVED,

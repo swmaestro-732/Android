@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
@@ -30,12 +31,16 @@ import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.NaverMapComposable
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberUpdatedMarkerState
+import kotlinx.coroutines.launch
 
 /** 지도 탐색 화면의 기본 확대 수준. 성수동 같은 동네 하나가 화면에 들어오는 정도. */
 private const val EXPLORE_ZOOM = 15.0
 
 /** 핀을 하나 골랐을 때 당겨 주는 확대 수준. */
 private const val FOCUS_ZOOM = 16.0
+
+/** 클러스터를 탭했을 때 더 당기는 확대 폭. 한 단계로는 묶음이 안 풀리는 경우가 많다. */
+private const val CLUSTER_ZOOM_STEP = 2.0
 
 /**
  * 장소 탐색용 지도(FS-10 계열 공용).
@@ -72,6 +77,7 @@ internal fun MapCanvas(
             cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(selectedPosition, FOCUS_ZOOM))
         }
     }
+    val scope = rememberCoroutineScope()
     // 내 위치 버튼은 누를 때마다 반응해야 하는데, 좌표는 그대로라 값으로는 재실행을 못 건다.
     // 누른 횟수를 키로 삼아 "같은 곳으로 다시" 를 표현한다. 0 은 첫 구성이라 건너뛴다.
     LaunchedEffect(recenterSignal) {
@@ -129,6 +135,13 @@ internal fun MapCanvas(
             clusters = clusters,
             selectedPlaceId = selectedPlaceId,
             onPlaceClick = onPlaceClick,
+            onClusterClick = { position ->
+                scope.launch {
+                    cameraPositionState.animate(
+                        CameraUpdate.scrollAndZoomTo(position, cameraPositionState.position.zoom + CLUSTER_ZOOM_STEP),
+                    )
+                }
+            },
         )
     }
 }
@@ -141,6 +154,7 @@ private fun MapOverlays(
     clusters: List<MapClusterVO>,
     selectedPlaceId: Long?,
     onPlaceClick: (Long) -> Unit,
+    onClusterClick: (LatLng) -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val density = LocalDensity.current.density
@@ -156,11 +170,17 @@ private fun MapOverlays(
                     textArgb = color.contentOnAccent.toArgb(),
                 )
             }
+        val position = LatLng(cluster.latitude, cluster.longitude)
         Marker(
-            state = rememberUpdatedMarkerState(position = LatLng(cluster.latitude, cluster.longitude)),
+            state = rememberUpdatedMarkerState(position = position),
             icon = icon,
             anchor = Offset(0.5f, 0.5f),
             zIndex = CLUSTER_Z,
+            onClick = {
+                // 묶음을 누르면 확대해서 푼다 — 격자가 좁아지며 개별 핀으로 갈라진다(SCRUM-633).
+                onClusterClick(position)
+                true
+            },
         )
     }
 

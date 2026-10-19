@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.map
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.main.domain.map.ClusterMapPlacesUseCase
 import com.chillsam.courmy.main.domain.map.GetMapPlacesUseCase
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapSortOrder
@@ -29,6 +30,7 @@ class MapViewModel
     @Inject
     constructor(
         private val getMapPlacesUseCase: GetMapPlacesUseCase,
+        private val clusterMapPlacesUseCase: ClusterMapPlacesUseCase,
     ) : MviViewModel<MapIntent, MapUIState, MapReducerEvent>(MapUIState.empty) {
         private var loadJob: Job? = null
 
@@ -167,14 +169,15 @@ class MapViewModel
                 }
 
                 is MapReducerEvent.Loaded -> {
-                    state.copy(
-                        isLoading = false,
-                        places = event.places.toImmutableList(),
-                        clusters = event.clusters.toImmutableList(),
-                        totalCount = event.totalCount,
-                        // 걸러낸 결과에 없는 장소가 선택된 채로 남으면 말풍선만 떠 있고 핀은 사라진다.
-                        selectedPlaceId = state.selectedPlaceId?.takeIf { id -> event.places.any { it.id == id } },
-                    )
+                    state
+                        .copy(
+                            isLoading = false,
+                            places = event.places.toImmutableList(),
+                            serverClusters = event.clusters.toImmutableList(),
+                            totalCount = event.totalCount,
+                            // 걸러낸 결과에 없는 장소가 선택된 채로 남으면 말풍선만 떠 있고 핀은 사라진다.
+                            selectedPlaceId = state.selectedPlaceId?.takeIf { id -> event.places.any { it.id == id } },
+                        ).withClusters()
                 }
 
                 is MapReducerEvent.Failed -> {
@@ -190,7 +193,8 @@ class MapViewModel
                 }
 
                 is MapReducerEvent.PlaceSelected -> {
-                    state.copy(selectedPlaceId = event.placeId)
+                    // 선택된 핀은 묶음에서 풀어 말풍선을 보여야 하므로 다시 계산한다.
+                    state.copy(selectedPlaceId = event.placeId).withClusters()
                 }
 
                 is MapReducerEvent.MyLocationChanged -> {
@@ -211,6 +215,15 @@ class MapViewModel
                     state.copy(errorMessage = null)
                 }
             }
+
+        /** 뷰포트 기준으로 겹친 핀을 숫자 묶음으로 바꾼 표시용 상태를 만든다(SCRUM-633). */
+        private fun MapUIState.withClusters(): MapUIState {
+            val result = clusterMapPlacesUseCase(places, bounds, selectedPlaceId)
+            return copy(
+                markerPlaces = result.singles.toImmutableList(),
+                clusters = (serverClusters + result.clusters).toImmutableList(),
+            )
+        }
 
         private companion object {
             const val TAG = "MapViewModel"
