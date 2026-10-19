@@ -17,5 +17,8 @@ fun List<String>?.toPlaceCategoryLabel(separator: String = " · "): String =
         .filter { it.isNotBlank() }
         .joinToString(separator)
 
-/** 코스 테마 코드를 [PlaceCategoryVO]의 한글 라벨로 바꾼다. */
-fun String?.toCourseTagLabel(): String = PlaceCategoryVO.labelOf(this)
+/**
+ * 코스 태그 코드(`date` …)·서버 `theme` enum 이름(`DATE` …) → 한글 라벨.
+ * 모르는 값은 빈 문자열이다 — 목록 카드는 빈 칩을 렌더하지 않는 계약이라 원문 fallback 은 호출부가 정한다.
+ */
+fun String?.toCourseTagLabel(): String = CourseTagVO.labelOf(this)

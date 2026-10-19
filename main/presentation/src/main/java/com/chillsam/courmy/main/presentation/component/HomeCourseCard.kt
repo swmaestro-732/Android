@@ -182,7 +182,7 @@ private fun HomeCourseCardPreview() {
                 HomeCourseVO(
                     id = "preview",
                     title = "비 오는 날 성수 감성 카페 코스",
-                    categoryLabel = "여가·놀거리",
+                    categoryLabel = "데이트",
                     saveCountText = "342",
                     likeCountText = "128",
                 ),

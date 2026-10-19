@@ -10,37 +10,44 @@ import org.junit.Test
  */
 class CourseDetailDtoMappingTest {
     @Test
-    fun `코스 상세 테마는 장소 카테고리 10종과 같은 라벨을 사용한다`() {
-        val codes =
+    fun `코스 상세 테마는 코스 태그 12종 라벨을 사용한다`() {
+        // 서버 `themes` 는 CourseCategory enum 이름(대문자)이다. 소문자 코드도 같은 라벨로 읽는다.
+        val names =
             listOf(
-                "cafe",
-                "restaurant",
-                "bar",
-                "shopping",
-                "culture",
-                "experience",
-                "nature",
-                "landmark",
-                "entertainment",
-                "wellness",
+                "DATE",
+                "HEALING",
+                "FOOD",
+                "CAFETOUR",
+                "CULTURE",
+                "NATURE",
+                "NIGHTVIEW",
+                "SHOPPING",
+                "TRADITION",
+                "ACTIVITY",
+                "FAMILY",
+                "SOLO",
             )
         val labels =
             listOf(
-                "카페·디저트",
-                "음식점",
-                "술집·바",
-                "쇼핑·상점",
-                "문화·전시",
-                "체험·클래스",
+                "데이트",
+                "힐링·산책",
+                "맛집·먹방",
+                "카페 투어",
+                "문화·예술",
                 "자연·아웃도어",
-                "역사·명소",
-                "여가·놀거리",
-                "웰니스·힐링",
+                "야경·감성",
+                "쇼핑",
+                "역사·전통",
+                "액티비티",
+                "가족 나들이",
+                "혼놀",
             )
-        val vo = fullData().copy(course = fullData().course!!.copy(themes = codes)).toVO(myUserId = null)
+        val vo = fullData().copy(course = fullData().course!!.copy(themes = names)).toVO(myUserId = null)
 
-        assertEquals(codes, vo.themes)
+        assertEquals(names, vo.themes)
         assertEquals(labels, vo.themeLabels)
+        val lower = fullData().copy(course = fullData().course!!.copy(themes = names.map { it.lowercase() }))
+        assertEquals(labels, lower.toVO(myUserId = null).themeLabels)
     }
 
     @Test
@@ -277,7 +284,7 @@ class CourseDetailDtoMappingTest {
 
         assertEquals(listOf("CULTURE", "성수"), vo.themes)
         // 마스터 코드는 한글 라벨로, 코드로 알아보지 못한 값은 그대로 남긴다.
-        assertEquals(listOf("문화·전시", "성수"), vo.themeLabels)
+        assertEquals(listOf("문화·예술", "성수"), vo.themeLabels)
     }
 
     /**

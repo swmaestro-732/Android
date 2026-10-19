@@ -21,7 +21,7 @@ class CourseFeedDtoMappingTest {
                             id = 7L,
                             title = "비 오는 날 성수 감성 카페 코스",
                             coverImageUrl = "https://cdn.example.com/1.jpg",
-                            theme = "cafe",
+                            theme = "CAFETOUR",
                             savesCnt = 342,
                         ),
                     ),
@@ -31,7 +31,7 @@ class CourseFeedDtoMappingTest {
         assertEquals("7", vo.id)
         assertEquals("비 오는 날 성수 감성 카페 코스", vo.title)
         assertEquals("https://cdn.example.com/1.jpg", vo.coverImageUrl)
-        assertEquals("카페·디저트", vo.categoryLabel)
+        assertEquals("카페 투어", vo.categoryLabel)
         assertEquals("342", vo.saveCountText)
     }
 

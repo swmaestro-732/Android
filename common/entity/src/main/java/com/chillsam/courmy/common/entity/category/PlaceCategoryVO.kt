@@ -1,6 +1,6 @@
 package com.chillsam.courmy.common.entity.category
 
-/** 장소·코스 테마·관심 테마(좋아하는 곳)가 공유하는 10종. 정본은 `.ai/taxonomy.md`. */
+/** 장소 카테고리 10종. 코스 쪽은 별개 체계인 [CourseTagVO] 12종을 쓴다. 정본은 `.ai/taxonomy.md`. */
 enum class PlaceCategoryVO(
     val code: String,
     val label: String,

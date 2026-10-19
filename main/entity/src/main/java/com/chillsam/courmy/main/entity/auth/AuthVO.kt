@@ -21,8 +21,8 @@ data class SocialLoginResult(
  * 신규 회원가입 입력값(가입 완료 화면에서 모아 전달).
  * - [nickname] 닉네임(최대 20자) · [handle] 핸들 · [profileImageUrl] 프로필 이미지 URL(선택)
  * - [areaCodes] 관심 지역 법정동코드 목록
- * - [likeThemes] 관심 테마. 코스 카테고리와 같은 값이라 `PlaceCategoryVO` 의 **코드**를 담는다
- *   (라벨을 보내면 서버가 `400 "존재하지 않는 관심 테마"` 로 거부한다)
+ * - [likeThemes] 관심 테마. 코스 태그 12종(`CourseTagVO`)의 **소문자 코드**(`date` …)를 담는다.
+ *   서버 요청은 CourseCategory enum 이름(대문자)이라 data 레이어가 전송 직전에 변환한다
  */
 data class SignupProfile(
     val nickname: String,

@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -36,12 +36,12 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 
 /**
- * 선택지는 장소·코스 테마와 같은 10종 목록이다([PlaceCategoryVO]).
+ * 선택지는 코스 태그 12종이다([CourseTagVO]). 장소 카테고리 10종과 별개 체계다.
  *
- * 선택 상태·저장은 소문자 코드(`cafe` …)로 하고 칩에는 라벨을 보여준다 — 서버가 `likeThemes` 를
- * enum 으로 검증해서, 라벨을 보내면 `400 "존재하지 않는 관심 테마가 포함되어 있습니다"` 로 거부한다.
+ * 선택 상태·저장은 소문자 코드(`date` …)로 하고 칩에는 라벨을 보여준다. 서버 `likeThemes` 는
+ * CourseCategory enum 이름(대문자)으로 검증하므로, 대문자 변환은 data 레이어가 요청 직전에 한다.
  */
-private val THEME_OPTIONS = PlaceCategoryVO.entries
+private val THEME_OPTIONS = CourseTagVO.entries
 private const val MIN_THEME_COUNT = 3
 
 /** 관심 테마 편집 화면(FS-06). 최소 [MIN_THEME_COUNT]개 이상 칩을 선택한다. */
@@ -62,7 +62,7 @@ fun InterestThemePage(
     LaunchedEffect(editing) { if (editing) viewModel.onIntent(InterestEditIntent.Load) }
     // 회원가입은 빈 선택으로 시작하고, 편집은 불러온 값이 도착하면 그 값으로 다시 채운다.
     var selected by remember(editState.loaded) {
-        mutableStateOf(editState.themes.mapNotNull { PlaceCategoryVO.fromCode(it)?.code }.toSet())
+        mutableStateOf(editState.themes.mapNotNull { CourseTagVO.fromCode(it)?.code }.toSet())
     }
     LaunchedEffect(editState.saved) { if (editState.saved) navigationHelper.navigateToBack() }
 

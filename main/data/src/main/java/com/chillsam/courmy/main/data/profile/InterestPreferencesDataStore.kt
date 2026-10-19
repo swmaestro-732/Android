@@ -6,7 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.main.entity.area.AreaVO
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -36,7 +36,7 @@ class InterestPreferencesDataStore(
             .map { preferences ->
                 preferences[KEY_THEMES]
                     .decodeOrEmpty<String>()
-                    .mapNotNull { PlaceCategoryVO.fromCode(it)?.code }
+                    .mapNotNull { CourseTagVO.fromCode(it)?.code }
                     .distinct()
             }.first()
 
