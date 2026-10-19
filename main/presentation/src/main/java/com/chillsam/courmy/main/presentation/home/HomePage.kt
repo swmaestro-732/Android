@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -76,8 +76,8 @@ private const val RECOMMENDED_PREVIEW_COUNT = 5
 /** 헤더 보조줄의 위치·날씨. 위치·날씨 연동 전까지 시안 고정값을 쓴다. */
 private const val LOCATION_WEATHER_MOCK = "성수동 · 흐림 18°"
 
-/** 테마별 둘러보기 타일. 탭하면 추천 코스의 해당 카테고리 필터를 연다. */
-private val themeTiles = PlaceCategoryVO.entries
+/** 테마별 둘러보기 타일. 탭하면 추천 코스의 해당 코스 태그 필터를 연다(코스 문맥이라 12종). */
+private val themeTiles = CourseTagVO.entries
 
 /**
  * 앱의 기본 시작 화면(FS-09). 새 시안 기준으로 섹션형 홈으로 개편했다.
@@ -627,23 +627,26 @@ private fun ThemeBrowseSection(
 /** 흰 카드 위 좌상단 라벨과 우하단 파스텔 벡터 일러스트. */
 @Composable
 private fun ThemeTile(
-    category: PlaceCategoryVO,
+    category: CourseTagVO,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    // 일러스트는 기존 장소 테마 세트를 가장 가까운 코스 태그에 재사용한다(family·solo 만 신규).
     val imageRes =
         when (category) {
-            PlaceCategoryVO.CAFE -> MainR.drawable.img_theme_cafe
-            PlaceCategoryVO.RESTAURANT -> MainR.drawable.img_theme_restaurant
-            PlaceCategoryVO.BAR -> MainR.drawable.img_theme_drinks
-            PlaceCategoryVO.SHOPPING -> MainR.drawable.img_theme_shopping
-            PlaceCategoryVO.CULTURE -> MainR.drawable.img_theme_culture
-            PlaceCategoryVO.EXPERIENCE -> MainR.drawable.img_theme_experience
-            PlaceCategoryVO.NATURE -> MainR.drawable.img_theme_nature
-            PlaceCategoryVO.LANDMARK -> MainR.drawable.img_theme_landmark
-            PlaceCategoryVO.ENTERTAINMENT -> MainR.drawable.img_theme_entertainment
-            PlaceCategoryVO.WELLNESS -> MainR.drawable.img_theme_wellness
+            CourseTagVO.DATE -> MainR.drawable.img_theme_date
+            CourseTagVO.HEALING -> MainR.drawable.img_theme_wellness
+            CourseTagVO.FOOD -> MainR.drawable.img_theme_restaurant
+            CourseTagVO.CAFETOUR -> MainR.drawable.img_theme_cafe
+            CourseTagVO.CULTURE -> MainR.drawable.img_theme_culture
+            CourseTagVO.NATURE -> MainR.drawable.img_theme_nature
+            CourseTagVO.NIGHTVIEW -> MainR.drawable.img_theme_drinks
+            CourseTagVO.SHOPPING -> MainR.drawable.img_theme_shopping
+            CourseTagVO.TRADITION -> MainR.drawable.img_theme_landmark
+            CourseTagVO.ACTIVITY -> MainR.drawable.img_theme_experience
+            CourseTagVO.FAMILY -> MainR.drawable.img_theme_family
+            CourseTagVO.SOLO -> MainR.drawable.img_theme_solo
         }
     Box(
         modifier =

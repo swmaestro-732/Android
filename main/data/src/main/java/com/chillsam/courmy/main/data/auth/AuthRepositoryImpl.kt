@@ -1,7 +1,7 @@
 package com.chillsam.courmy.main.data.auth
 
 import com.chillsam.courmy.common.data.auth.TokenStore
-import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.main.data.auth.dto.LogoutRequest
 import com.chillsam.courmy.main.data.auth.dto.SignupRequest
 import com.chillsam.courmy.main.data.auth.dto.SocialLoginRequest
@@ -63,9 +63,10 @@ class AuthRepositoryImpl(
                             handle = profile.handle,
                             profileImageUrl = profile.profileImageUrl,
                             areaCodes = profile.areaCodes.ifEmpty { null },
+                            // 서버는 likeThemes 를 CourseCategory enum 이름(대문자)으로 검증한다 — 소문자 코드는 400.
                             likeThemes =
                                 profile.likeThemes
-                                    .map { requireNotNull(PlaceCategoryVO.fromCode(it)) { "알 수 없는 관심 테마: $it" }.code }
+                                    .map { requireNotNull(CourseTagVO.fromCode(it)) { "알 수 없는 관심 테마: $it" }.name }
                                     .distinct()
                                     .ifEmpty { null },
                         ),

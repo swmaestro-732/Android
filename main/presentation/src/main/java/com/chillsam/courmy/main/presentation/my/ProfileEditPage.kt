@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -185,7 +185,7 @@ fun ProfileEditPage(
                 // 저장된 값은 서버 코드라 라벨로 바꿔 보여준다(모르는 코드는 그대로 노출).
                 chips =
                     profile?.interestThemes.orEmpty().map { code ->
-                        PlaceCategoryVO.labelOf(code).ifBlank { code }
+                        CourseTagVO.labelOf(code).ifBlank { code }
                     },
                 onEdit = { navigationHelper.navigateTo(InterestThemePage) },
             )

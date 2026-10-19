@@ -34,7 +34,9 @@ data class SimpleEnvelope(
 /**
  * POST /api/v1/auth/signup 요청.
  *
- * [likeThemes] 는 공통 카테고리 코드 목록이다(`cafe`, `culture` …).
+ * [likeThemes] 는 코스 태그(CourseCategory) enum **이름** 목록이다(`DATE`, `CAFETOUR` …).
+ * 서버가 enum 이름으로 검증해 소문자 코드나 라벨을 보내면
+ * `400 "존재하지 않는 관심 테마가 포함되어 있습니다"` 로 가입 전체가 거부된다.
  *
  * 이 엔드포인트는 모르는 필드를 400 없이 **조용히 무시**한다 — 이름이 어긋나면 200 을 받고도
  * 값만 빠지므로, 필드명은 서버 DTO 와 정확히 맞춰야 한다.

@@ -40,7 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -179,8 +179,9 @@ fun RecommendedCoursesPage(
     }
 }
 
+// 코스 피드 필터이므로 코스 태그 12종을 쓴다(카드 라벨과 같은 값이어야 필터가 맞물린다).
 private val recommendedCategories =
-    listOf(null to "추천순") + PlaceCategoryVO.entries.map { it.label to it.label }
+    listOf(null to "추천순") + CourseTagVO.entries.map { it.label to it.label }
 
 @Composable
 private fun RecommendedTopBar(

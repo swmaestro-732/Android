@@ -154,8 +154,8 @@ private fun MyPageCourseDTO.toVO(): ProfileCourseVO =
  * `PATCH /api/v1/users` 요청. null 인 필드는 서버가 건드리지 않는다(부분 수정).
  *
  * [areaCodes]·[likeThemes] 는 **전체 치환**이다 — 빈 배열이면 전부 해제, null 이면 유지.
- * [likeThemes] 는 공통 카테고리 코드(`cafe` …)이고 서버가 enum 으로 검증해 모르는 값은
- * `400 "존재하지 않는 관심 테마가 포함되어 있습니다"` 로 거부한다(라벨을 보내면 안 된다).
+ * [likeThemes] 는 코스 태그(CourseCategory) enum **이름**(`DATE` …)이고 서버가 enum 이름으로
+ * 검증해 소문자 코드·라벨 등 모르는 값은 `400 "존재하지 않는 관심 테마가 포함되어 있습니다"` 로 거부한다.
  *
  * 주의: 이 엔드포인트는 **모르는 필드를 400 없이 조용히 무시**한다. 필드명을 틀리면 200 을 받고도
  * 값만 반영되지 않아 알아채기 어려우므로, 이름을 서버 DTO 와 정확히 맞춘다.

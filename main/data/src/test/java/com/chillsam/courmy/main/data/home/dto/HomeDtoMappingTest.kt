@@ -21,7 +21,7 @@ class HomeDtoMappingTest {
                             id = 134L,
                             title = "중구 테토남 루트",
                             coverImageUrl = "https://cdn.example.com/1.png",
-                            theme = "cafe",
+                            theme = "CAFETOUR",
                             likesCnt = 1,
                             savesCnt = 2,
                         ),
@@ -44,7 +44,7 @@ class HomeDtoMappingTest {
         val course = vo.recommendedCourses.single()
         assertEquals("134", course.id)
         assertEquals("중구 테토남 루트", course.title)
-        assertEquals("카페·디저트", course.categoryLabel)
+        assertEquals("카페 투어", course.categoryLabel)
         assertEquals("1", course.likeCountText)
         assertEquals("2", course.saveCountText)
 
