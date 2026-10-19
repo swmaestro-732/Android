@@ -116,8 +116,11 @@ class MyViewModel
             moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getMyProfileUseCase() }
-                        .onSuccess { profile -> dispatch(MyProfileReducerEvent.Loaded(profile)) }
+                    // 복귀 재로드가 1페이지로 줄이면 깊이 스크롤한 위치가 잘린다(SCRUM-631).
+                    // 이미 보여 준 개수만큼 다시 받아 위치를 보존한다(UseCase 상한으로 캡).
+                    runCatching {
+                        getMyProfileUseCase(size = maxOf(GetMyProfileUseCase.DEFAULT_SIZE, currentState.courses.size))
+                    }.onSuccess { profile -> dispatch(MyProfileReducerEvent.Loaded(profile)) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.

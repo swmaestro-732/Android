@@ -15,6 +15,11 @@ sealed interface HomeFeedReducerEvent : ReducerEvent {
         val hasNext: Boolean,
     ) : HomeFeedReducerEvent
 
+    /** 복귀 동기화로 받은 저장 코스 id 집합. 목록·커서는 건드리지 않는다. */
+    data class SavedIdsSynced(
+        val savedCourseIds: Set<String>,
+    ) : HomeFeedReducerEvent
+
     data object LoadMoreStarted : HomeFeedReducerEvent
 
     /** 다음 페이지 도착. 기존 목록 뒤에 이어 붙인다. */

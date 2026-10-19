@@ -162,6 +162,9 @@ class SavedCoursesViewModel
                 viewModelScope.launch {
                     runCatching {
                         getSavedCoursesUseCase(
+                            // 복귀 재로드가 1페이지로 줄이면 깊이 스크롤한 위치가 잘린다(SCRUM-631).
+                            // 이미 보여 준 개수만큼 다시 받아 위치를 보존한다(UseCase 상한으로 캡).
+                            size = maxOf(GetSavedCoursesUseCase.DEFAULT_SIZE, currentState.courses.size),
                             folderId = currentState.selectedFolderId,
                             completed = currentState.completed,
                         )

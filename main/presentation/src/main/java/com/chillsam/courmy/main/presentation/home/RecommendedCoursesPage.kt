@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -29,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +57,45 @@ import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 
 /**
+ * 진입·복귀 시 1회성 효과 모음. 복귀 재컴포지션에서 다시 실행돼 무한 스크롤 위치·칩 선택을
+ * 날리지 않도록 전부 rememberSaveable 가드를 둔다(SCRUM-631).
+ *
+ * - 초기 카테고리(홈 테마 타일 진입)는 최초 1회만 적용 — 재적용하면 사용자가 바꾼 칩이 되돌아간다.
+ * - 목록 로드는 최초 1회만. 복귀 시 전체 재로드(Retry)는 쌓아둔 페이지와 스크롤 위치를 날리므로,
+ *   상세에서 바뀔 수 있는 저장 상태만 동기화한다.
+ * - 상단 이동은 칩이 실제로 바뀐 경우에만 — 키 기반 LaunchedEffect 를 그대로 쓰면 복귀에서도
+ *   실행돼 저장된 스크롤 위치를 지워 버린다.
+ */
+@Composable
+private fun FeedEntryEffects(
+    feedState: HomeFeedUIState,
+    listState: LazyListState,
+    initialCategory: String?,
+    onIntent: (HomeFeedIntent) -> Unit,
+) {
+    var initialCategoryApplied by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!initialCategoryApplied) {
+            initialCategoryApplied = true
+            initialCategory?.let { onIntent(HomeFeedIntent.SelectCategory(it)) }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (feedState.courses.isEmpty()) onIntent(HomeFeedIntent.Load)
+    }
+    RefreshOnResume { onIntent(HomeFeedIntent.SyncSavedIds) }
+
+    var scrolledForCategory by rememberSaveable { mutableStateOf(feedState.selectedCategory) }
+    LaunchedEffect(feedState.selectedCategory) {
+        if (scrolledForCategory != feedState.selectedCategory) {
+            scrolledForCategory = feedState.selectedCategory
+            listState.scrollToItem(0)
+        }
+    }
+}
+
+/**
  * 오늘의 추천 코스 전체 목록. 홈(FS-09)에 있던 공개 코스 피드 리스트를 그대로 옮겨 온 화면이다.
  *
  * 홈이 가로 미리보기 카드만 남기도록 개편되면서 세로 피드 전체는 이 화면이 맡는다.
@@ -72,17 +113,14 @@ fun RecommendedCoursesPage(
     val feedViewModel: HomeFeedViewModel = hiltViewModel()
     val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
 
-    // 홈 테마 타일로 들어오면 그 카테고리가 선택된 채 시작한다.
-    // 최초 1회만 적용한다 — 이후에는 사용자가 고른 칩이 기준이다.
-    LaunchedEffect(Unit) { initialCategory?.let { feedViewModel.onIntent(HomeFeedIntent.SelectCategory(it)) } }
-
-    // 코스를 만들거나 저장한 뒤 돌아오면 목록이 바뀌어 있을 수 있어 다시 불러온다(홈과 동일).
-    RefreshOnResume { feedViewModel.onIntent(HomeFeedIntent.Retry) }
-
     val listState = rememberLazyListState()
+    FeedEntryEffects(
+        feedState = feedState,
+        listState = listState,
+        initialCategory = initialCategory,
+        onIntent = feedViewModel::onIntent,
+    )
     LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
-
-    LaunchedEffect(feedState.selectedCategory) { listState.scrollToItem(0) }
 
     // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
     LaunchedEffect(feedState.actionErrorMessage) {
