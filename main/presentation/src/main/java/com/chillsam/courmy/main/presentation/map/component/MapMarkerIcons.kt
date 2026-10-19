@@ -52,25 +52,24 @@ internal fun placePinIcon(
     density: Float,
     style: PlacePinStyle,
     selected: Boolean,
-    label: String? = null,
 ): OverlayImage {
     val diameter = (if (selected) SELECTED_PIN_DIAMETER_DP else PIN_DIAMETER_DP) * density
     val tail = PIN_TAIL_HEIGHT_DP * density
     val shadowPad = SHADOW_PAD_DP * density
-    val labelBox = label?.let { LabelBox.measure(it, density, style.labelTextArgb) }
 
-    val width = maxOf(diameter, labelBox?.width ?: 0f) + shadowPad * 2
-    val height = (labelBox?.blockHeight(density) ?: 0f) + diameter + tail + shadowPad * 2
+    // 말풍선 라벨은 비트맵에 넣지 않는다 — 마커 터치 영역이 비트맵 전체라, 라벨까지 포함하면
+    // 동그라미 밖을 눌러도 핀 탭으로 먹힌다(SCRUM-632). 라벨은 placeLabelIcon 별도 마커가 그린다.
+    val width = diameter + shadowPad * 2
+    val height = diameter + tail + shadowPad * 2
     val bitmap = createBitmap(width.toInt(), height.toInt())
     val canvas = Canvas(bitmap)
     val centerX = width / 2f
 
-    labelBox?.draw(canvas, centerX, shadowPad, density, style.labelBackgroundArgb)
     canvas.drawPin(
         spec =
             PinSpec(
                 centerX = centerX,
-                top = shadowPad + (labelBox?.blockHeight(density) ?: 0f),
+                top = shadowPad,
                 diameter = diameter,
                 tail = tail,
                 shadowPad = shadowPad,
@@ -79,7 +78,7 @@ internal fun placePinIcon(
         fillArgb = style.fillArgb,
         strokeArgb = style.strokeArgb,
     )
-    val centerY = shadowPad + (labelBox?.blockHeight(density) ?: 0f) + diameter / 2f
+    val centerY = shadowPad + diameter / 2f
     val halfIcon = diameter * 0.24f
     style.categoryIcon.setBounds(
         (centerX - halfIcon).toInt(),
@@ -108,6 +107,25 @@ private class PinSpec(
     val shadowPad: Float,
     val strokeWidth: Float,
 )
+
+/**
+ * 선택된 핀 위에 띄우는 말풍선 라벨 아이콘. 아래쪽에 핀 높이만큼 투명 여백을 넣어
+ * anchor (0.5, 1) 로도 말풍선이 핀 위에 놓인다. 터치는 핀 마커가 zIndex 로 우선한다.
+ */
+internal fun placeLabelIcon(
+    density: Float,
+    label: String,
+    backgroundArgb: Int,
+    textArgb: Int,
+): OverlayImage {
+    val labelBox = LabelBox.measure(label, density, textArgb)
+    val pinBlock = SELECTED_PIN_DIAMETER_DP * density + PIN_TAIL_HEIGHT_DP * density + SHADOW_PAD_DP * density * 2
+    val width = labelBox.width
+    val height = labelBox.blockHeight(density) + pinBlock
+    val bitmap = createBitmap(width.toInt(), height.toInt())
+    labelBox.draw(Canvas(bitmap), width / 2f, 0f, density, backgroundArgb)
+    return OverlayImage.fromBitmap(bitmap)
+}
 
 /** 말풍선 한 덩이. 크기를 재는 일과 그리는 일이 같은 값(글자 Paint)을 써야 해서 묶어 둔다. */
 private class LabelBox(

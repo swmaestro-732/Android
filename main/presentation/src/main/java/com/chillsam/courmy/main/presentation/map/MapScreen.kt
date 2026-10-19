@@ -166,7 +166,8 @@ private fun NearbySheet(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             DsText(
-                text = "조건에 맞는 곳 ${uiState.totalCount}곳",
+                // 검색·필터 전에도 뜨는 시트라 "조건" 대신 지금 화면에 보이는 장소임을 말한다(사용자 결정).
+                text = "보이는 장소 ${uiState.totalCount}곳",
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = color.contentDefaultLevel0,
             )

@@ -187,9 +187,8 @@ private fun MapOverlays(
     places.forEach { place ->
         val position = place.latLngOrNull() ?: return@forEach
         val selected = place.id == selectedPlaceId
-        val label = if (selected) place.markerLabel() else null
         val icon =
-            remember(place.category, selected, label, density, color, context) {
+            remember(place.category, selected, density, color, context) {
                 placePinIcon(
                     density = density,
                     style =
@@ -206,9 +205,29 @@ private fun MapOverlays(
                                 },
                         ),
                     selected = selected,
-                    label = label,
                 )
             }
+        if (selected) {
+            // 말풍선은 별도 마커로 그린다 — 핀 비트맵에 넣으면 라벨 폭만큼 터치 영역이 커져
+            // 동그라미 밖을 눌러도 상세가 열린다. 탭은 소비만 하고 아무것도 하지 않는다.
+            val label = place.markerLabel()
+            val labelIcon =
+                remember(label, density, color) {
+                    placeLabelIcon(
+                        density = density,
+                        label = label,
+                        backgroundArgb = color.contentDefaultLevel0.toArgb(),
+                        textArgb = color.contentOnAccent.toArgb(),
+                    )
+                }
+            Marker(
+                state = rememberUpdatedMarkerState(position = position),
+                icon = labelIcon,
+                anchor = Offset(0.5f, 1f),
+                zIndex = SELECTED_LABEL_Z,
+                onClick = { true },
+            )
+        }
         Marker(
             state = rememberUpdatedMarkerState(position = position),
             icon = icon,
@@ -227,6 +246,7 @@ private fun MapOverlays(
 private const val PIN_Z = 0
 private const val CLUSTER_Z = 2
 private const val SELECTED_PIN_Z = 3
+private const val SELECTED_LABEL_Z = 2
 
 /** 선택된 핀 말풍선 문구. 시안의 `어니언 성수 · ★4.8` 형태. */
 private fun MapPlaceVO.markerLabel(): String = if (rating > 0) "$name · ★$rating" else name
