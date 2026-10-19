@@ -9,6 +9,7 @@ import com.chillsam.courmy.common.presentation.mvi.UiState
 import com.chillsam.courmy.main.domain.auth.LogoutUseCase
 import com.chillsam.courmy.main.domain.auth.WithdrawUseCase
 import com.chillsam.courmy.main.presentation.login.KakaoLoginClient
+import com.chillsam.courmy.main.presentation.login.NaverLoginClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -60,7 +61,7 @@ sealed interface AccountReducerEvent : ReducerEvent {
 /**
  * 계정 관리(로그아웃·회원 탈퇴) ViewModel.
  * 탈퇴는 현재 사용자 id 가 필요한데, id 는 accessToken(JWT sub)에서 파생돼 세션에 있으므로
- * data 레이어가 내부적으로 사용한다(여기선 별도 전달 없이 호출). 카카오 세션도 함께 정리한다.
+ * data 레이어가 내부적으로 사용한다(여기선 별도 전달 없이 호출). 카카오·네이버 SDK 세션도 함께 정리한다.
  */
 @HiltViewModel
 class AccountViewModel
@@ -101,6 +102,7 @@ class AccountViewModel
                     runCatching {
                         logoutUseCase()
                         runCatching { KakaoLoginClient.logout() }
+                        runCatching { NaverLoginClient.logout() }
                     }.onSuccess { dispatch(AccountReducerEvent.Finished(AccountAction.LOGGED_OUT)) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
@@ -120,6 +122,7 @@ class AccountViewModel
                     runCatching {
                         withdrawUseCase()
                         runCatching { KakaoLoginClient.unlink() }
+                        runCatching { NaverLoginClient.logout() }
                     }.onSuccess { dispatch(AccountReducerEvent.Finished(AccountAction.WITHDRAWN)) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
