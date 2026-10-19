@@ -68,7 +68,8 @@ fun DsButton(
             }
 
             DsButtonVariant.Secondary -> {
-                DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0
+                // 흰 면 토큰. bgDefaultLevel0(화면 바탕)과 구분되는 카드·버튼용 흰색이다.
+                DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
             }
         }
     val contentColor: Color =
