@@ -35,6 +35,8 @@ import com.chillsam.courmy.main.presentation.login.OnboardingCompletePage
 import com.chillsam.courmy.main.presentation.login.ProfileSetupPage
 import com.chillsam.courmy.main.presentation.login.SignupSelectionStore
 import com.chillsam.courmy.main.presentation.login.TermsAgreementPage
+import com.chillsam.courmy.main.presentation.map.MapPage
+import com.chillsam.courmy.main.presentation.map.MapSearchResultPage
 import com.chillsam.courmy.main.presentation.my.FollowListPage
 import com.chillsam.courmy.main.presentation.my.FollowTab
 import com.chillsam.courmy.main.presentation.my.GuestMyPage
@@ -46,6 +48,8 @@ import com.chillsam.courmy.main.presentation.onboarding.OnboardingPage
 import com.chillsam.courmy.main.presentation.onboarding.OnboardingViewModel
 import com.chillsam.courmy.main.presentation.onboarding.SplashPage
 import com.chillsam.courmy.main.presentation.saved.SavedPage
+import com.chillsam.courmy.main.presentation.search.SearchPage
+import com.chillsam.courmy.main.presentation.search.SearchResultPage
 import com.chillsam.courmy.main.presentation.settings.AccountManagePage
 import com.chillsam.courmy.main.presentation.settings.SettingsPage
 import com.chillsam.courmy.main.presentation.user.UserProfilePage
@@ -64,6 +68,8 @@ import com.chillsam.courmy.main.domain.login.ProfileSetupPage as ProfileSetupRou
 import com.chillsam.courmy.main.domain.login.SignupRegionPage as SignupRegionRoute
 import com.chillsam.courmy.main.domain.login.SignupThemePage as SignupThemeRoute
 import com.chillsam.courmy.main.domain.login.TermsAgreementPage as TermsRoute
+import com.chillsam.courmy.main.domain.map.MapPage as MapRoute
+import com.chillsam.courmy.main.domain.map.MapSearchResultPage as MapSearchResultRoute
 import com.chillsam.courmy.main.domain.my.FollowListPage as FollowListRoute
 import com.chillsam.courmy.main.domain.my.GuestMyPage as GuestMyRoute
 import com.chillsam.courmy.main.domain.my.InterestRegionPage as InterestRegionRoute
@@ -73,6 +79,8 @@ import com.chillsam.courmy.main.domain.my.ProfileEditPage as ProfileEditRoute
 import com.chillsam.courmy.main.domain.onboarding.OnboardingPage as OnboardingRoute
 import com.chillsam.courmy.main.domain.onboarding.SplashPage as SplashRoute
 import com.chillsam.courmy.main.domain.saved.SavedPage as SavedRoute
+import com.chillsam.courmy.main.domain.search.SearchPage as SearchRoute
+import com.chillsam.courmy.main.domain.search.SearchResultPage as SearchResultRoute
 import com.chillsam.courmy.main.domain.settings.AccountManagePage as AccountManageRoute
 import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
@@ -162,7 +170,38 @@ val appRoutes: List<AppRoute> =
         ),
         // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다.
         // 입력 화면은 공유하며 홈은 코스 결과, 지도는 장소 결과로 이동한다.
+        AppRoute(
+            path = SearchRoute.PATH,
+            render = { args ->
+                SearchPage(
+                    target = args[SearchRoute.ARG_TARGET] ?: SearchRoute.TARGET_COURSE,
+                    query = args[SearchRoute.ARG_QUERY].orEmpty(),
+                )
+            },
+        ),
+        AppRoute(
+            path = SearchResultRoute.PATH,
+            render = { args ->
+                SearchResultPage(
+                    query = args[SearchResultRoute.ARG_QUERY].orEmpty(),
+                )
+            },
+        ),
         // 지도 탭(FS-10). 검색 결과는 시트만 갈아 끼우는 한 화면이라 라우트도 하나다.
+        AppRoute(
+            path = MapRoute.PATH,
+            isBottomTab = true,
+            render = { MapPage() },
+        ),
+        AppRoute(
+            path = MapSearchResultRoute.PATH,
+            render = { args ->
+                MapSearchResultPage(
+                    query = args[MapSearchResultRoute.ARG_QUERY].orEmpty(),
+                    listMode = args[MapSearchResultRoute.ARG_LIST_MODE].toBoolean(),
+                )
+            },
+        ),
         // 코스 만들기: course 모듈의 실제 MVI 화면(SCRUM-234).
         // 상단바·저장바 네비게이션은 대상 화면(홈/코스 완성)이 main 모듈이라 여기서 주입한다.
         //

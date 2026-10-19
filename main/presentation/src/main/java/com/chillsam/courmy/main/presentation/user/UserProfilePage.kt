@@ -31,6 +31,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
+import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.FollowListPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
@@ -202,6 +203,10 @@ private fun UserProfileContent(
                 when (tab) {
                     MainTab.HOME -> {
                         navigationHelper.navigateTo(HomePage)
+                    }
+
+                    MainTab.MAP -> {
+                        navigationHelper.navigateTo(MapPage)
                     }
 
                     MainTab.SAVED -> {
