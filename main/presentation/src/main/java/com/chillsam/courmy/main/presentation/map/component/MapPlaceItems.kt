@@ -48,6 +48,7 @@ internal fun MapPlaceCarouselCard(
     place: MapPlaceVO,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    selected: Boolean = false,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(
@@ -55,8 +56,11 @@ internal fun MapPlaceCarouselCard(
             modifier
                 .width(CarouselCardWidth)
                 .clip(CardShape)
-                .background(color.bgDefaultLevel1)
-                .clickable(onClick = onClick),
+                // 지도에서 고른 핀과 같은 장소임을 알리는 하이라이트(검색 결과 선택 카드와 같은 조합).
+                .background(if (selected) color.bgAccentSubtle else color.bgDefaultLevel1)
+                .then(
+                    if (selected) Modifier.border(1.dp, color.contentAccent, CardShape) else Modifier,
+                ).clickable(onClick = onClick),
     ) {
         Box {
             PlaceThumbnail(

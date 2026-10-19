@@ -52,7 +52,10 @@ fun MapPage(
                 // TODO(SCRUM-지도필터): 복합 필터(FS-10-Filter)는 이번 범위 밖이라 아직 비어 있다.
                 onFilterClick = {},
                 onCategorySelect = { viewModel.onIntent(MapIntent.SelectCategory(it)) },
-                onPlaceSelect = {
+                // 핀 탭은 선택만 — 시트 캐러셀이 해당 카드로 포커스된다(SCRUM-632).
+                // 상세 시트는 카드를 탭했을 때만 연다(지도 맥락을 덮지 않기 위해).
+                onPlaceSelect = { viewModel.onIntent(MapIntent.SelectPlace(it)) },
+                onPlaceDetail = {
                     detailPlaceId = it
                     viewModel.onIntent(MapIntent.SelectPlace(it))
                 },
