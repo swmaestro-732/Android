@@ -40,6 +40,15 @@ val naverMapClientId: String =
 val kakaoNativeAppKey: String =
     (localProps.getProperty("KAKAO_NATIVE_APP_KEY") ?: System.getenv("KAKAO_NATIVE_APP_KEY")).orEmpty()
 
+// 네이버 로그인(개발자센터 애플리케이션)·구글 로그인(클라우드 콘솔 "웹" OAuth 클라이언트 ID).
+// 비어 있으면 빌드는 되고, 런타임에 해당 버튼이 "설정 전" 안내를 띄운다.
+val naverLoginClientId: String =
+    (localProps.getProperty("NAVER_LOGIN_CLIENT_ID") ?: System.getenv("NAVER_LOGIN_CLIENT_ID")).orEmpty()
+val naverLoginClientSecret: String =
+    (localProps.getProperty("NAVER_LOGIN_CLIENT_SECRET") ?: System.getenv("NAVER_LOGIN_CLIENT_SECRET")).orEmpty()
+val googleServerClientId: String =
+    (localProps.getProperty("GOOGLE_SERVER_CLIENT_ID") ?: System.getenv("GOOGLE_SERVER_CLIENT_ID")).orEmpty()
+
 // Firebase Crashlytics — google-services.json 이 있을 때만 플러그인을 붙인다.
 // 이 파일이 없는데 플러그인을 적용하면 빌드가 통째로 깨지므로, keystore·카카오 키와 같은 방식으로
 // "없으면 크래시 리포팅만 빠지고 빌드는 진행" 하게 둔다(릴리스에서는 아래에서 하드 실패).
@@ -142,6 +151,12 @@ android {
         // 카카오: KakaoSdk.init 용 BuildConfig + 카카오톡 로그인 리다이렉트 scheme(manifest) 주입.
         buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
         manifestPlaceholders["kakaoNativeAppKey"] = kakaoNativeAppKey
+
+        // 네이버·구글 로그인. 키가 비면 CourmyApplication 이 초기화를 건너뛰고
+        // 해당 버튼은 "설정 전" 안내를 띄운다(개발 중 crash 방지).
+        buildConfigField("String", "NAVER_LOGIN_CLIENT_ID", "\"$naverLoginClientId\"")
+        buildConfigField("String", "NAVER_LOGIN_CLIENT_SECRET", "\"$naverLoginClientSecret\"")
+        buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"$googleServerClientId\"")
     }
 
     signingConfigs {
@@ -263,6 +278,9 @@ dependencies {
 
     // 카카오 로그인 SDK — CourmyApplication 의 KakaoSdk.init 용
     implementation(libs.kakao.user)
+
+    // 네이버 로그인 SDK — CourmyApplication 의 NaverIdLoginSDK.initialize 용
+    implementation(libs.naver.oauth)
 
     // Firebase — 출시 후 크래시·ANR 리포팅. 개별 라이브러리 버전은 BOM 이 맞춘다.
     // Crashlytics 는 코드 없이 크래시를 잡고, Analytics 는 리포트에 breadcrumb 를 붙여 준다.

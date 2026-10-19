@@ -3,11 +3,19 @@ package com.chillsam.courmy.main.data.auth.dto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** POST /api/v1/auth/social-login 요청. provider 는 서버 enum 문자열("KAKAO" 등)과 일치. */
+/**
+ * POST /api/v1/auth/social-login 요청. provider 는 서버 enum 문자열("KAKAO" 등)과 일치.
+ *
+ * 서버는 provider 별로 **토큰 필드 하나만** 받는다(`tokenShapeValid` 검증, 2026-10-18 실호출 확인):
+ * - KAKAO·GOOGLE: OIDC 라 [idToken]
+ * - NAVER: OIDC 미지원이라 [accessToken]
+ * 둘 다 채우거나 어긋난 필드에 넣으면 400(4002) 이다.
+ */
 @Serializable
 data class SocialLoginRequest(
     val provider: String,
-    val idToken: String,
+    val idToken: String? = null,
+    val accessToken: String? = null,
 )
 
 /** POST /api/v1/auth/logout 요청. */
@@ -26,7 +34,7 @@ data class SimpleEnvelope(
 /**
  * POST /api/v1/auth/signup 요청.
  *
- * [likeThemes] 는 코스 카테고리 이름 목록이다(`CAFETOUR`, `CULTURE` …).
+ * [likeThemes] 는 공통 카테고리 코드 목록이다(`cafe`, `culture` …).
  *
  * 이 엔드포인트는 모르는 필드를 400 없이 **조용히 무시**한다 — 이름이 어긋나면 200 을 받고도
  * 값만 빠지므로, 필드명은 서버 DTO 와 정확히 맞춰야 한다.

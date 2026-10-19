@@ -30,7 +30,9 @@ class LoginViewModel
 
         override fun onIntent(intent: LoginIntent) {
             when (intent) {
-                is LoginIntent.KakaoLogin -> kakaoLogin(intent.context)
+                is LoginIntent.KakaoLogin -> socialLogin(SocialProvider.KAKAO, intent.context)
+                is LoginIntent.NaverLogin -> socialLogin(SocialProvider.NAVER, intent.context)
+                is LoginIntent.GoogleLogin -> socialLogin(SocialProvider.GOOGLE, intent.context)
                 LoginIntent.ConsumeResult -> dispatch(LoginReducerEvent.ResultConsumed)
                 LoginIntent.ConsumeError -> dispatch(LoginReducerEvent.ErrorConsumed)
             }
@@ -70,7 +72,7 @@ class LoginViewModel
             }
 
         /**
-         * 카카오 SDK 로그인 → 서버 social-login 을 **하나의 job** 으로 묶는다.
+         * 소셜 SDK 로그인(토큰 획득) → 서버 social-login 을 **하나의 job** 으로 묶는다.
          *
          * SDK 단계를 [viewModelScope] 에서 돌리는 게 핵심이다. 이전에는 화면의
          * `rememberCoroutineScope` 를 썼는데, 카카오톡으로 나간 사이 화면이 사라지면 스코프가 취소돼
@@ -79,32 +81,75 @@ class LoginViewModel
          * 두 단계를 한 job 으로 묶은 이유: 나눠 두면 뒤 단계가 앞 단계의 job 을 cancel 해 버리는
          * 사고가 나기 쉽다(같은 [loginJob] 을 공유하므로 자기 자신을 취소한다).
          */
-        private fun kakaoLogin(context: Context) {
+        private fun socialLogin(
+            provider: SocialProvider,
+            context: Context,
+        ) {
             // 진행 중이면 무시한다. 버튼도 isLoading 으로 잠그지만, 화면 재구성 등으로 상태가
             // 초기화되면 중복 진입이 가능하다. 그때 continuation 이 여러 개 생기면 결과가 뒤섞인다.
             if (loginJob?.isActive == true) return
             dispatch(LoginReducerEvent.Started)
             loginJob =
                 viewModelScope.launch {
-                    val idToken = obtainIdToken(context) ?: return@launch
-                    requestSocialLogin(idToken)
+                    val token = obtainSocialToken(provider, context) ?: return@launch
+                    requestSocialLogin(provider, token)
                 }
         }
 
-        /** 카카오 SDK 단계. 실패·취소는 여기서 상태로 반영하고 null 을 돌려 흐름을 끊는다. */
-        private suspend fun obtainIdToken(context: Context): String? =
-            runCatching { KakaoLoginClient.login(context) }
-                .getOrElse { e ->
-                    when {
-                        e is CancellationException -> throw e
-
-                        // 사용자가 스스로 취소한 것은 실패가 아니다. 안내도 리포트도 남기지 않는다.
-                        e is KakaoLoginClient.CanceledException -> dispatch(LoginReducerEvent.Canceled)
-
-                        else -> reportKakaoFailure(context, e)
-                    }
-                    null
+        /**
+         * 소셜 SDK 단계. 실패·취소는 여기서 상태로 반영하고 null 을 돌려 흐름을 끊는다.
+         *
+         * 네이버는 OIDC 미지원이라 accessToken 을 돌려준다 — 서버 social-login 의 accessToken 필드에
+         * 그대로 싣는 계약이다([NaverLoginClient] 참고).
+         */
+        private suspend fun obtainSocialToken(
+            provider: SocialProvider,
+            context: Context,
+        ): String? =
+            runCatching {
+                when (provider) {
+                    SocialProvider.KAKAO -> KakaoLoginClient.login(context)
+                    SocialProvider.NAVER -> NaverLoginClient.login(context)
+                    SocialProvider.GOOGLE -> GoogleLoginClient.login(context)
+                    SocialProvider.APPLE -> error("애플 로그인은 아직 지원하지 않습니다.")
                 }
+            }.getOrElse { e ->
+                when {
+                    e is CancellationException -> throw e
+
+                    // 사용자가 스스로 취소한 것은 실패가 아니다. 안내도 리포트도 남기지 않는다.
+                    e is KakaoLoginClient.CanceledException ||
+                        e is NaverLoginClient.CanceledException ||
+                        e is GoogleLoginClient.CanceledException
+                    -> dispatch(LoginReducerEvent.Canceled)
+
+                    // 콘솔 키 미설정(개발 중). 실패 리포트 대신 설정 안내만 띄운다.
+                    e is NaverLoginClient.NotConfiguredException ||
+                        e is GoogleLoginClient.NotConfiguredException
+                    -> dispatch(LoginReducerEvent.Failed("${provider.label()} 로그인이 아직 준비되지 않았어요."))
+
+                    provider == SocialProvider.KAKAO -> reportKakaoFailure(context, e)
+
+                    else -> reportSocialSdkFailure(provider, e)
+                }
+                null
+            }
+
+        /** 네이버·구글 SDK 로그인 실패. 카카오처럼 원격 계측에도 남긴다(키 해시 진단은 카카오 전용). */
+        private fun reportSocialSdkFailure(
+            provider: SocialProvider,
+            e: Throwable,
+        ) {
+            Log.w(TAG, "${provider.name} SDK 로그인 실패: ${e.javaClass.simpleName} - ${e.message}", e)
+            telemetry.recordFailure(
+                AppFailure(
+                    area = AppFlow.Login.eventName,
+                    kind = "${provider.name.lowercase()}_sdk_${e.javaClass.simpleName}",
+                    cause = e,
+                ),
+            )
+            dispatch(LoginReducerEvent.Failed("${provider.label()} 로그인을 완료하지 못했어요."))
+        }
 
         /**
          * 카카오 SDK 로그인 실패를 **원격에도** 남긴다.
@@ -130,8 +175,11 @@ class LoginViewModel
         }
 
         /** 서버 social-login 단계. 성공/실패 계측은 [SocialLoginUseCase] 의 track 이 담당한다. */
-        private suspend fun requestSocialLogin(idToken: String) {
-            runCatching { socialLoginUseCase(SocialProvider.KAKAO, idToken) }
+        private suspend fun requestSocialLogin(
+            provider: SocialProvider,
+            idToken: String,
+        ) {
+            runCatching { socialLoginUseCase(provider, idToken) }
                 .onSuccess { dispatch(LoginReducerEvent.Succeeded(it.newUser)) }
                 .onFailure { e ->
                     if (e is CancellationException) throw e
@@ -144,5 +192,14 @@ class LoginViewModel
 
         private companion object {
             const val TAG = "Login"
+
+            /** 안내 문구용 한글 이름. */
+            fun SocialProvider.label(): String =
+                when (this) {
+                    SocialProvider.KAKAO -> "카카오"
+                    SocialProvider.NAVER -> "네이버"
+                    SocialProvider.GOOGLE -> "구글"
+                    SocialProvider.APPLE -> "애플"
+                }
         }
     }
