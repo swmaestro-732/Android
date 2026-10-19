@@ -19,12 +19,17 @@ import javax.inject.Singleton
  *
  * debug 빌드에서는 두 SDK 의 수집이 매니페스트로 꺼져 있어(`app/src/debug/AndroidManifest.xml`)
  * 호출해도 전송되지 않는다. 그래서 별도 debug 구현을 두는 대신, 개발 중 확인용으로 logcat 에만 함께 남긴다.
+ *
+ * 제품 분석 지표(logFlow·setScreen)는 [AmplitudeClient] 로도 병행 전송한다 — 호출부(presentation)를
+ * 바꾸지 않고 data 레이어에서만 갈라, 같은 이벤트가 Firebase 와 Amplitude 양쪽에 쌓인다.
+ * [recordFailure] 는 크래시 리포트 전용이라 Crashlytics 에만 남긴다.
  */
 @Singleton
 class CrashlyticsTelemetry
     @Inject
     constructor(
         @ApplicationContext private val context: Context,
+        private val amplitude: AmplitudeClient,
     ) : Telemetry {
         /**
          * `app/google-services.json` 은 커밋하지 않으므로(`.gitignore`), 파일 없이 클론한 개발자의
@@ -48,6 +53,7 @@ class CrashlyticsTelemetry
             // custom key 는 마지막 값만 남아 "죽은 화면"이 되고, log 는 쌓여서 "거기까지 온 경로"가 된다.
             crashlytics?.setCustomKey(KEY_SCREEN, name)
             crashlytics?.log("screen: $name")
+            amplitude.track(EVENT_SCREEN_VIEW, mapOf(KEY_SCREEN to name))
             debugLog("screen: $name")
         }
 
@@ -57,12 +63,21 @@ class CrashlyticsTelemetry
             detail: String?,
         ) {
             val succeeded = result == FlowResult.Success
+            val resultValue = if (succeeded) RESULT_SUCCESS else RESULT_FAILURE
             analytics?.logEvent(
                 flow.eventName,
                 Bundle().apply {
-                    putString(PARAM_RESULT, if (succeeded) RESULT_SUCCESS else RESULT_FAILURE)
+                    putString(PARAM_RESULT, resultValue)
                     detail?.let { putString(PARAM_DETAIL, it) }
                 },
+            )
+            amplitude.track(
+                eventName = flow.eventName,
+                properties =
+                    buildMap {
+                        put(PARAM_RESULT, resultValue)
+                        detail?.let { put(PARAM_DETAIL, it) }
+                    },
             )
             // 실패는 크래시 리포트에도 남겨야 "죽기 직전에 뭘 하다 실패했는지"가 보인다.
             val outcome = if (succeeded) "ok" else "fail"
@@ -98,6 +113,7 @@ class CrashlyticsTelemetry
         private companion object {
             const val TAG = "Telemetry"
             const val KEY_SCREEN = "screen"
+            const val EVENT_SCREEN_VIEW = "screen_view"
             const val KEY_FAILURE_AREA = "failure_area"
             const val KEY_FAILURE_KIND = "failure_kind"
             const val PARAM_RESULT = "result"

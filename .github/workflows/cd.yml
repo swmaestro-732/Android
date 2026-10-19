@@ -19,6 +19,7 @@ name: CD
 #     NAVER_MAP_CLIENT_ID  : 없어도 빌드는 통과하지만 지도가 인증에 실패해
 #                            오류 표시 없이 빈 화면이 된다. 반드시 등록할 것.
 #     API_BASE_URL         : 미설정 시 common/data 의 운영 URL 폴백을 쓴다(선택).
+#     AMPLITUDE_API_KEY    : 제품 분석(Amplitude). 선택 — 없으면 분석만 꺼진 채 빌드된다.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -86,6 +87,7 @@ jobs:
           KAKAO_NATIVE_APP_KEY: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
           NAVER_MAP_CLIENT_ID: ${{ secrets.NAVER_MAP_CLIENT_ID }}
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          AMPLITUDE_API_KEY: ${{ secrets.AMPLITUDE_API_KEY }}
         run: bundle exec fastlane android build
       - name: Prepare release assets
         id: release

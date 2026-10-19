@@ -46,6 +46,7 @@ constraintlayout = "2.2.0"
 googleServices = "4.5.0"
 firebaseCrashlyticsPlugin = "3.0.7"
 firebaseBom = "34.17.0"
+amplitude = "1.35.0"
 
 [libraries]
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
@@ -118,6 +119,9 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 # Analytics 는 Crashlytics 리포트에 breadcrumb(화면 전환·이벤트)를 자동으로 붙여 준다.
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+
+# Amplitude — 제품 분석. SDK 의존성은 app 모듈에만 두고, data 레이어는 AmplitudeClient 인터페이스만 안다.
+amplitude-analytics = { group = "com.amplitude", name = "analytics-android", version.ref = "amplitude" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
