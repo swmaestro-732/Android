@@ -138,6 +138,28 @@ fun CourseCreatePage(
         }
     }
 
+    val loadError = uiState.loadErrorMessage
+    if (loadError != null) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0)
+                    .padding(ScreenHorizontalPadding),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            DsText(text = loadError)
+            Spacer(Modifier.height(16.dp))
+            DsButton(text = "다시 시도", onClick = {
+                viewModel.onIntent(CourseCreateIntent.Load(draftCourseId, forkFromCourseId, isPlan))
+            })
+            Spacer(Modifier.height(8.dp))
+            DsButton(text = "돌아가기", variant = DsButtonVariant.Secondary, onClick = onClose)
+        }
+        return
+    }
+
     CourseCreateContent(
         uiState = uiState,
         onIntent = viewModel::onIntent,
@@ -184,7 +206,7 @@ private fun CourseCreateContent(
 
         // 첫 단계가 아니면 시스템 뒤로가기는 화면을 닫지 않고 이전 단계로 돌아간다.
         BackHandler {
-            if (uiState.isSaving) return@BackHandler
+            if (uiState.isSavingAny) return@BackHandler
             if (uiState.step > CourseCreateUIState.FIRST_STEP) {
                 onIntent(CourseCreateIntent.PrevStep)
             } else if (uiState.hasContent) {
@@ -198,13 +220,13 @@ private fun CourseCreateContent(
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             CourseTopBar(
                 onClose = {
-                    if (!uiState.isSaving) {
+                    if (!uiState.isSavingAny) {
                         if (uiState.hasContent) showExitConfirm = true else onClose()
                     }
                 },
                 onSaveDraft = onSaveDraft,
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
-                savingDraft = uiState.isSavingDraft,
+                savingDraft = uiState.isSavingAny,
                 title = if (uiState.isPlan) "계획하기" else "새 코스 만들기",
                 showDraft = !uiState.isPlan,
             )
@@ -739,7 +761,12 @@ private fun StepBottomBar(
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (uiState.step > CourseCreateUIState.FIRST_STEP) {
                 Box(modifier = Modifier.weight(1f)) {
-                    DsButton(text = "이전", variant = DsButtonVariant.Secondary, onClick = onPrev)
+                    DsButton(
+                        text = "이전",
+                        variant = DsButtonVariant.Secondary,
+                        enabled = !uiState.isSavingAny,
+                        onClick = onPrev,
+                    )
                 }
             }
             Box(modifier = Modifier.weight(NEXT_BUTTON_WEIGHT)) {
@@ -757,7 +784,7 @@ private fun StepBottomBar(
                                 "다음"
                             },
                     // 저장 중에는 중복 탭을 막는다(업로드 + 생성이라 왕복이 길다).
-                    enabled = uiState.canGoNext && (!isLast || uiState.canSave) && !uiState.isSaving,
+                    enabled = uiState.canGoNext && (!isLast || uiState.canSave) && !uiState.isSavingAny,
                     loading = isLast && uiState.isSaving,
                     onClick = if (isLast) onSave else onNext,
                 )

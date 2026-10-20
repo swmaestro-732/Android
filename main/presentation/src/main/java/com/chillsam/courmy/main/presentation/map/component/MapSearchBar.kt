@@ -26,18 +26,14 @@ private val SearchBarElevation = 6.dp
 private val SearchBarHorizontalPadding = 16.dp
 private val SearchBarVerticalPadding = 13.dp
 private val SearchIconSize = 18.dp
-private val ActionIconSize = 16.dp
 
 /**
  * 지도 탭 상단 검색바(FS-10). 실제 입력은 검색 화면에서 하고 여기서는 눌러서 넘어가기만 한다.
- *
- * 오른쪽 `필터` 는 검색과 다른 동작이라 바깥쪽 clickable 이 삼키지 않게 자기 clickable 을 따로 갖는다.
  */
 @Composable
 internal fun MapSearchEntryBar(
     placeholder: String,
     onClick: () -> Unit,
-    onFilterClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -64,29 +60,6 @@ internal fun MapSearchEntryBar(
             color = color.contentDefaultLevel3,
             modifier = Modifier.weight(1f),
         )
-        Row(
-            modifier =
-                Modifier
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onFilterClick,
-                    ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_filter_list_24),
-                contentDescription = null,
-                tint = color.contentDefaultLevel0,
-                modifier = Modifier.size(ActionIconSize),
-            )
-            DsText(
-                text = "필터",
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentDefaultLevel0,
-            )
-        }
     }
 }
 

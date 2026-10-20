@@ -43,6 +43,7 @@ data class CourseCreateUIState(
     /** 임시저장이 끝나면 true. 화면을 빠져나가는 신호. */
     val draftSaved: Boolean = false,
     val errorMessage: String? = null,
+    val loadErrorMessage: String? = null,
     /**
      * 포크 중이면 원본 코스 id. null 이면 평범한 코스 만들기다.
      * 저장 요청에 `forkedFromId` 로 실려 서버가 출처를 남긴다.
@@ -53,6 +54,9 @@ data class CourseCreateUIState(
     /** 포크 원본 작성자 이름. 안내 배너 문구에만 쓴다. */
     val forkAuthorName: String = "",
 ) : UiState {
+    val isSavingAny: Boolean
+        get() = isSaving || isSavingDraft
+
     val lastStep: Int
         get() = if (isPlan) STEP_COURSE_INFO else LAST_STEP
 

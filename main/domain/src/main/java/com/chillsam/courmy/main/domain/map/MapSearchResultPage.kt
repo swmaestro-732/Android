@@ -12,6 +12,8 @@ import com.chillsam.courmy.common.domain.navigation.Page
 object MapSearchResultPage : Page {
     const val PATH = "/map/search"
     const val ARG_QUERY = "query"
+    const val ARG_LATITUDE = "lat"
+    const val ARG_LONGITUDE = "lng"
 
     /** 시트를 리스트로 펼친 채 들어갈지 여부. 지도 탭의 목록 버튼이 이 값으로 진입한다. */
     const val ARG_LIST_MODE = "list"
@@ -21,13 +23,17 @@ object MapSearchResultPage : Page {
     fun route(
         query: String,
         listMode: Boolean = false,
+        latitude: Double? = null,
+        longitude: Double? = null,
     ): NavRoute =
         NavRoute(
             path = PATH,
             args =
-                mapOf(
-                    ARG_QUERY to query,
-                    ARG_LIST_MODE to listMode.toString(),
-                ),
+                buildMap {
+                    put(ARG_QUERY, query)
+                    put(ARG_LIST_MODE, listMode.toString())
+                    latitude?.let { put(ARG_LATITUDE, it.toString()) }
+                    longitude?.let { put(ARG_LONGITUDE, it.toString()) }
+                },
         )
 }

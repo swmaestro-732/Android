@@ -9,6 +9,8 @@ enum class MapSheetMode { MARKER, LIST }
 
 data class MapSearchResultUIState(
     val query: String = "",
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val isLoading: Boolean = true,
     val isLoadingMore: Boolean = false,
     val places: ImmutableList<MapPlaceVO> = persistentListOf(),

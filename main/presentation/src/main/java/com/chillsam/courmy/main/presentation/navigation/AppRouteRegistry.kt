@@ -184,6 +184,8 @@ val appRoutes: List<AppRoute> =
                 SearchPage(
                     target = args[SearchRoute.ARG_TARGET] ?: SearchRoute.TARGET_COURSE,
                     query = args[SearchRoute.ARG_QUERY].orEmpty(),
+                    latitude = args[SearchRoute.ARG_LATITUDE]?.toDoubleOrNull(),
+                    longitude = args[SearchRoute.ARG_LONGITUDE]?.toDoubleOrNull(),
                 )
             },
         ),
@@ -203,10 +205,15 @@ val appRoutes: List<AppRoute> =
         ),
         AppRoute(
             path = MapSearchResultRoute.PATH,
+            syntheticStack = { args ->
+                listOf(GenericNavKey(MapRoute.PATH), GenericNavKey(MapSearchResultRoute.PATH, args))
+            },
             render = { args ->
                 MapSearchResultPage(
                     query = args[MapSearchResultRoute.ARG_QUERY].orEmpty(),
                     listMode = args[MapSearchResultRoute.ARG_LIST_MODE].toBoolean(),
+                    latitude = args[MapSearchResultRoute.ARG_LATITUDE]?.toDoubleOrNull(),
+                    longitude = args[MapSearchResultRoute.ARG_LONGITUDE]?.toDoubleOrNull(),
                 )
             },
         ),

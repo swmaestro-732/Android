@@ -8,6 +8,8 @@ interface MapPlaceSearchRepository {
     suspend fun search(
         query: String,
         cursor: String?,
+        latitude: Double?,
+        longitude: Double?,
     ): CursorPageVO<MapPlaceVO>
 }
 
@@ -20,5 +22,17 @@ class SearchMapPlacesUseCase
         suspend operator fun invoke(
             query: String,
             cursor: String? = null,
-        ): CursorPageVO<MapPlaceVO> = repository.search(query.trim(), cursor)
+            latitude: Double? = null,
+            longitude: Double? = null,
+        ): CursorPageVO<MapPlaceVO> {
+            val validLocation =
+                latitude != null && longitude != null &&
+                    latitude in -90.0..90.0 && longitude in -180.0..180.0
+            return repository.search(
+                query.trim(),
+                cursor,
+                latitude.takeIf { validLocation },
+                longitude.takeIf { validLocation },
+            )
+        }
     }

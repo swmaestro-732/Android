@@ -8,6 +8,8 @@ object SearchPage : Page {
     const val PATH = "/search"
     const val ARG_TARGET = "target"
     const val ARG_QUERY = "query"
+    const val ARG_LATITUDE = "lat"
+    const val ARG_LONGITUDE = "lng"
     const val TARGET_COURSE = "course"
     const val TARGET_PLACE = "place"
 
@@ -16,5 +18,16 @@ object SearchPage : Page {
     fun route(
         target: String = TARGET_COURSE,
         query: String = "",
-    ): NavRoute = NavRoute(PATH, mapOf(ARG_TARGET to target, ARG_QUERY to query))
+        latitude: Double? = null,
+        longitude: Double? = null,
+    ): NavRoute =
+        NavRoute(
+            PATH,
+            buildMap {
+                put(ARG_TARGET, target)
+                put(ARG_QUERY, query)
+                latitude?.let { put(ARG_LATITUDE, it.toString()) }
+                longitude?.let { put(ARG_LONGITUDE, it.toString()) }
+            },
+        )
 }

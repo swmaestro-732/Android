@@ -5,6 +5,8 @@ import com.chillsam.courmy.common.presentation.mvi.MviIntent
 sealed interface MapSearchResultIntent : MviIntent {
     data class Load(
         val query: String,
+        val latitude: Double? = null,
+        val longitude: Double? = null,
     ) : MapSearchResultIntent
 
     data object Retry : MapSearchResultIntent
