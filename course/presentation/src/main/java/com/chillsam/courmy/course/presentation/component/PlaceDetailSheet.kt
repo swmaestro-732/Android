@@ -137,7 +137,7 @@ private const val SHEET_ANIM_MS = 220
  * 전체 보기에서 핀이 오버레이 뒤로 숨지 않도록 두는 여백. 위쪽은 제목 카드 + 장소 칩,
  * 아래쪽은 코스 버튼 + 팁 카드가 가리는 높이를 어림한 값이다.
  */
-private val OVERVIEW_FIT_PADDING = RouteFitPadding(top = 210.dp, bottom = 190.dp, side = 40.dp)
+private val OVERVIEW_FIT_PADDING = RouteFitPadding(top = 260.dp, bottom = 190.dp, side = 40.dp)
 
 /** 장소 이동 칩의 이름 최대 폭. 이름이 길어도 칩 하나가 화면을 다 먹지 않게 한다. */
 private val JUMP_CHIP_NAME_MAX_WIDTH = 120.dp
