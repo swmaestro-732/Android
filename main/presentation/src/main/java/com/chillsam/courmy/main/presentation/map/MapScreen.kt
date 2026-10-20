@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -71,7 +73,10 @@ fun MapScreen(
             clusters = uiState.clusters,
             selectedPlaceId = uiState.selectedPlaceId,
             myLocation = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
-            onPlaceClick = actions.onPlaceSelect,
+            // 핀도 카드와 같은 2단계 — 비활성 핀은 선택·포커스, 활성 핀 재탭은 상세 시트.
+            onPlaceClick = { id ->
+                if (id == uiState.selectedPlaceId) actions.onPlaceDetail(id) else actions.onPlaceSelect(id)
+            },
             onMapClick = { actions.onPlaceSelect(null) },
             contentPadding = PaddingValues(bottom = MapBottomInset),
             recenterSignal = recenterSignal,
@@ -96,30 +101,32 @@ fun MapScreen(
             )
         }
 
-        Column(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = ScreenHorizontalPadding, bottom = ControlBottomGap),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            MapCircleIconButton(
-                iconRes = R.drawable.ic_filter_list_24,
-                contentDescription = "목록으로 보기",
-                onClick = actions.onListClick,
-            )
-            MapCircleIconButton(
-                iconRes = R.drawable.ic_my_location_24,
-                contentDescription = "내 위치",
-                onClick = { recenterSignal++ },
+        // 컨트롤을 시트와 같은 Column 에 묶는다 — 시트보다 먼저(BottomEnd) 그리면
+        // 시트가 위에 덮여 목록보기·내 위치 버튼이 가려져 눌리지 않는다(SCRUM-632).
+        Column(modifier = Modifier.align(Alignment.BottomCenter)) {
+            Column(
+                modifier =
+                    Modifier
+                        .align(Alignment.End)
+                        .padding(end = ScreenHorizontalPadding, bottom = ControlBottomGap),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                MapCircleIconButton(
+                    iconRes = R.drawable.ic_filter_list_24,
+                    contentDescription = "목록으로 보기",
+                    onClick = actions.onListClick,
+                )
+                MapCircleIconButton(
+                    iconRes = R.drawable.ic_my_location_24,
+                    contentDescription = "내 위치",
+                    onClick = { recenterSignal++ },
+                )
+            }
+            NearbySheet(
+                uiState = uiState,
+                actions = actions,
             )
         }
-
-        NearbySheet(
-            uiState = uiState,
-            actions = actions,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
     }
 }
 
@@ -153,17 +160,29 @@ private fun NearbySheet(
         } else if (uiState.places.isEmpty()) {
             EmptyPlaces(loading = uiState.isLoading)
         } else {
+            val listState = rememberLazyListState()
+            // 핀을 고르면 캐러셀이 그 카드로 따라간다(SCRUM-632) — 상세 시트 대신
+            // 하단 시트 안에서 포커스를 옮겨 지도 맥락을 유지한다.
+            LaunchedEffect(uiState.selectedPlaceId, uiState.places) {
+                val index = uiState.places.indexOfFirst { it.id == uiState.selectedPlaceId }
+                if (index >= 0) listState.animateScrollToItem(index)
+            }
             LazyRow(
+                state = listState,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = SheetHorizontalPadding),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(uiState.places, key = { it.id }) { place ->
+                    val selected = place.id == uiState.selectedPlaceId
                     MapPlaceCarouselCard(
                         place = place,
-                        // 카드를 누르면 지도의 그 핀이 선택돼 말풍선이 뜬다.
-                        // TODO(SCRUM-장소상세): 장소 상세 라우트가 생기면 그쪽으로 넘긴다.
-                        onClick = { actions.onPlaceSelect(place.id) },
+                        selected = selected,
+                        // 비활성 카드는 먼저 지도 이동·핀 활성화만 한다. 상세 시트는
+                        // 이미 활성화된 카드를 다시 탭했을 때 연다(SCRUM-632).
+                        onClick = {
+                            if (selected) actions.onPlaceDetail(place.id) else actions.onPlaceSelect(place.id)
+                        },
                     )
                 }
             }

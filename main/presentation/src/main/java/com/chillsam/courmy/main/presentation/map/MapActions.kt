@@ -18,7 +18,10 @@ data class MapActions(
     val onSearchClick: () -> Unit,
     val onFilterClick: () -> Unit,
     val onCategorySelect: (MapCategory) -> Unit,
+    /** 핀·빈 지도 탭 — 선택만 바꾼다. 시트 캐러셀이 그 장소로 포커스되고 상세는 열지 않는다. */
     val onPlaceSelect: (Long?) -> Unit,
+    /** 시트 카드 탭 — 장소 상세 시트를 연다. */
+    val onPlaceDetail: (Long) -> Unit,
     val onSortSelect: (MapSortOrder) -> Unit,
     val onListClick: () -> Unit,
 )
