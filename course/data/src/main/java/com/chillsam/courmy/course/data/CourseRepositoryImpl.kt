@@ -112,7 +112,15 @@ class CourseRepositoryImpl(
         draft: CourseDraftVO,
         thumbnailUrl: String?,
         published: Boolean,
+        draftCourseId: Long?,
     ): Long {
+        if (draftCourseId != null) {
+            courseManageDataSource.updateCourse(
+                draftCourseId,
+                draft.copy(thumbnailUrl = thumbnailUrl.orEmpty()).toDraftUpdateRequest(published),
+            )
+            return draftCourseId
+        }
         val request = draft.toCreateRequest(thumbnailUrl, published)
         // 포크로 시작한 코스는 생성 API 대신 포크 API 로 보낸다. 포크 API 가 코스 생성까지 해 주는
         // 구조(응답이 생성과 같은 courseId 엔벨로프)인 데다, 원본 장소 유지 규칙(CourseForkRule)과

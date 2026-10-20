@@ -46,6 +46,12 @@ class CourseCreateViewModel
         // 플랫한 MVI 인텐트 디스패치라 분기 수만큼 길이·복잡도가 늘지만 로직 복잡도는 아니다.
         @Suppress("LongMethod", "CyclomaticComplexMethod")
         override fun onIntent(intent: CourseCreateIntent) {
+            val consumesEffect =
+                intent == CourseCreateIntent.ConsumeSaveError ||
+                    intent == CourseCreateIntent.ConsumeSaved || intent == CourseCreateIntent.ConsumeDraftSaved
+            val cannotEdit = currentState.isLoading || currentState.loadErrorMessage != null
+            val blockedByLoad = cannotEdit && intent !is CourseCreateIntent.Load
+            if (!consumesEffect && (currentState.isSavingAny || blockedByLoad)) return
             when (intent) {
                 is CourseCreateIntent.Load -> {
                     load(intent.draftCourseId, intent.forkFromCourseId, intent.isPlan)
@@ -195,7 +201,7 @@ class CourseCreateViewModel
                 }
 
                 is CourseCreateReducerEvent.LoadFailed -> {
-                    state.copy(isLoading = false, errorMessage = event.message)
+                    state.copy(isLoading = false, loadErrorMessage = event.message)
                 }
 
                 CourseCreateReducerEvent.LoadStarted -> {
@@ -209,6 +215,7 @@ class CourseCreateViewModel
                         forkOriginPlaceIds = persistentSetOf(),
                         forkAuthorName = "",
                         errorMessage = null,
+                        loadErrorMessage = null,
                     )
                 }
 
@@ -421,7 +428,7 @@ class CourseCreateViewModel
         private fun createCourse(completed: CourseCompleteVO?) {
             val state = currentState
             // 버튼 비활성화를 우회해 들어와도(뒤로 가서 값을 지운 경우 등) 서버 400 전에 여기서 거른다.
-            if (state.isSaving || !state.canSave) return
+            if (state.isSavingAny || !state.canSave) return
             dispatch(CourseCreateReducerEvent.SaveStarted)
             saveJob?.cancel()
             saveJob =
@@ -435,6 +442,7 @@ class CourseCreateViewModel
                                 thumbnailUris = state.thumbnailPhotos,
                                 published = true,
                                 completed = completed,
+                                draftCourseId = state.draftCourseId,
                             )
                         }
                     }.onSuccess { result ->
@@ -535,11 +543,7 @@ class CourseCreateViewModel
                             refreshWalkingMinutes()
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
-                            // 스피너를 걷지 않으면 화면이 영구 정지한다(불러오지 못해도 작성은 가능하다).
-                            //
-                            // 이때 초안 id·포크 원본 id 를 **채우지 않는다**. 못 불러온 초안에 이어서 임시저장하면
-                            // 빈 내용으로 PATCH 가 나가 원래 초안이 지워지고, 원본을 못 읽은 포크로 저장하면
-                            // 서버가 어차피 404 로 거절한다. 둘 다 평범한 새 코스로 이어 쓰게 두는 쪽이 덜 잃는다.
+                            // 실패한 초안을 새 코스로 오인해 저장하지 않도록 재시도 화면을 유지한다.
                             Log.w(TAG, "작성 화면 진입 로드 실패: draftId=$draftCourseId, forkFromId=$forkFromCourseId", e)
                             dispatch(
                                 CourseCreateReducerEvent.LoadFailed(
@@ -563,7 +567,7 @@ class CourseCreateViewModel
          */
         private fun saveDraft() {
             if (currentState.isPlan) return
-            if (currentState.isSavingDraft) return
+            if (currentState.isSavingAny) return
             if (!currentState.canSaveDraft) {
                 dispatch(
                     CourseCreateReducerEvent.DraftSaveFailed(
