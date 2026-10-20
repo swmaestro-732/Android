@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.placeDetail.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -7,6 +8,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlaceDetailDtoMappingTest {
+    @Test
+    fun `원본 카테고리는 대소문자와 중복을 정규화하고 알 수 없는 코드는 제외한다`() {
+        val vo =
+            PlaceDetailScreenDTO(
+                place = PlaceScreenDTO(categories = listOf("CAFE", "bar", " cafe ", "UNKNOWN", "future")),
+            ).toVO()
+
+        assertEquals(listOf(PlaceCategoryVO.CAFE, PlaceCategoryVO.BAR), vo.categories)
+    }
+
+    @Test
+    fun `카테고리가 없으면 원본 카테고리는 빈 목록이다`() {
+        assertTrue(PlaceDetailScreenDTO(place = PlaceScreenDTO()).toVO().categories.isEmpty())
+        assertTrue(PlaceDetailScreenDTO().toVO().categories.isEmpty())
+    }
+
     @Test
     fun `장소 정보와 카테고리를 화면 VO로 변환한다`() {
         val vo =
