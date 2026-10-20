@@ -97,17 +97,10 @@ fun InterestRegionPage(
     val editState by editViewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(editing) { if (editing) editViewModel.onIntent(InterestEditIntent.Load) }
     // 회원가입은 빈 선택으로 시작하고, 편집은 불러온 값이 도착하면 그 값으로 다시 채운다.
-    var selected by remember(editState.loaded) { mutableStateOf(editState.regions) }
+    var selected by remember(editState.loaded) { mutableStateOf(editState.regions.filter { it.code.isNotBlank() }) }
     LaunchedEffect(editState.saved) { if (editState.saved) navigationHelper.navigateToBack() }
     val query = searchState.keyword
     val search = { keyword: String -> searchViewModel.onIntent(AreaSearchIntent.QueryChanged(keyword)) }
-    // 인기 지역 탭이 실제 행정구역으로 풀리면 그대로 선택에 담는다.
-    LaunchedEffect(searchState.resolved) {
-        searchState.resolved?.let { area ->
-            if (selected.none { it.sameAs(area) }) selected = selected + area
-            searchViewModel.onIntent(AreaSearchIntent.ConsumeResolved)
-        }
-    }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 상단 바 영역은 흰색(Figma FS-07). 가운데 콘텐츠만 Gray200.
@@ -174,10 +167,10 @@ fun InterestRegionPage(
                 SearchDropdown(
                     results = searchState.results,
                     isSearching = searchState.isSearching,
-                    usedFallback = searchState.usedFallback,
+                    searchFailed = searchState.searchFailed,
                     onSelect = { area ->
-                        // 같은 코드를 두 번 담지 않는다. 폴백 결과는 코드가 비어 이름으로 가른다.
-                        if (selected.none { it.sameAs(area) }) selected = selected + area
+                        // 실제 지역 코드를 가진 항목만 담고 중복을 막는다.
+                        if (area.code.isNotBlank() && selected.none { it.sameAs(area) }) selected = selected + area
                         search("")
                     },
                 )
@@ -192,16 +185,7 @@ fun InterestRegionPage(
             SectionLabel(text = "인기 지역")
             PopularRegionChips(
                 regions = POPULAR_REGIONS,
-                selectedNames = selected,
-                onToggle = { name ->
-                    val already = selected.filter { it.matchesName(name) }
-                    // 이미 고른 지역이면 그 자리에서 뺀다. 아니면 검색을 거쳐 실제 행정구역으로 담는다.
-                    if (already.isNotEmpty()) {
-                        selected = selected - already.toSet()
-                    } else {
-                        searchViewModel.onIntent(AreaSearchIntent.ResolvePopular(name))
-                    }
-                },
+                onToggle = search,
             )
         }
 
@@ -230,7 +214,7 @@ fun InterestRegionPage(
 private fun SearchDropdown(
     results: List<AreaVO>,
     isSearching: Boolean,
-    usedFallback: Boolean,
+    searchFailed: Boolean,
     onSelect: (AreaVO) -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -247,7 +231,12 @@ private fun SearchDropdown(
         if (results.isEmpty()) {
             DsText(
                 // 검색 중에 "결과 없음"이 잠깐 스쳐 보이지 않게 상태를 갈라 보여 준다.
-                text = if (isSearching) "검색 중이에요" else "검색 결과가 없어요",
+                text =
+                    when {
+                        isSearching -> "검색 중이에요"
+                        searchFailed -> "지역을 불러오지 못했어요. 다시 검색해 주세요."
+                        else -> "검색 결과가 없어요"
+                    },
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
@@ -266,16 +255,6 @@ private fun SearchDropdown(
                         HorizontalDivider(color = color.borderDefaultLevel0)
                     }
                 }
-            }
-            if (usedFallback) {
-                // 서버 검색이 안 될 때 내장 목록으로 채운 상태임을 숨기지 않는다.
-                DsText(
-                    text = "지금은 검색 서버에 연결할 수 없어 자주 쓰는 지역만 보여 주고 있어요",
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel3,
-                    maxLines = Int.MAX_VALUE,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                )
             }
         }
     }
@@ -379,7 +358,6 @@ private fun SelectedRegionChips(
 @Composable
 private fun PopularRegionChips(
     regions: List<String>,
-    selectedNames: List<AreaVO>,
     onToggle: (String) -> Unit,
 ) {
     FlowRow(
@@ -389,26 +367,12 @@ private fun PopularRegionChips(
         regions.forEach { region ->
             DsChip(
                 text = region,
-                selected = selectedNames.any { it.matchesName(region) },
+                selected = false,
                 onClick = { onToggle(region) },
             )
         }
     }
 }
 
-/**
- * 인기 지역 칩 이름과 같은 곳인지.
- *
- * 검색이 칩 이름을 더 잘게 쪼갠 결과를 주므로("성수동" → "성수동1가") 정확히 같은지로는 못 가른다.
- * 그래서 이름이 포함되는지로 느슨하게 본다.
- */
-private fun AreaVO.matchesName(name: String): Boolean = shortName.contains(name) || fullName.contains(name)
-
-/**
- * 같은 지역인지 판정.
- *
- * 보통은 법정동코드로 가르지만, 검색 폴백 결과는 코드가 비어 있어 코드만 보면 서로 다른 지역이
- * 모두 같은 것으로 뭉개진다. 그래서 코드가 있을 때만 코드로, 없으면 이름으로 비교한다.
- */
-private fun AreaVO.sameAs(other: AreaVO): Boolean =
-    if (code.isNotBlank() && other.code.isNotBlank()) code == other.code else fullName == other.fullName
+/** 선택 항목은 서버가 반환한 실제 지역 코드로만 비교한다. */
+private fun AreaVO.sameAs(other: AreaVO): Boolean = code.isNotBlank() && code == other.code

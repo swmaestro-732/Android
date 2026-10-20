@@ -23,23 +23,14 @@ sealed interface AreaSearchIntent : MviIntent {
     data class QueryChanged(
         val keyword: String,
     ) : AreaSearchIntent
-
-    /** 인기 지역 탭. 이름으로 검색해 실제 행정구역으로 바꾼 뒤 [AreaSearchUiState.resolved] 로 돌려준다. */
-    data class ResolvePopular(
-        val name: String,
-    ) : AreaSearchIntent
-
-    data object ConsumeResolved : AreaSearchIntent
 }
 
 data class AreaSearchUiState(
     val keyword: String = "",
     val results: List<AreaVO> = emptyList(),
     val isSearching: Boolean = false,
-    /** 서버 검색이 실패해 내장 목록으로 대신 채운 상태. 화면이 안내 문구를 띄우는 데 쓴다. */
-    val usedFallback: Boolean = false,
-    /** 인기 지역 탭이 실제 행정구역으로 풀린 1회성 결과. 화면이 선택에 담고 비운다. */
-    val resolved: AreaVO? = null,
+    /** 검색 실패를 빈 결과와 구분한다. */
+    val searchFailed: Boolean = false,
 ) : UiState {
     companion object {
         val empty = AreaSearchUiState()
@@ -55,23 +46,11 @@ sealed interface AreaSearchReducerEvent : ReducerEvent {
 
     data class Loaded(
         val results: List<AreaVO>,
-        val usedFallback: Boolean,
+        val searchFailed: Boolean,
     ) : AreaSearchReducerEvent
-
-    data class Resolved(
-        val area: AreaVO,
-    ) : AreaSearchReducerEvent
-
-    data object ResolvedConsumed : AreaSearchReducerEvent
 }
 
-/**
- * 관심 지역 검색 ViewModel(`GET /api/v1/areas/search`).
- *
- * 서버 호출이 실패하면 내장 목록([FALLBACK_AREAS])을 걸러 대신 보여 준다.
- * 엔드포인트가 아직 배포되지 않았을 수 있어(백엔드 main 에는 머지됨) 화면이 비어 보이는 걸 막기 위해서다.
- * 폴백 항목은 법정동코드가 없어 [AreaVO.code] 가 빈 문자열이며, 회원가입 전송 시 걸러진다. [wiki-needed]
- */
+/** 관심 지역 검색. 서버가 반환한 코드가 있는 실제 지역만 선택할 수 있다. */
 @HiltViewModel
 class AreaSearchViewModel
     @Inject
@@ -83,8 +62,6 @@ class AreaSearchViewModel
         override fun onIntent(intent: AreaSearchIntent) {
             when (intent) {
                 is AreaSearchIntent.QueryChanged -> search(intent.keyword)
-                is AreaSearchIntent.ResolvePopular -> resolvePopular(intent.name)
-                AreaSearchIntent.ConsumeResolved -> dispatch(AreaSearchReducerEvent.ResolvedConsumed)
             }
         }
 
@@ -94,27 +71,19 @@ class AreaSearchViewModel
         ): AreaSearchUiState =
             when (event) {
                 is AreaSearchReducerEvent.QueryChanged -> {
-                    state.copy(keyword = event.keyword)
+                    state.copy(keyword = event.keyword, results = emptyList(), searchFailed = false)
                 }
 
                 AreaSearchReducerEvent.Started -> {
-                    state.copy(isSearching = true)
+                    state.copy(isSearching = true, results = emptyList(), searchFailed = false)
                 }
 
                 is AreaSearchReducerEvent.Loaded -> {
                     state.copy(
-                        results = event.results,
+                        results = event.results.filter { it.code.isNotBlank() },
                         isSearching = false,
-                        usedFallback = event.usedFallback,
+                        searchFailed = event.searchFailed,
                     )
-                }
-
-                is AreaSearchReducerEvent.Resolved -> {
-                    state.copy(resolved = event.area)
-                }
-
-                AreaSearchReducerEvent.ResolvedConsumed -> {
-                    state.copy(resolved = null)
                 }
             }
 
@@ -122,7 +91,7 @@ class AreaSearchViewModel
             dispatch(AreaSearchReducerEvent.QueryChanged(keyword))
             job?.cancel()
             if (keyword.isBlank()) {
-                dispatch(AreaSearchReducerEvent.Loaded(emptyList(), usedFallback = false))
+                dispatch(AreaSearchReducerEvent.Loaded(emptyList(), searchFailed = false))
                 return
             }
             dispatch(AreaSearchReducerEvent.Started)
@@ -130,38 +99,12 @@ class AreaSearchViewModel
                 viewModelScope.launch {
                     delay(SEARCH_DEBOUNCE_MS)
                     runCatching { searchAreasUseCase(keyword) }
-                        .onSuccess { dispatch(AreaSearchReducerEvent.Loaded(it, usedFallback = false)) }
+                        .onSuccess { dispatch(AreaSearchReducerEvent.Loaded(it, searchFailed = false)) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
-                            Log.w(TAG, "지역 검색 실패, 내장 목록으로 대체: ${e.message}", e)
-                            dispatch(AreaSearchReducerEvent.Loaded(fallbackAreas(keyword), usedFallback = true))
+                            Log.w(TAG, "지역 검색 실패: ${e.message}", e)
+                            dispatch(AreaSearchReducerEvent.Loaded(emptyList(), searchFailed = true))
                         }
-                }
-        }
-
-        /**
-         * 인기 지역 이름을 실제 행정구역 한 건으로 바꾼다.
-         *
-         * 칩에는 법정동코드가 없어 그대로 고르면 서버에 보낼 수 없다. 그래서 이름으로 한 번 검색해
-         * 코드가 붙은 결과를 집는다. 이름이 그대로 걸리는 결과를 먼저 보고(예: "성수동" → "성수동1가"),
-         * 없으면 첫 결과를, 검색 자체가 비면 코드 없는 값으로라도 골라 화면이 무반응이 되지 않게 한다.
-         */
-        private fun resolvePopular(name: String) {
-            job?.cancel()
-            job =
-                viewModelScope.launch {
-                    val candidates =
-                        runCatching { searchAreasUseCase(name) }
-                            .getOrElse { e ->
-                                if (e is CancellationException) throw e
-                                Log.w(TAG, "인기 지역 조회 실패, 내장 목록으로 대체: ${e.message}", e)
-                                fallbackAreas(name)
-                            }
-                    val area =
-                        candidates.firstOrNull { it.shortName.contains(name) || it.fullName.contains(name) }
-                            ?: candidates.firstOrNull()
-                            ?: AreaVO(code = "", shortName = name, fullName = name)
-                    dispatch(AreaSearchReducerEvent.Resolved(area))
                 }
         }
 
@@ -169,29 +112,3 @@ class AreaSearchViewModel
             const val TAG = "AreaSearch"
         }
     }
-
-/**
- * 서버 검색이 안 될 때 쓰는 내장 지역 목록.
- *
- * 법정동코드가 없어 [AreaVO.code] 를 비워 둔다 — 화면에서 고르고 기기에 저장하는 것까지는 되지만
- * 회원가입 요청의 `areaCodes` 에는 실리지 않는다. 서버 검색이 자리 잡으면 이 목록을 지운다.
- */
-private val FALLBACK_AREAS =
-    listOf(
-        "서울특별시 성동구 성수동" to "성수동",
-        "서울특별시 마포구 연남동" to "연남동",
-        "서울특별시 마포구 합정동" to "합정동",
-        "서울특별시 마포구 망원동" to "망원동",
-        "서울특별시 용산구 한남동" to "한남동",
-        "서울특별시 용산구 이태원동" to "이태원동",
-        "서울특별시 종로구 익선동" to "익선동",
-        "서울특별시 종로구 삼청동" to "삼청동",
-        "서울특별시 종로구 사직동" to "서촌",
-        "서울특별시 중구 을지로동" to "을지로",
-        "서울특별시 마포구 서교동" to "홍대",
-        "서울특별시 송파구 잠실동" to "잠실",
-        "서울특별시 강남구 압구정동" to "압구정",
-    ).map { (full, short) -> AreaVO(code = "", shortName = short, fullName = full) }
-
-private fun fallbackAreas(keyword: String): List<AreaVO> =
-    FALLBACK_AREAS.filter { it.shortName.contains(keyword) || it.fullName.contains(keyword) }
