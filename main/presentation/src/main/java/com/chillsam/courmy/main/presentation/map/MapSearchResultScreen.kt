@@ -81,11 +81,12 @@ fun MapSearchResultScreen(
         MapCanvas(
             places = uiState.places,
             clusters = emptyList(),
+            showAllPlaces = true,
             selectedPlaceId = uiState.selectedPlaceId,
             initialPosition = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
             onPlaceClick = actions.onPlaceSelect,
             onMapClick = { actions.onPlaceSelect(null) },
-            contentPadding = PaddingValues(bottom = if (isList) listSheetHeight else MarkerSheetInset),
+            contentPadding = PaddingValues(top = 100.dp, bottom = if (isList) listSheetHeight else MarkerSheetInset),
             locationSource = locationSource,
             locationTrackingMode = trackingMode,
             onCameraGesture = {
@@ -179,7 +180,7 @@ private fun SelectedPlaceSheet(
     ) {
         MapPlaceDetailCard(
             place = place,
-            onClick = { actions.onPlaceSelect(place.id) },
+            onClick = { actions.onPlaceDetail(place.id) },
             onSaveClick = { actions.onSaveToggle(place.id) },
             modifier = Modifier.padding(horizontal = SheetHorizontalPadding),
         )
@@ -232,7 +233,7 @@ private fun ResultListSheet(
                         rank = index + 1,
                         place = place,
                         isSelected = place.id == uiState.selectedPlaceId,
-                        onClick = { actions.onPlaceSelect(place.id) },
+                        onClick = { actions.onPlaceDetail(place.id) },
                         onSaveClick = { actions.onSaveToggle(place.id) },
                     )
                 }

@@ -23,6 +23,8 @@ import com.chillsam.courmy.main.domain.search.SearchResultPage as SearchResultRo
 fun SearchPage(
     target: String = SearchRoute.TARGET_COURSE,
     query: String = "",
+    latitude: Double? = null,
+    longitude: Double? = null,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
@@ -35,7 +37,7 @@ fun SearchPage(
     }
 
     val actions =
-        remember(viewModel, navigationHelper, target) {
+        remember(viewModel, navigationHelper, target, latitude, longitude) {
             SearchActions(
                 onQueryChange = { viewModel.onIntent(SearchIntent.ChangeQuery(it)) },
                 onClearQuery = { viewModel.onIntent(SearchIntent.ClearQuery) },
@@ -48,7 +50,7 @@ fun SearchPage(
                         navigationHelper.navigateToBack()
                         navigationHelper.navigateByRoute(
                             if (target == SearchRoute.TARGET_PLACE) {
-                                MapSearchResultPage.route(trimmed)
+                                MapSearchResultPage.route(trimmed, latitude = latitude, longitude = longitude)
                             } else {
                                 SearchResultRoute.route(trimmed)
                             },
