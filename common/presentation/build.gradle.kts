@@ -61,6 +61,7 @@ composeCompiler {
 
 dependencies {
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     api(project(":common:domain"))
     api(project(":tti"))

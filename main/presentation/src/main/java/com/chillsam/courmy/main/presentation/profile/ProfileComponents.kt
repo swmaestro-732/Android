@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,6 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.ContentSkeleton
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -398,7 +398,7 @@ private fun ProfileCourseCard(
     }
 }
 
-/** 프로필 로딩 중 스피너. */
+/** 프로필 로딩 중 콘텐츠 자리. */
 @Composable
 fun ProfileLoading(modifier: Modifier = Modifier) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -406,7 +406,7 @@ fun ProfileLoading(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(color = color.contentAccent)
+        ContentSkeleton()
     }
 }
 

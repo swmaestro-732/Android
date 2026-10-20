@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -44,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.ContentSkeleton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
@@ -297,7 +297,7 @@ internal fun FeedLoading() {
         modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(color = DesignSystemThemeImpl.designSystemColor.contentAccent)
+        ContentSkeleton(showHero = false)
     }
 }
 

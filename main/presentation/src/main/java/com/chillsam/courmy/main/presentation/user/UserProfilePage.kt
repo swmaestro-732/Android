@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
@@ -26,6 +27,7 @@ import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.report.ReportAction
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
@@ -171,6 +173,9 @@ private fun UserProfileContent(
                         contentDescription = "공유",
                         onClick = shareProfile,
                     )
+                }
+                if (!profile.isMe) {
+                    ReportAction(ReportTargetType.USER, profile.id)
                 }
             }
             // 자기 자신을 연 경우(응답 id == 내 id)에는 팔로우 버튼을 노출하지 않는다.
