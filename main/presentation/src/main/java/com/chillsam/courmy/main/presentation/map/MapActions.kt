@@ -16,7 +16,6 @@ data class MapActions(
     val onBoundsChanged: (MapBounds) -> Unit,
     val onRetry: () -> Unit,
     val onSearchClick: () -> Unit,
-    val onFilterClick: () -> Unit,
     val onCategorySelect: (MapCategory) -> Unit,
     /** 핀·빈 지도 탭 — 선택만 바꾼다. 시트 캐러셀이 그 장소로 포커스되고 상세는 열지 않는다. */
     val onPlaceSelect: (Long?) -> Unit,
@@ -34,6 +33,7 @@ data class MapSearchResultActions(
     val onQueryClick: () -> Unit,
     val onClearQuery: () -> Unit,
     val onPlaceSelect: (Long?) -> Unit,
+    val onPlaceDetail: (Long) -> Unit,
     val onSaveToggle: (Long) -> Unit,
     val onRetry: () -> Unit,
     val onLoadMore: () -> Unit,
