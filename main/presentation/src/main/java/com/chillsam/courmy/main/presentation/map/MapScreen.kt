@@ -121,7 +121,6 @@ fun MapScreen(
             MapSearchEntryBar(
                 placeholder = "장소 검색",
                 onClick = actions.onSearchClick,
-                onFilterClick = actions.onFilterClick,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 8.dp),
             )
             MapChipRow(

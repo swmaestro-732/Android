@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapBounds
@@ -18,6 +19,7 @@ import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.presentation.component.placeCategoryIcon
 import com.naver.maps.geometry.LatLng
+import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.LocationSource
@@ -65,15 +67,29 @@ internal fun MapCanvas(
     locationTrackingMode: LocationTrackingMode = LocationTrackingMode.None,
     onLocationChange: ((android.location.Location) -> Unit)? = null,
     onCameraGesture: (() -> Unit)? = null,
+    showAllPlaces: Boolean = false,
 ) {
     val cameraPositionState =
         rememberCameraPositionState {
             position = CameraPosition(initialPosition, EXPLORE_ZOOM)
         }
     val selectedPosition = places.firstOrNull { it.id == selectedPlaceId }?.latLngOrNull()
-    LaunchedEffect(selectedPlaceId, selectedPosition) {
-        if (selectedPosition != null) {
-            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(selectedPosition, FOCUS_ZOOM))
+    val overviewPositions = if (showAllPlaces) places.mapNotNull { it.latLngOrNull() }.distinct() else emptyList()
+    val fitPadding = with(LocalDensity.current) { 48.dp.roundToPx() }
+    LaunchedEffect(selectedPlaceId, selectedPosition, overviewPositions, contentPadding.takeIf { showAllPlaces }) {
+        when {
+            selectedPosition != null -> {
+                cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(selectedPosition, FOCUS_ZOOM))
+            }
+
+            overviewPositions.size == 1 -> {
+                cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(overviewPositions.single(), EXPLORE_ZOOM))
+            }
+
+            overviewPositions.size > 1 -> {
+                val bounds = LatLngBounds.Builder().apply { overviewPositions.forEach { include(it) } }.build()
+                cameraPositionState.animate(CameraUpdate.fitBounds(bounds, fitPadding))
+            }
         }
     }
     val scope = rememberCoroutineScope()

@@ -27,11 +27,7 @@ class MapSearchResultViewModel
         override fun onIntent(intent: MapSearchResultIntent) {
             when (intent) {
                 is MapSearchResultIntent.Load -> {
-                    if (intent.query != currentState.query ||
-                        currentState.isLoading
-                    ) {
-                        load(intent.query)
-                    }
+                    loadIfChanged(intent)
                 }
 
                 MapSearchResultIntent.Retry -> {
@@ -70,16 +66,25 @@ class MapSearchResultViewModel
             }
         }
 
+        private fun loadIfChanged(intent: MapSearchResultIntent.Load) {
+            val locationChanged = intent.latitude != currentState.latitude || intent.longitude != currentState.longitude
+            if (intent.query != currentState.query || locationChanged || currentState.isLoading) {
+                load(intent.query, latitude = intent.latitude, longitude = intent.longitude)
+            }
+        }
+
         private fun load(
             query: String,
             append: Boolean = false,
+            latitude: Double? = currentState.latitude,
+            longitude: Double? = currentState.longitude,
         ) {
             val cursor = if (append) currentState.nextCursor else null
             loadJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    dispatch(MapSearchResultReducerEvent.LoadStarted(query, append))
-                    runCatching { searchPlaces(query, cursor) }
+                    dispatch(MapSearchResultReducerEvent.LoadStarted(query, latitude, longitude, append))
+                    runCatching { searchPlaces(query, cursor, latitude, longitude) }
                         .onSuccess { page -> dispatch(MapSearchResultReducerEvent.Loaded(page, append)) }
                         .onFailure { error ->
                             if (error is CancellationException) throw error
@@ -125,7 +130,12 @@ class MapSearchResultViewModel
                             errorMessage = null,
                         )
                     } else {
-                        MapSearchResultUIState(query = event.query, sheetMode = state.sheetMode)
+                        MapSearchResultUIState(
+                            query = event.query,
+                            latitude = event.latitude,
+                            longitude = event.longitude,
+                            sheetMode = state.sheetMode,
+                        )
                     }
                 }
 
@@ -193,8 +203,7 @@ class MapSearchResultViewModel
                 nextCursor = event.page.nextCursor,
                 hasNext = event.page.hasNext && event.page.nextCursor != state.nextCursor,
                 selectedPlaceId =
-                    state.selectedPlaceId?.takeIf { id -> places.any { it.id == id } }
-                        ?: places.firstOrNull()?.id,
+                    state.selectedPlaceId?.takeIf { id -> places.any { it.id == id } },
             )
         }
     }
