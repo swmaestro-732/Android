@@ -47,7 +47,6 @@ import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
-import com.chillsam.courmy.main.presentation.profile.ProfileSectionLabel
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
@@ -187,7 +186,7 @@ private fun UserProfileContent(
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
-            ProfileSectionLabel(text = "코스 ${profile.courseCount}")
+            Spacer(Modifier.height(20.dp))
             ProfileCoursesGrid(
                 courses = courses,
                 onCourseClick = { courseId ->
