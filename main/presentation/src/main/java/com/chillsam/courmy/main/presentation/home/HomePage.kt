@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -78,6 +77,7 @@ import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.main.presentation.component.hasLocationPermission
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
@@ -731,11 +731,6 @@ private fun ThemeTile(
         )
     }
 }
-
-/** 정확/대략 어느 쪽이든 위치 권한이 있는지. */
-private fun Context.hasLocationPermission(): Boolean =
-    checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-        checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
 /** 기기 위치 서비스(GPS·네트워크)가 켜져 있는지. */
 private fun Context.isLocationEnabled(): Boolean {
