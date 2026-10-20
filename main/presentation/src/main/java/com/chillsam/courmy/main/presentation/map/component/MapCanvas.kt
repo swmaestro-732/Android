@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapBounds
@@ -18,6 +19,7 @@ import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.presentation.component.placeCategoryIcon
 import com.naver.maps.geometry.LatLng
+import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.LocationSource
@@ -46,8 +48,8 @@ private const val CLUSTER_ZOOM_STEP = 2.0
  * 장소 탐색용 지도(FS-10 계열 공용).
  *
  * 좌표가 없는 장소는 핀을 못 찍으므로 자동으로 빠진다. 선택된 핀만 크게 그리고 말풍선을 얹는다.
- * 카메라는 [selectedPlaceId] 가 바뀔 때만 움직인다 — 사용자가 지도를 끌어 옮긴 뒤에도 목록을
- * 다시 그렸다는 이유로 원래 자리로 튕겨 돌아가면 안 되기 때문이다.
+ * 선택한 핀으로 이동하고, [showAllPlaces] 일 때는 결과 좌표가 바뀌면 전체를 보여 준다.
+ * 선택 해제나 시트 크기 변경만으로 사용자가 옮긴 카메라를 되돌리지 않는다.
  */
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
@@ -65,15 +67,31 @@ internal fun MapCanvas(
     locationTrackingMode: LocationTrackingMode = LocationTrackingMode.None,
     onLocationChange: ((android.location.Location) -> Unit)? = null,
     onCameraGesture: (() -> Unit)? = null,
+    showAllPlaces: Boolean = false,
 ) {
     val cameraPositionState =
         rememberCameraPositionState {
             position = CameraPosition(initialPosition, EXPLORE_ZOOM)
         }
     val selectedPosition = places.firstOrNull { it.id == selectedPlaceId }?.latLngOrNull()
+    val overviewPositions = if (showAllPlaces) places.mapNotNull { it.latLngOrNull() }.distinct() else emptyList()
+    val fitPadding = with(LocalDensity.current) { 48.dp.roundToPx() }
     LaunchedEffect(selectedPlaceId, selectedPosition) {
-        if (selectedPosition != null) {
-            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(selectedPosition, FOCUS_ZOOM))
+        selectedPosition?.let {
+            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(it, FOCUS_ZOOM))
+        }
+    }
+    LaunchedEffect(overviewPositions) {
+        if (selectedPosition != null) return@LaunchedEffect
+        when {
+            overviewPositions.size == 1 -> {
+                cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(overviewPositions.single(), EXPLORE_ZOOM))
+            }
+
+            overviewPositions.size > 1 -> {
+                val bounds = LatLngBounds.Builder().apply { overviewPositions.forEach { include(it) } }.build()
+                cameraPositionState.animate(CameraUpdate.fitBounds(bounds, fitPadding))
+            }
         }
     }
     val scope = rememberCoroutineScope()

@@ -7,6 +7,8 @@ import com.chillsam.courmy.main.entity.map.MapPlaceVO
 sealed interface MapSearchResultReducerEvent : ReducerEvent {
     data class LoadStarted(
         val query: String,
+        val latitude: Double?,
+        val longitude: Double?,
         val append: Boolean,
     ) : MapSearchResultReducerEvent
 
