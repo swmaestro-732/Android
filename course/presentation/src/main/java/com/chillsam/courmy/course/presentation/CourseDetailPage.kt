@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chillsam.courmy.common.presentation.component.ContentSkeleton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
@@ -146,7 +145,7 @@ private fun CourseDetailLoading(modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
-        ContentSkeleton()
+        CourseDetailSkeleton()
     }
 }
 

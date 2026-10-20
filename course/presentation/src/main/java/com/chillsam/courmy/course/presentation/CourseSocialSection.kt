@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -324,9 +323,7 @@ private fun CommentList(
     val color = DesignSystemThemeImpl.designSystemColor
     when {
         state.isLoading -> {
-            Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = color.contentAccent)
-            }
+            CommentListSkeleton(modifier = modifier)
         }
 
         state.errorMessage != null -> {

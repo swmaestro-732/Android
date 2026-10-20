@@ -43,7 +43,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
-import com.chillsam.courmy.common.presentation.component.ContentSkeleton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
@@ -54,6 +53,7 @@ import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.main.presentation.component.CourseCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 
 /**
@@ -293,12 +293,7 @@ private fun RecommendedTopBar(
 /** 피드 로딩 자리. 홈 미리보기·전체 목록이 함께 쓴다. */
 @Composable
 internal fun FeedLoading() {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        ContentSkeleton(showHero = false)
-    }
+    CourseCardsSkeleton()
 }
 
 /** 피드가 비었거나 실패했을 때의 안내. [onRetry] 가 있으면 재시도를 노출한다. */

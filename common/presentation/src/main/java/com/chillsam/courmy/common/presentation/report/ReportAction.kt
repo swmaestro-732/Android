@@ -73,7 +73,11 @@ fun ReportAction(
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(text = {
-                DsText(text = "신고하기", color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0)
+                DsText(
+                    text = "신고하기",
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+                )
             }, onClick = {
                 expanded = false
                 reporting = true
@@ -130,7 +134,12 @@ private fun ReportDialog(
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
             )
-            DsText(text = "신고 사유를 선택해 주세요.", color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2)
+            DsText(
+                text = "신고 사유를 선택해 주세요.",
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+                maxLines = Int.MAX_VALUE,
+            )
             ReportReason.entries.forEach { reason ->
                 DsChip(text = reason.label, selected = state.reason == reason, enabled = !state.submitting, onClick = {
                     viewModel.onIntent(ReportIntent.SelectReason(reason))
@@ -142,6 +151,7 @@ private fun ReportDialog(
             state.error?.let {
                 DsText(
                     text = it,
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = DesignSystemThemeImpl.designSystemColor.contentDanger,
                     maxLines = Int.MAX_VALUE,
                 )

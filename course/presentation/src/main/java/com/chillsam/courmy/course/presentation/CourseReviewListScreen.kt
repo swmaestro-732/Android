@@ -173,7 +173,7 @@ private fun ReviewWriteBar(onWriteReview: () -> Unit) {
 
 /** 상단 바: 뒤로가기 + "따라간 후기". */
 @Composable
-private fun ReviewListTopBar(onBack: () -> Unit) {
+internal fun ReviewListTopBar(onBack: () -> Unit) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
         modifier =

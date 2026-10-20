@@ -18,12 +18,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.component.alignTextFieldBorder
@@ -60,9 +63,7 @@ fun CourseEditScreen(
     ) {
         EditTopBar(onClose = onClose)
         if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = color.contentAccent)
-            }
+            CourseEditSkeleton()
             return@Column
         }
         Column(
@@ -153,19 +154,12 @@ private fun EditTopBar(onClose: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(color.bgDefaultLevel1)
-                    .clickable(onClick = onClose),
-            contentAlignment = Alignment.Center,
-        ) {
-            DsText(
-                text = "✕",
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = color.contentDefaultLevel0,
+        IconButton(onClick = onClose, modifier = Modifier.size(48.dp)) {
+            Icon(
+                painter = painterResource(R.drawable.close_small_24),
+                contentDescription = "코스 편집 닫기",
+                tint = color.contentDefaultLevel0,
+                modifier = Modifier.size(24.dp),
             )
         }
         DsText(

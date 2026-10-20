@@ -32,7 +32,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
-import com.chillsam.courmy.main.presentation.home.FeedLoading
+import com.chillsam.courmy.main.presentation.component.PlaceRowsSkeleton
 import com.chillsam.courmy.main.presentation.home.FeedMessage
 import com.chillsam.courmy.main.presentation.map.component.MapBottomSheet
 import com.chillsam.courmy.main.presentation.map.component.MapCanvas
@@ -125,7 +125,10 @@ fun MapSearchResultScreen(
         if (uiState.places.isEmpty()) {
             MapBottomSheet(modifier = Modifier.align(Alignment.BottomCenter)) {
                 if (uiState.isLoading) {
-                    FeedLoading()
+                    PlaceRowsSkeleton(
+                        Modifier.padding(horizontal = SheetHorizontalPadding, vertical = 12.dp),
+                        count = 1,
+                    )
                 } else {
                     FeedMessage(uiState.errorMessage ?: "검색 결과가 없어요", uiState.errorMessage?.let { actions.onRetry })
                 }
