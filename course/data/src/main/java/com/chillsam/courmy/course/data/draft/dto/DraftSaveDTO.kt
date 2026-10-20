@@ -13,8 +13,8 @@ import com.chillsam.courmy.course.entity.CourseDraftVO
  *
  * 서버는 PATCH 여도 **전체 본문**을 요구하고 places 를 통째로 치환한다([UpdateCourseRequest] 주석 참고).
  */
-fun CourseDraftVO.toDraftUpdateRequest(): UpdateCourseRequest {
-    val request = toCreateRequest(thumbnailUrl = thumbnailUrl.ifBlank { null }, published = false)
+fun CourseDraftVO.toDraftUpdateRequest(published: Boolean = false): UpdateCourseRequest {
+    val request = toCreateRequest(thumbnailUrl = thumbnailUrl.ifBlank { null }, published = published)
     return UpdateCourseRequest(
         title = request.title,
         description = request.description,
