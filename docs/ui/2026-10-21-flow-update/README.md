@@ -2,7 +2,7 @@
 
 실제 에뮬레이터 APK 화면. 공개 코스 ID1과 courmy 프로필, 성수동 검색을 읽어 확인했다. 서버 후기/신고/저장 POST는 수행하지 않았다.
 
-- 통합 브랜치 fix/SCRUM-624-flow-integration. 최초 캡처 d5836a5, 최종 신고 폼·지도 전체보기는9a6be80 빌드에서 다시 캡처.
+- 통합 브랜치 fix/SCRUM-624-flow-integration. 최초 캡처 d5836a5, 신고 폼은 9a6be80, 최종 지도 전체보기·장소 패널은 315642c 빌드에서 다시 캡처.
 - course-detail: 좋아요·저장 상단 아이콘, 신고 더보기.
 - report: 신고 폼, 미제출 상태.
 - place-detail/place-review: 실제 장소 상세·카페 키워드 후기 입력, 미제출 상태.
