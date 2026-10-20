@@ -458,7 +458,44 @@ private fun ColumnScope.FullMapLayout(
                 onToggleOverview = onToggleOverview,
                 modifier = Modifier.align(Alignment.BottomStart),
             )
+        } else {
+            CompactCourseSummary(
+                course = course,
+                modifier =
+                    Modifier
+                        .align(
+                            Alignment.TopStart,
+                        ).statusBarsPadding()
+                        .padding(start = 16.dp, end = 64.dp, top = 8.dp),
+            )
         }
+    }
+}
+
+@Composable
+private fun CompactCourseSummary(
+    course: PlaceSheetCourse,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier = modifier.fillMaxWidth().background(color.bgDefaultLevel1, RoundedCornerShape(14.dp)).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        DsText(
+            text = course.title,
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel0,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        DsText(
+            text = course.summary.ifBlank { "${course.places.size}곳" },
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel2,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
