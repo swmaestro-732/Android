@@ -15,7 +15,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.main.domain.home.HomePage
-import com.chillsam.courmy.main.domain.map.MapSearchResultPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
@@ -60,10 +59,8 @@ fun MapPage(
                     viewModel.onIntent(MapIntent.SelectPlace(it))
                 },
                 onSortSelect = { viewModel.onIntent(MapIntent.ChangeSortOrder(it)) },
-                onListClick = {
-                    navigationHelper.navigateByRoute(
-                        MapSearchResultPage.route("", listMode = true),
-                    )
+                onMyLocationChange = { lat, lng ->
+                    viewModel.onIntent(MapIntent.MyLocationChanged(lat, lng))
                 },
             )
         }

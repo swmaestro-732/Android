@@ -26,6 +26,9 @@ data class MapUIState(
     val sortOrder: MapSortOrder = MapSortOrder.SAVED,
     /** 말풍선이 떠 있는 핀. 아무것도 안 고르면 null. */
     val selectedPlaceId: Long? = null,
+    /** 현위치 추적이 알려 준 기기 좌표(SCRUM-634). 권한 전·추적 전이면 null 이라 기본 기준점을 쓴다. */
+    val myLat: Double? = null,
+    val myLng: Double? = null,
     val errorMessage: String? = null,
 ) : UiState {
     val selectedPlace: MapPlaceVO?

@@ -4,6 +4,11 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- 지도 현위치(FS-10). 정확한 위치는 지도 추적용, 대략 위치는 Android 12+ 에서 사용자가
+         "대략만 허용"을 고를 수 있게 함께 선언한다(SCRUM-634). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
         android:name=".CourmyApplication"
         android:allowBackup="true"

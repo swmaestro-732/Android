@@ -23,7 +23,8 @@ data class MapActions(
     /** 시트 카드 탭 — 장소 상세 시트를 연다. */
     val onPlaceDetail: (Long) -> Unit,
     val onSortSelect: (MapSortOrder) -> Unit,
-    val onListClick: () -> Unit,
+    /** 현위치 추적이 알려 준 기기 좌표. 거리 기준점 갱신용(SCRUM-634). */
+    val onMyLocationChange: (Double, Double) -> Unit,
 )
 
 /** 검색 결과 화면이 상위로 올려 보내는 동작 묶음(FS-10-ResultMap / FS-10-List). */

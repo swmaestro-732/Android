@@ -72,6 +72,10 @@ class MapViewModel
                     dispatch(MapReducerEvent.PlaceSelected(intent.placeId))
                 }
 
+                is MapIntent.MyLocationChanged -> {
+                    onMyLocationChanged(intent)
+                }
+
                 is MapIntent.ToggleSave -> {
                     toggleSave(intent.placeId)
                 }
@@ -80,6 +84,19 @@ class MapViewModel
                     dispatch(MapReducerEvent.ErrorConsumed)
                 }
             }
+        }
+
+        /**
+         * 위치는 걸을 때도 계속 들어온다. 기준점 용도라 ~50m 이상 움직였을 때만 반영해
+         * 불필요한 리컴포지션을 막는다.
+         */
+        private fun onMyLocationChanged(intent: MapIntent.MyLocationChanged) {
+            val state = currentState
+            val moved =
+                state.myLat == null || state.myLng == null ||
+                    kotlin.math.abs(state.myLat - intent.lat) > LOCATION_EPSILON ||
+                    kotlin.math.abs(state.myLng - intent.lng) > LOCATION_EPSILON
+            if (moved) dispatch(MapReducerEvent.MyLocationChanged(intent.lat, intent.lng))
         }
 
         private fun load() {
@@ -98,9 +115,9 @@ class MapViewModel
                             neLng = bounds.neLng,
                             category = state.category,
                             sortOrder = state.sortOrder,
-                            // 위치 권한 연동 전이라 거리 기준점은 기본 진입 지점으로 둔다.
-                            userLat = MapMockData.DEFAULT_LATITUDE,
-                            userLng = MapMockData.DEFAULT_LONGITUDE,
+                            // 거리 기준점은 현위치. 권한 전·추적 전이면 기본 진입 지점으로 둔다(SCRUM-634).
+                            userLat = state.myLat ?: MapMockData.DEFAULT_LATITUDE,
+                            userLng = state.myLng ?: MapMockData.DEFAULT_LONGITUDE,
                         )
                     }.onSuccess { result ->
                         dispatch(
@@ -176,6 +193,10 @@ class MapViewModel
                     state.copy(selectedPlaceId = event.placeId)
                 }
 
+                is MapReducerEvent.MyLocationChanged -> {
+                    state.copy(myLat = event.lat, myLng = event.lng)
+                }
+
                 is MapReducerEvent.SaveToggled -> {
                     state.copy(
                         places =
@@ -193,6 +214,9 @@ class MapViewModel
 
         private companion object {
             const val TAG = "MapViewModel"
+
+            /** 위도·경도 약 0.0005도 = 서울 기준 수십 m. 이보다 작은 이동은 기준점 갱신을 생략한다. */
+            const val LOCATION_EPSILON = 0.0005
         }
     }
 

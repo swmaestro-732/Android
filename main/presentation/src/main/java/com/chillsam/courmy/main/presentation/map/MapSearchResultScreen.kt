@@ -19,8 +19,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +43,9 @@ import com.chillsam.courmy.main.presentation.map.component.MapSearchQueryBar
 import com.chillsam.courmy.main.presentation.map.component.SheetHorizontalPadding
 import com.chillsam.courmy.main.presentation.map.mock.MapMockData
 import com.naver.maps.geometry.LatLng
+import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.LocationTrackingMode
+import com.naver.maps.map.compose.rememberFusedLocationSource
 
 private val ScreenHorizontalPadding = 16.dp
 private val ControlBottomGap = 12.dp
@@ -55,6 +59,7 @@ private const val LIST_SHEET_EXPANDED_RATIO = 0.62f
  * 상단바·지도·컨트롤은 두 시안이 같고 하단 시트만 다르다. 그래서 화면을 하나로 두고
  * [MapSearchResultUIState.sheetMode] 로 시트만 갈아 끼운다.
  */
+@OptIn(ExperimentalNaverMapApi::class)
 @Composable
 fun MapSearchResultScreen(
     uiState: MapSearchResultUIState,
@@ -62,21 +67,32 @@ fun MapSearchResultScreen(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    var recenterSignal by remember { mutableIntStateOf(0) }
     val isList = uiState.sheetMode == MapSheetMode.LIST
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val listSheetHeight = screenHeight * LIST_SHEET_EXPANDED_RATIO
+
+    // 내 위치 버튼은 지도 탭과 같은 기기 위치 추적(SCRUM-634). 초기 카메라는 검색 결과가
+    // 주인공이라 결과 쪽에 두고, 추적은 버튼을 눌렀을 때만 켠다.
+    val locationSource = rememberFusedLocationSource()
+    var trackingModeName by rememberSaveable { mutableStateOf(LocationTrackingMode.None.name) }
+    val trackingMode = remember(trackingModeName) { LocationTrackingMode.valueOf(trackingModeName) }
 
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         MapCanvas(
             places = uiState.places,
             clusters = emptyList(),
             selectedPlaceId = uiState.selectedPlaceId,
-            myLocation = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
+            initialPosition = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
             onPlaceClick = actions.onPlaceSelect,
             onMapClick = { actions.onPlaceSelect(null) },
             contentPadding = PaddingValues(bottom = if (isList) listSheetHeight else MarkerSheetInset),
-            recenterSignal = recenterSignal,
+            locationSource = locationSource,
+            locationTrackingMode = trackingMode,
+            onCameraGesture = {
+                if (trackingMode == LocationTrackingMode.Follow) {
+                    trackingModeName = LocationTrackingMode.NoFollow.name
+                }
+            },
         )
 
         Column(
@@ -96,7 +112,8 @@ fun MapSearchResultScreen(
         }
 
         MapControlsRow(
-            onRecenter = { recenterSignal++ },
+            // 기기 실제 위치로 카메라를 보낸다. 첫 탭이면 권한 요청부터 시작된다.
+            onMyLocation = { trackingModeName = LocationTrackingMode.Follow.name },
             modifier =
                 Modifier
                     .align(Alignment.BottomCenter)
@@ -134,14 +151,14 @@ private val MarkerSheetInset = 130.dp
 /** `목록 보기` 알약과 내 위치 버튼이 같은 줄에 놓인다. 알약은 가운데, 버튼은 오른쪽 끝. */
 @Composable
 private fun MapControlsRow(
-    onRecenter: () -> Unit,
+    onMyLocation: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         MapCircleIconButton(
             iconRes = R.drawable.ic_my_location_24,
             contentDescription = "내 위치",
-            onClick = onRecenter,
+            onClick = onMyLocation,
             modifier = Modifier.align(Alignment.CenterEnd),
         )
     }
