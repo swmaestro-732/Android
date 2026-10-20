@@ -24,12 +24,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapCategory
+import com.chillsam.courmy.main.presentation.component.hasLocationPermission
 import com.chillsam.courmy.main.presentation.home.FeedMessage
 import com.chillsam.courmy.main.presentation.map.component.MapBottomSheet
 import com.chillsam.courmy.main.presentation.map.component.MapCanvas
@@ -73,8 +75,15 @@ fun MapScreen(
 
     // 현위치 추적(SCRUM-634). 권한 요청·위치 구독은 FusedLocationSource 가 담당하고,
     // 버튼은 추적 모드만 켠다. 지도를 끌면 카메라 추적(Follow)만 풀고 오버레이는 유지한다(NoFollow).
+    // 권한이 이미 있으면 첫 진입부터 기기 위치에서 시작한다. 없으면 기본 좌표(성수)에 두고,
+    // 첫 진입에 권한 다이얼로그부터 들이밀지 않는다 — 요청은 내 위치 버튼을 눌렀을 때만.
+    val context = LocalContext.current
     val locationSource = rememberFusedLocationSource()
-    var trackingModeName by rememberSaveable { mutableStateOf(LocationTrackingMode.None.name) }
+    var trackingModeName by rememberSaveable {
+        mutableStateOf(
+            if (context.hasLocationPermission()) LocationTrackingMode.Follow.name else LocationTrackingMode.None.name,
+        )
+    }
     val trackingMode = remember(trackingModeName) { LocationTrackingMode.valueOf(trackingModeName) }
 
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
