@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
-import com.chillsam.courmy.common.presentation.component.ContentSkeleton
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -60,7 +59,10 @@ import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
+import com.chillsam.courmy.main.presentation.component.CourseCardsSkeleton
+import com.chillsam.courmy.main.presentation.component.CourseSkeletonLayout
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.component.PlaceRowsSkeleton
 import com.chillsam.courmy.main.presentation.component.SavedCourseCard
 import com.chillsam.courmy.main.presentation.component.SavedPlaceCard
 
@@ -142,7 +144,7 @@ private fun SavedCourseList(
                 }
 
                 uiState.isLoading -> {
-                    SavedListLoading()
+                    CourseCardsSkeleton(CourseSkeletonLayout.SAVED)
                 }
 
                 else -> {
@@ -240,7 +242,7 @@ private fun SavedPlaceList(
                 }
 
                 uiState.isLoading -> {
-                    SavedListLoading()
+                    PlaceRowsSkeleton()
                 }
 
                 else -> {
@@ -294,17 +296,6 @@ private fun SavedPlacesFooter(
         androidx.compose.material3.TextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth()) {
             DsText(text = "장소 더 불러오기", style = DesignSystemThemeImpl.typeScale.textRegularS)
         }
-    }
-}
-
-/** 저장 목록 로딩 자리. */
-@Composable
-private fun SavedListLoading() {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        ContentSkeleton(showHero = false)
     }
 }
 

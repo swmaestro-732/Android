@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chillsam.courmy.common.presentation.component.ContentSkeleton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -74,7 +73,7 @@ fun CourseReviewListPage(
         }
 
         uiState.isLoading -> {
-            ReviewListLoading(modifier)
+            ReviewListLoading(onBack = onBack, modifier = modifier)
         }
 
         else -> {
@@ -128,14 +127,17 @@ private fun CourseReviewWriteOverlay(
 }
 
 @Composable
-private fun ReviewListLoading(modifier: Modifier = Modifier) {
+private fun ReviewListLoading(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier =
             modifier
                 .fillMaxSize()
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
-        ContentSkeleton()
+        CourseReviewListSkeleton(onBack = onBack)
     }
 }
 

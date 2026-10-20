@@ -133,7 +133,7 @@ fun OnboardingPage(
                         text = "건너뛰기",
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel2,
-                        modifier = Modifier.clickable(onClick = onSkip),
+                        modifier = Modifier.clickable(onClick = onSkip).padding(vertical = 14.dp, horizontal = 8.dp),
                     )
                     NextButton(
                         onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },

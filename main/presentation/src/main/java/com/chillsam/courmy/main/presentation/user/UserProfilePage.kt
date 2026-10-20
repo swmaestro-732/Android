@@ -103,7 +103,7 @@ fun UserProfilePage(
         }
 
         uiState.isLoading -> {
-            ProfileLoading(modifier = modifier)
+            ProfileLoading(modifier = modifier, showTabs = false)
         }
 
         else -> {

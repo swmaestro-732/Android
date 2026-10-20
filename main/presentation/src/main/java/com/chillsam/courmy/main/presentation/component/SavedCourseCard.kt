@@ -126,6 +126,8 @@ fun SavedCourseCard(
                     ).filter { it.isNotBlank() }.joinToString(" · "),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 6.dp),
             )
         }

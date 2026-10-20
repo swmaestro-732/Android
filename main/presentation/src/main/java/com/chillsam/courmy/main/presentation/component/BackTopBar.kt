@@ -56,15 +56,17 @@ fun BackTopBar(
                 Modifier
             }
         Box(
-            modifier = Modifier.size(38.dp).then(boxStyle).clickable(onClick = onBack),
+            modifier = Modifier.size(48.dp).clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_chevron_left_24),
-                contentDescription = "뒤로",
-                tint = color.contentDefaultLevel0,
-                modifier = Modifier.size(24.dp),
-            )
+            Box(modifier = Modifier.size(38.dp).then(boxStyle), contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_left_24),
+                    contentDescription = "뒤로 가기",
+                    tint = color.contentDefaultLevel0,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
         }
         DsText(
             text = title,

@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
-import com.chillsam.courmy.common.presentation.component.ContentSkeleton
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -42,6 +41,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
+import com.chillsam.courmy.main.presentation.component.ProfileContentSkeleton
 
 // 마이(FS-15)·타유저(FS-15 OtherUserPage) 프로필이 공유하는 구성요소.
 // 두 화면은 상단 프로필·코스 그리드가 같고, 상단 좌우 버튼(뒤로 가기·공유·설정)과 소개 유무,
@@ -120,6 +120,8 @@ fun ProfileHeader(
             Column(modifier = Modifier.weight(1f)) {
                 DsText(
                     text = nickname,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     style = DesignSystemThemeImpl.typeScale.titleExtraL,
                     color = color.contentDefaultLevel0,
                 )
@@ -128,6 +130,8 @@ fun ProfileHeader(
                     Spacer(Modifier.height(2.dp))
                     DsText(
                         text = "@$handle",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel2,
                     )
@@ -406,14 +410,11 @@ private fun ProfileCourseCard(
 
 /** 프로필 로딩 중 콘텐츠 자리. */
 @Composable
-fun ProfileLoading(modifier: Modifier = Modifier) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0),
-        contentAlignment = Alignment.Center,
-    ) {
-        ContentSkeleton()
-    }
+fun ProfileLoading(
+    modifier: Modifier = Modifier,
+    showTabs: Boolean = true,
+) {
+    ProfileContentSkeleton(modifier, showTabs)
 }
 
 /**

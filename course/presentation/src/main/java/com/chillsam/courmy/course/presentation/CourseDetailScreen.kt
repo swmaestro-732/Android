@@ -36,6 +36,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -629,21 +630,18 @@ private fun HeroCircleButton(
     enabled: Boolean = true,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier =
-            Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(color.bgDefaultLevel1)
-                .clickable(enabled = enabled, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = contentDescription,
-            tint = if (enabled) tint else color.contentDefaultLevel3,
-            modifier = Modifier.size(22.dp),
-        )
+    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp)) {
+        Box(
+            modifier = Modifier.size(34.dp).clip(CircleShape).background(color.bgDefaultLevel1),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = contentDescription,
+                tint = if (enabled) tint else color.contentDefaultLevel3,
+                modifier = Modifier.size(22.dp),
+            )
+        }
     }
 }
 

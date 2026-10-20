@@ -62,11 +62,7 @@ fun CourseFollowPage(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (uiState.isLoading) {
-                DsText(
-                    text = "코스를 불러오는 중이에요…",
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel3,
-                )
+                CourseFollowSkeleton()
             } else {
                 DsText(
                     text = "코스를 불러오지 못했어요.",

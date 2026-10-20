@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +51,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.user.UserProfilePage
 import com.chillsam.courmy.main.entity.my.FollowUserVO
+import com.chillsam.courmy.main.presentation.component.FollowRowsSkeleton
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.chillsam.courmy.main.domain.my.MyPage as MyRoute
 
@@ -299,38 +299,39 @@ private fun FollowUserRow(
     }
 }
 
-/** 목록이 비었을 때의 자리: 로딩 스피너 또는 안내(+재시도). */
+/** 목록이 비었을 때의 자리: 프로필 행 스켈레톤 또는 안내(+재시도). */
 @Composable
 private fun FollowListMessage(
     isLoading: Boolean,
     message: String,
     onRetry: (() -> Unit)?,
 ) {
+    if (isLoading) {
+        FollowRowsSkeleton()
+        return
+    }
     val color = DesignSystemThemeImpl.designSystemColor
     Box(
         modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
         contentAlignment = Alignment.Center,
     ) {
-        if (isLoading) {
-            CircularProgressIndicator(color = color.contentAccent)
-        } else {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            DsText(
+                text = message,
+                maxLines = Int.MAX_VALUE,
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = color.contentDefaultLevel2,
+            )
+            if (onRetry != null) {
                 DsText(
-                    text = message,
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel2,
+                    text = "다시 시도",
+                    style = DesignSystemThemeImpl.typeScale.textRegularM,
+                    color = color.contentAccent,
+                    modifier = Modifier.clickable(onClick = onRetry),
                 )
-                if (onRetry != null) {
-                    DsText(
-                        text = "다시 시도",
-                        style = DesignSystemThemeImpl.typeScale.textRegularM,
-                        color = color.contentAccent,
-                        modifier = Modifier.clickable(onClick = onRetry),
-                    )
-                }
             }
         }
     }

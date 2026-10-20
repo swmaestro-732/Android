@@ -210,7 +210,7 @@ private fun EditPlanDialog(
 }
 
 @Composable
-private fun PlanHeader(
+internal fun PlanHeader(
     onBack: () -> Unit,
     isMutating: Boolean = false,
     onEdit: (() -> Unit)? = null,
