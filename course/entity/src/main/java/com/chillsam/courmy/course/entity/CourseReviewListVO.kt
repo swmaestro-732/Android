@@ -34,7 +34,12 @@ data class CourseReviewListVO(
     val nextCursor: String? = null,
     val hasNext: Boolean = false,
     val hasCompletedCourse: Boolean = false,
+    val totalCount: Int? = null,
 ) {
+    /** 서버 집계가 확인된 0~3건 장소에만 외부 리뷰 검색을 제안한다. */
+    val shouldSuggestExternalReviews: Boolean
+        get() = totalCount != null && totalCount in 0..3 && !hasNext
+
     /**
      * 받아 온 페이지 안에 내 리뷰가 있는지. 작성 버튼을 미리 감추는 데만 쓴다.
      *

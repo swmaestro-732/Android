@@ -109,6 +109,7 @@ fun CourseReviewListData.toVO(
         averageRatingText = (averageRating ?: 0.0).toString(),
         averageStars = (averageRating ?: 0.0).roundToInt(),
         totalCountText = "${totalCount ?: 0}개",
+        totalCount = totalCount,
         distribution =
             buckets
                 .sortedByDescending { it.rating ?: 0 }

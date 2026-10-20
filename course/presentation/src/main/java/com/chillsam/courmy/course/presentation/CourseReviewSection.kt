@@ -3,6 +3,7 @@ package com.chillsam.courmy.course.presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -10,9 +11,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,9 +30,6 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CourseReviewTagVO
 import com.chillsam.courmy.course.entity.CourseReviewVO
-
-/** 카드 한 장에 늘어놓는 첨부 사진 수. 넘치면 가로로 잘려 나가므로 앞쪽만 보여준다. */
-private const val MAX_PREVIEW_PHOTOS = 4
 
 /**
  * 코스 상세 리뷰 섹션(Figma FS-11 하단). 헤더(평균 별점·리뷰 수·전체보기) + 리뷰 미리보기 카드.
@@ -54,7 +54,7 @@ internal fun CourseReviewSection(
         if (detail.reviews.isEmpty()) {
             // 리뷰 0개도 정상 상태다 — 섹션을 통째로 감추면 "리뷰를 남길 수 있는 코스" 라는 사실이 사라진다.
             DsText(
-                text = "아직 리뷰가 없어요. 이 코스를 따라간 뒤 첫 리뷰를 남겨 보세요.",
+                text = "아직 후기가 없어요. 코스를 다녀온 경험을 나눠 주세요.",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
                 maxLines = Int.MAX_VALUE,
@@ -83,7 +83,7 @@ private fun ReviewSectionHeader(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             DsText(
-                text = "리뷰",
+                text = "후기",
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
             )
@@ -180,24 +180,20 @@ internal fun ReviewCard(
                 }
             }
             if (onDelete != null) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_trash_24),
-                    contentDescription = "내 후기 삭제",
-                    tint = color.contentDefaultLevel3,
-                    modifier =
-                        Modifier
-                            .clip(CircleShape)
-                            .clickable(onClick = onDelete)
-                            // 아이콘만 두면 탭 영역이 좁다. 여백까지 누를 수 있게 클릭 안쪽에 패딩을 둔다.
-                            .padding(4.dp)
-                            .size(18.dp),
-                )
+                IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_trash_24),
+                        contentDescription = "내 후기 삭제",
+                        tint = color.contentDefaultLevel3,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
         }
         if (review.body.isNotBlank()) {
             DsText(
                 text = review.body,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel1,
                 maxLines = Int.MAX_VALUE,
             )
@@ -206,11 +202,14 @@ internal fun ReviewCard(
             ReviewTagRow(tags = review.tags)
         }
         if (review.photoUrls.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                review.photoUrls.take(MAX_PREVIEW_PHOTOS).forEach { url ->
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                review.photoUrls.forEach { url ->
                     CourseImage(
                         url = url,
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(88.dp),
                         shape = RoundedCornerShape(10.dp),
                     )
                 }
