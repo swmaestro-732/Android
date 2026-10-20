@@ -33,6 +33,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseReviewLimits
 import com.chillsam.courmy.course.entity.CourseReviewTagCatalog
+import com.chillsam.courmy.course.entity.CourseReviewTagVO
 import com.chillsam.courmy.course.presentation.component.CoursePhotoRow
 
 /** 별점을 고르기 전 보여줄 안내. 고르고 나면 점수 문구로 바뀐다. */
@@ -55,6 +56,8 @@ internal fun CourseReviewWriteScreen(
     onSubmit: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    tags: List<CourseReviewTagVO> = CourseReviewTagCatalog.entries.map { it.toTagVO() },
+    isPlace: Boolean = false,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     // 이 화면은 목록 라우트 위에 덮여 있어서, 막지 않으면 뒤로 가기가 목록째로 닫아 버린다.
@@ -77,11 +80,13 @@ internal fun CourseReviewWriteScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             RatingField(
+                title = if (isPlace) "이 장소 어땠나요?" else "이 코스 어땠나요?",
                 rating = state.rating,
                 enabled = !state.isSubmitting,
                 onRatingChange = { onIntent(CourseReviewWriteIntent.ChangeRating(it)) },
             )
             ContentField(
+                placeholder = if (isPlace) "장소를 방문한 경험을 적어 주세요. (선택)" else "코스를 따라간 경험을 적어 주세요. (선택)",
                 content = state.content,
                 enabled = !state.isSubmitting,
                 onContentChange = { onIntent(CourseReviewWriteIntent.ChangeContent(it)) },
@@ -91,6 +96,8 @@ internal fun CourseReviewWriteScreen(
                 onPhotosChange = { onIntent(CourseReviewWriteIntent.ChangePhotos(it)) },
             )
             TagField(
+                tags = tags,
+                enabled = !state.isSubmitting,
                 selected = state.selectedTagCodes,
                 canSelectMore = state.canSelectMoreTags,
                 onToggle = { onIntent(CourseReviewWriteIntent.ToggleTag(it)) },
@@ -168,12 +175,13 @@ private fun ReviewWriteTopBar(onClose: () -> Unit) {
 /** 별점(필수). 고른 점수에 맞는 문구를 옆에 세워 선택이 됐는지 분명히 한다. */
 @Composable
 private fun RatingField(
+    title: String,
     rating: Int,
     enabled: Boolean,
     onRatingChange: (Int) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionTitle(title = "이 코스 어땠나요?", required = true)
+        SectionTitle(title = title, required = true)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -191,6 +199,7 @@ private fun RatingField(
 /** 본문(선택). 남은 글자 수를 세어 상한에 닿기 전에 알 수 있게 한다. */
 @Composable
 private fun ContentField(
+    placeholder: String,
     content: String,
     enabled: Boolean,
     onContentChange: (String) -> Unit,
@@ -201,7 +210,7 @@ private fun ContentField(
             value = content,
             onValueChange = onContentChange,
             enabled = enabled,
-            placeholder = "코스를 따라간 경험을 적어 주세요. (선택)",
+            placeholder = placeholder,
             // 후기는 여러 줄로 쓰는 글이라 한 줄로 가두지 않는다.
             singleLine = false,
             modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
@@ -234,6 +243,8 @@ private fun PhotoField(
 /** 태그(선택, 최대 [CourseReviewLimits.MAX_TAGS] 개). 서버 enum 을 그대로 옮긴 카탈로그에서 고른다. */
 @Composable
 private fun TagField(
+    tags: List<CourseReviewTagVO>,
+    enabled: Boolean,
     selected: Set<String>,
     canSelectMore: Boolean,
     onToggle: (String) -> Unit,
@@ -254,13 +265,13 @@ private fun TagField(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            CourseReviewTagCatalog.entries.forEach { tag ->
+            tags.forEach { tag ->
                 val isSelected = tag.code in selected
                 DsChip(
                     text = "${tag.icon} ${tag.label}",
                     selected = isSelected,
                     // 상한에 닿으면 안 고른 칩은 눌러도 소용없다. 눌리지 않는다는 걸 색으로 알린다.
-                    enabled = isSelected || canSelectMore,
+                    enabled = enabled && (isSelected || canSelectMore),
                     onClick = { onToggle(tag.code) },
                 )
             }

@@ -142,6 +142,10 @@ class PlaceDetailViewModel
                 }
         }
 
+        fun refreshReviews() {
+            if (currentPlaceId > 0) loadReviews(currentPlaceId)
+        }
+
         private fun loadReviews(placeId: Long) {
             reviewsJob?.cancel()
             reviewsJob =

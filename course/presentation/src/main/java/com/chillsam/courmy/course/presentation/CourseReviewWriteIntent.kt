@@ -27,6 +27,10 @@ sealed interface CourseReviewWriteIntent : MviIntent {
         val courseId: Long,
     ) : CourseReviewWriteIntent
 
+    data class SubmitPlace(
+        val placeId: Long,
+    ) : CourseReviewWriteIntent
+
     /** 에러 안내를 닫았다. */
     data object ConsumeError : CourseReviewWriteIntent
 

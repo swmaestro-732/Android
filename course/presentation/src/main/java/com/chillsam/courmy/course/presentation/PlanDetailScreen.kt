@@ -439,6 +439,8 @@ private fun PlanPlaceDetail(
             ),
         address = state.place?.address?.takeIf { it.isNotBlank() } ?: initialAddress,
         reviews = state.reviews,
+        reviewCategories = state.place?.categories.orEmpty(),
+        onReviewWritten = viewModel::refreshReviews,
         isSaved = state.isSaved,
         onToggleSave = viewModel::toggleSave,
         onDismiss = onDismiss,
