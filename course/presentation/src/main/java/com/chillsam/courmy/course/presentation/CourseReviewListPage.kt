@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.presentation.component.ContentSkeleton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -135,10 +135,7 @@ private fun ReviewListLoading(modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
-        CircularProgressIndicator(
-            modifier = Modifier.align(Alignment.Center),
-            color = DesignSystemThemeImpl.designSystemColor.contentAccent,
-        )
+        ContentSkeleton()
     }
 }
 

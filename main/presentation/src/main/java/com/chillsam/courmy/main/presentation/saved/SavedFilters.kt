@@ -32,7 +32,7 @@ internal fun SavedHeader(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -44,6 +44,7 @@ internal fun SavedHeader(
                     .background(color.borderDefaultLevel0)
                     .padding(3.dp)
                     .selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             listOf(SAVED_TAB_COURSES to "코스", SAVED_TAB_PLACES to "장소").forEach { (tab, title) ->
                 Box(
