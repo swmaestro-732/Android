@@ -86,9 +86,13 @@ fun MapScreen(
     }
     val trackingMode = remember(trackingModeName) { LocationTrackingMode.valueOf(trackingModeName) }
 
+    // 첫 진입은 지도 전체 화면이다(사용자 결정, 2026-10-19). 시트는 핀을 고르거나
+    // 카테고리로 거르기 시작했을 때만 띄운다.
+    val sheetVisible = uiState.selectedPlaceId != null || uiState.category != MapCategory.ALL
+
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         MapCanvas(
-            places = uiState.places,
+            places = uiState.markerPlaces,
             clusters = uiState.clusters,
             selectedPlaceId = uiState.selectedPlaceId,
             initialPosition = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
@@ -97,7 +101,8 @@ fun MapScreen(
                 if (id == uiState.selectedPlaceId) actions.onPlaceDetail(id) else actions.onPlaceSelect(id)
             },
             onMapClick = { actions.onPlaceSelect(null) },
-            contentPadding = PaddingValues(bottom = MapBottomInset),
+            // 시트가 없을 때도 여백을 고정하면 네이버 로고·저작권 표기가 허공에 뜬다.
+            contentPadding = PaddingValues(bottom = if (sheetVisible) MapBottomInset else 0.dp),
             onBoundsChanged = actions.onBoundsChanged,
             locationSource = locationSource,
             locationTrackingMode = trackingMode,
@@ -129,7 +134,7 @@ fun MapScreen(
 
         // 컨트롤을 시트와 같은 Column 에 묶는다 — 시트보다 먼저(BottomEnd) 그리면
         // 시트가 위에 덮여 목록보기·내 위치 버튼이 가려져 눌리지 않는다(SCRUM-632).
-        Column(modifier = Modifier.align(Alignment.BottomCenter)) {
+        Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
             // 목록보기 버튼은 사용자 요청으로 제거(2026-10-19) — 시트 캐러셀이 목록 역할을 한다.
             MapCircleIconButton(
                 iconRes = R.drawable.ic_my_location_24,
@@ -141,10 +146,12 @@ fun MapScreen(
                         .align(Alignment.End)
                         .padding(end = ScreenHorizontalPadding, bottom = ControlBottomGap),
             )
-            NearbySheet(
-                uiState = uiState,
-                actions = actions,
-            )
+            if (sheetVisible) {
+                NearbySheet(
+                    uiState = uiState,
+                    actions = actions,
+                )
+            }
         }
     }
 }
@@ -168,7 +175,8 @@ private fun NearbySheet(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             DsText(
-                text = "조건에 맞는 곳 ${uiState.totalCount}곳",
+                // 검색·필터 전에도 뜨는 시트라 "조건" 대신 지금 화면에 보이는 장소임을 말한다(사용자 결정).
+                text = "보이는 장소 ${uiState.totalCount}곳",
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = color.contentDefaultLevel0,
             )

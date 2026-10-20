@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
@@ -30,12 +31,16 @@ import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.NaverMapComposable
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberUpdatedMarkerState
+import kotlinx.coroutines.launch
 
 /** 지도 탐색 화면의 기본 확대 수준. 성수동 같은 동네 하나가 화면에 들어오는 정도. */
 private const val EXPLORE_ZOOM = 15.0
 
 /** 핀을 하나 골랐을 때 당겨 주는 확대 수준. */
 private const val FOCUS_ZOOM = 16.0
+
+/** 클러스터를 탭했을 때 더 당기는 확대 폭. 한 단계로는 묶음이 안 풀리는 경우가 많다. */
+private const val CLUSTER_ZOOM_STEP = 2.0
 
 /**
  * 장소 탐색용 지도(FS-10 계열 공용).
@@ -71,6 +76,7 @@ internal fun MapCanvas(
             cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(selectedPosition, FOCUS_ZOOM))
         }
     }
+    val scope = rememberCoroutineScope()
 
     fun reportBounds() {
         val bounds = cameraPositionState.contentBounds ?: return
@@ -121,6 +127,13 @@ internal fun MapCanvas(
             clusters = clusters,
             selectedPlaceId = selectedPlaceId,
             onPlaceClick = onPlaceClick,
+            onClusterClick = { position ->
+                scope.launch {
+                    cameraPositionState.animate(
+                        CameraUpdate.scrollAndZoomTo(position, cameraPositionState.position.zoom + CLUSTER_ZOOM_STEP),
+                    )
+                }
+            },
         )
     }
 }
@@ -133,6 +146,7 @@ private fun MapOverlays(
     clusters: List<MapClusterVO>,
     selectedPlaceId: Long?,
     onPlaceClick: (Long) -> Unit,
+    onClusterClick: (LatLng) -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val density = LocalDensity.current.density
@@ -148,20 +162,25 @@ private fun MapOverlays(
                     textArgb = color.contentOnAccent.toArgb(),
                 )
             }
+        val position = LatLng(cluster.latitude, cluster.longitude)
         Marker(
-            state = rememberUpdatedMarkerState(position = LatLng(cluster.latitude, cluster.longitude)),
+            state = rememberUpdatedMarkerState(position = position),
             icon = icon,
             anchor = Offset(0.5f, 0.5f),
             zIndex = CLUSTER_Z,
+            onClick = {
+                // 묶음을 누르면 확대해서 푼다 — 격자가 좁아지며 개별 핀으로 갈라진다(SCRUM-633).
+                onClusterClick(position)
+                true
+            },
         )
     }
 
     places.forEach { place ->
         val position = place.latLngOrNull() ?: return@forEach
         val selected = place.id == selectedPlaceId
-        val label = if (selected) place.markerLabel() else null
         val icon =
-            remember(place.category, selected, label, density, color, context) {
+            remember(place.category, selected, density, color, context) {
                 placePinIcon(
                     density = density,
                     style =
@@ -178,9 +197,29 @@ private fun MapOverlays(
                                 },
                         ),
                     selected = selected,
-                    label = label,
                 )
             }
+        if (selected) {
+            // 말풍선은 별도 마커로 그린다 — 핀 비트맵에 넣으면 라벨 폭만큼 터치 영역이 커져
+            // 동그라미 밖을 눌러도 상세가 열린다. 탭은 소비만 하고 아무것도 하지 않는다.
+            val label = place.markerLabel()
+            val labelIcon =
+                remember(label, density, color) {
+                    placeLabelIcon(
+                        density = density,
+                        label = label,
+                        backgroundArgb = color.contentDefaultLevel0.toArgb(),
+                        textArgb = color.contentOnAccent.toArgb(),
+                    )
+                }
+            Marker(
+                state = rememberUpdatedMarkerState(position = position),
+                icon = labelIcon,
+                anchor = Offset(0.5f, 1f),
+                zIndex = SELECTED_LABEL_Z,
+                onClick = { true },
+            )
+        }
         Marker(
             state = rememberUpdatedMarkerState(position = position),
             icon = icon,
@@ -199,6 +238,7 @@ private fun MapOverlays(
 private const val PIN_Z = 0
 private const val CLUSTER_Z = 2
 private const val SELECTED_PIN_Z = 3
+private const val SELECTED_LABEL_Z = 2
 
 /** 선택된 핀 말풍선 문구. 시안의 `어니언 성수 · ★4.8` 형태. */
 private fun MapPlaceVO.markerLabel(): String = if (rating > 0) "$name · ★$rating" else name
