@@ -124,19 +124,7 @@ class MapSearchResultViewModel
         ): MapSearchResultUIState =
             when (event) {
                 is MapSearchResultReducerEvent.LoadStarted -> {
-                    if (event.append) {
-                        state.copy(
-                            isLoadingMore = true,
-                            errorMessage = null,
-                        )
-                    } else {
-                        MapSearchResultUIState(
-                            query = event.query,
-                            latitude = event.latitude,
-                            longitude = event.longitude,
-                            sheetMode = state.sheetMode,
-                        )
-                    }
+                    loadingState(state, event)
                 }
 
                 is MapSearchResultReducerEvent.Loaded -> {
@@ -185,6 +173,30 @@ class MapSearchResultViewModel
                 MapSearchResultReducerEvent.ErrorConsumed -> {
                     state.copy(actionErrorMessage = null)
                 }
+            }
+
+        private fun loadingState(
+            state: MapSearchResultUIState,
+            event: MapSearchResultReducerEvent.LoadStarted,
+        ): MapSearchResultUIState =
+            if (event.append) {
+                state.copy(
+                    isLoadingMore = true,
+                    errorMessage = null,
+                )
+            } else {
+                MapSearchResultUIState(
+                    query = event.query,
+                    latitude = event.latitude,
+                    longitude = event.longitude,
+                    sheetMode = state.sheetMode,
+                    selectedPlaceId =
+                        state.selectedPlaceId.takeIf {
+                            event.query == state.query &&
+                                event.latitude == state.latitude &&
+                                event.longitude == state.longitude
+                        },
+                )
             }
 
         private fun loadedState(

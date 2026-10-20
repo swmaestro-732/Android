@@ -48,8 +48,8 @@ private const val CLUSTER_ZOOM_STEP = 2.0
  * 장소 탐색용 지도(FS-10 계열 공용).
  *
  * 좌표가 없는 장소는 핀을 못 찍으므로 자동으로 빠진다. 선택된 핀만 크게 그리고 말풍선을 얹는다.
- * 카메라는 [selectedPlaceId] 가 바뀔 때만 움직인다 — 사용자가 지도를 끌어 옮긴 뒤에도 목록을
- * 다시 그렸다는 이유로 원래 자리로 튕겨 돌아가면 안 되기 때문이다.
+ * 선택한 핀으로 이동하고, [showAllPlaces] 일 때는 결과 좌표가 바뀌면 전체를 보여 준다.
+ * 선택 해제나 시트 크기 변경만으로 사용자가 옮긴 카메라를 되돌리지 않는다.
  */
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
@@ -76,12 +76,14 @@ internal fun MapCanvas(
     val selectedPosition = places.firstOrNull { it.id == selectedPlaceId }?.latLngOrNull()
     val overviewPositions = if (showAllPlaces) places.mapNotNull { it.latLngOrNull() }.distinct() else emptyList()
     val fitPadding = with(LocalDensity.current) { 48.dp.roundToPx() }
-    LaunchedEffect(selectedPlaceId, selectedPosition, overviewPositions, contentPadding.takeIf { showAllPlaces }) {
+    LaunchedEffect(selectedPlaceId, selectedPosition) {
+        selectedPosition?.let {
+            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(it, FOCUS_ZOOM))
+        }
+    }
+    LaunchedEffect(overviewPositions) {
+        if (selectedPosition != null) return@LaunchedEffect
         when {
-            selectedPosition != null -> {
-                cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(selectedPosition, FOCUS_ZOOM))
-            }
-
             overviewPositions.size == 1 -> {
                 cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(overviewPositions.single(), EXPLORE_ZOOM))
             }
