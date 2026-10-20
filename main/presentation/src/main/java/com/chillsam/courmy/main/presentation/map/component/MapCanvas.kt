@@ -55,7 +55,6 @@ internal fun MapCanvas(
     onMapClick: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
-    recenterSignal: Int = 0,
     onBoundsChanged: ((MapBounds) -> Unit)? = null,
     locationSource: LocationSource? = null,
     locationTrackingMode: LocationTrackingMode = LocationTrackingMode.None,
@@ -70,13 +69,6 @@ internal fun MapCanvas(
     LaunchedEffect(selectedPlaceId, selectedPosition) {
         if (selectedPosition != null) {
             cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(selectedPosition, FOCUS_ZOOM))
-        }
-    }
-    // 내 위치 버튼은 누를 때마다 반응해야 하는데, 좌표는 그대로라 값으로는 재실행을 못 건다.
-    // 누른 횟수를 키로 삼아 "같은 곳으로 다시" 를 표현한다. 0 은 첫 구성이라 건너뛴다.
-    LaunchedEffect(recenterSignal) {
-        if (recenterSignal > 0) {
-            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(initialPosition, EXPLORE_ZOOM))
         }
     }
 
