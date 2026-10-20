@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.createBitmap
+import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
@@ -75,6 +76,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseReviewListVO
+import com.chillsam.courmy.course.presentation.PlaceReviewWriteDialog
 import com.chillsam.courmy.course.presentation.ReviewCard
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.geometry.LatLngBounds
@@ -176,12 +178,15 @@ fun PlaceDetailSheet(
     modifier: Modifier = Modifier,
     startInOverview: Boolean = false,
     onDeleteReview: (Long) -> Unit = {},
+    reviewCategories: List<PlaceCategoryVO> = emptyList(),
+    onReviewWritten: () -> Unit = {},
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val scope = rememberCoroutineScope()
     // 코스 전체 보기 모드. 켜면 카메라가 모든 핀을 담고, 몇 번째 장소로 갈지 고르는 줄이 나온다.
     // 코스 상세의 "자세히" 로 들어오면 처음부터 전체 보기로 연다.
     var overview by remember { mutableStateOf(startInOverview) }
+    var isWriting by remember(coursePlace.placeId) { mutableStateOf(false) }
     // 다른 장소로 옮길 때는 전체 보기를 풀어 그 장소에 카메라를 맞춘다.
     val selectPlace = { place: CourseDetailPlaceVO ->
         overview = false
@@ -266,10 +271,22 @@ fun PlaceDetailSheet(
                         onToggleSave = onToggleSave,
                         onDismiss = animatedDismiss,
                         onDeleteReview = onDeleteReview,
+                        onWriteReview = { isWriting = true },
                     )
                 }
             }
         }
+    }
+    if (isWriting) {
+        PlaceReviewWriteDialog(
+            placeId = coursePlace.placeId,
+            categories = reviewCategories,
+            onClose = { isWriting = false },
+            onWritten = {
+                isWriting = false
+                onReviewWritten()
+            },
+        )
     }
 }
 
@@ -357,6 +374,7 @@ private fun ColumnScope.PlaceInfoLayout(
     onToggleSave: () -> Unit,
     onDismiss: () -> Unit,
     onDeleteReview: (Long) -> Unit = {},
+    onWriteReview: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
@@ -435,6 +453,15 @@ private fun ColumnScope.PlaceInfoLayout(
                 )
             }
         }
+        DsText(
+            text = "후기 쓰기",
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentAccent,
+            modifier =
+                Modifier
+                    .clickable(enabled = coursePlace.placeId > 0, onClick = onWriteReview)
+                    .padding(vertical = 12.dp),
+        )
         Spacer(Modifier.height(10.dp))
         if (reviewItems.isEmpty()) {
             // 후기 0건(또는 아직 로드 전)도 정상 상태다. 섹션을 감추면 후기를 남길 수 있다는 사실이 사라진다.

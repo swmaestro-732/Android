@@ -44,6 +44,8 @@ internal fun MapPlaceDetailSheet(
             ),
         address = detail?.address?.takeIf { it.isNotBlank() } ?: place.address,
         reviews = state.reviews,
+        reviewCategories = state.place?.categories.orEmpty(),
+        onReviewWritten = viewModel::refreshReviews,
         isSaved = state.isSaved,
         onToggleSave = viewModel::toggleSave,
         onDismiss = onDismiss,

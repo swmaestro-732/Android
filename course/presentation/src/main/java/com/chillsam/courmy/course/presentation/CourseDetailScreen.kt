@@ -281,6 +281,8 @@ fun CourseDetailScreen(
                 ),
             address = placeDetailState.place?.address.orEmpty(),
             reviews = placeDetailState.reviews,
+            reviewCategories = placeDetailState.place?.categories.orEmpty(),
+            onReviewWritten = placeDetailViewModel::refreshReviews,
             isSaved = placeDetailState.isSaved,
             onToggleSave = { placeDetailViewModel.toggleSave() },
             onDismiss = dismiss,
