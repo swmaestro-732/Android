@@ -56,7 +56,9 @@ fun ReportAction(
             )
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(text = { DsText(text = "신고하기") }, onClick = {
+            DropdownMenuItem(text = {
+                DsText(text = "신고하기", color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0)
+            }, onClick = {
                 expanded = false
                 reporting = true
             })
@@ -107,8 +109,12 @@ private fun ReportDialog(
                     .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            DsText(text = "신고하기", style = DesignSystemThemeImpl.typeScale.titleExtraL)
-            DsText(text = "신고 사유를 선택해 주세요.")
+            DsText(
+                text = "신고하기",
+                style = DesignSystemThemeImpl.typeScale.titleExtraL,
+                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+            )
+            DsText(text = "신고 사유를 선택해 주세요.", color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2)
             ReportReason.entries.forEach { reason ->
                 DsChip(text = reason.label, selected = state.reason == reason, enabled = !state.submitting, onClick = {
                     viewModel.onIntent(ReportIntent.SelectReason(reason))
