@@ -78,6 +78,8 @@ dependencies {
     implementation(libs.coil.compose)
     // 지도 탭(FS-10): 네이버 지도 렌더·마커 오버레이.
     implementation(libs.naver.map.compose)
+    // 홈 현위치: 권한 허용 시 마지막 위치를 한 번 읽어 근처 저장 장소 기준점으로 쓴다(SCRUM-634).
+    implementation(libs.play.services.location)
     // 상세화면 Fragment 호스팅(FragmentActivity, FragmentContainerView).
     implementation(libs.androidx.fragment.ktx)
     api(libs.androidx.navigation3.runtime)

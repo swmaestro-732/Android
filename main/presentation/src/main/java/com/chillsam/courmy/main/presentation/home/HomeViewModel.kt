@@ -31,9 +31,26 @@ class HomeViewModel
         ) {
         private var loadJob: Job? = null
 
+        /** 기기 현위치. 확보 전에는 null 이라 기본 기준점으로 조회한다. */
+        private var myLat: Double? = null
+        private var myLng: Double? = null
+
         override fun onIntent(intent: HomeIntent) {
             when (intent) {
-                HomeIntent.Retry -> load()
+                HomeIntent.Retry -> {
+                    load()
+                }
+
+                is HomeIntent.UpdateLocation -> {
+                    // 기준점이 실제로 바뀌었을 때만 다시 불러 재진입마다 중복 조회를 막는다.
+                    val moved =
+                        myLat == null || myLng == null ||
+                            kotlin.math.abs(myLat!! - intent.lat) > LOCATION_EPSILON ||
+                            kotlin.math.abs(myLng!! - intent.lng) > LOCATION_EPSILON
+                    myLat = intent.lat
+                    myLng = intent.lng
+                    if (moved) load()
+                }
             }
         }
 
@@ -67,9 +84,9 @@ class HomeViewModel
                 viewModelScope.launch {
                     runCatching {
                         getHomeUseCase(
-                            // 위치 권한 연동 전이라 거리 기준점은 지도 기본 진입 지점과 같은 값을 쓴다.
-                            userLat = DefaultLocation.LATITUDE,
-                            userLng = DefaultLocation.LONGITUDE,
+                            // 거리 기준점은 기기 현위치. 권한 전에는 기본 진입 지점 폴백(SCRUM-634).
+                            userLat = myLat ?: DefaultLocation.LATITUDE,
+                            userLng = myLng ?: DefaultLocation.LONGITUDE,
                         )
                     }.onSuccess { home ->
                         dispatch(
@@ -89,5 +106,8 @@ class HomeViewModel
 
         private companion object {
             const val TAG = "Home"
+
+            /** 위경도 약 0.0005도 = 수십 m. 이보다 작은 이동은 재조회하지 않는다. */
+            const val LOCATION_EPSILON = 0.0005
         }
     }

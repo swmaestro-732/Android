@@ -1,5 +1,14 @@
 package com.chillsam.courmy.main.presentation.home
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.LocationManager
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,7 +33,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,6 +52,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
@@ -68,13 +82,11 @@ import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
+import com.google.android.gms.location.LocationServices
 import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
-
-/** 헤더 보조줄의 위치·날씨. 위치·날씨 연동 전까지 시안 고정값을 쓴다. */
-private const val LOCATION_WEATHER_MOCK = "성수동 · 흐림 18°"
 
 /** 테마별 둘러보기 타일. 탭하면 추천 코스의 해당 코스 태그 필터를 연다(코스 문맥이라 12종). */
 private val themeTiles = CourseTagVO.entries
@@ -102,8 +114,29 @@ fun HomePage(modifier: Modifier = Modifier) {
     // 헤더 인사말·아바타는 내 프로필에서 가져온다.
     val profile = if (session.isLoggedIn) myProfileForHeader() else null
 
+    // 근처 저장 장소의 거리 기준점(SCRUM-634). 권한·GPS 상태는 설정에 다녀오면 바뀔 수 있어
+    // 복귀할 때마다 다시 평가한다(locationTick).
+    val context = LocalContext.current
+    var locationTick by remember { mutableIntStateOf(0) }
+    val hasLocationPermission = remember(locationTick) { context.hasLocationPermission() }
+    val gpsEnabled = remember(locationTick) { context.isLocationEnabled() }
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            locationTick++
+        }
+    LaunchedEffect(hasLocationPermission, gpsEnabled) {
+        if (hasLocationPermission && gpsEnabled) {
+            fetchLastLocation(context) { lat, lng ->
+                homeViewModel.onIntent(HomeIntent.UpdateLocation(lat, lng))
+            }
+        }
+    }
+
     // 코스를 만들거나 장소를 저장하고 돌아오면 섹션이 바뀌어 있을 수 있어 다시 불러온다.
-    RefreshOnResume { homeViewModel.onIntent(HomeIntent.Retry) }
+    RefreshOnResume {
+        homeViewModel.onIntent(HomeIntent.Retry)
+        locationTick++
+    }
 
     Box(
         modifier =
@@ -132,6 +165,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
+
             item {
                 RecommendedCoursesSection(
                     homeState = homeState,
@@ -140,8 +174,35 @@ fun HomePage(modifier: Modifier = Modifier) {
                     onRetry = { homeViewModel.onIntent(HomeIntent.Retry) },
                 )
             }
-            // 비로그인이거나 근처에 저장한 곳이 없으면 섹션째 숨긴다(빈 헤더만 뜨지 않게).
-            if (homeState.nearbyPlaces.isNotEmpty()) {
+            // 위치가 없으면 BFF 가 기본 좌표(성수) 기준으로 응답해 도보 시간이 틀어진다.
+            // 그래서 안내가 데이터보다 먼저고, 비로그인·빈 응답이면 섹션째 숨긴다(빈 헤더만 뜨지 않게).
+            if (session.isLoggedIn && (!hasLocationPermission || !gpsEnabled)) {
+                // 섹션이 비는 이유(위치 없음)를 그 자리에서 안내한다 — 상단 띠는 과해서 뺐다(사용자 결정).
+                item {
+                    NearbyLocationPrompt(
+                        message =
+                            if (!hasLocationPermission) {
+                                "위치를 허용하면 근처에 저장한 장소가 여기에 보여요"
+                            } else {
+                                "기기 위치(GPS)가 꺼져 있어 근처 장소를 찾을 수 없어요"
+                            },
+                        actionLabel = if (!hasLocationPermission) "위치 허용" else "위치 켜기",
+                        onAction = {
+                            if (!hasLocationPermission) {
+                                permissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                                    ),
+                                )
+                            } else {
+                                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                            }
+                        },
+                        modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                    )
+                }
+            } else if (homeState.nearbyPlaces.isNotEmpty()) {
                 item {
                     NearbySavedSection(
                         places = homeState.nearbyPlaces,
@@ -271,9 +332,9 @@ private fun myProfileForHeader(): MyProfileVO? {
 }
 
 /**
- * 홈 헤더: 위치·날씨 보조줄 → 인사 타이틀 + 우상단 아바타.
+ * 홈 헤더: 인사 타이틀 + 우상단 아바타.
  *
- * 위치·날씨는 연동 전이라 시안 고정값([LOCATION_WEATHER_MOCK])을 쓴다.
+ * 위치·날씨 보조줄은 실데이터 소스가 없어 고정값만 보여 혼란을 줘 제거했다(사용자 결정, 2026-10-19).
  * 로그인했으면 닉네임을 넣어 부르고, 게스트는 닉네임 없는 기존 문구를 유지한다.
  */
 @Composable
@@ -291,13 +352,7 @@ private fun HomeHeader(
     Row(modifier = modifier, verticalAlignment = Alignment.Top) {
         Column(modifier = Modifier.weight(1f)) {
             DsText(
-                text = LOCATION_WEATHER_MOCK,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel3,
-            )
-            DsText(
                 text = greeting,
-                modifier = Modifier.padding(top = 6.dp),
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = color.contentDefaultLevel0,
                 maxLines = 2,
@@ -311,13 +366,13 @@ private fun HomeHeader(
     }
 }
 
-/** 섹션 공통 헤더: 좌측 제목 + 우측 액션 링크. */
+/** 섹션 공통 헤더: 좌측 제목 + (있으면) 우측 액션 링크. */
 @Composable
 private fun SectionHeader(
     title: String,
-    actionLabel: String,
-    onAction: () -> Unit,
     modifier: Modifier = Modifier,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
@@ -330,16 +385,18 @@ private fun SectionHeader(
             color = color.contentDefaultLevel0,
             modifier = Modifier.weight(1f),
         )
-        DsText(
-            text = actionLabel,
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = color.contentAccent,
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .clickable(onClick = onAction)
-                    .padding(horizontal = 4.dp, vertical = 4.dp),
-        )
+        if (actionLabel != null && onAction != null) {
+            DsText(
+                text = actionLabel,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentAccent,
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(percent = 50))
+                        .clickable(onClick = onAction)
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+            )
+        }
     }
 }
 
@@ -672,5 +729,68 @@ private fun ThemeTile(
             color = color.contentDefaultLevel0,
             modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
         )
+    }
+}
+
+/** 정확/대략 어느 쪽이든 위치 권한이 있는지. */
+private fun Context.hasLocationPermission(): Boolean =
+    checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+        checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+/** 기기 위치 서비스(GPS·네트워크)가 켜져 있는지. */
+private fun Context.isLocationEnabled(): Boolean {
+    val manager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    return manager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+        manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+}
+
+/** 마지막 위치를 한 번 읽는다. 호출부가 권한을 확인한 뒤에만 부른다. */
+@SuppressLint("MissingPermission")
+private fun fetchLastLocation(
+    context: Context,
+    onLocation: (Double, Double) -> Unit,
+) {
+    LocationServices
+        .getFusedLocationProviderClient(context)
+        .lastLocation
+        .addOnSuccessListener { location ->
+            location?.let { onLocation(it.latitude, it.longitude) }
+        }
+}
+
+/**
+ * "근처 저장 장소" 섹션 자리에 띄우는 위치 안내. 섹션이 비는 이유를 그 맥락에서 설명하고
+ * 허용·설정으로 이어 준다. 버튼은 탭하기 쉽게 카드 전체 폭을 쓴다.
+ */
+@Composable
+private fun NearbyLocationPrompt(
+    message: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(title = "근처 저장 장소")
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(color.bgDefaultLevel1)
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            DsText(
+                text = message,
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = color.contentDefaultLevel1,
+            )
+            DsButton(
+                text = actionLabel,
+                variant = DsButtonVariant.Secondary,
+                onClick = onAction,
+            )
+        }
     }
 }
