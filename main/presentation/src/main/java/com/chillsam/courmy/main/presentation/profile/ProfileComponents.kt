@@ -94,14 +94,20 @@ fun ProfileHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (onBack != null) {
-                ProfileHeaderIconButton(
-                    iconRes = R.drawable.ic_chevron_left_24,
-                    contentDescription = "뒤로 가기",
-                    onClick = onBack,
-                )
+                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    ProfileHeaderIconButton(
+                        iconRes = R.drawable.ic_chevron_left_24,
+                        contentDescription = "뒤로 가기",
+                        onClick = onBack,
+                    )
+                }
             }
             Spacer(Modifier.weight(1f))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), content = actions)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                content = actions,
+            )
         }
 
         Row(
