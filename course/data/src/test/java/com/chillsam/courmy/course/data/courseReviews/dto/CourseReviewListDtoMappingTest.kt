@@ -189,6 +189,34 @@ class CourseReviewListDtoMappingTest {
         assertEquals("c1", more.nextCursor)
     }
 
+    @Test
+    fun `실제 집계는 표시 문구와 별개로 외부 후기 판단까지 전달한다`() {
+        val zero = CourseReviewListData(totalCount = 0).toVO(myUserId = null, nowMillis = NOW)
+        val three = CourseReviewListData(totalCount = 3).toVO(myUserId = null, nowMillis = NOW)
+        val four = CourseReviewListData(totalCount = 4).toVO(myUserId = null, nowMillis = NOW)
+        assertEquals(0, zero.totalCount)
+        assertEquals(3, three.totalCount)
+        assertEquals(4, four.totalCount)
+        assertTrue(zero.shouldSuggestExternalReviews)
+        assertTrue(three.shouldSuggestExternalReviews)
+        assertFalse(four.shouldSuggestExternalReviews)
+    }
+
+    @Test
+    fun `집계 누락을 실제 0건으로 바꾸지 않는다`() {
+        val vo = CourseReviewListData().toVO(myUserId = null, nowMillis = NOW)
+        assertNull(vo.totalCount)
+        assertFalse(vo.shouldSuggestExternalReviews)
+    }
+
+    @Test
+    fun `페이지가 더 있으면 적은 집계라도 외부 후기를 제안하지 않는다`() {
+        val vo =
+            CourseReviewListData(totalCount = 3, hasNext = true, nextCursor = "c1")
+                .toVO(myUserId = null, nowMillis = NOW)
+        assertFalse(vo.shouldSuggestExternalReviews)
+    }
+
     private fun item(
         id: Long,
         authorId: Long = 1L,

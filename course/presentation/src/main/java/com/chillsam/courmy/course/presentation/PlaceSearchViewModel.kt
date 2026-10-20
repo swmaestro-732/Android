@@ -12,7 +12,9 @@ import com.chillsam.courmy.course.entity.CoursePlaceVO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -56,8 +58,6 @@ sealed interface PlaceSearchReducerEvent : ReducerEvent {
     data class QueryUpdated(
         val query: String,
     ) : PlaceSearchReducerEvent
-
-    data object Started : PlaceSearchReducerEvent
 
     data class Loaded(
         val results: List<CoursePlaceVO>,
@@ -118,6 +118,7 @@ class PlaceSearchViewModel
                     // 검색어가 바뀌면 이전 결과를 즉시 비워, 다른 키워드의 결과가 남아 보이지 않게 한다.
                     state.copy(
                         query = event.query,
+                        isSearching = event.query.isNotBlank(),
                         results = emptyList(),
                         errorMessage = null,
                         fromMapSearch = false,
@@ -125,10 +126,6 @@ class PlaceSearchViewModel
                         hasNext = false,
                         isLoadingMore = false,
                     )
-                }
-
-                PlaceSearchReducerEvent.Started -> {
-                    state.copy(isSearching = true, errorMessage = null)
                 }
 
                 is PlaceSearchReducerEvent.Loaded -> {
@@ -170,6 +167,9 @@ class PlaceSearchViewModel
                         results = emptyList(),
                         errorMessage = event.message,
                         fromMapSearch = event.fromMapSearch,
+                        nextCursor = null,
+                        hasNext = false,
+                        isLoadingMore = false,
                     )
                 }
             }
@@ -183,39 +183,50 @@ class PlaceSearchViewModel
          */
         private fun searchOnMap(name: String) {
             val query = name.trim()
-            if (query.isBlank()) return
             searchJob?.cancel()
-            searchJob =
-                viewModelScope.launch {
-                    dispatch(PlaceSearchReducerEvent.Started)
-                    runCatching { searchExternalPlacesUseCase(query) }
-                        .onSuccess { dispatch(PlaceSearchReducerEvent.Loaded(it, fromMapSearch = true)) }
-                        .onFailure { e ->
-                            if (e is CancellationException) throw e
-                            Log.w(TAG, "지도 장소 검색 실패: query=$query", e)
-                            dispatch(
-                                PlaceSearchReducerEvent.Failed(
-                                    message = "장소를 찾지 못했어요. 잠시 후 다시 시도해 주세요.",
-                                    fromMapSearch = true,
-                                ),
-                            )
-                        }
-                }
+            moreJob?.cancel()
+            dispatch(PlaceSearchReducerEvent.QueryUpdated(query))
+            if (query.isBlank()) return
+            searchJob = viewModelScope.launch { searchExternal(query) }
+        }
+
+        /** 자동 보완과 수동 지도 검색이 같은 요청 안에서 완료되도록 job 을 새로 만들지 않는다. */
+        private suspend fun searchExternal(query: String) {
+            runCatching {
+                val results = searchExternalPlacesUseCase(query)
+                currentCoroutineContext().ensureActive()
+                dispatch(PlaceSearchReducerEvent.Loaded(results, fromMapSearch = true))
+            }.onFailure { e ->
+                if (e is CancellationException) throw e
+                currentCoroutineContext().ensureActive()
+                Log.w(TAG, "지도 장소 검색 실패: query=$query", e)
+                dispatch(
+                    PlaceSearchReducerEvent.Failed(
+                        message = "지도에서 장소를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+                        fromMapSearch = true,
+                    ),
+                )
+            }
         }
 
         private fun search(query: String) {
-            dispatch(PlaceSearchReducerEvent.QueryUpdated(query))
             searchJob?.cancel()
-            // 검색어가 바뀌었으므로 이전 키워드의 이어받기는 버린다(섞이면 엉뚱한 결과가 붙는다).
+            // 이전 키워드의 이어받기도 취소해 새 검색 결과와 섞이지 않게 한다.
             moreJob?.cancel()
+            dispatch(PlaceSearchReducerEvent.QueryUpdated(query))
             if (query.isBlank()) return
 
             searchJob =
                 viewModelScope.launch {
                     delay(DEBOUNCE_MS)
-                    dispatch(PlaceSearchReducerEvent.Started)
-                    runCatching { searchPlacesUseCase(query) }
-                        .onSuccess { page ->
+                    runCatching {
+                        val page = searchPlacesUseCase(query)
+                        currentCoroutineContext().ensureActive()
+                        if (page.items.isEmpty()) {
+                            // 등록 결과가 없을 때만 기존 "새로운 위치 추가" 검색으로 이어간다.
+                            // 두 검색이 끝날 때까지 로딩을 유지해 결과 없음이 먼저 보이지 않게 한다.
+                            searchExternal(query.trim())
+                        } else {
                             dispatch(
                                 PlaceSearchReducerEvent.Loaded(
                                     results = page.items,
@@ -223,17 +234,18 @@ class PlaceSearchViewModel
                                     hasNext = page.hasNext,
                                 ),
                             )
-                        }.onFailure { e ->
-                            if (e is CancellationException) throw e
-                            // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
-                            Log.w(TAG, "장소 검색 실패: query=$query", e)
-                            dispatch(
-                                PlaceSearchReducerEvent.Failed(
-                                    message = "장소를 불러오지 못했어요.",
-                                    fromMapSearch = false,
-                                ),
-                            )
                         }
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        currentCoroutineContext().ensureActive()
+                        Log.w(TAG, "장소 검색 실패: query=$query", e)
+                        dispatch(
+                            PlaceSearchReducerEvent.Failed(
+                                message = "장소를 불러오지 못했어요.",
+                                fromMapSearch = false,
+                            ),
+                        )
+                    }
                 }
         }
 
@@ -254,6 +266,7 @@ class PlaceSearchViewModel
                 viewModelScope.launch {
                     runCatching { searchPlacesUseCase(query, cursor) }
                         .onSuccess { page ->
+                            currentCoroutineContext().ensureActive()
                             dispatch(
                                 PlaceSearchReducerEvent.MoreLoaded(
                                     results = page.items,
@@ -263,6 +276,7 @@ class PlaceSearchViewModel
                             )
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
+                            currentCoroutineContext().ensureActive()
                             Log.w(TAG, "장소 검색 다음 페이지 로드 실패: query=$query", e)
                             dispatch(PlaceSearchReducerEvent.MoreFailed)
                         }

@@ -2,7 +2,7 @@ package com.chillsam.courmy.course.presentation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,21 +19,35 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsRatingInput
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
+import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseReviewLimits
 import com.chillsam.courmy.course.entity.CourseReviewTagCatalog
 import com.chillsam.courmy.course.entity.CourseReviewTagVO
+import com.chillsam.courmy.course.entity.PlaceReviewTagCatalog
 import com.chillsam.courmy.course.presentation.component.CoursePhotoRow
 
 /** 별점을 고르기 전 보여줄 안내. 고르고 나면 점수 문구로 바뀐다. */
@@ -76,7 +90,7 @@ internal fun CourseReviewWriteScreen(
                 Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = ScreenHorizontalPadding),
+                    .padding(horizontal = ScreenHorizontalPadding, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             RatingField(
@@ -97,6 +111,7 @@ internal fun CourseReviewWriteScreen(
             )
             TagField(
                 tags = tags,
+                isPlace = isPlace,
                 enabled = !state.isSubmitting,
                 selected = state.selectedTagCodes,
                 canSelectMore = state.canSelectMoreTags,
@@ -145,28 +160,21 @@ private fun ReviewWriteTopBar(onClose: () -> Unit) {
                 .fillMaxWidth()
                 .background(color.bgDefaultLevel1)
                 .statusBarsPadding()
-                .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(color.bgDefaultLevel0)
-                    .clickable(onClick = onClose),
-            contentAlignment = Alignment.Center,
-        ) {
-            DsText(
-                text = "✕",
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = color.contentDefaultLevel0,
+        IconButton(onClick = onClose, modifier = Modifier.size(48.dp)) {
+            Icon(
+                painter = painterResource(R.drawable.close_small_24),
+                contentDescription = "후기 작성 닫기",
+                tint = color.contentDefaultLevel0,
+                modifier = Modifier.size(24.dp),
             )
         }
         DsText(
             text = "후기 쓰기",
-            style = DesignSystemThemeImpl.typeScale.titleExtraL,
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
         )
     }
@@ -182,9 +190,10 @@ private fun RatingField(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionTitle(title = title, required = true)
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             DsRatingInput(rating = rating, onRatingChange = onRatingChange, enabled = enabled)
             DsText(
@@ -205,7 +214,7 @@ private fun ContentField(
     onContentChange: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionTitle(title = "어떤 점이 좋았나요?")
+        SectionTitle(title = "방문 경험을 들려주세요")
         DsTextField(
             value = content,
             onValueChange = onContentChange,
@@ -217,6 +226,7 @@ private fun ContentField(
         )
         DsText(
             text = "${content.length}/${CourseReviewLimits.MAX_CONTENT_LENGTH}",
+            textAlign = TextAlign.End,
             modifier = Modifier.fillMaxWidth(),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
@@ -244,36 +254,94 @@ private fun PhotoField(
 @Composable
 private fun TagField(
     tags: List<CourseReviewTagVO>,
+    isPlace: Boolean,
     enabled: Boolean,
     selected: Set<String>,
     canSelectMore: Boolean,
     onToggle: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    val groups =
+        remember(tags, isPlace) {
+            tags.groupBy { tag ->
+                if (isPlace) {
+                    PlaceReviewTagCatalog.entries.firstOrNull { it.code == tag.code }?.group
+                } else {
+                    CourseReviewTagCatalog.entries.firstOrNull { it.code == tag.code }?.group
+                }.orEmpty().ifBlank { "기타" }
+            }
+        }
+    var activeGroup by rememberSaveable(isPlace) { mutableStateOf(groups.keys.firstOrNull().orEmpty()) }
+    val currentGroup = activeGroup.takeIf { it in groups } ?: groups.keys.firstOrNull().orEmpty()
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle(title = "키워드로 표현해 주세요")
+        DsText(
+            text = "좋았던 점을 최대 ${CourseReviewLimits.MAX_TAGS}개 골라 주세요. (선택)",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+        )
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SectionTitle(title = "어울리는 태그를 골라 주세요")
-            DsText(
-                text = "${selected.size}/${CourseReviewLimits.MAX_TAGS}",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
-            )
+            groups.keys.forEach { title ->
+                DsChip(text = title, selected = title == currentGroup, onClick = { activeGroup = title })
+            }
         }
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            tags.forEach { tag ->
+            groups[currentGroup].orEmpty().forEach { tag ->
                 val isSelected = tag.code in selected
                 DsChip(
                     text = "${tag.icon} ${tag.label}",
                     selected = isSelected,
-                    // 상한에 닿으면 안 고른 칩은 눌러도 소용없다. 눌리지 않는다는 걸 색으로 알린다.
                     enabled = enabled && (isSelected || canSelectMore),
                     onClick = { onToggle(tag.code) },
                 )
+            }
+        }
+        SelectedReviewKeywords(tags.filter { it.code in selected }, enabled, onToggle)
+    }
+}
+
+@Composable
+private fun SelectedReviewKeywords(
+    tags: List<CourseReviewTagVO>,
+    enabled: Boolean,
+    onRemove: (String) -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1, RoundedCornerShape(16.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        DsText(
+            text = "선택한 키워드 ${tags.size}/${CourseReviewLimits.MAX_TAGS}",
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel0,
+        )
+        if (tags.isEmpty()) {
+            DsText(
+                text = "선택한 키워드가 여기에 모여요",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+        } else {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                tags.forEach { tag ->
+                    DsChip(
+                        text = "${tag.icon} ${tag.label} ×",
+                        modifier = Modifier.semantics { contentDescription = "${tag.label} 선택 해제" },
+                        selected = true,
+                        enabled = enabled,
+                        onClick = { onRemove(tag.code) },
+                    )
+                }
             }
         }
     }
@@ -297,5 +365,18 @@ private fun SectionTitle(
                 color = DesignSystemThemeImpl.designSystemColor.contentAccent,
             )
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360)
+@Composable
+private fun CourseReviewWritePreview() {
+    DesignSystemTheme {
+        CourseReviewWriteScreen(
+            state = CourseReviewWriteUIState(rating = 4),
+            onIntent = {},
+            onSubmit = {},
+            onClose = {},
+        )
     }
 }

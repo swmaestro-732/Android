@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -86,12 +88,20 @@ fun CourseReviewListScreen(
                 .background(color.bgDefaultLevel0),
     ) {
         ReviewListTopBar(onBack = onBack)
-        LazyColumn(state = listState, modifier = Modifier.weight(1f)) {
-            item(key = "summary") { RatingSummaryBand(summary = summary) }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(bottom = 20.dp),
+        ) {
+            if (reviews.isNotEmpty()) {
+                item(key = "summary") { RatingSummaryBand(summary = summary) }
+            }
             if (summary.photoUrls.isNotEmpty()) {
                 item(key = "photos") { ReviewPhotoBand(summary = summary) }
             }
-            item(key = "sort") { SortTabs(selected = sort, onSelect = onSortChange) }
+            if (reviews.isNotEmpty()) {
+                item(key = "sort") { SortTabs(selected = sort, onSelect = onSortChange) }
+            }
             if (reviews.isEmpty()) {
                 item(key = "empty") { ReviewListEmpty() }
             } else {
@@ -175,19 +185,17 @@ private fun ReviewListTopBar(onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_chevron_left_24),
-            contentDescription = "뒤로",
-            tint = color.contentDefaultLevel0,
-            modifier =
-                Modifier
-                    .clip(CircleShape)
-                    .clickable(onClick = onBack)
-                    .size(24.dp),
-        )
+        IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_left_24),
+                contentDescription = "뒤로",
+                tint = color.contentDefaultLevel0,
+                modifier = Modifier.size(24.dp),
+            )
+        }
         DsText(
-            text = "따라간 후기",
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            text = "코스 후기",
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
         )
     }
@@ -387,12 +395,12 @@ private fun ReviewListEmpty() {
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         DsText(
-            text = "아직 후기가 없어요",
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            text = "첫 후기를 기다리고 있어요",
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
         )
         DsText(
-            text = "이 코스를 따라간 뒤 첫 후기를 남겨 보세요.",
+            text = "코스를 다녀온 경험을 나눠 주세요.\n별점만 남겨도 다음 여행에 도움이 돼요.",
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
             textAlign = TextAlign.Center,

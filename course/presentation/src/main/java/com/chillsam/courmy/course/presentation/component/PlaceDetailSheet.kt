@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -110,7 +111,7 @@ private val INFO_CIRCLE_BUTTON_SIZE = 38.dp
 
 /** 후기 미리보기 수. 나머지는 "전체보기"의 몫이다(코스 상세 리뷰 섹션과 같은 규칙). */
 private const val REVIEW_PREVIEW_COUNT = 2
-private const val DETAIL_PANEL_FRACTION = 0.55f
+private const val DETAIL_PANEL_FRACTION = 0.48f
 
 /** 오버레이 카드 배경 불투명도. 지도가 비쳐 보이되 글자는 읽히는 선. */
 private const val OVERLAY_ALPHA = 0.95f
@@ -250,6 +251,7 @@ fun PlaceDetailSheet(
                     Modifier
                         .fillMaxSize()
                         .offset { IntOffset(0, offsetY.value.roundToInt()) }
+                        .navigationBarsPadding()
                         .clip(SHEET_TOP_SHAPE)
                         .background(color.bgDefaultLevel0),
             ) {
@@ -341,50 +343,68 @@ private fun FullCourseMapDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
         BackHandler(onBack = close)
-        Box(Modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
-            Column(Modifier.fillMaxSize().padding(bottom = if (detailsVisible) panelHeight else 0.dp)) {
-                FullMapLayout(
-                    coursePlace = coursePlace,
-                    course = course,
-                    address = details.address,
-                    overview = !detailsVisible,
-                    onToggleOverview = { detailsVisible = !detailsVisible },
-                    onSelectPlace = {
-                        onSelectPlace(it)
-                        detailsVisible = true
-                    },
-                )
-            }
-            IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding()) {
-                Icon(
-                    painterResource(R.drawable.close_small_24),
-                    contentDescription = "지도 닫기",
-                    tint = color.contentDefaultLevel0,
-                )
-            }
-            if (detailsVisible) {
-                Column(
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(panelHeight)
-                        .clip(SHEET_TOP_SHAPE)
-                        .background(color.bgDefaultLevel0),
-                ) {
-                    PlaceInfoLayout(
+        Column(Modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                Column(Modifier.fillMaxSize().padding(bottom = if (detailsVisible) panelHeight else 0.dp)) {
+                    FullMapLayout(
                         coursePlace = coursePlace,
+                        course = course,
                         address = details.address,
-                        reviews = details.reviews,
-                        isSaved = details.isSaved,
-                        onToggleSave = onToggleSave,
-                        onDismiss = { detailsVisible = false },
-                        onDeleteReview = onDeleteReview,
-                        onWriteReview = { writing = true },
+                        overview = !detailsVisible,
+                        onToggleOverview = { detailsVisible = !detailsVisible },
+                        onSelectPlace = {
+                            onSelectPlace(it)
+                            detailsVisible = true
+                        },
                     )
                 }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .statusBarsPadding()
+                            .padding(8.dp)
+                            .background(color.bgDefaultLevel0, CircleShape),
+                ) {
+                    Icon(
+                        painterResource(R.drawable.close_small_24),
+                        contentDescription = "지도 닫기",
+                        tint = color.contentDefaultLevel0,
+                    )
+                }
+                if (detailsVisible) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(panelHeight),
+                        shape = SHEET_TOP_SHAPE,
+                        color = color.bgDefaultLevel0,
+                        shadowElevation = 8.dp,
+                    ) {
+                        Column {
+                            Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 6.dp), Alignment.Center) {
+                                Box(Modifier.size(36.dp, 4.dp).background(color.borderDefaultLevel0, CircleShape))
+                            }
+                            PlaceInfoLayout(
+                                coursePlace = coursePlace,
+                                address = details.address,
+                                reviews = details.reviews,
+                                isSaved = details.isSaved,
+                                onToggleSave = onToggleSave,
+                                onDismiss = { detailsVisible = false },
+                                onDeleteReview = onDeleteReview,
+                                onWriteReview = { writing = true },
+                            )
+                        }
+                    }
+                }
+            }
+            CoursePlaceStepBar(course.places, coursePlace, detailsVisible) {
+                onSelectPlace(it)
+                detailsVisible = true
             }
         }
     }
+
     if (writing) {
         PlaceReviewWriteDialog(coursePlace.placeId, details.categories, onClose = { writing = false }, onWritten = {
             writing = false
@@ -438,20 +458,65 @@ private fun ColumnScope.FullMapLayout(
                 onToggleOverview = onToggleOverview,
                 modifier = Modifier.align(Alignment.BottomStart),
             )
+        } else {
+            CompactCourseSummary(
+                course = course,
+                modifier =
+                    Modifier
+                        .align(
+                            Alignment.TopStart,
+                        ).statusBarsPadding()
+                        .padding(start = 16.dp, end = 64.dp, top = 8.dp),
+            )
         }
     }
-    val index = places.indexOf(coursePlace)
-    // 전체 보기에서는 보고 있는 장소가 없으므로 앞뒤로 옮길 대상도 없다(둘 다 비활성).
+}
+
+@Composable
+private fun CompactCourseSummary(
+    course: PlaceSheetCourse,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier = modifier.fillMaxWidth().background(color.bgDefaultLevel1, RoundedCornerShape(14.dp)).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        DsText(
+            text = course.title,
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel0,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        DsText(
+            text = course.summary.ifBlank { "${course.places.size}곳" },
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel2,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun CoursePlaceStepBar(
+    places: List<CourseDetailPlaceVO>,
+    coursePlace: CourseDetailPlaceVO,
+    detailsVisible: Boolean,
+    onSelectPlace: (CourseDetailPlaceVO) -> Unit,
+) {
+    val index = places.indexOfFirst { it.placeId == coursePlace.placeId && it.order == coursePlace.order }
     PlaceStepBar(
         onPrevious =
             places
                 .getOrNull(index - 1)
-                ?.takeIf { index > 0 && !overview }
+                ?.takeIf { index > 0 && detailsVisible }
                 ?.let { { onSelectPlace(it) } },
         onNext =
             places
                 .getOrNull(index + 1)
-                ?.takeIf { index >= 0 && !overview }
+                ?.takeIf { index >= 0 && detailsVisible }
                 ?.let { { onSelectPlace(it) } },
     )
 }
@@ -483,33 +548,17 @@ private fun ColumnScope.PlaceInfoLayout(
     onOverview: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val context = LocalContext.current
     val reviewItems = reviews?.reviews.orEmpty()
     // 삭제 확인 중인 내 후기 id. 실수 탭 한 번으로 지워지지 않게 확인을 거친다(후기 목록 화면과 동일).
     var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
+    PlaceInfoHeader(coursePlace = coursePlace, onDismiss = onDismiss)
     Column(
         modifier =
             Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
                 .padding(horizontal = ScreenHorizontalPadding, vertical = 6.dp),
     ) {
-        PlaceInfoHeader(isSaved, onToggleSave, onDismiss)
-        Spacer(Modifier.height(18.dp))
-        DsText(
-            text = coursePlace.name,
-            style = DesignSystemThemeImpl.typeScale.titleExtraL,
-            color = color.contentDefaultLevel0,
-        )
-        if (coursePlace.category.isNotBlank()) {
-            Spacer(Modifier.height(4.dp))
-            DsText(
-                text = coursePlace.category,
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = color.contentDefaultLevel3,
-            )
-        }
         if (reviewItems.isNotEmpty() && reviews != null) {
             Spacer(Modifier.height(10.dp))
             Row(
@@ -554,18 +603,6 @@ private fun ColumnScope.PlaceInfoLayout(
                 color = color.contentDefaultLevel0,
                 modifier = Modifier.weight(1f),
             )
-            if (reviewItems.isNotEmpty()) {
-                DsText(
-                    text = "전체보기",
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel1,
-                    modifier =
-                        Modifier
-                            // 장소 후기 전체보기 진입점은 아직 없어 준비 중 안내를 표시한다.
-                            .clickable { Toast.makeText(context, "준비 중이에요.", Toast.LENGTH_SHORT).show() }
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                )
-            }
         }
         DsText(
             text = "후기 쓰기",
@@ -576,11 +613,12 @@ private fun ColumnScope.PlaceInfoLayout(
                     .clickable(enabled = coursePlace.placeId > 0, onClick = onWriteReview)
                     .padding(vertical = 12.dp),
         )
+        ExternalPlaceReviews(coursePlace.name, address, reviews)
         Spacer(Modifier.height(10.dp))
         if (reviewItems.isEmpty()) {
             // 후기 0건(또는 아직 로드 전)도 정상 상태다. 섹션을 감추면 후기를 남길 수 있다는 사실이 사라진다.
             DsText(
-                text = "아직 후기가 없어요. 다녀온 뒤 첫 후기를 남겨 보세요.",
+                text = if (reviews == null) "후기 정보를 불러오지 못했어요" else "아직 후기가 없어요. 다녀온 뒤 첫 후기를 남겨 보세요.",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
                 maxLines = Int.MAX_VALUE,
@@ -1211,23 +1249,35 @@ private fun NoLocationPlaceholder() {
 
 @Composable
 private fun PlaceInfoHeader(
-    isSaved: Boolean,
-    onToggleSave: () -> Unit,
+    coursePlace: CourseDetailPlaceVO,
     onDismiss: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (coursePlace.category.isNotBlank()) {
+                DsText(
+                    text = coursePlace.category,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                )
+            }
+            DsText(
+                text = coursePlace.name,
+                style = DesignSystemThemeImpl.typeScale.titleExtraL,
+                color = color.contentDefaultLevel0,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         SheetCircleIconButton(
             iconRes = R.drawable.ic_chevron_down_24,
-            contentDescription = "닫기",
+            contentDescription = "장소 상세 닫기",
             onClick = onDismiss,
-        )
-        Spacer(Modifier.weight(1f))
-        SheetCircleIconButton(
-            iconRes = if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
-            contentDescription = if (isSaved) "장소 저장 취소" else "장소 저장",
-            tint = if (isSaved) color.contentAccent else color.contentDefaultLevel0,
-            onClick = onToggleSave,
         )
     }
 }

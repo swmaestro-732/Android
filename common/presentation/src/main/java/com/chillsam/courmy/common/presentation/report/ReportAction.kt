@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
@@ -48,12 +50,26 @@ fun ReportAction(
     var expanded by remember(targetType, targetId) { mutableStateOf(false) }
     var reporting by remember(targetType, targetId) { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { expanded = true }, enabled = targetId > 0) {
-            Icon(
-                painterResource(R.drawable.ic_more_vert_24),
-                contentDescription = "더 보기",
-                tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
-            )
+        IconButton(
+            onClick = { expanded = true },
+            enabled = targetId > 0,
+            modifier = Modifier.size(48.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(
+                            34.dp,
+                        ).background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1, CircleShape),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_more_horizontal_24),
+                    contentDescription = "더 보기",
+                    modifier = Modifier.size(22.dp),
+                    tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+                )
+            }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(text = {

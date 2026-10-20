@@ -133,7 +133,7 @@ private fun SavedCourseList(
                             course = course,
                             onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
                             onBookmarkClick = { pendingRemoval = course },
-                            modifier = Modifier.padding(bottom = 16.dp),
+                            modifier = Modifier.padding(bottom = 12.dp),
                         )
                     }
                     if (uiState.isLoadingMore) {
@@ -173,7 +173,7 @@ private fun SavedCourseList(
     pendingRemoval?.let { course ->
         DsConfirmDialog(
             title = "저장을 취소할까요?",
-            description = "저장을 취소하면 이 코스가 저장함에서 사라져요.",
+            description = "저장을 취소하면 이 코스가 저장 목록에서 사라져요.",
             destructive = true,
             onConfirm = {
                 viewModel.onIntent(SavedCoursesIntent.Unsave(course.id))
@@ -272,7 +272,7 @@ private fun SavedPlaceList(
     pendingRemoval?.let { place ->
         DsConfirmDialog(
             title = "저장을 취소할까요?",
-            description = "저장을 취소하면 이 장소가 저장함에서 사라져요.",
+            description = "저장을 취소하면 이 장소가 저장 목록에서 사라져요.",
             destructive = true,
             onConfirm = {
                 viewModel.onIntent(SavedPlacesIntent.Unsave(place.placeId))
@@ -351,12 +351,6 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                     .statusBarsPadding()
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
-            DsText(
-                text = "저장함",
-                style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                color = color.contentDefaultLevel0,
-                modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
-            )
             Column(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.Center,
