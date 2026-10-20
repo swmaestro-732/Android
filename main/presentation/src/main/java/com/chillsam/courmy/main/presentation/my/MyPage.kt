@@ -27,8 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
-import com.chillsam.courmy.common.presentation.component.DsButton
-import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
@@ -38,7 +36,6 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
-import com.chillsam.courmy.course.domain.DraftListPage
 import com.chillsam.courmy.course.domain.PlanDetailPage
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.chillsam.courmy.main.domain.home.HomePage
@@ -237,12 +234,6 @@ private fun MyContent(
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
-            DsButton(
-                text = "임시저장한 코스",
-                variant = DsButtonVariant.Secondary,
-                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
-                onClick = { navigationHelper.navigateTo(DraftListPage) },
-            )
             // 탭 순서는 ProfileTab 선언 순서를 그대로 따른다(계획 → 코스).
             ProfileTabRow(
                 tabs =

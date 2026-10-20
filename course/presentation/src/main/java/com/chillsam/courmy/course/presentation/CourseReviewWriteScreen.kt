@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,17 +16,22 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -264,50 +270,77 @@ private fun TagField(
                 }.orEmpty().ifBlank { "기타" }
             }
         }
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            SectionTitle(title = "키워드로 표현해 주세요")
-            DsText(
-                text = "${selected.size}/${CourseReviewLimits.MAX_TAGS}",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = DesignSystemThemeImpl.designSystemColor.contentAccent,
-            )
-        }
+    var activeGroup by rememberSaveable(isPlace) { mutableStateOf(groups.keys.firstOrNull().orEmpty()) }
+    val currentGroup = activeGroup.takeIf { it in groups } ?: groups.keys.firstOrNull().orEmpty()
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle(title = "키워드로 표현해 주세요")
         DsText(
-            text = "묶음을 옆으로 넘겨 보세요. 최대 ${CourseReviewLimits.MAX_TAGS}개까지 선택할 수 있어요.",
+            text = "좋았던 점을 최대 ${CourseReviewLimits.MAX_TAGS}개 골라 주세요. (선택)",
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
-            maxLines = Int.MAX_VALUE,
         )
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            groups.forEach { (title, groupTags) ->
-                Column(
-                    modifier =
-                        Modifier
-                            .widthIn(min = 240.dp)
-                            .background(
-                                DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1,
-                                RoundedCornerShape(16.dp),
-                            ).padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    DsText(
-                        text = title,
-                        style = DesignSystemThemeImpl.typeScale.textStrongS,
-                        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
+            groups.keys.forEach { title ->
+                DsChip(text = title, selected = title == currentGroup, onClick = { activeGroup = title })
+            }
+        }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            groups[currentGroup].orEmpty().forEach { tag ->
+                val isSelected = tag.code in selected
+                DsChip(
+                    text = "${tag.icon} ${tag.label}",
+                    selected = isSelected,
+                    enabled = enabled && (isSelected || canSelectMore),
+                    onClick = { onToggle(tag.code) },
+                )
+            }
+        }
+        SelectedReviewKeywords(tags.filter { it.code in selected }, enabled, onToggle)
+    }
+}
+
+@Composable
+private fun SelectedReviewKeywords(
+    tags: List<CourseReviewTagVO>,
+    enabled: Boolean,
+    onRemove: (String) -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(
+        modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1, RoundedCornerShape(16.dp)).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        DsText(
+            text = "선택한 키워드 ${tags.size}/${CourseReviewLimits.MAX_TAGS}",
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel0,
+        )
+        if (tags.isEmpty()) {
+            DsText(
+                text = "선택한 키워드가 여기에 모여요",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+        } else {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                tags.forEach { tag ->
+                    DsChip(
+                        text = "${tag.icon} ${tag.label} ×",
+                        modifier = Modifier.semantics { contentDescription = "${tag.label} 선택 해제" },
+                        selected = true,
+                        enabled = enabled,
+                        onClick = { onRemove(tag.code) },
                     )
-                    groupTags.forEach { tag ->
-                        val isSelected = tag.code in selected
-                        DsChip(
-                            text = "${tag.icon} ${tag.label}",
-                            selected = isSelected,
-                            enabled = enabled && (isSelected || canSelectMore),
-                            onClick = { onToggle(tag.code) },
-                        )
-                    }
                 }
             }
         }

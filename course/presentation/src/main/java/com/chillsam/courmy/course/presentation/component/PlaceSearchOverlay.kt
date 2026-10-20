@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.ContentSkeleton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
@@ -53,6 +54,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.presentation.AddPlaceDialog
 import com.chillsam.courmy.course.presentation.PlaceSearchIntent
+import com.chillsam.courmy.course.presentation.PlaceSearchUiState
 import com.chillsam.courmy.course.presentation.PlaceSearchViewModel
 
 /**
@@ -122,6 +124,8 @@ fun PlaceSearchOverlay(
                 text =
                     when {
                         // 실패를 "결과 0" 으로 보여 주면 못 찾은 것과 구분되지 않는다.
+                        uiState.isSearching -> "장소를 찾고 있어요"
+
                         uiState.errorMessage != null -> ""
 
                         query.isBlank() && !uiState.fromMapSearch -> ""
@@ -141,11 +145,8 @@ fun PlaceSearchOverlay(
         }
         // 결과 목록/빈 상태/에러 분기는 별도 컴포저블로 뺀다(오버레이 본문 복잡도 관리).
         PlaceCandidateList(
-            results = results,
-            errorMessage = uiState.errorMessage,
-            hasQuery = query.isNotBlank(),
+            state = uiState,
             selectedIds = selectedIds,
-            isLoadingMore = uiState.isLoadingMore,
             onLoadMore = { viewModel.onIntent(PlaceSearchIntent.LoadMore) },
             onToggle = { candidate ->
                 when {
@@ -188,18 +189,19 @@ fun PlaceSearchOverlay(
 /** 후보 목록 · 빈 상태 · 에러를 분기해 렌더한다. */
 @Composable
 private fun ColumnScope.PlaceCandidateList(
-    results: List<CoursePlaceVO>,
-    errorMessage: String?,
-    hasQuery: Boolean,
+    state: PlaceSearchUiState,
     selectedIds: List<String>,
     onToggle: (CoursePlaceVO) -> Unit,
-    isLoadingMore: Boolean,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     when {
-        results.isNotEmpty() -> {
+        state.isSearching -> {
+            ContentSkeleton(modifier = modifier, showHero = false)
+        }
+
+        state.results.isNotEmpty() -> {
             val listState = rememberLazyListState()
             LoadMoreOnScrollEnd(listState, onLoadMore)
             LazyColumn(
@@ -207,7 +209,7 @@ private fun ColumnScope.PlaceCandidateList(
                 modifier = modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(results, key = { it.id }) { candidate ->
+                items(state.results, key = { it.id }) { candidate ->
                     val order = selectedIds.indexOf(candidate.id)
                     SearchResultRow(
                         candidate = candidate,
@@ -215,17 +217,17 @@ private fun ColumnScope.PlaceCandidateList(
                         onToggle = { onToggle(candidate) },
                     )
                 }
-                if (isLoadingMore) {
+                if (state.isLoadingMore) {
                     item { LoadingMoreFooter() }
                 }
             }
         }
 
         // 실패를 빈 목록으로 보여 주면 "못 찾음" 과 구분되지 않는다.
-        errorMessage != null -> {
+        state.errorMessage != null -> {
             Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 DsText(
-                    text = errorMessage,
+                    text = state.errorMessage,
                     style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = color.contentDefaultLevel2,
                 )
@@ -233,7 +235,7 @@ private fun ColumnScope.PlaceCandidateList(
         }
 
         else -> {
-            SearchEmptyState(hasQuery = hasQuery, modifier = modifier)
+            SearchEmptyState(hasQuery = state.query.isNotBlank(), modifier = modifier)
         }
     }
 }
