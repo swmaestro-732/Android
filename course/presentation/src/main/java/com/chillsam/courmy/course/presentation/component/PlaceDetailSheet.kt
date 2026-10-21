@@ -42,6 +42,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -595,35 +596,37 @@ private fun ColumnScope.PlaceInfoLayout(
             HeroAddressCard(address = address)
         }
         Spacer(Modifier.height(22.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        HorizontalDivider(color = color.borderDefaultLevel0)
+        Spacer(Modifier.height(20.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             DsText(
-                // totalCountText("128개")에서 단위를 떼 디자인("후기 128")과 맞춘다.
-                text = if (reviews != null) "후기 ${reviews.totalCountText.removeSuffix("개")}" else "후기",
+                text = "후기",
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
-                modifier = Modifier.weight(1f),
             )
+            if (reviews != null) {
+                DsText(
+                    text = reviews.totalCountText.removeSuffix("개"),
+                    style = DesignSystemThemeImpl.typeScale.textStrongM,
+                    color = color.contentDefaultLevel3,
+                )
+            }
         }
-        DsText(
-            text = "후기 쓰기",
-            style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = color.contentAccent,
-            modifier =
-                Modifier
-                    .clickable(enabled = coursePlace.placeId > 0, onClick = onWriteReview)
-                    .padding(vertical = 12.dp),
-        )
-        ExternalPlaceReviews(coursePlace.name, address, reviews)
-        Spacer(Modifier.height(10.dp))
-        if (reviewItems.isEmpty()) {
-            // 후기 0건(또는 아직 로드 전)도 정상 상태다. 섹션을 감추면 후기를 남길 수 있다는 사실이 사라진다.
+        Spacer(Modifier.height(16.dp))
+        if (reviewItems.isEmpty() && reviews != null) {
+            PlaceReviewEmptyState(enabled = coursePlace.placeId > 0, onWriteReview = onWriteReview)
+        } else if (reviews == null) {
             DsText(
-                text = if (reviews == null) "후기 정보를 불러오지 못했어요" else "아직 후기가 없어요. 다녀온 뒤 첫 후기를 남겨 보세요.",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                text = "후기 정보를 불러오지 못했어요",
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel3,
                 maxLines = Int.MAX_VALUE,
             )
+            Spacer(Modifier.height(12.dp))
+            PlaceReviewWriteButton(enabled = coursePlace.placeId > 0, onClick = onWriteReview)
         } else {
+            PlaceReviewWriteButton(enabled = coursePlace.placeId > 0, onClick = onWriteReview)
+            Spacer(Modifier.height(16.dp))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 reviewItems.take(REVIEW_PREVIEW_COUNT).forEach { review ->
                     ReviewCard(
@@ -639,6 +642,8 @@ private fun ColumnScope.PlaceInfoLayout(
                 }
             }
         }
+        Spacer(Modifier.height(20.dp))
+        ExternalPlaceReviews(coursePlace.name, address, reviews)
         Spacer(Modifier.height(16.dp))
     }
     pendingDeleteId?.let { reviewId ->
