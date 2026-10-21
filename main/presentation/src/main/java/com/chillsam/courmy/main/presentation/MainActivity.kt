@@ -1,0 +1,135 @@
+package com.chillsam.courmy.main.presentation
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.metrics.performance.JankStats
+import com.chillsam.courmy.common.domain.helper.MessageHelper
+import com.chillsam.courmy.common.domain.helper.NavigationHelper
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.presentation.LocalTTIHelper
+import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
+import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.jank.JankReporter
+import com.chillsam.courmy.common.presentation.jank.LocalJankReporter
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
+import com.chillsam.courmy.main.presentation.deeplink.resolveNewIntentRoute
+import com.chillsam.courmy.main.presentation.deeplink.resolveStartStack
+import com.chillsam.courmy.main.presentation.navigation.RootComposable
+import com.chillsam.courmy.tti.TTIHelper
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+
+@AndroidEntryPoint
+class MainActivity : FragmentActivity() {
+    @Inject
+    lateinit var navigationHelper: NavigationHelper
+
+    @Inject
+    lateinit var messageHelper: MessageHelper
+
+    @Inject
+    lateinit var jankReporter: JankReporter
+
+    @Inject
+    lateinit var ttiHelper: TTIHelper
+
+    @Inject
+    lateinit var telemetry: Telemetry
+
+    private var jankStats: JankStats? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // App Link 진입 시 Intent.data 에서 시작 백스택을 구성한다.
+        val startStack = resolveStartStack(intent?.data)
+
+        // JankStats 는 DecorView 가 생성된 이후에만 만들 수 있다. setContent 가 DecorView 를
+        // 보장하므로 lifecycle observer 안에서 lazy 하게 생성하고, tracking on/off 와 백그라운드
+        // flush 도 함께 처리한다. listener 는 main thread 에서 호출됨이 보장된다.
+        lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onResume(owner: LifecycleOwner) {
+                    if (jankStats == null) {
+                        jankStats =
+                            JankStats.createAndTrack(window) { frameData ->
+                                jankReporter.onFrame(frameData)
+                            }
+                    }
+                    jankStats?.isTrackingEnabled = true
+                }
+
+                override fun onPause(owner: LifecycleOwner) {
+                    jankStats?.isTrackingEnabled = false
+                }
+
+                override fun onStop(owner: LifecycleOwner) {
+                    // 앱이 백그라운드로 진입할 때 누적된 통계를 손실 없이 flush.
+                    jankReporter.onAppBackground()
+                }
+            },
+        )
+
+        // 상태바 영역의 색과 아이콘 밝기는 화면마다 달라 RootComposable 이 맡는다.
+        enableEdgeToEdge()
+        hideNavigationBar()
+        setContent {
+            CompositionLocalProvider(
+                LocalNavigationHelper provides navigationHelper,
+                LocalMessageHelper provides messageHelper,
+                LocalJankReporter provides jankReporter,
+                LocalTTIHelper provides ttiHelper,
+                LocalTelemetry provides telemetry,
+            ) {
+                RootComposable(startStack = startStack)
+            }
+        }
+    }
+
+    /**
+     * 다이얼로그·키보드·시스템 UI 가 뜨면 안드로이드가 내비게이션 바를 되돌려 놓는다.
+     * 포커스를 되찾을 때마다 다시 숨겨 몰입 상태를 유지한다.
+     */
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideNavigationBar()
+    }
+
+    /**
+     * 시스템 내비게이션 바(뒤로가기·홈·최근앱)를 숨긴다. 상태 바는 그대로 둔다.
+     *
+     * 완전히 막지는 않는다 — 화면 아래 가장자리에서 위로 쓸면 잠시 나타났다 사라진다
+     * (BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE). 제스처 내비게이션 기기에서는 뒤로가기 제스처가
+     * 그대로 동작하므로, 버튼 내비게이션 기기에서만 스와이프가 필요하다.
+     */
+    private fun hideNavigationBar() {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.navigationBars())
+        }
+    }
+
+    /**
+     * launchMode 가 singleTop / singleTask 인 경우, 앱 실행 중 들어오는 새 딥링크를 처리한다.
+     * URI 를 NavRoute 로 해석만 하고, 실제 dispatch 는 NavigationHelper 의 deep-link 플로우가 담당한다.
+     * 웜 스타트는 콜드 스타트의 synthetic 스택과 달리 기존 스택을 보존하고 대상만 최전면으로 올린다
+     * (bring-to-front, [com.chillsam.courmy.main.presentation.navigation.handleDeepLink]).
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+
+        val uri = intent.data ?: return
+        val route = resolveNewIntentRoute(uri) ?: return
+        navigationHelper.navigateDeepLink(route)
+    }
+}

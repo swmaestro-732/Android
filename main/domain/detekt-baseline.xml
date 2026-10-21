@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ReturnCount:RouteMatcher.kt$fun matchRoute( segments: List&lt;String&gt;, query: Map&lt;String, String&gt;, literalPaths: Set&lt;String&gt;, templates: List&lt;RoutePattern&gt;, ): NavRoute?</ID>
+    <ID>ReturnCount:RoutePattern.kt$RoutePattern$fun match(uriSegments: List&lt;String&gt;): Map&lt;String, String&gt;?</ID>
+  </CurrentIssues>
+</SmellBaseline>

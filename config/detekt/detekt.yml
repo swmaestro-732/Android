@@ -1,0 +1,42 @@
+# Detekt 규칙 설정 — buildUponDefaultConfig=true 이므로 기본 룰셋 위에 아래 항목만 override.
+# 포맷팅(들여쓰기·import 정렬 등)은 ktlint 가 담당하므로 여기선 다루지 않는다.
+# 코드 스멜/복잡도/잠재버그 위주로만 검사한다.
+
+build:
+  # 기존 위반은 baseline.xml 로 동결한다. 새 위반이 하나라도 생기면 실패.
+  maxIssues: 0
+
+complexity:
+  active: true
+  LongParameterList:
+    # Compose 함수는 파라미터가 많을 수 있어 상한을 완화.
+    functionThreshold: 8
+    constructorThreshold: 8
+    ignoreDefaultParameters: true
+  LongMethod:
+    # @Composable 은 선언형 레이아웃 DSL 이라 줄 수가 길어도 로직 복잡도가 아니다.
+    # (naming·UnusedPrivateMember·LongParameterList 와 동일한 Compose 예외 정책.)
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    # 한 화면을 작은 private @Composable 로 잘게 나누는 게 Compose 정석이라
+    # 파일당 함수 수가 많아지는데, 이는 스멜이 아니므로 @Composable 은 카운트에서 제외.
+    ignoreAnnotatedFunctions: ['Composable']
+
+style:
+  active: true
+  MagicNumber:
+    # Compose 의 dp/sp/weight 등 UI 상수 오탐이 많아 비활성.
+    active: false
+  UnusedPrivateMember:
+    # @Preview 등 도구가 호출하는 비공개 함수 오탐 방지.
+    ignoreAnnotated: ['Preview', 'Composable']
+  ReturnCount:
+    # 입력 검증용 가드절(`?: return null`, `if (...) return null`)은 세지 않는다.
+    # 가드절을 max 2 에 맞추려면 중첩 if 로 되돌려야 해서 오히려 읽기 나빠진다.
+    excludeGuardClauses: true
+
+naming:
+  active: true
+  FunctionNaming:
+    # @Composable 함수는 PascalCase 라 예외 (ktlint 설정과 동일 정책).
+    ignoreAnnotated: ['Composable']

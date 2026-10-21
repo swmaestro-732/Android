@@ -1,0 +1,34 @@
+package com.chillsam.courmy.main.presentation.saved
+
+import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+
+/**
+ * 저장함 · 장소 탭 상태. 코스 탭([SavedCoursesUIState])과 같은 구조다.
+ * [errorMessage] 는 저장 취소 실패처럼 토스트로 한 번 알리고 지우는 일시 오류다
+ * (목록 로드 실패는 [loadErrorMessage] 로 화면에 남긴다).
+ */
+data class SavedPlacesUIState(
+    val isLoading: Boolean = true,
+    val selectedCategory: String? = null,
+    val showVisited: Boolean = false,
+    val places: ImmutableList<SavedPlaceVO> = persistentListOf(),
+    val loadErrorMessage: String? = null,
+    val errorMessage: String? = null,
+    /** 다음 페이지 커서. [hasNext] 가 false 면 의미가 없다. */
+    val nextCursor: String? = null,
+    val hasNext: Boolean = false,
+    val isLoadingMore: Boolean = false,
+) : UiState {
+    val categoryPlaces: List<SavedPlaceVO>
+        get() = places.filter { selectedCategory == null || it.categoryLabel == selectedCategory }
+
+    val visiblePlaces: List<SavedPlaceVO>
+        get() = categoryPlaces.filter { it.visited == showVisited }
+
+    companion object {
+        val empty: SavedPlacesUIState = SavedPlacesUIState()
+    }
+}

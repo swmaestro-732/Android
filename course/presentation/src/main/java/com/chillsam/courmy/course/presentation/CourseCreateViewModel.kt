@@ -1,0 +1,654 @@
+package com.chillsam.courmy.course.presentation
+
+import android.util.Log
+import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.course.domain.CreateCourseUseCase
+import com.chillsam.courmy.course.domain.CreatePlanUseCase
+import com.chillsam.courmy.course.domain.GetCourseDraftUseCase
+import com.chillsam.courmy.course.domain.GetCourseForkSourceUseCase
+import com.chillsam.courmy.course.domain.GetRecommendedTagsUseCase
+import com.chillsam.courmy.course.domain.GetWalkingMinutesUseCase
+import com.chillsam.courmy.course.domain.SaveDraftUseCase
+import com.chillsam.courmy.course.entity.CourseCompleteVO
+import com.chillsam.courmy.course.entity.CourseDraftVO
+import com.chillsam.courmy.course.entity.CoursePlaceCoordinate
+import com.chillsam.courmy.course.entity.CoursePlaceVO
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class CourseCreateViewModel
+    @Inject
+    constructor(
+        private val getCourseDraftUseCase: GetCourseDraftUseCase,
+        private val getCourseForkSourceUseCase: GetCourseForkSourceUseCase,
+        private val saveDraftUseCase: SaveDraftUseCase,
+        private val createCourseUseCase: CreateCourseUseCase,
+        private val createPlanUseCase: CreatePlanUseCase,
+        private val getRecommendedTagsUseCase: GetRecommendedTagsUseCase,
+        private val getWalkingMinutesUseCase: GetWalkingMinutesUseCase,
+    ) : MviViewModel<CourseCreateIntent, CourseCreateUIState, CourseCreateReducerEvent>(
+            CourseCreateUIState.empty,
+        ) {
+        private var loadJob: Job? = null
+        private var saveJob: Job? = null
+        private var draftJob: Job? = null
+        private var tagsJob: Job? = null
+        private var walkJob: Job? = null
+
+        // 플랫한 MVI 인텐트 디스패치라 분기 수만큼 길이·복잡도가 늘지만 로직 복잡도는 아니다.
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
+        override fun onIntent(intent: CourseCreateIntent) {
+            val consumesEffect =
+                intent == CourseCreateIntent.ConsumeSaveError ||
+                    intent == CourseCreateIntent.ConsumeSaved || intent == CourseCreateIntent.ConsumeDraftSaved
+            val cannotEdit = currentState.isLoading || currentState.loadErrorMessage != null
+            val blockedByLoad = cannotEdit && intent !is CourseCreateIntent.Load
+            if (!consumesEffect && (currentState.isSavingAny || blockedByLoad)) return
+            when (intent) {
+                is CourseCreateIntent.Load -> {
+                    load(intent.draftCourseId, intent.forkFromCourseId, intent.isPlan)
+                }
+
+                is CourseCreateIntent.ChangePlannedDate -> {
+                    dispatch(CourseCreateReducerEvent.PlannedDateChanged(intent.date))
+                }
+
+                is CourseCreateIntent.ChangeName -> {
+                    dispatch(CourseCreateReducerEvent.NameChanged(intent.name))
+                }
+
+                is CourseCreateIntent.ChangeDescription -> {
+                    dispatch(CourseCreateReducerEvent.DescriptionChanged(intent.description))
+                }
+
+                is CourseCreateIntent.ChangeThumbnailPhotos -> {
+                    dispatch(
+                        CourseCreateReducerEvent.ThumbnailPhotosChanged(
+                            intent.photoUrls.take(CourseCreateUIState.MAX_THUMBNAIL_PHOTOS),
+                        ),
+                    )
+                }
+
+                is CourseCreateIntent.AddTag -> {
+                    addTag(intent.tag)
+                }
+
+                is CourseCreateIntent.RemoveTag -> {
+                    dispatch(CourseCreateReducerEvent.TagsChanged(currentState.tags - intent.tag))
+                }
+
+                is CourseCreateIntent.AddPlaces -> {
+                    addPlaces(intent.places)
+                }
+
+                is CourseCreateIntent.ChangePlaceNote -> {
+                    dispatch(
+                        CourseCreateReducerEvent.PlacesChanged(
+                            currentState.places.map { place ->
+                                if (place.id == intent.placeId) place.copy(note = intent.note) else place
+                            },
+                        ),
+                    )
+                }
+
+                is CourseCreateIntent.ChangePlacePhotos -> {
+                    dispatch(
+                        CourseCreateReducerEvent.PlacesChanged(
+                            currentState.places.map { place ->
+                                if (place.id == intent.placeId) {
+                                    place.copy(photoUrls = intent.photoUrls.take(place.maxPhotos))
+                                } else {
+                                    place
+                                }
+                            },
+                        ),
+                    )
+                }
+
+                is CourseCreateIntent.RemovePlace -> {
+                    // 포크는 원본 장소를 최소 유지 수 아래로 뺄 수 없다(서버가 400 으로 거절한다).
+                    // 카드의 삭제 버튼도 비활성이지만, 상태 쪽에서도 막아 경로가 하나 더 생기지 않게 한다.
+                    if (!currentState.canRemovePlace(intent.placeId)) return
+                    // 장소가 빠지면 앞뒤 구간이 새로 이어지므로 도보 시간을 다시 구한다.
+                    dispatch(
+                        CourseCreateReducerEvent.PlacesChanged(
+                            currentState.places.filterNot { it.id == intent.placeId },
+                        ),
+                    )
+                    refreshWalkingMinutes()
+                }
+
+                is CourseCreateIntent.MovePlace -> {
+                    movePlace(intent.fromIndex, intent.toIndex)
+                }
+
+                is CourseCreateIntent.ChangeVisibility -> {
+                    dispatch(CourseCreateReducerEvent.VisibilityChanged(intent.visibility))
+                }
+
+                CourseCreateIntent.SaveDraft -> {
+                    saveDraft()
+                }
+
+                is CourseCreateIntent.CompleteCourse -> {
+                    createCourse(intent.course)
+                }
+
+                CourseCreateIntent.ConsumeSaveError -> {
+                    dispatch(CourseCreateReducerEvent.SaveErrorConsumed)
+                }
+
+                CourseCreateIntent.ConsumeSaved -> {
+                    dispatch(CourseCreateReducerEvent.SavedConsumed)
+                }
+
+                CourseCreateIntent.ConsumeDraftSaved -> {
+                    dispatch(CourseCreateReducerEvent.DraftSavedConsumed)
+                }
+
+                CourseCreateIntent.NextStep -> {
+                    // 조건을 못 채웠으면 넘어가지 않는다(버튼도 비활성이지만 상태 쪽에서도 막는다).
+                    if (currentState.canGoNext && currentState.step < currentState.lastStep) {
+                        val next = currentState.step + 1
+                        dispatch(CourseCreateReducerEvent.StepChanged(next))
+                        // 장소를 다 담고 넘어가는 시점에 한 번만 구간 도보 시간을 구한다
+                        // (장소를 담을 때마다 부르면 같은 계산을 여러 번 하게 된다).
+                        if (next == CourseCreateUIState.STEP_PLACE_RECORDS) refreshWalkingMinutes()
+                        // 태그 단계에 들어설 때, 확정된 장소들로 추천을 받는다.
+                        if (!currentState.isPlan && next == CourseCreateUIState.LAST_STEP) loadRecommendedTags()
+                    }
+                }
+
+                CourseCreateIntent.PrevStep -> {
+                    if (currentState.step > CourseCreateUIState.FIRST_STEP) {
+                        dispatch(CourseCreateReducerEvent.StepChanged(currentState.step - 1))
+                    }
+                }
+            }
+        }
+
+        // onIntent 와 같은 이유: 이벤트 종류만큼 갈래가 늘 뿐, 각 갈래는 copy 한 줄이다.
+        @Suppress("CyclomaticComplexMethod", "LongMethod")
+        override fun reduce(
+            state: CourseCreateUIState,
+            event: CourseCreateReducerEvent,
+        ): CourseCreateUIState =
+            when (event) {
+                is CourseCreateReducerEvent.PlanLoaded -> {
+                    CourseCreateUIState(
+                        isLoading = false,
+                        isPlan = true,
+                        places = event.places.map { it.copy(note = "", photoUrls = emptyList()) }.toImmutableList(),
+                        sourceCourseId = event.sourceCourseId,
+                        forkAuthorName = event.authorName,
+                    )
+                }
+
+                is CourseCreateReducerEvent.PlannedDateChanged -> {
+                    state.copy(plannedDate = event.date)
+                }
+
+                is CourseCreateReducerEvent.WalkingLoadingChanged -> {
+                    state.copy(isCalculatingWalking = event.loading)
+                }
+
+                is CourseCreateReducerEvent.LoadFailed -> {
+                    state.copy(isLoading = false, loadErrorMessage = event.message)
+                }
+
+                CourseCreateReducerEvent.LoadStarted -> {
+                    // 새 초안을 읽는 동안 이전 초안 id를 남기면 실패 뒤 저장이 옛 초안을 덮어쓴다.
+                    // 포크 출처도 같은 이유로 지운다 — 남겨 두면 로드가 실패했을 때 이전 진입의
+                    // 원본 id·장소 집합이 살아남아, 엉뚱한 코스의 포크로 저장되고 유지 가드까지 따라온다.
+                    state.copy(
+                        isLoading = true,
+                        draftCourseId = null,
+                        forkFromCourseId = null,
+                        forkOriginPlaceIds = persistentSetOf(),
+                        forkAuthorName = "",
+                        errorMessage = null,
+                        loadErrorMessage = null,
+                    )
+                }
+
+                is CourseCreateReducerEvent.DraftLoaded -> {
+                    // state.copy 가 아니라 **빈 상태에서 새로 만든다**. 이 화면의 엔트리가 백스택에
+                    // 남아 ViewModel 이 재사용되더라도, 진입할 때마다 이전 코스의 입력(대표 사진,
+                    // 저장 결과 등)이 남지 않도록 하기 위해서다. 이어서 쓸 값은 임시저장 목록에서
+                    // 불러오는 것이 이 화면의 계약이다.
+                    CourseCreateUIState.empty.copy(
+                        isLoading = false,
+                        name = event.draft.name,
+                        description = event.draft.description,
+                        // 커버는 한 장만 쓰므로 비어 있으면 목록도 비운다.
+                        thumbnailPhotos =
+                            listOfNotNull(event.draft.thumbnailUrl.takeIf { it.isNotBlank() })
+                                .toImmutableList(),
+                        tags = event.draft.tags.toImmutableList(),
+                        suggestedTags = event.draft.suggestedTags.toImmutableList(),
+                        places = event.draft.places.toImmutableList(),
+                        visibility = event.draft.visibility,
+                        draftCourseId = event.courseId,
+                        forkFromCourseId = event.draft.forkedFromId,
+                        forkOriginPlaceIds =
+                            event.forkSource
+                                ?.places
+                                .orEmpty()
+                                .map { it.id }
+                                .toImmutableSet(),
+                        forkAuthorName = event.forkSource?.authorName.orEmpty(),
+                    )
+                }
+
+                is CourseCreateReducerEvent.ForkSourceLoaded -> {
+                    // DraftLoaded 와 같은 이유로 빈 상태에서 새로 만든다. 포크는 늘 새 코스라
+                    // draftCourseId 를 남기지 않는다 — 남기면 임시저장이 원본 작성자의 초안을 건드린다.
+                    CourseCreateUIState.empty.copy(
+                        isLoading = false,
+                        places = event.source.places.toImmutableList(),
+                        forkFromCourseId = event.source.courseId,
+                        forkOriginPlaceIds =
+                            event.source.places
+                                .mapTo(mutableSetOf()) { it.id }
+                                .toImmutableSet(),
+                        forkAuthorName = event.source.authorName,
+                    )
+                }
+
+                is CourseCreateReducerEvent.NameChanged -> {
+                    state.copy(name = event.name)
+                }
+
+                is CourseCreateReducerEvent.DescriptionChanged -> {
+                    state.copy(description = event.description)
+                }
+
+                is CourseCreateReducerEvent.ThumbnailPhotosChanged -> {
+                    state.copy(thumbnailPhotos = event.photoUrls.toImmutableList())
+                }
+
+                is CourseCreateReducerEvent.TagsChanged -> {
+                    state.copy(tags = event.tags.toImmutableList())
+                }
+
+                is CourseCreateReducerEvent.PlacesChanged -> {
+                    state.copy(places = event.places.toImmutableList())
+                }
+
+                is CourseCreateReducerEvent.VisibilityChanged -> {
+                    state.copy(visibility = event.visibility)
+                }
+
+                CourseCreateReducerEvent.SaveStarted -> {
+                    state.copy(isSaving = true, errorMessage = null)
+                }
+
+                is CourseCreateReducerEvent.SaveSucceeded -> {
+                    state.copy(
+                        isSaving = false,
+                        savedCourseId = event.courseId,
+                        imagesMissing = !event.imagesUploaded,
+                    )
+                }
+
+                is CourseCreateReducerEvent.SaveFailed -> {
+                    state.copy(isSaving = false, errorMessage = event.message)
+                }
+
+                CourseCreateReducerEvent.SaveErrorConsumed -> {
+                    state.copy(errorMessage = null)
+                }
+
+                CourseCreateReducerEvent.SavedConsumed -> {
+                    state.copy(savedCourseId = null, imagesMissing = false)
+                }
+
+                is CourseCreateReducerEvent.StepChanged -> {
+                    state.copy(step = event.step)
+                }
+
+                is CourseCreateReducerEvent.SuggestedTagsLoaded -> {
+                    state.copy(suggestedTags = event.tags.toImmutableList())
+                }
+
+                CourseCreateReducerEvent.DraftSaveStarted -> {
+                    state.copy(isSavingDraft = true, errorMessage = null)
+                }
+
+                is CourseCreateReducerEvent.DraftSaveSucceeded -> {
+                    state.copy(
+                        isSavingDraft = false,
+                        draftSaved = true,
+                        draftCourseId = event.courseId,
+                        imagesMissing = !event.imagesUploaded,
+                    )
+                }
+
+                is CourseCreateReducerEvent.DraftSaveFailed -> {
+                    state.copy(isSavingDraft = false, errorMessage = event.message)
+                }
+
+                CourseCreateReducerEvent.DraftSavedConsumed -> {
+                    state.copy(draftSaved = false, imagesMissing = false)
+                }
+            }
+
+        private fun addTag(tag: String) {
+            val trimmed = tag.trim()
+            if (trimmed.isEmpty() || currentState.tags.contains(trimmed)) return
+            dispatch(CourseCreateReducerEvent.TagsChanged(currentState.tags + trimmed))
+        }
+
+        private fun movePlace(
+            fromIndex: Int,
+            toIndex: Int,
+        ) {
+            val places = currentState.places
+            if (fromIndex !in places.indices || toIndex !in places.indices || fromIndex == toIndex) return
+            val reordered =
+                places.toMutableList().apply {
+                    add(toIndex, removeAt(fromIndex))
+                }
+            dispatch(CourseCreateReducerEvent.PlacesChanged(reordered))
+            refreshWalkingMinutes()
+        }
+
+        /**
+         * 장소 사이 도보 시간을 다시 구해 [CoursePlaceVO.walkText] 에 채운다.
+         *
+         * 좌표가 빠진 장소가 섞이면 구간을 짝지을 수 없어 아예 표시하지 않는다. 응답이 와도 구간 수가
+         * 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없으므로 같은 이유로 걷어낸다.
+         * 실패해도 코스 만들기 자체는 계속돼야 하므로 화면을 막거나 에러를 띄우지 않는다.
+         */
+        private fun refreshWalkingMinutes() {
+            walkJob?.cancel()
+            dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(false))
+            val places = currentState.places
+            if (places.size < MIN_WALK_POINTS || places.any { !it.hasLocation }) {
+                places.clearedWalkTexts()?.let { dispatch(CourseCreateReducerEvent.PlacesChanged(it)) }
+                return
+            }
+            val points =
+                places.map { CoursePlaceCoordinate(latitude = it.latitude!!, longitude = it.longitude!!) }
+            dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(true))
+            walkJob =
+                viewModelScope.launch {
+                    runCatching { getWalkingMinutesUseCase(points) }
+                        .onSuccess { segments ->
+                            dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(false))
+                            if (currentState.places.map { it.id } != places.map { it.id }) return@onSuccess
+                            val applied = currentState.places.withWalkTexts(segments)
+                            if (applied == null) {
+                                Log.w(TAG, "도보 구간 수 불일치: 장소 ${places.size}곳 / 구간 ${segments.size}개")
+                                currentState.places.clearedWalkTexts()?.let {
+                                    dispatch(
+                                        CourseCreateReducerEvent.PlacesChanged(it),
+                                    )
+                                }
+                            } else {
+                                dispatch(CourseCreateReducerEvent.PlacesChanged(applied))
+                            }
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(false))
+                            Log.w(TAG, "도보 시간 조회 실패: 장소 ${places.size}곳", e)
+                            if (currentState.places.map { it.id } == places.map { it.id }) {
+                                currentState.places.clearedWalkTexts()?.let {
+                                    dispatch(
+                                        CourseCreateReducerEvent.PlacesChanged(it),
+                                    )
+                                }
+                            }
+                        }
+                }
+        }
+
+        private fun addPlaces(places: List<CoursePlaceVO>) {
+            val remaining = CourseCreateUIState.MAX_PLACES - currentState.places.size
+            if (remaining <= 0) return
+            val existingIds = currentState.places.map { it.id }.toSet()
+            // 기존 상태 중복 + 입력 목록 내 중복 id 를 모두 제거한 뒤 남은 자리(최대 10곳)만큼만 담는다.
+            val toAdd = places.filter { it.id !in existingIds }.distinctBy { it.id }.take(remaining)
+            if (toAdd.isEmpty()) return
+            dispatch(CourseCreateReducerEvent.PlacesChanged(currentState.places + toAdd))
+        }
+
+        /**
+         * 초안을 서버에 코스로 생성하고(POST /api/v1/courses), 성공하면 완성 화면용 요약을 로컬에 보관한다.
+         * 서버 저장이 끝나기 전에는 완성 화면으로 넘기지 않는다(실패했는데 성공처럼 보이지 않게).
+         */
+        private fun createCourse(completed: CourseCompleteVO?) {
+            val state = currentState
+            // 버튼 비활성화를 우회해 들어와도(뒤로 가서 값을 지운 경우 등) 서버 400 전에 여기서 거른다.
+            if (state.isSavingAny || !state.canSave) return
+            dispatch(CourseCreateReducerEvent.SaveStarted)
+            saveJob?.cancel()
+            saveJob =
+                viewModelScope.launch {
+                    runCatching {
+                        if (state.isPlan) {
+                            savePlan(state, createPlanUseCase, getWalkingMinutesUseCase)
+                        } else {
+                            createCourseUseCase(
+                                draft = state.toDraftVO(),
+                                thumbnailUris = state.thumbnailPhotos,
+                                published = true,
+                                completed = completed,
+                                draftCourseId = state.draftCourseId,
+                            )
+                        }
+                    }.onSuccess { result ->
+                        dispatch(
+                            CourseCreateReducerEvent.SaveSucceeded(
+                                courseId = result.courseId,
+                                imagesUploaded = result.imagesUploaded,
+                            ),
+                        )
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
+                        Log.w(TAG, "코스 생성 실패", e)
+                        dispatch(
+                            CourseCreateReducerEvent.SaveFailed(
+                                if (state.isPlan) {
+                                    "계획 저장에 실패했어요. 장소와 도보 경로를 확인한 뒤 다시 시도해 주세요."
+                                } else {
+                                    "코스 저장에 실패했어요. 잠시 후 다시 시도해 주세요."
+                                },
+                            ),
+                        )
+                    }
+                }
+        }
+
+        /**
+         * 추천 태그를 받아 채운다.
+         *
+         * 태그는 저장의 필수 조건이 아니라서 실패해도 화면을 막지 않는다(추천 칩만 안 보인다).
+         * 장소 id 는 서버 place id 문자열이라 Long 으로 되돌린다.
+         */
+        private fun loadRecommendedTags() {
+            tagsJob?.cancel()
+            tagsJob =
+                viewModelScope.launch {
+                    val placeIds = currentState.places.mapNotNull { it.id.toLongOrNull() }
+                    runCatching { getRecommendedTagsUseCase(placeIds) }
+                        .onSuccess { dispatch(CourseCreateReducerEvent.SuggestedTagsLoaded(it)) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "추천 태그 로드 실패", e)
+                        }
+                }
+        }
+
+        /**
+         * 화면 진입 데이터 적재. 세 갈래다 — 빈 코스(인자 없음) · 임시저장 이어쓰기 · 포크.
+         *
+         * 빈 코스는 서버에 물어볼 것이 없어 바로 연다(새로 만들기가 네트워크 상태와 무관하게 즉시 열린다).
+         * 나머지 둘은 읽어 오는 대상만 다르고 스피너·실패 처리가 같아 한 경로로 묶는다.
+         * [forkFromCourseId] 가 우선이다 — 포크는 늘 새 코스라 이어쓸 초안이 있을 수 없다.
+         */
+        private fun load(
+            draftCourseId: Long?,
+            forkFromCourseId: Long?,
+            isPlan: Boolean,
+        ) {
+            loadJob?.cancel()
+            walkJob?.cancel()
+            if (isPlan) dispatch(CourseCreateReducerEvent.PlanLoaded())
+            val loadEvent: (suspend () -> CourseCreateReducerEvent)? =
+                when {
+                    forkFromCourseId != null -> {
+                        {
+                            val source = getCourseForkSourceUseCase(forkFromCourseId)
+                            if (isPlan) {
+                                CourseCreateReducerEvent.PlanLoaded(source.places, source.courseId, source.authorName)
+                            } else {
+                                CourseCreateReducerEvent.ForkSourceLoaded(source)
+                            }
+                        }
+                    }
+
+                    !isPlan && draftCourseId != null -> {
+                        {
+                            val draft = getCourseDraftUseCase(draftCourseId)
+                            val source = draft.forkedFromId?.let { getCourseForkSourceUseCase(it) }
+                            CourseCreateReducerEvent.DraftLoaded(draft, draftCourseId, source)
+                        }
+                    }
+
+                    else -> {
+                        null
+                    }
+                }
+            if (loadEvent == null) {
+                if (!isPlan) dispatch(CourseCreateReducerEvent.DraftLoaded(CourseDraftVO.empty, courseId = null))
+                return
+            }
+            dispatch(CourseCreateReducerEvent.LoadStarted)
+            loadJob =
+                viewModelScope.launch {
+                    runCatching { loadEvent() }
+                        .onSuccess { event ->
+                            dispatch(event)
+                            // 이어 쓰는 초안에도, 포크한 원본에도 장소가 들어 있어 도보 시간을 채워야 한다.
+                            refreshWalkingMinutes()
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            // 실패한 초안을 새 코스로 오인해 저장하지 않도록 재시도 화면을 유지한다.
+                            Log.w(TAG, "작성 화면 진입 로드 실패: draftId=$draftCourseId, forkFromId=$forkFromCourseId", e)
+                            dispatch(
+                                CourseCreateReducerEvent.LoadFailed(
+                                    if (forkFromCourseId != null) {
+                                        "복제할 코스를 불러오지 못했어요."
+                                    } else {
+                                        "임시저장한 내용을 불러오지 못했어요."
+                                    },
+                                ),
+                            )
+                        }
+                }
+        }
+
+        /**
+         * 현재 작성 중인 내용을 서버에 임시저장한다.
+         *
+         * 장소 수는 서버가 400 으로 거절하는 유일한 조건이라 보내기 전에 앱에서 걸러 안내한다
+         * (서버 문구를 그대로 노출하지 않는다). 저장이 끝나기 전에 화면을 닫으면 요청이 취소되므로,
+         * 화면 이동은 [CourseCreateUIState.draftSaved] 신호를 받은 뒤에 한다.
+         */
+        private fun saveDraft() {
+            if (currentState.isPlan) return
+            if (currentState.isSavingAny) return
+            if (!currentState.canSaveDraft) {
+                dispatch(
+                    CourseCreateReducerEvent.DraftSaveFailed(
+                        "장소를 ${CourseCreateUIState.MIN_PLACES}곳 이상 담아야 임시저장할 수 있어요.",
+                    ),
+                )
+                return
+            }
+            dispatch(CourseCreateReducerEvent.DraftSaveStarted)
+            draftJob?.cancel()
+            draftJob =
+                viewModelScope.launch {
+                    runCatching { saveDraftUseCase(currentState.toDraftVO(), currentState.draftCourseId) }
+                        .onSuccess { result ->
+                            dispatch(
+                                CourseCreateReducerEvent.DraftSaveSucceeded(
+                                    courseId = result.courseId,
+                                    imagesUploaded = result.imagesUploaded,
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "임시저장 실패: courseId=${currentState.draftCourseId}", e)
+                            dispatch(
+                                CourseCreateReducerEvent.DraftSaveFailed("임시저장에 실패했어요. 잠시 후 다시 시도해 주세요."),
+                            )
+                        }
+                }
+        }
+
+        private companion object {
+            /** 도보 시간은 구간이 있어야 의미가 있다(장소 2곳부터). */
+            const val MIN_WALK_POINTS = 2
+
+            const val TAG = "CourseCreate"
+        }
+    }
+
+/** 현재 화면 입력값을 임시저장용 초안으로 변환한다. */
+private fun CourseCreateUIState.toDraftVO(): CourseDraftVO =
+    CourseDraftVO(
+        name = name,
+        description = description,
+        tags = tags,
+        suggestedTags = suggestedTags,
+        places = places,
+        visibility = visibility,
+        // 대표 사진은 한 장만 쓴다. 로컬 URI 는 UseCase 가 업로드해 공개 URL 로 바꾼다.
+        thumbnailUrl = thumbnailPhotos.firstOrNull().orEmpty(),
+        // 포크면 원본 id 를 실어 서버가 출처를 남기게 한다. 직접 만든 코스면 null 이다.
+        forkedFromId = forkFromCourseId,
+    )
+
+/** 걸어서 갈 수 없는 구간(서버가 음수로 알려 준다). */
+private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
+
+/**
+ * 구간 도보 분을 장소별 값으로 채운다. 구간 수가 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없어
+ * null 을 돌려 호출부가 표시를 걷어내게 한다. 마지막 장소는 갈 곳이 없어 빈 문자열·null 이다.
+ * 서버 저장 요청에도 숫자 값이 필요하므로 표시 문구와 함께 원본 분을 보존한다.
+ */
+private fun List<CoursePlaceVO>.withWalkTexts(segments: List<Int>): List<CoursePlaceVO>? {
+    if (segments.size != size - 1) return null
+    return mapIndexed { index, place ->
+        val minutes = segments.getOrNull(index)
+        place.copy(walkText = minutes?.toWalkText().orEmpty(), walkingMinutes = minutes)
+    }
+}
+
+/** 이미 비어 있으면 null 을 돌려 불필요한 상태 갱신을 막는다. */
+private fun List<CoursePlaceVO>.clearedWalkTexts(): List<CoursePlaceVO>? =
+    if (none { it.walkText.isNotEmpty() || it.walkingMinutes != null }) {
+        null
+    } else {
+        map { it.copy(walkText = "", walkingMinutes = null) }
+    }
+
+/**
+ * 구간 도보 분 → 화면 문구.
+ *
+ * 서버는 걸어서 갈 수 없는 구간(너무 멀거나 경로가 없음)을 **음수(-1)** 로 준다.
+ * 이때는 분으로 환산하지 않고 그렇게 알린다.
+ */
+private fun Int.toWalkText(): String = if (this < 0) UNREACHABLE_TEXT else "도보 ${this}분"

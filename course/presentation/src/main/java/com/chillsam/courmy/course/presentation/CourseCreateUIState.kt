@@ -1,0 +1,193 @@
+package com.chillsam.courmy.course.presentation
+
+import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.course.entity.CourseForkRule
+import com.chillsam.courmy.course.entity.CoursePlaceVO
+import com.chillsam.courmy.course.entity.CourseVisibility
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
+
+/**
+ * 코스 만들기 화면 상태(Figma FS-34). 컬렉션은 Compose 안정성을 위해 Immutable* 사용.
+ */
+data class CourseCreateUIState(
+    val isLoading: Boolean = true,
+    val isPlan: Boolean = false,
+    val plannedDate: String = "",
+    val sourceCourseId: Long? = null,
+    val isCalculatingWalking: Boolean = false,
+    /** 현재 단계(1..[LAST_STEP]). 1 장소 고르기 · 2 장소별 기록 · 3 코스 정보 · 4 설정. */
+    val step: Int = FIRST_STEP,
+    val name: String = "",
+    val description: String = "",
+    val thumbnailPhotos: ImmutableList<String> = persistentListOf(),
+    val tags: ImmutableList<String> = persistentListOf(),
+    val suggestedTags: ImmutableList<String> = persistentListOf(),
+    val places: ImmutableList<CoursePlaceVO> = persistentListOf(),
+    val visibility: CourseVisibility = CourseVisibility.PUBLIC,
+    val isSaving: Boolean = false,
+    /** 서버 저장이 끝나면 채워진다. 코스 상세로 넘어가는 신호. */
+    val savedCourseId: Long? = null,
+    /** 코스는 만들어졌지만 사진 업로드가 실패한 경우 true. 안내만 하고 저장은 성공으로 본다. */
+    val imagesMissing: Boolean = false,
+    /**
+     * 이 작성 세션이 서버에 만들어 둔 임시저장 초안의 코스 id.
+     *
+     * 이어서 작성으로 들어왔거나 한 번이라도 임시저장했으면 채워진다. 값이 있으면 임시저장이
+     * 그 초안을 갱신하므로, 여러 번 눌러도 목록에 초안이 늘지 않는다.
+     */
+    val draftCourseId: Long? = null,
+    val isSavingDraft: Boolean = false,
+    /** 임시저장이 끝나면 true. 화면을 빠져나가는 신호. */
+    val draftSaved: Boolean = false,
+    val errorMessage: String? = null,
+    val loadErrorMessage: String? = null,
+    /**
+     * 포크 중이면 원본 코스 id. null 이면 평범한 코스 만들기다.
+     * 저장 요청에 `forkedFromId` 로 실려 서버가 출처를 남긴다.
+     */
+    val forkFromCourseId: Long? = null,
+    /** 포크 원본이 담고 있던 장소 id 들. 이 중 [requiredKeptOriginPlaceCount] 곳은 반드시 남겨야 한다. */
+    val forkOriginPlaceIds: ImmutableSet<String> = persistentSetOf(),
+    /** 포크 원본 작성자 이름. 안내 배너 문구에만 쓴다. */
+    val forkAuthorName: String = "",
+) : UiState {
+    val isSavingAny: Boolean
+        get() = isSaving || isSavingDraft
+
+    val lastStep: Int
+        get() = if (isPlan) STEP_COURSE_INFO else LAST_STEP
+
+    /** 남의 코스를 포크해 작성 중인지. */
+    val isForking: Boolean
+        get() = forkFromCourseId != null
+
+    /** 원본에서 반드시 그대로 남겨야 하는 장소 수([CourseForkRule]). 포크가 아니면 0. */
+    val requiredKeptOriginPlaceCount: Int
+        get() = CourseForkRule.requiredKeptPlaceCount(forkOriginPlaceIds.size)
+
+    /** 지금 코스에 남아 있는 원본 장소 수. */
+    val keptOriginPlaceCount: Int
+        get() = places.map { it.id }.toSet().count { it in forkOriginPlaceIds }
+
+    /**
+     * [placeId] 를 코스에서 뺄 수 있는지.
+     *
+     * 포크가 아니면 언제나 뺄 수 있고, 포크여도 **내가 추가한 장소**는 자유롭게 뺀다.
+     * 원본 장소만, 최소 유지 수 아래로 내려가는 삭제를 막는다(서버가 400 으로 거절하는 조건과 같다).
+     */
+    fun canRemovePlace(placeId: String): Boolean =
+        placeId !in forkOriginPlaceIds || keptOriginPlaceCount > requiredKeptOriginPlaceCount
+
+    /**
+     * 포크 배너에 붙일 유지 규칙 안내. 포크가 아니면 null.
+     *
+     * 막힌 카드마다 띄우지 않고 배너 한 곳에만 둔다 — 원본이 두 곳이면 처음부터 한 곳도 뺄 수 없어
+     * 같은 문장이 카드 수만큼 반복되기 때문이다. 못 빼는 장소는 삭제 버튼 자체를 감춰서 알린다.
+     * 여유가 있든 없든 규칙은 같으므로 문구도 바뀌지 않는다(상태에 따라 깜빡이지 않는다).
+     */
+    val forkKeepRuleText: String?
+        get() = "원본 장소는 ${requiredKeptOriginPlaceCount}곳 이상 유지해야 해요".takeIf { isForking }
+
+    /**
+     * 저장 가능 여부. 단계별 차단 사유([placesReason]·[recordsReason]·[infoReason])가 모두 통과
+     * 상태일 때만 저장할 수 있다 — 조건을 사유 프로퍼티 한 곳에만 두어, 저장 버튼 활성 조건과
+     * 버튼에 띄우는 문구가 서로 어긋나지 않게 한다.
+     */
+    val canSave: Boolean
+        get() =
+            if (isPlan) {
+                placesReason == null && infoReason == null && !isCalculatingWalking
+            } else {
+                placesReason == null && recordsReason == null && infoReason == null
+            }
+
+    /**
+     * 임시저장 가능 조건은 **장소 [MIN_PLACES]곳 이상 하나뿐**이다(서버가 그 아래를 400 으로 거절한다).
+     * 제목·설명·커버·장소 사진·태그는 발행할 때만 필요하므로 여기서 보지 않는다.
+     */
+    val canSaveDraft: Boolean
+        get() =
+            !isPlan && places.size >= MIN_PLACES &&
+                (!isForking || keptOriginPlaceCount >= CourseForkRule.MIN_SHARED_PLACES)
+
+    /**
+     * 현재 단계를 넘어가지 못하게 막는 이유. 통과 상태면 null. 버튼 문구로 그대로 쓴다.
+     *
+     * 단계를 나눈 가장 큰 이유가 이것이다. 한 화면일 때는 저장 버튼이 왜 비활성인지 알 수 없어
+     * (조건이 화면 곳곳에 흩어져 있다) 사용자가 직접 찾아내야 했다. 이제는 막힌 지점에서 바로 말해 준다.
+     *
+     * 마지막 단계에서는 앞선 단계의 조건을 모두 다시 본다. 앞 단계를 통과해야 넘어올 수 있으니
+     * 보통은 걸리지 않지만, 뒤로 가서 값을 지운 경우까지 저장 직전에 걸러 낸다.
+     */
+    val stepBlockedReason: String?
+        get() =
+            when (step) {
+                STEP_PLACES -> placesReason
+                STEP_PLACE_RECORDS -> recordsReason
+                STEP_COURSE_INFO -> if (isPlan) placesReason ?: infoReason else infoReason
+                else -> placesReason ?: recordsReason ?: infoReason
+            }
+
+    /** 다음 단계로 갈 수 있는지. 마지막 단계에서는 저장 가능 여부와 같다. */
+    val canGoNext: Boolean
+        get() = stepBlockedReason == null
+
+    private val placesReason: String?
+        get() =
+            if (places.size !in
+                (if (isPlan) 1 else MIN_PLACES)..MAX_PLACES
+            ) {
+                "장소를 ${if (isPlan) 1 else MIN_PLACES}~${MAX_PLACES}곳 담아 주세요."
+            } else if (isForking && keptOriginPlaceCount < CourseForkRule.MIN_SHARED_PLACES) {
+                "원본 장소를 2곳 이상 담아 주세요."
+            } else {
+                null
+            }
+
+    private val recordsReason: String?
+        get() = if (!isPlan && places.any { it.photoUrls.isEmpty() }) "사진을 추가해주세요" else null
+
+    private val infoReason: String?
+        get() =
+            when {
+                !isPlan && name.isBlank() -> "코스 이름을 입력해 주세요."
+
+                // 커버(썸네일)는 서버 발행 필수값 — 없으면 400 "코스를 발행하려면 커버 이미지가 필요합니다".
+                !isPlan && thumbnailPhotos.isEmpty() -> "썸네일 이미지를 추가해 주세요."
+
+                isPlan && name.length > 200 -> "계획 제목은 200자까지 입력해 주세요."
+
+                isPlan && (description.length > 500 || places.any { it.note.length > 500 }) -> "메모는 500자까지 입력해 주세요."
+
+                isPlan && plannedDate.isNotBlank() && !isValidPlanDate(plannedDate) -> "날짜를 yyyy-MM-dd 형식으로 입력해 주세요."
+
+                else -> null
+            }
+
+    companion object {
+        val empty: CourseCreateUIState = CourseCreateUIState()
+
+        /** 썸네일(코스 대표 사진)은 1장만 선택한다. */
+        const val MAX_THUMBNAIL_PHOTOS = 1
+
+        /** 코스 저장에 필요한 최소 장소 수. */
+        const val MIN_PLACES = 2
+
+        /** 코스에 담을 수 있는 최대 장소 수. */
+        const val MAX_PLACES = 10
+
+        const val STEP_PLACES = 1
+        const val STEP_PLACE_RECORDS = 2
+        const val STEP_COURSE_INFO = 3
+        const val STEP_SETTINGS = 4
+
+        const val FIRST_STEP = STEP_PLACES
+        const val LAST_STEP = STEP_SETTINGS
+    }
+}
+
+private fun isValidPlanDate(value: String): Boolean =
+    value.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) && runCatching { java.time.LocalDate.parse(value) }.isSuccess

@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ForbiddenComment:TTILogger.kt$RemoteTTILogger$// TODO: 사내 모니터링 SDK / Datadog Logs / Sentry 등 외부 로깅 연동</ID>
+  </CurrentIssues>
+</SmellBaseline>

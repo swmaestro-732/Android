@@ -1,0 +1,45 @@
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending       # LF 강제 (.editorconfig 와 짝)
+        args: ["--fix=lf"]
+      - id: check-yaml
+      - id: check-json              # .mcp.json 등 JSON 문법 검증
+      - id: check-toml              # libs.versions.toml(버전 카탈로그) 문법 검증
+      - id: check-xml               # AndroidManifest / layout / res XML 문법 검증
+      - id: check-case-conflict     # 대소문자 무시 FS(macOS) 파일명 충돌 방지
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+        # 폰트 TTF(Pretendard, ~2.6MB)만 크기 검사 제외 — 기존 폰트도 동일 크기로 존재. 다른 파일은 2048 유지.
+        exclude: '.*/res/font/.*\.ttf$'
+      # 시크릿 탐지는 아래 gitleaks 가 전담(개인키 포함 상위호환) → detect-private-key 제거
+
+  # 시크릿 스캔 — CI 와 동일 엔진/버전(v8.18.4). staged diff 만 검사(빠른 예방),
+  # CI gitleaks 는 히스토리 전체를 검사(우회 불가 게이트). 다층 방어.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: ktlint
+        name: ktlint (format)
+        # 래퍼로 로컬 ktlint 버전을 CI(KTLINT_VERSION) 와 일치 강제 (drift 차단)
+        entry: scripts/ktlint.sh
+        language: script
+        types: [kotlin]
+        require_serial: true
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [--strict, feat, fix, docs, chore, refactor, test, ci, build, hotfix, release]

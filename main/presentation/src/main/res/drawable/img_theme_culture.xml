@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?><!-- 테마 타일 일러스트: 전시·산책(디자이너 SVG theme_culture.svg 변환). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="240dp"
+    android:viewportWidth="320"
+    android:viewportHeight="240">
+    <path
+        android:fillColor="#FFDDF2E0"
+        android:pathData="M78,240 C47,214 78,188 121,162 C174,130 253,102 320,114 L320,240 Z" />
+    <group
+        android:rotation="-13"
+        android:pivotX="219"
+        android:pivotY="172">
+        <path
+            android:fillColor="#FFCCD2BC"
+            android:pathData="M125,62 L305,62 L305,270 L125,270 Z" />
+        <path
+            android:fillColor="#FFFFF9E5"
+            android:pathData="M140,77 L290,77 L290,254 L140,254 Z" />
+        <path
+            android:fillColor="#FFDFF3FA"
+            android:pathData="M155,98 L275,98 L275,229 L155,229 Z" />
+        <path
+            android:fillColor="#FFF2D06B"
+            android:pathData="M251,124 m-14,0 a14,14 0 1,1 28,0 a14,14 0 1,1 -28,0" />
+        <path
+            android:fillColor="#FF88BE9F"
+            android:pathData="M155,229 L155,207 C165,176 173,159 185,162 C199,165 210,189 223,207 L238,229 Z" />
+        <path
+            android:fillColor="#FF70AE8E"
+            android:pathData="M203,229 C217,211 230,192 241,191 C253,190 265,211 275,229 Z" />
+    </group>
+</vector>
