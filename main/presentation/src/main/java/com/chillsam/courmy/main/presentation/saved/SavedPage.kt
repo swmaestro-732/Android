@@ -205,7 +205,7 @@ private fun SavedPlaceList(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingRemoval by remember { mutableStateOf<SavedPlaceVO?>(null) }
-    var detailPlaceId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var detailPlace by remember { mutableStateOf<SavedPlaceVO?>(null) }
 
     // 다른 화면(장소 시트)에서 저장한 장소가 반영되도록 다시 보일 때마다 새로 불러온다.
     RefreshOnResume { viewModel.onIntent(SavedPlacesIntent.Retry) }
@@ -238,7 +238,7 @@ private fun SavedPlaceList(
                     uiState.visiblePlaces.forEach { place ->
                         SavedPlaceCard(
                             place = place,
-                            onClick = { detailPlaceId = place.placeId },
+                            onClick = { detailPlace = place },
                             onBookmarkClick = { pendingRemoval = place },
                             modifier = Modifier.padding(bottom = 12.dp),
                         )
@@ -275,7 +275,7 @@ private fun SavedPlaceList(
         )
     }
 
-    uiState.places.firstOrNull { it.placeId == detailPlaceId }?.let { place ->
+    detailPlace?.let { place ->
         MapPlaceDetailSheet(
             place =
                 MapPlaceVO(
@@ -286,7 +286,7 @@ private fun SavedPlaceList(
                     saved = true,
                 ),
             onDismiss = {
-                detailPlaceId = null
+                detailPlace = null
                 viewModel.onIntent(SavedPlacesIntent.Retry)
             },
         )
