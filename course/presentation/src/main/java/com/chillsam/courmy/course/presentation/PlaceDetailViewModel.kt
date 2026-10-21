@@ -66,7 +66,10 @@ class PlaceDetailViewModel
         /** 저장 토글·후기 삭제 요청의 대상. [open] 에서 채우고 [clear] 에서 비운다. */
         private var currentPlaceId: Long = 0L
 
-        fun open(placeId: Long) {
+        fun open(
+            placeId: Long,
+            initiallySaved: Boolean = false,
+        ) {
             loadJob?.cancel()
             reviewsJob?.cancel()
             currentPlaceId = placeId
@@ -75,7 +78,7 @@ class PlaceDetailViewModel
                 _uiState.value = PlaceDetailUiState(errorMessage = "주소를 불러오지 못했어요.")
                 return
             }
-            _uiState.value = PlaceDetailUiState(isLoading = true)
+            _uiState.value = PlaceDetailUiState(isLoading = true, isSaved = initiallySaved)
             loadJob =
                 viewModelScope.launch {
                     runCatching { getPlaceDetailUseCase(placeId) }
@@ -101,6 +104,7 @@ class PlaceDetailViewModel
          * 연타는 마지막 상태만 의미가 있으므로 직전 요청을 끊고 최신 상태만 보낸다.
          */
         fun toggleSave() {
+            if (_uiState.value.isLoading) return
             val placeId = currentPlaceId
             if (placeId <= 0L) return
             val next = !_uiState.value.isSaved
