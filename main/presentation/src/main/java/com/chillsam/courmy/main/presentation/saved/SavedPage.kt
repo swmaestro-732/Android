@@ -56,6 +56,7 @@ import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
+import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
@@ -65,6 +66,7 @@ import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.PlaceRowsSkeleton
 import com.chillsam.courmy.main.presentation.component.SavedCourseCard
 import com.chillsam.courmy.main.presentation.component.SavedPlaceCard
+import com.chillsam.courmy.main.presentation.map.MapPlaceDetailSheet
 
 /** 저장함의 콘텐츠 탭 인덱스. 화면 이탈 후 복귀에도 유지되도록 rememberSaveable 로 든다. */
 internal const val SAVED_TAB_COURSES = 0
@@ -203,6 +205,7 @@ private fun SavedPlaceList(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingRemoval by remember { mutableStateOf<SavedPlaceVO?>(null) }
+    var detailPlace by remember { mutableStateOf<SavedPlaceVO?>(null) }
 
     // 다른 화면(장소 시트)에서 저장한 장소가 반영되도록 다시 보일 때마다 새로 불러온다.
     RefreshOnResume { viewModel.onIntent(SavedPlacesIntent.Retry) }
@@ -235,6 +238,7 @@ private fun SavedPlaceList(
                     uiState.visiblePlaces.forEach { place ->
                         SavedPlaceCard(
                             place = place,
+                            onClick = { detailPlace = place },
                             onBookmarkClick = { pendingRemoval = place },
                             modifier = Modifier.padding(bottom = 12.dp),
                         )
@@ -267,6 +271,23 @@ private fun SavedPlaceList(
                     MainTab.MY -> navigationHelper.navigateTo(MyPage)
                     else -> Unit
                 }
+            },
+        )
+    }
+
+    detailPlace?.let { place ->
+        MapPlaceDetailSheet(
+            place =
+                MapPlaceVO(
+                    id = place.placeId,
+                    name = place.name,
+                    category = place.categoryLabel,
+                    thumbnailUrl = place.imageUrl,
+                    saved = true,
+                ),
+            onDismiss = {
+                detailPlace = null
+                viewModel.onIntent(SavedPlacesIntent.Retry)
             },
         )
     }
