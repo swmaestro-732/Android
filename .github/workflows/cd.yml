@@ -20,6 +20,9 @@ name: CD
 #                            오류 표시 없이 빈 화면이 된다. 반드시 등록할 것.
 #     API_BASE_URL         : 미설정 시 common/data 의 운영 URL 폴백을 쓴다(선택).
 #     AMPLITUDE_API_KEY    : 제품 분석(Amplitude). 선택 — 없으면 분석만 꺼진 채 빌드된다.
+#     GOOGLE_SERVER_CLIENT_ID / NAVER_LOGIN_CLIENT_ID / NAVER_LOGIN_CLIENT_SECRET :
+#                            소셜 로그인. 없어도 빌드는 통과하지만 출시본에서 해당
+#                            로그인이 "준비되지 않았어요" 로 실패한다. 반드시 등록할 것.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -88,6 +91,9 @@ jobs:
           NAVER_MAP_CLIENT_ID: ${{ secrets.NAVER_MAP_CLIENT_ID }}
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           AMPLITUDE_API_KEY: ${{ secrets.AMPLITUDE_API_KEY }}
+          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+          NAVER_LOGIN_CLIENT_ID: ${{ secrets.NAVER_LOGIN_CLIENT_ID }}
+          NAVER_LOGIN_CLIENT_SECRET: ${{ secrets.NAVER_LOGIN_CLIENT_SECRET }}
         run: bundle exec fastlane android build
       - name: Prepare release assets
         id: release
