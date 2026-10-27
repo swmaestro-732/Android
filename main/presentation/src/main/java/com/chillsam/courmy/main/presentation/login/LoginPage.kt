@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.login
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -62,6 +63,11 @@ fun LoginPage(modifier: Modifier = Modifier) {
     val viewModel: LoginViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val canStartLogin = !uiState.isLoading && !uiState.isSelectingGoogleAccount
+
+    BackHandler(enabled = uiState.isSelectingGoogleAccount) {
+        viewModel.onIntent(LoginIntent.CancelGoogleLogin)
+    }
 
     // 로그인 성공 → 분기 내비게이션(1회성). 기존 회원은 세션 로그인 후 홈, 신규 회원은 가입 플로우.
     LaunchedEffect(uiState.result) {
@@ -114,12 +120,26 @@ fun LoginPage(modifier: Modifier = Modifier) {
             Spacer(Modifier.weight(1f))
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (uiState.isSelectingGoogleAccount) {
+                    DsText(
+                        text = "Google 계정을 선택해 주세요.\n선택창이 열리지 않으면 취소 후 다시 시도해 주세요.",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel1,
+                    )
+                    SocialButton(
+                        text = "Google 로그인 취소",
+                        iconRes = null,
+                        background = color.bgDefaultLevel0,
+                        textColor = color.contentDefaultLevel0,
+                        onClick = { viewModel.onIntent(LoginIntent.CancelGoogleLogin) },
+                    )
+                }
                 SocialButton(
                     text = "카카오로 시작하기",
                     iconRes = R.drawable.ic_kakao_24,
                     background = KakaoYellow,
                     textColor = color.contentDefaultLevel0,
-                    enabled = !uiState.isLoading,
+                    enabled = canStartLogin,
                     onClick = { viewModel.onIntent(LoginIntent.KakaoLogin(context)) },
                 )
                 SocialButton(
@@ -127,7 +147,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     iconRes = R.drawable.ic_naver_24,
                     background = NaverGreen,
                     textColor = color.contentOnAccent,
-                    enabled = !uiState.isLoading,
+                    enabled = canStartLogin,
                     onClick = { viewModel.onIntent(LoginIntent.NaverLogin(context)) },
                 )
                 SocialButton(
@@ -136,7 +156,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     background = color.bgDefaultLevel1,
                     textColor = color.contentDefaultLevel0,
                     border = color.borderDefaultLevel0,
-                    enabled = !uiState.isLoading,
+                    enabled = canStartLogin,
                     onClick = { viewModel.onIntent(LoginIntent.GoogleLogin(context)) },
                 )
                 SocialButton(
@@ -145,7 +165,10 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     background = color.bgDefaultLevel0,
                     textColor = color.contentDefaultLevel1,
                     enabled = !uiState.isLoading,
-                    onClick = { navigationHelper.navigateToBack() },
+                    onClick = {
+                        viewModel.onIntent(LoginIntent.CancelGoogleLogin)
+                        navigationHelper.navigateToBack()
+                    },
                 )
             }
             DsText(

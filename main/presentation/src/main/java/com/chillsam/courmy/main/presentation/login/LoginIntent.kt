@@ -24,6 +24,9 @@ sealed interface LoginIntent : MviIntent {
         val context: Context,
     ) : LoginIntent
 
+    /** 계정 선택창이 열리지 않거나 사용자가 대기를 중단할 때. */
+    data object CancelGoogleLogin : LoginIntent
+
     /** 내비게이션 신호 소비 후 상태 초기화. */
     data object ConsumeResult : LoginIntent
 

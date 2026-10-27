@@ -9,7 +9,7 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.NoCredentialException
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import java.security.MessageDigest
 
@@ -35,11 +35,8 @@ object GoogleLoginClient {
     suspend fun login(context: Context): String {
         if (serverClientId.isBlank()) throw NotConfiguredException()
         val option =
-            GetGoogleIdOption
-                .Builder()
-                .setServerClientId(serverClientId)
-                // 이 앱에 로그인한 적 없는 계정도 고를 수 있게 한다(첫 로그인 화면이므로).
-                .setFilterByAuthorizedAccounts(false)
+            GetSignInWithGoogleOption
+                .Builder(serverClientId)
                 .build()
         val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
         val credential = getCredential(context, request)
