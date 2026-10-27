@@ -12,7 +12,9 @@ import com.chillsam.courmy.main.entity.auth.SocialProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 /**
@@ -30,11 +32,32 @@ class LoginViewModel
 
         override fun onIntent(intent: LoginIntent) {
             when (intent) {
-                is LoginIntent.KakaoLogin -> socialLogin(SocialProvider.KAKAO, intent.context)
-                is LoginIntent.NaverLogin -> socialLogin(SocialProvider.NAVER, intent.context)
-                is LoginIntent.GoogleLogin -> socialLogin(SocialProvider.GOOGLE, intent.context)
-                LoginIntent.ConsumeResult -> dispatch(LoginReducerEvent.ResultConsumed)
-                LoginIntent.ConsumeError -> dispatch(LoginReducerEvent.ErrorConsumed)
+                is LoginIntent.KakaoLogin -> {
+                    socialLogin(SocialProvider.KAKAO, intent.context)
+                }
+
+                is LoginIntent.NaverLogin -> {
+                    socialLogin(SocialProvider.NAVER, intent.context)
+                }
+
+                is LoginIntent.GoogleLogin -> {
+                    socialLogin(SocialProvider.GOOGLE, intent.context)
+                }
+
+                LoginIntent.CancelGoogleLogin -> {
+                    if (currentState.isSelectingGoogleAccount) {
+                        loginJob?.cancel()
+                        dispatch(LoginReducerEvent.Canceled)
+                    }
+                }
+
+                LoginIntent.ConsumeResult -> {
+                    dispatch(LoginReducerEvent.ResultConsumed)
+                }
+
+                LoginIntent.ConsumeError -> {
+                    dispatch(LoginReducerEvent.ErrorConsumed)
+                }
             }
         }
 
@@ -43,19 +66,24 @@ class LoginViewModel
             event: LoginReducerEvent,
         ): LoginUiState =
             when (event) {
+                LoginReducerEvent.GoogleSelectionStarted -> {
+                    state.copy(isSelectingGoogleAccount = true, isLoading = false, errorMessage = null, result = null)
+                }
+
                 LoginReducerEvent.Started -> {
-                    state.copy(isLoading = true, errorMessage = null, result = null)
+                    state.copy(isLoading = true, isSelectingGoogleAccount = false, errorMessage = null, result = null)
                 }
 
                 is LoginReducerEvent.Succeeded -> {
                     state.copy(
                         isLoading = false,
+                        isSelectingGoogleAccount = false,
                         result = if (event.newUser) LoginResult.NEW_USER else LoginResult.EXISTING_USER,
                     )
                 }
 
                 is LoginReducerEvent.Failed -> {
-                    state.copy(isLoading = false, errorMessage = event.message)
+                    state.copy(isLoading = false, isSelectingGoogleAccount = false, errorMessage = event.message)
                 }
 
                 LoginReducerEvent.ResultConsumed -> {
@@ -67,7 +95,7 @@ class LoginViewModel
                 }
 
                 LoginReducerEvent.Canceled -> {
-                    state.copy(isLoading = false)
+                    state.copy(isLoading = false, isSelectingGoogleAccount = false)
                 }
             }
 
@@ -87,12 +115,30 @@ class LoginViewModel
         ) {
             // 진행 중이면 무시한다. 버튼도 isLoading 으로 잠그지만, 화면 재구성 등으로 상태가
             // 초기화되면 중복 진입이 가능하다. 그때 continuation 이 여러 개 생기면 결과가 뒤섞인다.
-            if (loginJob?.isActive == true) return
-            dispatch(LoginReducerEvent.Started)
+            if (loginJob?.isCompleted == false) return
+            dispatch(
+                if (provider == SocialProvider.GOOGLE) {
+                    LoginReducerEvent.GoogleSelectionStarted
+                } else {
+                    LoginReducerEvent.Started
+                },
+            )
             loginJob =
                 viewModelScope.launch {
-                    val token = obtainSocialToken(provider, context) ?: return@launch
-                    requestSocialLogin(provider, token)
+                    try {
+                        val token = obtainSocialToken(provider, context) ?: return@launch
+                        ensureActive()
+                        dispatch(LoginReducerEvent.Started)
+                        val completed =
+                            withTimeoutOrNull(SERVER_LOGIN_TIMEOUT_MILLIS) {
+                                requestSocialLogin(provider, token)
+                            }
+                        if (completed == null) {
+                            dispatch(LoginReducerEvent.Failed("로그인 응답이 늦어지고 있어요. 다시 시도해 주세요."))
+                        }
+                    } finally {
+                        dispatch(LoginReducerEvent.Canceled)
+                    }
                 }
         }
 
@@ -209,6 +255,7 @@ class LoginViewModel
 
         private companion object {
             const val TAG = "Login"
+            const val SERVER_LOGIN_TIMEOUT_MILLIS = 30_000L
 
             /** 안내 문구용 한글 이름. */
             fun SocialProvider.label(): String =

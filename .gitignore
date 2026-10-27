@@ -48,4 +48,5 @@ google-services.json
 .DS_Store
 Thumbs.db
 
+# 로컬 산출물(마케팅 이미지 등) — 레포에 넣지 않는다
 output/
