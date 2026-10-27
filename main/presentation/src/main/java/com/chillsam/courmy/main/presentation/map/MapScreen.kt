@@ -151,6 +151,12 @@ fun MapScreen(
                     uiState = uiState,
                     actions = actions,
                 )
+            } else if (uiState.errorMessage != null) {
+                // 첫 진입은 장소 시트를 숨겨도 조회 실패와 재시도는 보여 준다.
+                // 오류 표시 때문에 지도 영역을 바꾸면 불필요한 재조회가 생기므로 padding은 유지한다.
+                MapBottomSheet {
+                    FeedMessage(uiState.errorMessage, actions.onRetry)
+                }
             }
         }
     }
