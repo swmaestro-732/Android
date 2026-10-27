@@ -55,6 +55,7 @@ import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
@@ -76,7 +77,6 @@ import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.MainTab
-import com.chillsam.courmy.main.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.main.presentation.component.RecommendedCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.hasLocationPermission
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore

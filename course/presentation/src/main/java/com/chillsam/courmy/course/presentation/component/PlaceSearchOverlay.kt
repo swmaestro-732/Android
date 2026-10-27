@@ -51,6 +51,7 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
+import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -361,12 +362,11 @@ private fun SearchResultRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(color.imagePlaceholder),
+        PlaceThumbnail(
+            url = candidate.thumbnailUrl.ifBlank { null },
+            category = candidate.category,
+            modifier = Modifier.size(44.dp),
+            shape = RoundedCornerShape(10.dp),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             DsText(

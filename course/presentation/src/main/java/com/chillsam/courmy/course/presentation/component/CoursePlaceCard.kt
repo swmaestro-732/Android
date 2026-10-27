@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -119,12 +120,11 @@ private fun PlaceHeader(
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
             )
         }
-        Box(
-            modifier =
-                Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0),
+        PlaceThumbnail(
+            url = place.thumbnailUrl.ifBlank { null },
+            category = place.category,
+            modifier = Modifier.size(48.dp),
+            shape = RoundedCornerShape(11.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
             DsText(

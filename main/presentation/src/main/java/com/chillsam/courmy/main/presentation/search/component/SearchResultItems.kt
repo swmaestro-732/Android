@@ -27,11 +27,11 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.search.SearchCourseVO
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
-import com.chillsam.courmy.main.presentation.component.PlaceThumbnail
 
 private val CardShape = RoundedCornerShape(14.dp)
 private val ThumbShape = RoundedCornerShape(10.dp)
