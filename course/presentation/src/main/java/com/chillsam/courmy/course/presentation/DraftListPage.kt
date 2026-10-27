@@ -17,8 +17,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -117,10 +117,7 @@ fun DraftListPage(
                     }
 
                     uiState.isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center),
-                            color = color.contentAccent,
-                        )
+                        DraftListSkeleton()
                     }
 
                     uiState.loadFailed -> {
@@ -171,18 +168,12 @@ private fun DraftListHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center,
-            ) {
-                DsText(
-                    text = "‹",
-                    style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                    color = color.contentDefaultLevel0,
+            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_left_24),
+                    contentDescription = "뒤로",
+                    tint = color.contentDefaultLevel0,
+                    modifier = Modifier.size(24.dp),
                 )
             }
             DsText(
@@ -273,7 +264,7 @@ private fun DraftCourseCard(
         Box(
             modifier =
                 Modifier
-                    .size(32.dp)
+                    .size(48.dp)
                     .clip(RoundedCornerShape(9999.dp))
                     .clickable(onClick = onDelete),
             contentAlignment = Alignment.Center,

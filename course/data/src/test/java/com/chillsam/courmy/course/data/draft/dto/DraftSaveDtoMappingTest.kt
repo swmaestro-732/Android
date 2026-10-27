@@ -18,6 +18,14 @@ import org.junit.Test
  */
 class DraftSaveDtoMappingTest {
     @Test
+    fun `발행 갱신은 isPublished true를 직렬화한다`() {
+        val request = draft(place("1"), place("2")).toDraftUpdateRequest(published = true)
+
+        assertTrue(request.isPublished)
+        assertTrue(Json.encodeToString(request).contains("\"isPublished\":true"))
+    }
+
+    @Test
     fun `임시저장 갱신은 발행하지 않는다`() {
         val request = draft(place("1"), place("2")).toDraftUpdateRequest()
 

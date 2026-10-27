@@ -77,6 +77,7 @@ import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.main.presentation.component.RecommendedCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.hasLocationPermission
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
@@ -440,7 +441,7 @@ private fun RecommendedCoursesSection(
             }
 
             homeState.isLoading -> {
-                FeedLoading()
+                RecommendedCardsSkeleton()
             }
 
             else -> {

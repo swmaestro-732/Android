@@ -18,7 +18,8 @@ import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
-import com.chillsam.courmy.main.presentation.home.FeedLoading
+import com.chillsam.courmy.main.presentation.component.CourseCardsSkeleton
+import com.chillsam.courmy.main.presentation.component.CourseSkeletonLayout
 import com.chillsam.courmy.main.presentation.home.FeedMessage
 import com.chillsam.courmy.main.presentation.search.component.SearchCourseCard
 import com.chillsam.courmy.main.presentation.search.component.SearchResultTopBar
@@ -47,7 +48,7 @@ fun SearchResultScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (uiState.isLoading) {
-                item { FeedLoading() }
+                item { CourseCardsSkeleton(CourseSkeletonLayout.SEARCH) }
             } else {
                 items(uiState.courses, key = { it.id }) { course ->
                     SearchCourseCard(course = course, onClick = { actions.onCourseClick(course) })

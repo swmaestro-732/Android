@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
@@ -26,8 +27,8 @@ import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.report.ReportAction
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
-import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
@@ -46,7 +47,6 @@ import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
-import com.chillsam.courmy.main.presentation.profile.ProfileSectionLabel
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
@@ -103,7 +103,7 @@ fun UserProfilePage(
         }
 
         uiState.isLoading -> {
-            ProfileLoading(modifier = modifier)
+            ProfileLoading(modifier = modifier, showTabs = false)
         }
 
         else -> {
@@ -165,6 +165,14 @@ private fun UserProfileContent(
                 // 소개가 비어 있으면 줄 자체를 두지 않는다.
                 bio = profile.bio.ifBlank { null },
             ) {
+                if (!profile.isMe) {
+                    FollowButton(
+                        relation = profile.relation,
+                        onClick = onToggleFollow,
+                        inFlight = isFollowInFlight,
+                        modifier = Modifier.width(116.dp).height(40.dp),
+                    )
+                }
                 if (FeatureFlags.SHARE_ENABLED) {
                     ProfileHeaderIconButton(
                         iconRes = R.drawable.ic_share_24,
@@ -172,24 +180,13 @@ private fun UserProfileContent(
                         onClick = shareProfile,
                     )
                 }
-            }
-            // 자기 자신을 연 경우(응답 id == 내 id)에는 팔로우 버튼을 노출하지 않는다.
-            if (!profile.isMe) {
-                FollowButton(
-                    relation = profile.relation,
-                    onClick = onToggleFollow,
-                    inFlight = isFollowInFlight,
-                    modifier =
-                        Modifier.padding(
-                            start = ScreenHorizontalPadding,
-                            end = ScreenHorizontalPadding,
-                            bottom = 20.dp,
-                        ),
-                )
+                if (!profile.isMe) {
+                    ReportAction(ReportTargetType.USER, profile.id)
+                }
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
-            ProfileSectionLabel(text = "코스 ${profile.courseCount}")
+            Spacer(Modifier.height(20.dp))
             ProfileCoursesGrid(
                 courses = courses,
                 onCourseClick = { courseId ->

@@ -26,12 +26,12 @@ import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
 
 /**
  * 장소 카드: 썸네일 + 이름 + "카테고리 · 지역"(+ 방문함 표시) + 저장(북마크) 버튼.
- * 저장함 장소 탭에서 쓴다. 코스 카드([SavedCourseCard])와 달리 상세 화면이 아직 없어
- * 카드 자체는 눌리지 않는다.
+ * 카드 본문은 장소 상세를 열고, 북마크는 저장 취소 확인을 연다.
  */
 @Composable
 fun SavedPlaceCard(
     place: SavedPlaceVO,
+    onClick: () -> Unit,
     onBookmarkClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -43,6 +43,7 @@ fun SavedPlaceCard(
                 .clip(RoundedCornerShape(16.dp))
                 .background(color.bgDefaultLevel1)
                 .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(16.dp))
+                .clickable(onClick = onClick)
                 .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

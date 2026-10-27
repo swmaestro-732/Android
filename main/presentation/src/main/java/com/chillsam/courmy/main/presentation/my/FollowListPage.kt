@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,10 +46,12 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.user.UserProfilePage
 import com.chillsam.courmy.main.entity.my.FollowUserVO
+import com.chillsam.courmy.main.presentation.component.FollowRowsSkeleton
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.chillsam.courmy.main.domain.my.MyPage as MyRoute
 
@@ -72,6 +73,7 @@ fun FollowListPage(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedTab = uiState.selectedTab
     val users = uiState.users
+    val loadErrorMessage = uiState.loadErrorMessage
     var pendingRemoval by remember { mutableStateOf<FollowUserVO?>(null) }
     // 대상이 지정되지 않았으면 내 목록이다(라우트 인자 없이 마이에서 진입).
     val isMyList = targetUserId == null
@@ -79,10 +81,9 @@ fun FollowListPage(
     // 팔로워 탭에서는 ✕ 를 두지 않는다(눌러도 "준비 중" 만 뜨던 자리).
     val canUnfollow = isMyList && selectedTab == FollowTab.FOLLOWING
 
-    // 조회 대상을 먼저 알린 뒤 진입 탭을 부른다. 순서가 반대면 대상이 정해지기 전에 내 목록을 불러온다.
-    LaunchedEffect(targetUserId, initialTab) {
-        viewModel.onIntent(FollowListIntent.SetTarget(targetUserId))
-        viewModel.onIntent(FollowListIntent.SelectTab(initialTab))
+    // 프로필에서 관계를 바꾸고 돌아오면 현재 탭을 갱신한다. 초기 탭 적용은 ViewModel이 구분한다.
+    RefreshOnResume {
+        viewModel.onIntent(FollowListIntent.Refresh(targetUserId, initialTab))
     }
     // 해제 실패는 화면을 바꾸지 않고 토스트로만 알린다.
     LaunchedEffect(uiState.errorMessage) {
@@ -105,14 +106,14 @@ fun FollowListPage(
                         FollowListMessage(
                             isLoading = uiState.isLoading,
                             message =
-                                uiState.loadErrorMessage
+                                loadErrorMessage
                                     ?: if (selectedTab == FollowTab.FOLLOWER) {
                                         "아직 팔로워가 없어요."
                                     } else {
                                         "아직 팔로우한 사람이 없어요."
                                     },
                             onRetry =
-                                uiState.loadErrorMessage?.let {
+                                loadErrorMessage?.let {
                                     { viewModel.onIntent(FollowListIntent.Retry) }
                                 },
                         )
@@ -135,6 +136,15 @@ fun FollowListPage(
                 }
                 if (uiState.isLoadingMore) {
                     item { LoadingMoreFooter() }
+                }
+                if (users.isNotEmpty() && loadErrorMessage != null) {
+                    item {
+                        FollowListMessage(
+                            isLoading = false,
+                            message = loadErrorMessage,
+                            onRetry = { viewModel.onIntent(FollowListIntent.Retry) },
+                        )
+                    }
                 }
             }
         }
@@ -289,38 +299,39 @@ private fun FollowUserRow(
     }
 }
 
-/** 목록이 비었을 때의 자리: 로딩 스피너 또는 안내(+재시도). */
+/** 목록이 비었을 때의 자리: 프로필 행 스켈레톤 또는 안내(+재시도). */
 @Composable
 private fun FollowListMessage(
     isLoading: Boolean,
     message: String,
     onRetry: (() -> Unit)?,
 ) {
+    if (isLoading) {
+        FollowRowsSkeleton()
+        return
+    }
     val color = DesignSystemThemeImpl.designSystemColor
     Box(
         modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
         contentAlignment = Alignment.Center,
     ) {
-        if (isLoading) {
-            CircularProgressIndicator(color = color.contentAccent)
-        } else {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            DsText(
+                text = message,
+                maxLines = Int.MAX_VALUE,
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                color = color.contentDefaultLevel2,
+            )
+            if (onRetry != null) {
                 DsText(
-                    text = message,
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel2,
+                    text = "다시 시도",
+                    style = DesignSystemThemeImpl.typeScale.textRegularM,
+                    color = color.contentAccent,
+                    modifier = Modifier.clickable(onClick = onRetry),
                 )
-                if (onRetry != null) {
-                    DsText(
-                        text = "다시 시도",
-                        style = DesignSystemThemeImpl.typeScale.textRegularM,
-                        color = color.contentAccent,
-                        modifier = Modifier.clickable(onClick = onRetry),
-                    )
-                }
             }
         }
     }

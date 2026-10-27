@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -32,36 +33,32 @@ internal fun SavedHeader(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp, bottom = 16.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(color.bgDefaultLevel1)
+                .padding(3.dp)
+                .selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        DsText(text = "저장함", style = DesignSystemThemeImpl.typeScale.titleExtraL)
-        Row(
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(color.borderDefaultLevel0)
-                    .padding(3.dp)
-                    .selectableGroup(),
-        ) {
-            listOf(SAVED_TAB_COURSES to "코스", SAVED_TAB_PLACES to "장소").forEach { (tab, title) ->
-                Box(
-                    modifier =
-                        Modifier
-                            .width(56.dp)
-                            .height(42.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .then(if (selectedTab == tab) Modifier.background(color.bgDefaultLevel1) else Modifier)
-                            .selectable(selected = selectedTab == tab, role = Role.Tab, onClick = { onSelectTab(tab) }),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    DsText(
-                        text = title,
-                        style = DesignSystemThemeImpl.typeScale.textStrongS,
-                        color = if (selectedTab == tab) color.contentDefaultLevel0 else color.contentDefaultLevel3,
-                    )
-                }
+        listOf(SAVED_TAB_COURSES to "코스", SAVED_TAB_PLACES to "장소").forEach { (tab, title) ->
+            Box(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .then(if (selectedTab == tab) Modifier.background(color.bgDefaultLevel0) else Modifier)
+                        .selectable(selected = selectedTab == tab, role = Role.Tab, onClick = { onSelectTab(tab) }),
+                contentAlignment = Alignment.Center,
+            ) {
+                DsText(
+                    text = title,
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = if (selectedTab == tab) color.contentDefaultLevel0 else color.contentDefaultLevel3,
+                )
             }
         }
     }
@@ -79,34 +76,17 @@ internal fun SavedPlaceFilters(
                 .filter { it.isNotBlank() }
                 .distinct()
     Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()).selectableGroup(),
+        modifier = Modifier.heightIn(min = 48.dp).horizontalScroll(rememberScrollState()).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         categories.forEach { category ->
-            val selected = state.selectedCategory == category
             val count = state.places.count { category == null || it.categoryLabel == category }
-            Box(
-                modifier =
-                    Modifier
-                        .padding(vertical = 4.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (selected) color.contentDefaultLevel0 else color.bgDefaultLevel1)
-                        .border(
-                            1.dp,
-                            if (selected) color.contentDefaultLevel0 else color.borderDefaultLevel0,
-                            RoundedCornerShape(50),
-                        ).selectable(
-                            selected = selected,
-                            role = Role.Tab,
-                            onClick = { onIntent(SavedPlacesIntent.SelectCategory(category)) },
-                        ).padding(horizontal = 15.dp, vertical = 10.dp),
-            ) {
-                DsText(
-                    text = "${category ?: "전체"} $count",
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = if (selected) color.contentOnAccent else color.contentDefaultLevel1,
-                )
-            }
+            SavedFilterChip(
+                label = "${category ?: "전체"} $count",
+                selected = state.selectedCategory == category,
+                onClick = { onIntent(SavedPlacesIntent.SelectCategory(category)) },
+            )
         }
     }
     if (state.hasNext) {
@@ -117,20 +97,61 @@ internal fun SavedPlaceFilters(
             modifier = Modifier.padding(top = 4.dp),
         )
     }
+    SavedStatusTabs(
+        selectedSecond = state.showVisited,
+        firstLabel = "미방문 ${state.categoryPlaces.count { !it.visited }}",
+        secondLabel = "방문 ${state.categoryPlaces.count { it.visited }}",
+        onSelect = { onIntent(SavedPlacesIntent.SelectVisited(it)) },
+    )
+}
+
+/** 장소 탭의 작은 필터 크기를 폴더와 카테고리에 함께 사용한다. */
+@Composable
+internal fun SavedFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val shape = RoundedCornerShape(50)
+    Box(
+        modifier =
+            Modifier
+                .padding(vertical = 4.dp)
+                .clip(shape)
+                .background(if (selected) color.contentDefaultLevel0 else color.bgDefaultLevel1)
+                .border(1.dp, if (selected) color.contentDefaultLevel0 else color.borderDefaultLevel0, shape)
+                .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+                .padding(horizontal = 15.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        DsText(
+            text = label,
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = if (selected) color.contentOnAccent else color.contentDefaultLevel1,
+        )
+    }
+}
+
+@Composable
+internal fun SavedStatusTabs(
+    selectedSecond: Boolean,
+    firstLabel: String,
+    secondLabel: String,
+    onSelect: (Boolean) -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
     Row(
         modifier = Modifier.padding(top = 12.dp).selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        listOf(false to "미방문", true to "방문").forEach { (visited, label) ->
-            val selected = state.showVisited == visited
+        listOf(false to firstLabel, true to secondLabel).forEach { (second, label) ->
+            val selected = selectedSecond == second
             Column(
-                modifier =
-                    Modifier.selectable(selected = selected, role = Role.Tab, onClick = {
-                        onIntent(SavedPlacesIntent.SelectVisited(visited))
-                    }),
+                modifier = Modifier.selectable(selected = selected, role = Role.Tab, onClick = { onSelect(second) }),
             ) {
                 DsText(
-                    text = "$label ${state.categoryPlaces.count { it.visited == visited }}",
+                    text = label,
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = if (selected) color.contentDefaultLevel1 else color.contentDefaultLevel3,
                     modifier = Modifier.padding(vertical = 12.dp),

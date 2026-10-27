@@ -23,7 +23,7 @@ internal fun MapPlaceDetailSheet(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     DisposableEffect(place.id, viewModel) {
-        viewModel.open(place.id)
+        viewModel.open(place.id, initiallySaved = place.saved)
         onDispose { viewModel.clear() }
     }
     LaunchedEffect(state.errorMessage) {
@@ -44,6 +44,8 @@ internal fun MapPlaceDetailSheet(
             ),
         address = detail?.address?.takeIf { it.isNotBlank() } ?: place.address,
         reviews = state.reviews,
+        reviewCategories = state.place?.categories.orEmpty(),
+        onReviewWritten = viewModel::refreshReviews,
         isSaved = state.isSaved,
         onToggleSave = viewModel::toggleSave,
         onDismiss = onDismiss,

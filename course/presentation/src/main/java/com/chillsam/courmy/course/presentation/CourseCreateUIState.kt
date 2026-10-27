@@ -43,6 +43,7 @@ data class CourseCreateUIState(
     /** 임시저장이 끝나면 true. 화면을 빠져나가는 신호. */
     val draftSaved: Boolean = false,
     val errorMessage: String? = null,
+    val loadErrorMessage: String? = null,
     /**
      * 포크 중이면 원본 코스 id. null 이면 평범한 코스 만들기다.
      * 저장 요청에 `forkedFromId` 로 실려 서버가 출처를 남긴다.
@@ -53,6 +54,9 @@ data class CourseCreateUIState(
     /** 포크 원본 작성자 이름. 안내 배너 문구에만 쓴다. */
     val forkAuthorName: String = "",
 ) : UiState {
+    val isSavingAny: Boolean
+        get() = isSaving || isSavingDraft
+
     val lastStep: Int
         get() = if (isPlan) STEP_COURSE_INFO else LAST_STEP
 
@@ -66,7 +70,7 @@ data class CourseCreateUIState(
 
     /** 지금 코스에 남아 있는 원본 장소 수. */
     val keptOriginPlaceCount: Int
-        get() = places.count { it.id in forkOriginPlaceIds }
+        get() = places.map { it.id }.toSet().count { it in forkOriginPlaceIds }
 
     /**
      * [placeId] 를 코스에서 뺄 수 있는지.
@@ -80,7 +84,7 @@ data class CourseCreateUIState(
     /**
      * 포크 배너에 붙일 유지 규칙 안내. 포크가 아니면 null.
      *
-     * 막힌 카드마다 띄우지 않고 배너 한 곳에만 둔다 — 원본이 4곳 이하면 처음부터 한 곳도 뺄 수 없어
+     * 막힌 카드마다 띄우지 않고 배너 한 곳에만 둔다 — 원본이 두 곳이면 처음부터 한 곳도 뺄 수 없어
      * 같은 문장이 카드 수만큼 반복되기 때문이다. 못 빼는 장소는 삭제 버튼 자체를 감춰서 알린다.
      * 여유가 있든 없든 규칙은 같으므로 문구도 바뀌지 않는다(상태에 따라 깜빡이지 않는다).
      */
@@ -105,7 +109,9 @@ data class CourseCreateUIState(
      * 제목·설명·커버·장소 사진·태그는 발행할 때만 필요하므로 여기서 보지 않는다.
      */
     val canSaveDraft: Boolean
-        get() = !isPlan && places.size >= MIN_PLACES
+        get() =
+            !isPlan && places.size >= MIN_PLACES &&
+                (!isForking || keptOriginPlaceCount >= CourseForkRule.MIN_SHARED_PLACES)
 
     /**
      * 현재 단계를 넘어가지 못하게 막는 이유. 통과 상태면 null. 버튼 문구로 그대로 쓴다.
@@ -135,6 +141,8 @@ data class CourseCreateUIState(
                 (if (isPlan) 1 else MIN_PLACES)..MAX_PLACES
             ) {
                 "장소를 ${if (isPlan) 1 else MIN_PLACES}~${MAX_PLACES}곳 담아 주세요."
+            } else if (isForking && keptOriginPlaceCount < CourseForkRule.MIN_SHARED_PLACES) {
+                "원본 장소를 2곳 이상 담아 주세요."
             } else {
                 null
             }

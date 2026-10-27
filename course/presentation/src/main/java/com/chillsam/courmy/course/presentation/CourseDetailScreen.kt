@@ -36,6 +36,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -69,10 +70,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.entity.format.formatCount
+import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
+import com.chillsam.courmy.common.presentation.report.ReportAction
 import com.chillsam.courmy.common.presentation.ui.modifier.cardElevation
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -151,11 +154,11 @@ fun CourseDetailScreen(
             ) {
                 Box(Modifier.onSizeChanged { heroHeightPx = it.height }) {
                     DetailHero(
+                        courseId = courseId,
                         detail = detail,
                         isSaving = isSaving,
                         isDeleting = isDeleting,
                         isLiked = social.isLiked,
-                        likeCount = social.likeCount,
                         actions = actions,
                         onBack = actions.onBack,
                     )
@@ -175,6 +178,13 @@ fun CourseDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
                     StatsRow(detail = detail)
+                    social.likeCount?.let { count ->
+                        DsText(
+                            text = "좋아요 ${formatCount(count)}",
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel2,
+                        )
+                    }
                     DsText(
                         text = detail.description,
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
@@ -281,6 +291,8 @@ fun CourseDetailScreen(
                 ),
             address = placeDetailState.place?.address.orEmpty(),
             reviews = placeDetailState.reviews,
+            reviewCategories = placeDetailState.place?.categories.orEmpty(),
+            onReviewWritten = placeDetailViewModel::refreshReviews,
             isSaved = placeDetailState.isSaved,
             onToggleSave = { placeDetailViewModel.toggleSave() },
             onDismiss = dismiss,
@@ -377,15 +389,15 @@ private fun DetailPinnedBar(
  * 좋아요와 저장은 **누른 상태가 보여야 하는 토글**이라 메뉴에 접지 않고 아이콘으로 내놓는다.
  * 메뉴 안에 있으면 열기 전에는 지금 눌렀는지 알 수 없고, 토글 한 번에 두 탭이 든다.
  *
- * ⋮ 는 편집·삭제 전용이라 **내 코스일 때만** 나온다([CourseSettingsMenu]).
+ * ⋮ 는 내 코스의 편집·삭제와 다른 사람 코스의 신고를 제공한다.
  */
 @Composable
 private fun DetailHero(
+    courseId: Long,
     detail: CourseDetailVO,
     isSaving: Boolean,
     isDeleting: Boolean,
     isLiked: Boolean,
-    likeCount: Int?,
     actions: CourseDetailActions,
     onBack: () -> Unit,
 ) {
@@ -436,7 +448,6 @@ private fun DetailHero(
             Spacer(Modifier.weight(1f))
             HeroLikeButton(
                 isLiked = isLiked,
-                likeCount = likeCount,
                 onClick = actions.onToggleLike,
             )
             // 내 코스는 저장할 이유가 없다. 편집·삭제가 대신 ⋮ 에 붙는다.
@@ -462,6 +473,8 @@ private fun DetailHero(
             if (detail.isMine) {
                 Spacer(Modifier.width(8.dp))
                 CourseSettingsMenu(isDeleting = isDeleting, actions = actions)
+            } else {
+                ReportAction(ReportTargetType.COURSE, courseId)
             }
         }
         Column(
@@ -583,44 +596,23 @@ private fun CourseSettingsMenuItem(
     )
 }
 
-/**
- * 히어로의 좋아요 버튼. 집계를 알면([likeCount] != null) 숫자를 붙인 알약으로 넓어지고,
- * 모르면 아이콘만 있는 원형으로 남는다 — 상세 응답에 집계가 없어 지어낸 수를 그리지 않는다
- * ([CourseSocialUIState.likeCount] 주석 참고).
- */
+/** 상단에는 상태를 나타내는 아이콘만 표시한다. 집계는 본문에서 읽는다. */
 @Composable
 private fun HeroLikeButton(
     isLiked: Boolean,
-    likeCount: Int?,
     onClick: () -> Unit,
 ) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Row(
-        modifier =
-            Modifier
-                .height(34.dp)
-                .clip(RoundedCornerShape(17.dp))
-                .background(color.bgDefaultLevel1)
-                .clickable(onClick = onClick)
-                .padding(horizontal = if (likeCount != null) 10.dp else 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            painter = painterResource(if (isLiked) R.drawable.ic_like_on_24 else R.drawable.ic_like_off_24),
-            contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
-            tint = if (isLiked) color.contentAccent else color.contentDefaultLevel0,
-            modifier = Modifier.size(22.dp),
-        )
-        if (likeCount != null) {
-            Spacer(Modifier.width(4.dp))
-            DsText(
-                text = formatCount(likeCount),
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = if (isLiked) color.contentAccent else color.contentDefaultLevel0,
-            )
-        }
-    }
+    HeroCircleButton(
+        iconRes = if (isLiked) R.drawable.ic_like_on_24 else R.drawable.ic_like_off_24,
+        contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
+        tint =
+            if (isLiked) {
+                DesignSystemThemeImpl.designSystemColor.contentAccent
+            } else {
+                DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0
+            },
+        onClick = onClick,
+    )
 }
 
 /**
@@ -638,21 +630,18 @@ private fun HeroCircleButton(
     enabled: Boolean = true,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier =
-            Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(color.bgDefaultLevel1)
-                .clickable(enabled = enabled, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = contentDescription,
-            tint = if (enabled) tint else color.contentDefaultLevel3,
-            modifier = Modifier.size(22.dp),
-        )
+    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(48.dp)) {
+        Box(
+            modifier = Modifier.size(34.dp).clip(CircleShape).background(color.bgDefaultLevel1),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = contentDescription,
+                tint = if (enabled) tint else color.contentDefaultLevel3,
+                modifier = Modifier.size(22.dp),
+            )
+        }
     }
 }
 
@@ -1602,7 +1591,6 @@ private fun CourseDetailScreenPreview() {
             social =
                 CourseSocialUIState(
                     isLiked = true,
-                    likeCount = 128,
                 ),
             actions =
                 CourseDetailActions(

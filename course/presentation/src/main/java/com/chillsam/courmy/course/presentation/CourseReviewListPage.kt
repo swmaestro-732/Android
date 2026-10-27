@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -74,7 +73,7 @@ fun CourseReviewListPage(
         }
 
         uiState.isLoading -> {
-            ReviewListLoading(modifier)
+            ReviewListLoading(onBack = onBack, modifier = modifier)
         }
 
         else -> {
@@ -128,17 +127,17 @@ private fun CourseReviewWriteOverlay(
 }
 
 @Composable
-private fun ReviewListLoading(modifier: Modifier = Modifier) {
+private fun ReviewListLoading(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier =
             modifier
                 .fillMaxSize()
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
-        CircularProgressIndicator(
-            modifier = Modifier.align(Alignment.Center),
-            color = DesignSystemThemeImpl.designSystemColor.contentAccent,
-        )
+        CourseReviewListSkeleton(onBack = onBack)
     }
 }
 

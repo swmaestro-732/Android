@@ -38,40 +38,41 @@ enum class CourseReviewTagCatalog(
     val code: String,
     val label: String,
     val icon: String,
+    val group: String,
 ) {
     // ── 코스 구성 ──
-    PACKED("packed", "구성이 알차요", "📦"),
-    COMBO("combo", "장소 조합이 좋아요", "🌿"),
-    SMOOTH("smooth", "흐름이 자연스러워요", "🌊"),
-    EFFICIENT("efficient", "동선이 효율적이에요", "🎢"),
+    PACKED("packed", "구성이 알차요", "📦", "코스 구성"),
+    COMBO("combo", "장소 조합이 좋아요", "🌿", "코스 구성"),
+    SMOOTH("smooth", "흐름이 자연스러워요", "🌊", "코스 구성"),
+    EFFICIENT("efficient", "동선이 효율적이에요", "🎢", "코스 구성"),
 
     // ── 이동·접근 ──
-    WALKABLE("walkable", "도보로 다니기 좋아요", "👣"),
-    TRANSIT("transit", "대중교통으로 편해요", "🚌"),
-    BYCAR("bycar", "차 있으면 편해요", "🚗"),
-    COMPACT("compact", "이동 거리가 짧아요", "📏"),
-    STEEP("steep", "언덕·계단이 많아요", "🚶‍♂️"),
+    WALKABLE("walkable", "도보로 다니기 좋아요", "👣", "이동·접근"),
+    TRANSIT("transit", "대중교통으로 편해요", "🚌", "이동·접근"),
+    BYCAR("bycar", "차 있으면 편해요", "🚗", "이동·접근"),
+    COMPACT("compact", "이동 거리가 짧아요", "📏", "이동·접근"),
+    STEEP("steep", "언덕·계단이 많아요", "🚶‍♂️", "이동·접근"),
 
     // ── 시간·페이스 ──
-    HALFDAY("halfday", "반나절 코스로 좋아요", "⏰"),
-    FULLDAY("fullday", "하루 코스로 좋아요", "🌇"),
-    QUICKCOURSE("quickcourse", "짧고 알차요", "⏳"),
-    RELAXED("relaxed", "여유롭게 즐겨요", "😌"),
-    SLOWPACE("slowpace", "천천히 걷기 좋아요", "🐢"),
+    HALFDAY("halfday", "반나절 코스로 좋아요", "⏰", "시간·페이스"),
+    FULLDAY("fullday", "하루 코스로 좋아요", "🌇", "시간·페이스"),
+    QUICKCOURSE("quickcourse", "짧고 알차요", "⏳", "시간·페이스"),
+    RELAXED("relaxed", "여유롭게 즐겨요", "😌", "시간·페이스"),
+    SLOWPACE("slowpace", "천천히 걷기 좋아요", "🐢", "시간·페이스"),
 
     // ── 동반자 ──
-    DATE("date", "데이트 코스로 좋아요", "❤️"),
-    SOLO("solo", "혼자 즐기기 좋아요", "👤"),
-    FRIENDS("friends", "친구랑 가기 좋아요", "👥"),
-    FAMILY("family", "가족 나들이로 좋아요", "🏠"),
-    KIDS("kids", "아이와 함께 좋아요", "👶🏻"),
-    PARENTS("parents", "부모님과 가기 좋아요", "👒"),
+    DATE("date", "데이트 코스로 좋아요", "❤️", "동반자"),
+    SOLO("solo", "혼자 즐기기 좋아요", "👤", "동반자"),
+    FRIENDS("friends", "친구랑 가기 좋아요", "👥", "동반자"),
+    FAMILY("family", "가족 나들이로 좋아요", "🏠", "동반자"),
+    KIDS("kids", "아이와 함께 좋아요", "👶🏻", "동반자"),
+    PARENTS("parents", "부모님과 가기 좋아요", "👒", "동반자"),
 
     // ── 비용·만족 ──
-    VALUE("value", "가성비 좋은 코스예요", "👛"),
-    FREE("free", "무료로 즐길 수 있어요", "🎟️"),
-    REVISIT("revisit", "또 가고 싶어요", "🔁"),
-    MEMORABLE("memorable", "기억에 남아요", "🔖"),
+    VALUE("value", "가성비 좋은 코스예요", "👛", "비용·만족"),
+    FREE("free", "무료로 즐길 수 있어요", "🎟️", "비용·만족"),
+    REVISIT("revisit", "또 가고 싶어요", "🔁", "비용·만족"),
+    MEMORABLE("memorable", "기억에 남아요", "🔖", "비용·만족"),
     ;
 
     fun toTagVO(): CourseReviewTagVO = CourseReviewTagVO(code = code, label = label, icon = icon)

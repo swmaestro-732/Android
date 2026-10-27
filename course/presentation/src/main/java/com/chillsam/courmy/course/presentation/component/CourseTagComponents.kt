@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,7 +27,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -78,26 +85,35 @@ private fun RemovableTagChip(
     tag: String,
     onRemove: () -> Unit,
 ) {
-    Row(
+    Box(
         modifier =
             Modifier
-                .clip(RoundedCornerShape(percent = 50))
-                .background(DesignSystemThemeImpl.designSystemColor.bgAccent)
-                .padding(start = 13.dp, end = 11.dp, top = 7.dp, bottom = 7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                .clickable(onClick = onRemove)
+                .semantics { contentDescription = "$tag 태그 삭제" },
+        contentAlignment = Alignment.Center,
     ) {
-        DsText(
-            text = tag,
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
-        )
-        DsText(
-            text = "✕",
-            modifier = Modifier.clickable(onClick = onRemove),
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
-        )
+        Row(
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(DesignSystemThemeImpl.designSystemColor.bgAccent)
+                    .padding(start = 13.dp, end = 11.dp, top = 7.dp, bottom = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            DsText(
+                text = tag,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
+            )
+            Icon(
+                painter = painterResource(R.drawable.close_small_24),
+                contentDescription = null,
+                tint = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
+                modifier = Modifier.size(14.dp),
+            )
+        }
     }
 }
 

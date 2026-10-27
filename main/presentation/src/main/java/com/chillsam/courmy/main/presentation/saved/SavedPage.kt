@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,12 +56,17 @@ import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
+import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
 import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
+import com.chillsam.courmy.main.presentation.component.CourseCardsSkeleton
+import com.chillsam.courmy.main.presentation.component.CourseSkeletonLayout
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.component.PlaceRowsSkeleton
 import com.chillsam.courmy.main.presentation.component.SavedCourseCard
 import com.chillsam.courmy.main.presentation.component.SavedPlaceCard
+import com.chillsam.courmy.main.presentation.map.MapPlaceDetailSheet
 
 /** 저장함의 콘텐츠 탭 인덱스. 화면 이탈 후 복귀에도 유지되도록 rememberSaveable 로 든다. */
 internal const val SAVED_TAB_COURSES = 0
@@ -133,7 +137,7 @@ private fun SavedCourseList(
                             course = course,
                             onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
                             onBookmarkClick = { pendingRemoval = course },
-                            modifier = Modifier.padding(bottom = 16.dp),
+                            modifier = Modifier.padding(bottom = 12.dp),
                         )
                     }
                     if (uiState.isLoadingMore) {
@@ -142,7 +146,7 @@ private fun SavedCourseList(
                 }
 
                 uiState.isLoading -> {
-                    SavedListLoading()
+                    CourseCardsSkeleton(CourseSkeletonLayout.SAVED)
                 }
 
                 else -> {
@@ -173,7 +177,7 @@ private fun SavedCourseList(
     pendingRemoval?.let { course ->
         DsConfirmDialog(
             title = "저장을 취소할까요?",
-            description = "저장을 취소하면 이 코스가 저장함에서 사라져요.",
+            description = "저장을 취소하면 이 코스가 저장 목록에서 사라져요.",
             destructive = true,
             onConfirm = {
                 viewModel.onIntent(SavedCoursesIntent.Unsave(course.id))
@@ -201,6 +205,7 @@ private fun SavedPlaceList(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingRemoval by remember { mutableStateOf<SavedPlaceVO?>(null) }
+    var detailPlace by remember { mutableStateOf<SavedPlaceVO?>(null) }
 
     // 다른 화면(장소 시트)에서 저장한 장소가 반영되도록 다시 보일 때마다 새로 불러온다.
     RefreshOnResume { viewModel.onIntent(SavedPlacesIntent.Retry) }
@@ -233,6 +238,7 @@ private fun SavedPlaceList(
                     uiState.visiblePlaces.forEach { place ->
                         SavedPlaceCard(
                             place = place,
+                            onClick = { detailPlace = place },
                             onBookmarkClick = { pendingRemoval = place },
                             modifier = Modifier.padding(bottom = 12.dp),
                         )
@@ -240,7 +246,7 @@ private fun SavedPlaceList(
                 }
 
                 uiState.isLoading -> {
-                    SavedListLoading()
+                    PlaceRowsSkeleton()
                 }
 
                 else -> {
@@ -269,10 +275,27 @@ private fun SavedPlaceList(
         )
     }
 
+    detailPlace?.let { place ->
+        MapPlaceDetailSheet(
+            place =
+                MapPlaceVO(
+                    id = place.placeId,
+                    name = place.name,
+                    category = place.categoryLabel,
+                    thumbnailUrl = place.imageUrl,
+                    saved = true,
+                ),
+            onDismiss = {
+                detailPlace = null
+                viewModel.onIntent(SavedPlacesIntent.Retry)
+            },
+        )
+    }
+
     pendingRemoval?.let { place ->
         DsConfirmDialog(
             title = "저장을 취소할까요?",
-            description = "저장을 취소하면 이 장소가 저장함에서 사라져요.",
+            description = "저장을 취소하면 이 장소가 저장 목록에서 사라져요.",
             destructive = true,
             onConfirm = {
                 viewModel.onIntent(SavedPlacesIntent.Unsave(place.placeId))
@@ -294,17 +317,6 @@ private fun SavedPlacesFooter(
         androidx.compose.material3.TextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth()) {
             DsText(text = "장소 더 불러오기", style = DesignSystemThemeImpl.typeScale.textRegularS)
         }
-    }
-}
-
-/** 저장 목록 로딩 자리. */
-@Composable
-private fun SavedListLoading() {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(color = DesignSystemThemeImpl.designSystemColor.contentAccent)
     }
 }
 
@@ -351,12 +363,6 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                     .statusBarsPadding()
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
-            DsText(
-                text = "저장함",
-                style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                color = color.contentDefaultLevel0,
-                modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
-            )
             Column(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.Center,

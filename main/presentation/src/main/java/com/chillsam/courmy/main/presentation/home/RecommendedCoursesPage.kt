@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -54,6 +53,7 @@ import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.main.presentation.component.CourseCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 
 /**
@@ -293,12 +293,7 @@ private fun RecommendedTopBar(
 /** 피드 로딩 자리. 홈 미리보기·전체 목록이 함께 쓴다. */
 @Composable
 internal fun FeedLoading() {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(color = DesignSystemThemeImpl.designSystemColor.contentAccent)
-    }
+    CourseCardsSkeleton()
 }
 
 /** 피드가 비었거나 실패했을 때의 안내. [onRetry] 가 있으면 재시도를 노출한다. */

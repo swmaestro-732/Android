@@ -161,36 +161,53 @@ class LoginViewModel
                 }
             }.getOrElse { e ->
                 when {
-                    e is CancellationException -> throw e
+                    e is CancellationException -> {
+                        throw e
+                    }
 
                     // 사용자가 스스로 취소한 것은 실패가 아니다. 안내도 리포트도 남기지 않는다.
                     e is KakaoLoginClient.CanceledException ||
                         e is NaverLoginClient.CanceledException ||
                         e is GoogleLoginClient.CanceledException
-                    -> dispatch(LoginReducerEvent.Canceled)
+                    -> {
+                        dispatch(LoginReducerEvent.Canceled)
+                    }
 
                     // 콘솔 키 미설정(개발 중). 실패 리포트 대신 설정 안내만 띄운다.
                     e is NaverLoginClient.NotConfiguredException ||
                         e is GoogleLoginClient.NotConfiguredException
-                    -> dispatch(LoginReducerEvent.Failed("${provider.label()} 로그인이 아직 준비되지 않았어요."))
+                    -> {
+                        dispatch(LoginReducerEvent.Failed("${provider.label()} 로그인이 아직 준비되지 않았어요."))
+                    }
 
-                    provider == SocialProvider.KAKAO -> reportKakaoFailure(context, e)
+                    provider == SocialProvider.KAKAO -> {
+                        reportKakaoFailure(context, e)
+                    }
 
-                    else -> reportSocialSdkFailure(provider, e)
+                    // 구글은 서명 SHA-1 미등록이 기기별 실패로 나타난다(카카오 키 해시와 같은 패턴).
+                    provider == SocialProvider.GOOGLE -> {
+                        reportSocialSdkFailure(provider, e, GoogleLoginClient.diagnostics(context))
+                    }
+
+                    else -> {
+                        reportSocialSdkFailure(provider, e)
+                    }
                 }
                 null
             }
 
-        /** 네이버·구글 SDK 로그인 실패. 카카오처럼 원격 계측에도 남긴다(키 해시 진단은 카카오 전용). */
+        /** 네이버·구글 SDK 로그인 실패. 카카오처럼 원격 계측에도 남긴다(구글은 서명 SHA-1 진단 포함). */
         private fun reportSocialSdkFailure(
             provider: SocialProvider,
             e: Throwable,
+            detail: String? = null,
         ) {
-            Log.w(TAG, "${provider.name} SDK 로그인 실패: ${e.javaClass.simpleName} - ${e.message}", e)
+            Log.w(TAG, "${provider.name} SDK 로그인 실패: ${e.javaClass.simpleName} - ${e.message} $detail", e)
             telemetry.recordFailure(
                 AppFailure(
                     area = AppFlow.Login.eventName,
                     kind = "${provider.name.lowercase()}_sdk_${e.javaClass.simpleName}",
+                    detail = detail,
                     cause = e,
                 ),
             )

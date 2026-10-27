@@ -77,10 +77,11 @@ internal fun PlanDetailScreen(
             Modifier.padding(horizontal = 20.dp, vertical = 24.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            PlanSummary(detail)
             detail.sourceCourseId?.let { sourceId -> PlanSourceRow { onSourceCourse(sourceId) } }
             if (detail.memo.isNotBlank()) PlanMemo(detail.memo)
-            Box(Modifier.fillMaxWidth().height(1.dp).background(color.borderDefaultLevel0))
+            if (detail.sourceCourseId != null || detail.memo.isNotBlank()) {
+                Box(Modifier.fillMaxWidth().height(1.dp).background(color.borderDefaultLevel0))
+            }
             PlacesSection(
                 places = places,
                 authorName = "",
@@ -209,7 +210,7 @@ private fun EditPlanDialog(
 }
 
 @Composable
-private fun PlanHeader(
+internal fun PlanHeader(
     onBack: () -> Unit,
     isMutating: Boolean = false,
     onEdit: (() -> Unit)? = null,
@@ -291,41 +292,6 @@ private fun PlanSettingsMenu(
                 },
             )
         }
-    }
-}
-
-@Composable
-private fun PlanSummary(detail: PlanDetailVO) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-        PlanStat(R.drawable.ic_calendar_24, "방문 날짜", detail.plannedDate.ifBlank { "아직 정하지 않았어요" }, Modifier.weight(1f))
-        PlanStat(R.drawable.ic_location_24, "담은 장소", "${detail.places.size}곳", Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun PlanStat(
-    icon: Int,
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(
-                painterResource(icon),
-                contentDescription = null,
-                tint = color.contentAccent,
-                modifier = Modifier.size(16.dp),
-            )
-            DsText(label, style = DesignSystemThemeImpl.typeScale.textRegularXS, color = color.contentDefaultLevel2)
-        }
-        DsText(
-            value,
-            style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = color.contentDefaultLevel0,
-            maxLines = 2,
-        )
     }
 }
 
@@ -439,6 +405,8 @@ private fun PlanPlaceDetail(
             ),
         address = state.place?.address?.takeIf { it.isNotBlank() } ?: initialAddress,
         reviews = state.reviews,
+        reviewCategories = state.place?.categories.orEmpty(),
+        onReviewWritten = viewModel::refreshReviews,
         isSaved = state.isSaved,
         onToggleSave = viewModel::toggleSave,
         onDismiss = onDismiss,

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.error.HttpResponseException
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CreateCourseReviewUseCase
+import com.chillsam.courmy.course.domain.CreatePlaceReviewUseCase
 import com.chillsam.courmy.course.entity.CourseReviewDraftVO
 import com.chillsam.courmy.course.entity.CourseReviewLimits
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,12 +27,14 @@ class CourseReviewWriteViewModel
     @Inject
     constructor(
         private val createCourseReviewUseCase: CreateCourseReviewUseCase,
+        private val createPlaceReviewUseCase: CreatePlaceReviewUseCase,
     ) : MviViewModel<CourseReviewWriteIntent, CourseReviewWriteUIState, CourseReviewWriteReducerEvent>(
             CourseReviewWriteUIState.empty,
         ) {
         private var submitJob: Job? = null
 
         override fun onIntent(intent: CourseReviewWriteIntent) {
+            if (currentState.isSubmitting && intent != CourseReviewWriteIntent.ConsumeError) return
             when (intent) {
                 is CourseReviewWriteIntent.ChangeRating -> {
                     dispatch(CourseReviewWriteReducerEvent.RatingChanged(intent.rating))
@@ -66,6 +69,10 @@ class CourseReviewWriteViewModel
                     submit(intent.courseId)
                 }
 
+                is CourseReviewWriteIntent.SubmitPlace -> {
+                    submit(intent.placeId, isPlace = true)
+                }
+
                 CourseReviewWriteIntent.ConsumeError -> {
                     dispatch(CourseReviewWriteReducerEvent.ErrorConsumed)
                 }
@@ -76,7 +83,10 @@ class CourseReviewWriteViewModel
             }
         }
 
-        private fun submit(courseId: Long) {
+        private fun submit(
+            courseId: Long,
+            isPlace: Boolean = false,
+        ) {
             val state = currentState
             // 이미 보냈거나 별점이 없으면 보내지 않는다. 중복 제출은 서버가 409 로 막지만,
             // 그 전에 사진이 한 번 더 업로드돼 쓰레기가 남는다.
@@ -86,16 +96,21 @@ class CourseReviewWriteViewModel
             submitJob =
                 viewModelScope.launch {
                     runCatching {
-                        createCourseReviewUseCase(
-                            courseId = courseId,
-                            draft =
-                                CourseReviewDraftVO(
-                                    rating = state.rating,
-                                    content = state.content,
-                                    photoUrls = state.photoUris,
-                                    tagCodes = state.selectedTagCodes.toList(),
-                                ),
-                        )
+                        val draft =
+                            CourseReviewDraftVO(
+                                rating = state.rating,
+                                content = state.content,
+                                photoUrls = state.photoUris,
+                                tagCodes = state.selectedTagCodes.toList(),
+                            )
+                        if (isPlace) {
+                            createPlaceReviewUseCase(
+                                courseId,
+                                draft,
+                            )
+                        } else {
+                            createCourseReviewUseCase(courseId, draft)
+                        }
                     }.onSuccess { dispatch(CourseReviewWriteReducerEvent.SubmitSucceeded(it)) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
@@ -113,7 +128,7 @@ class CourseReviewWriteViewModel
          */
         private fun Throwable.toWriteMessage(): String =
             when ((this as? HttpResponseException)?.rawCode) {
-                CONFLICT -> "이미 이 코스에 후기를 남겼어요."
+                CONFLICT -> "이미 후기를 남긴 곳이에요."
                 UNAUTHORIZED -> "로그인이 필요해요."
                 else -> message?.takeIf { this is IllegalArgumentException } ?: "후기를 등록하지 못했어요."
             }

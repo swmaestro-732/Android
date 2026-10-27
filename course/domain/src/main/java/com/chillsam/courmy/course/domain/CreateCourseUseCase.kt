@@ -34,6 +34,7 @@ class CreateCourseUseCase
             thumbnailUris: List<String> = emptyList(),
             published: Boolean = true,
             completed: CourseCompleteVO? = null,
+            draftCourseId: Long? = null,
         ): CreateCourseResultVO =
             telemetry.track(AppFlow.CourseCreate) {
                 val uploader = CourseImageUploader(mediaRepository)
@@ -44,6 +45,7 @@ class CreateCourseUseCase
                         draft = draft.copy(places = places),
                         thumbnailUrl = thumbnailUrl,
                         published = published,
+                        draftCourseId = draftCourseId,
                     )
                 // 코스는 만들어졌지만 사진이 빠진 상태. 화면에는 안내가 나가도 운영에서는 성공으로만 보이므로
                 // 따로 남긴다 — 업로드가 통째로 막힌 상황을 이걸로 알아챌 수 있다.

@@ -1,6 +1,5 @@
 package com.chillsam.courmy.course.presentation
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,10 +58,9 @@ private val ROUTE_LIST_MAX_HEIGHT = 230.dp
  * 따라가기 화면(FS-21). [CourseFollowPhase] 에 따라 세 모습을 오간다.
  *
  * - 미리보기: 지도(전체 동선) + 동선 목록 + "이 코스 따라가기"
- * - 진행: 지도(지금 장소) + 자투리 추천 배너 + 다음 스팟 + "도착 · 방문 체크"
+ * - 진행: 지도(지금 장소) + 다음 스팟 + "도착 · 방문 체크"
  * - 완주: 축하 + 통계(방문 스팟·소요 시간·이동 거리) + "리뷰 남기기"
  *
- * 자투리 추천은 서버 계약이 없어 자리만 잡아 두고 누르면 준비 중임을 알린다.
  */
 @Composable
 internal fun CourseFollowScreen(
@@ -158,7 +155,7 @@ private fun ColumnScope.PreviewPhase(
     }
 }
 
-/** 진행: 지금 장소에 집중한 지도 + 자투리 배너 + 다음 스팟 + 방문 체크. */
+/** 진행: 지금 장소에 집중한 지도 + 다음 스팟 + 방문 체크. */
 @Composable
 private fun ColumnScope.TrackingPhase(
     state: CourseFollowUIState,
@@ -183,7 +180,6 @@ private fun ColumnScope.TrackingPhase(
                 .navigationBarsPadding(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        SparePickBanner()
         val current = state.currentPlace
         if (current != null) {
             DsText(
@@ -292,7 +288,6 @@ private fun ColumnScope.DonePhase(
             }
         }
         Spacer(Modifier.height(16.dp))
-        SparePickBanner()
     }
     Column(
         modifier =
@@ -446,49 +441,6 @@ private fun RoutePlaceRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-    }
-}
-
-/**
- * 자투리 추천 배너. 서버 계약(trace/place-connection)이 아직 없어 자리만 잡고 준비 중임을 알린다.
- * TODO-API-SPEC: course-track 계약이 생기면 근처 한 곳 추천으로 잇는다.
- */
-@Composable
-private fun SparePickBanner() {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val context = LocalContext.current
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(color.contentDefaultLevel0)
-                .clickable { Toast.makeText(context, "준비 중이에요.", Toast.LENGTH_SHORT).show() }
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            DsText(
-                text = "아직 시간 여유 있으세요?",
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentOnAccent,
-            )
-            DsText(
-                text = "근처 한 곳 더 추천받기",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.borderDefaultLevel0,
-            )
-        }
-        DsText(
-            text = "자투리 추천",
-            style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = color.contentDefaultLevel0,
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(9999.dp))
-                    .background(color.bgDefaultLevel1)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-        )
     }
 }
 

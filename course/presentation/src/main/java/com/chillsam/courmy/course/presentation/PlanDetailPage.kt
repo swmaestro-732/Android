@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -58,16 +57,10 @@ fun PlanDetailPage(
         )
         return
     }
-    Column(modifier.fillMaxSize().background(color.bgDefaultLevel0).statusBarsPadding()) {
-        IconButton(onClick = onBack) {
-            Icon(
-                painterResource(R.drawable.arrow_back_24px),
-                contentDescription = "뒤로",
-                tint = color.contentDefaultLevel0,
-            )
-        }
+    Column(modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
+        PlanHeader(onBack = onBack)
         if (state.isLoading) {
-            CircularProgressIndicator(modifier = Modifier.padding(24.dp), color = color.contentAccent)
+            PlanDetailSkeleton()
         } else if (state.errorMessage != null) {
             Column(Modifier.padding(20.dp)) {
                 DsText(

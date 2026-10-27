@@ -9,6 +9,11 @@ sealed interface FollowListReducerEvent : ReducerEvent {
         val tab: FollowTab,
     ) : FollowListReducerEvent
 
+    /** 새 대상이면 탭을 초기화하고, 같은 대상이면 현재 탭과 표시 중인 목록을 유지한다. */
+    data class RefreshStarted(
+        val initialTab: FollowTab?,
+    ) : FollowListReducerEvent
+
     data object LoadStarted : FollowListReducerEvent
 
     data class Loaded(

@@ -7,13 +7,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -87,8 +93,13 @@ fun CourseRouteMap(
         rememberCameraPositionState {
             position = CameraPosition(focus, PLACE_MAP_ZOOM)
         }
+    var loaded by remember { mutableStateOf(false) }
+    var viewport by remember { mutableStateOf(IntSize.Zero) }
     // 전체 보기면 모든 핀이 들어오게, 아니면 지금 장소로 확대해 맞춘다.
-    LaunchedEffect(focus, overview, points) {
+    LaunchedEffect(focus, overview, points, loaded, viewport, fitPadding) {
+        if (!loaded || viewport == IntSize.Zero) return@LaunchedEffect
+        // 네이티브 지도에 변경된 레이아웃 크기가 적용된 다음 카메라 경계를 맞춘다.
+        withFrameNanos { }
         val coords = points.map { it.second }
         if (overview && coords.size >= 2) {
             val bounds = LatLngBounds.Builder().apply { coords.forEach { include(it) } }.build()
@@ -110,7 +121,8 @@ fun CourseRouteMap(
         }
     }
     NaverMap(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().onSizeChanged { viewport = it },
+        onMapLoaded = { loaded = true },
         cameraPositionState = cameraPositionState,
         onMapClick = { _, _ -> onMapClick?.invoke() },
         uiSettings =
