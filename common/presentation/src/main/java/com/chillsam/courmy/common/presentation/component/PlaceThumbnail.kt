@@ -1,4 +1,4 @@
-package com.chillsam.courmy.main.presentation.component
+package com.chillsam.courmy.common.presentation.component
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
@@ -18,8 +18,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
-import com.chillsam.courmy.main.presentation.R
 
 /**
  * 장소 썸네일 공용 컴포저블. 사진 로딩 중·실패·미제공 시 카테고리 아이콘을 표시한다.
@@ -28,7 +28,7 @@ import com.chillsam.courmy.main.presentation.R
  * — 회색 자리 지킴 대신 어디서든 같은 아이콘 placeholder 가 보인다.
  */
 @Composable
-internal fun PlaceThumbnail(
+fun PlaceThumbnail(
     url: String?,
     category: String,
     modifier: Modifier = Modifier,
@@ -69,11 +69,11 @@ internal fun PlaceThumbnail(
 
 /** API enum과 검색 API·화면 라벨의 한글 카테고리를 같은 아이콘으로 표시한다. */
 @DrawableRes
-internal fun placeCategoryIcon(category: String): Int =
+fun placeCategoryIcon(category: String): Int =
     categoryIcons
         .firstOrNull { (keywords, _) ->
             keywords.any { category.contains(it, ignoreCase = true) }
-        }?.second ?: com.chillsam.courmy.common.presentation.R.drawable.ic_location_24
+        }?.second ?: R.drawable.ic_location_24
 
 private val categoryIcons =
     listOf(
