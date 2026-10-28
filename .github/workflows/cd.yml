@@ -14,6 +14,11 @@ name: CD
 #     GOOGLE_SERVICES_JSON_BASE64 : `base64 -i app/google-services.json` 결과
 #   이건 폴백이 없다. release 빌드는 이 파일이 없으면 실패한다(크래시 리포팅 없는 출시 방지).
 #
+# 🚀 Play 업로드 — deploy lane 이 Play Console API 로 AAB 를 올리고 프로덕션 심사를 제출한다:
+#     PLAY_SERVICE_ACCOUNT_JSON : Play Console → 설정 → API 액세스에서 발급한 서비스 계정 JSON 원문.
+#   없으면 deploy 단계에서 즉시 끊는다. versionCode 는 Play 최신값 +1 로 자동 산정한다.
+#   ⚠️ release 브랜치 push 는 프로덕션 출시 심사 제출까지 자동 진행된다 — 신중히 머지할 것.
+#
 # 🔌 앱 키 — 로컬은 local.properties 에서 읽지만 러너에는 그 파일이 없으므로 env 로 주입:
 #     KAKAO_NATIVE_APP_KEY : 없으면 release 빌드가 즉시 실패한다.
 #     NAVER_MAP_CLIENT_ID  : 없어도 빌드는 통과하지만 지도가 인증에 실패해
@@ -79,9 +84,25 @@ jobs:
             exit 1
           fi
           echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > app/google-services.json
+      # Play Console API 서비스 계정 키. deploy lane(Play 업로드)에만 필요하므로 없으면 끊는다.
+      - name: Restore Play service account
+        shell: bash
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]]; then
+            echo "PLAY_SERVICE_ACCOUNT_JSON secret 이 없습니다." >&2
+            echo "Play Console → 설정 → API 액세스에서 서비스 계정 JSON 을 받아" >&2
+            echo "저장소 Settings → Secrets 에 PLAY_SERVICE_ACCOUNT_JSON 으로 등록하세요." >&2
+            exit 1
+          fi
+          echo "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play-key.json"
       # 러너에는 local.properties 가 없다. 앱 키는 여기서 env 로 넣어야만
       # build.gradle.kts 의 System.getenv 폴백이 값을 본다.
-      - name: Build release artifact (Fastlane)
+      # deploy lane 이 Play 최신 versionCode 를 조회해 +1 로 빌드하고, 프로덕션 트랙에 업로드 후
+      # 심사를 제출한다. 같은 versionCode 로 만든 APK 는 아래 GitHub pre-release 에 함께 올린다.
+      - name: Build & deploy to Play Store (Fastlane)
         env:
           KEYSTORE_FILE: ${{ env.HAS_KEYSTORE == 'true' && format('{0}/release.jks', runner.temp) || '' }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -94,7 +115,8 @@ jobs:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           NAVER_LOGIN_CLIENT_ID: ${{ secrets.NAVER_LOGIN_CLIENT_ID }}
           NAVER_LOGIN_CLIENT_SECRET: ${{ secrets.NAVER_LOGIN_CLIENT_SECRET }}
-        run: bundle exec fastlane android build
+          PLAY_JSON_KEY_FILE: ${{ runner.temp }}/play-key.json
+        run: bundle exec fastlane android deploy
       - name: Prepare release assets
         id: release
         shell: bash

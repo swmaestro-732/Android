@@ -142,7 +142,9 @@ android {
                 .toInt()
         // Play 는 versionCode 로만 버전 순서를 판단한다. 업로드할 때마다 반드시 올려야 하고,
         // 한 번 쓴 값은 재사용할 수 없다(같은 값으로 올리면 중복으로 거부된다).
-        versionCode = 8
+        // CD 는 Play 최신 버전을 조회해 +1 한 값을 -PappVersionCode 로 주입한다(fastlane deploy).
+        // 로컬·일반 빌드는 기본값을 쓴다 — 로컬 APK 는 Play 에 올리지 않으므로 충돌하지 않는다.
+        versionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 8
         // 사용자에게 보이는 표시용 문자열. 정식 출시 전이라 0.x 로 둔다.
         // SemVer 만 쓰고 빌드 번호를 접미사로 붙이지 않는다 — Play Console 과 Crashlytics 가
         // versionName 과 versionCode 를 이미 함께 보여주므로 중복이다. 정식 출시 때 1.0.0.
