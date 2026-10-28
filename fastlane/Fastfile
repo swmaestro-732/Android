@@ -41,14 +41,19 @@ platform :android do
       properties: { "appVersionCode" => next_code },
     )
 
-    # 프로덕션 트랙에 올리고 바로 심사 제출(completed). 메타데이터·스크린샷은 Play Console 에서
-    # 관리하므로 여기서는 바이너리만 올린다(skip_upload_* 로 덮어쓰기 방지).
+    # 프로덕션 트랙에 올리고 바로 심사 제출(completed). 스토어 등록정보(제목·설명)·스크린샷은
+    # Play Console 에서 관리하므로 덮어쓰지 않는다(skip_upload_metadata/images/screenshots).
+    # 단 출시 노트(changelogs)는 올린다 — fastlane/metadata/android/<lang>/changelogs/ 에서 읽는다.
+    # versionCode 별 파일(<code>.txt)이 없으면 default.txt 를 이 버전의 "새로운 기능"으로 쓴다.
+    # skip_upload_metadata 는 등록정보만 막고 changelogs 는 별개라, changelogs 는 그대로 올라간다.
     upload_to_play_store(
       track: "production",
       release_status: "completed",
       aab: "app/build/outputs/bundle/release/app-release.aab",
+      metadata_path: "./fastlane/metadata/android",
       skip_upload_apk: true,
       skip_upload_metadata: true,
+      skip_upload_changelogs: false,
       skip_upload_images: true,
       skip_upload_screenshots: true,
     )
