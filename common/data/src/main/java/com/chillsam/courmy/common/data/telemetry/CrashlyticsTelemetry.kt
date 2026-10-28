@@ -8,6 +8,8 @@ import com.chillsam.courmy.common.domain.telemetry.AppFailure
 import com.chillsam.courmy.common.domain.telemetry.AppFlow
 import com.chillsam.courmy.common.domain.telemetry.FlowResult
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.facebook.appevents.AppEventsConstants
+import com.facebook.appevents.AppEventsLogger
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,6 +51,12 @@ class CrashlyticsTelemetry
             runCatching { FirebaseAnalytics.getInstance(context) }.getOrNull()
         }
 
+        // 메타(Facebook) 광고 전환용 로거. App ID 가 Manifest 에 없으면(=광고 설정 전) 생성이
+        // 실패할 수 있어 null 로 두고 건너뛴다. 초기화는 SDK 가 앱 시작 시 자동으로 한다.
+        private val metaLogger by lazy {
+            runCatching { AppEventsLogger.newLogger(context) }.getOrNull()
+        }
+
         override fun setScreen(name: String) {
             // custom key 는 마지막 값만 남아 "죽은 화면"이 되고, log 는 쌓여서 "거기까지 온 경로"가 된다.
             crashlytics?.setCustomKey(KEY_SCREEN, name)
@@ -79,12 +87,28 @@ class CrashlyticsTelemetry
                         detail?.let { put(PARAM_DETAIL, it) }
                     },
             )
+            // 광고 전환은 성공한 핵심 플로우만 Meta 표준 이벤트로 보낸다(실패는 전환이 아니다).
+            if (succeeded) {
+                metaEventName(flow)?.let { metaLogger?.logEvent(it) }
+            }
             // 실패는 크래시 리포트에도 남겨야 "죽기 직전에 뭘 하다 실패했는지"가 보인다.
             val outcome = if (succeeded) "ok" else "fail"
             val suffix = detail?.let { " ($it)" }.orEmpty()
             crashlytics?.log("flow: ${flow.eventName} $outcome$suffix")
             debugLog("flow: ${flow.eventName} $outcome$suffix")
         }
+
+        /**
+         * 핵심 플로우를 Meta 표준 이벤트로 매핑한다. 광고 최적화에 쓰는 전환만 보내고,
+         * 나머지(로그인·좋아요 등)는 Firebase·Amplitude 로만 남긴다(Meta 쪽 노이즈 방지).
+         */
+        private fun metaEventName(flow: AppFlow): String? =
+            when (flow) {
+                AppFlow.Signup -> AppEventsConstants.EVENT_NAME_COMPLETED_REGISTRATION
+                AppFlow.PlaceSave, AppFlow.CourseSave -> AppEventsConstants.EVENT_NAME_ADDED_TO_WISHLIST
+                AppFlow.CourseDetailLoad -> AppEventsConstants.EVENT_NAME_VIEWED_CONTENT
+                else -> null
+            }
 
         override fun recordFailure(failure: AppFailure) {
             crashlytics?.setCustomKey(KEY_FAILURE_AREA, failure.area)

@@ -93,6 +93,10 @@ dependencies {
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
 
+    // 메타(Facebook) 앱 이벤트 — 광고 전환 추적. Telemetry 구현이 핵심 플로우를 Meta 표준
+    // 이벤트로도 보낸다. SDK 초기화(App ID·Client Token)는 app 모듈 Manifest 가 담당한다.
+    implementation(libs.facebook.core)
+
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
 }

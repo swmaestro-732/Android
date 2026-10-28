@@ -54,6 +54,16 @@ val googleServerClientId: String =
 val amplitudeApiKey: String =
     (localProps.getProperty("AMPLITUDE_API_KEY") ?: System.getenv("AMPLITUDE_API_KEY")).orEmpty()
 
+// 메타(Facebook) 광고 SDK. App ID·Client Token 은 앱에 넣어도 되는 공개값이지만(앱 시크릿 아님)
+// 다른 키처럼 local.properties/CI secret 으로만 관리하고 커밋하지 않는다. 비면 이벤트가 안 나갈 뿐 빌드는 통과.
+val facebookAppId: String =
+    (localProps.getProperty("FACEBOOK_APP_ID") ?: System.getenv("FACEBOOK_APP_ID")).orEmpty()
+val facebookClientToken: String =
+    (localProps.getProperty("FACEBOOK_CLIENT_TOKEN") ?: System.getenv("FACEBOOK_CLIENT_TOKEN")).orEmpty()
+// 네이버 성과형 디스플레이(GFA) 전환 추적 Site ID(네이버 공통키). 비면 NTracker 초기화를 건너뛴다.
+val naverGfaSiteId: String =
+    (localProps.getProperty("NAVER_GFA_SITE_ID") ?: System.getenv("NAVER_GFA_SITE_ID")).orEmpty()
+
 // Firebase Crashlytics — google-services.json 이 있을 때만 플러그인을 붙인다.
 // 이 파일이 없는데 플러그인을 적용하면 빌드가 통째로 깨지므로, keystore·카카오 키와 같은 방식으로
 // "없으면 크래시 리포팅만 빠지고 빌드는 진행" 하게 둔다(릴리스에서는 아래에서 하드 실패).
@@ -167,6 +177,14 @@ android {
 
         // Amplitude 제품 분석. 키가 비면 AnalyticsModule 이 no-op 으로 폴백한다.
         buildConfigField("String", "AMPLITUDE_API_KEY", "\"$amplitudeApiKey\"")
+
+        // 메타 광고 SDK — Manifest meta-data 가 @string 으로 참조한다. SDK 가 앱 시작 시 자동 초기화.
+        resValue("string", "facebook_app_id", facebookAppId)
+        resValue("string", "facebook_client_token", facebookClientToken)
+        // fb{앱ID} 는 메타 SDK 가 요구하는 리소스명. 로그인/딥링크엔 안 쓰지만 형식을 맞춰 둔다.
+        resValue("string", "fb_login_protocol_scheme", "fb$facebookAppId")
+        // 네이버 GFA 전환 추적 Site ID. CourmyApplication 이 비어 있지 않을 때만 초기화한다.
+        buildConfigField("String", "NAVER_GFA_SITE_ID", "\"$naverGfaSiteId\"")
     }
 
     signingConfigs {
@@ -241,6 +259,8 @@ android {
     buildFeatures {
         buildConfig = true
         compose = true
+        // 메타 SDK 키(facebook_app_id·client_token)를 resValue 로 주입하기 위해 켠다.
+        resValues = true
     }
 }
 
@@ -300,6 +320,15 @@ dependencies {
 
     // Amplitude — 제품 분석. SDK 는 app 에만 두고 data 레이어에는 AmplitudeClient 인터페이스로 노출한다.
     implementation(libs.amplitude.analytics)
+
+    // 광고 전환 추적.
+    // 메타(facebook-core)는 common:data 의 Telemetry 구현이 쓰지만, Manifest meta-data·resValue 가
+    // app 에 있어야 SDK 가 자동 초기화되므로 설정은 app 이 소유한다(의존성은 common:data 가 전이).
+    // 네이버 GFA(NTracker)는 CourmyApplication 에서 Site ID 로 초기화한다. Install Referrer·App Set ID
+    // 기반 어트리뷰션이라 두 보조 라이브러리가 필요하다.
+    implementation(libs.naver.ntracker)
+    implementation(libs.play.services.appset)
+    implementation(libs.install.referrer)
 
     // Baseline Profile: 설치 시점에 dump 된 프로필을 ART 에 등록해 주는 런타임 라이브러리.
     // minSdk 24 ~ 27 백포트를 위해 필수.
