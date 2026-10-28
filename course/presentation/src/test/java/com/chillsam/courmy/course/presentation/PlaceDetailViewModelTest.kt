@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.presentation
 
+import com.chillsam.courmy.common.domain.telemetry.NoOpTelemetry
 import com.chillsam.courmy.course.domain.DeletePlaceReviewUseCase
 import com.chillsam.courmy.course.domain.GetPlaceDetailUseCase
 import com.chillsam.courmy.course.domain.GetPlaceReviewsUseCase
@@ -102,7 +103,7 @@ class PlaceDetailViewModelTest {
         PlaceDetailViewModel(
             GetPlaceDetailUseCase(repository),
             GetPlaceReviewsUseCase(repository),
-            SetPlaceSavedUseCase(repository),
+            SetPlaceSavedUseCase(repository, NoOpTelemetry),
             DeletePlaceReviewUseCase(repository),
         )
 

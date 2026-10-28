@@ -2,6 +2,9 @@ package com.chillsam.courmy.course.domain
 
 import com.chillsam.courmy.common.domain.media.MediaRepository
 import com.chillsam.courmy.common.domain.media.UploadPurpose
+import com.chillsam.courmy.common.domain.telemetry.AppFlow
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.telemetry.track
 import com.chillsam.courmy.course.entity.CourseReviewDraftVO
 import com.chillsam.courmy.course.entity.CourseReviewLimits
 import javax.inject.Inject
@@ -21,6 +24,7 @@ class CreateCourseReviewUseCase
     constructor(
         private val repository: CourseReviewRepository,
         private val mediaRepository: MediaRepository,
+        private val telemetry: Telemetry,
     ) {
         /** 작성된 리뷰 id 를 돌려준다. */
         suspend operator fun invoke(
@@ -40,11 +44,13 @@ class CreateCourseReviewUseCase
                 "태그는 ${CourseReviewLimits.MAX_TAGS}개까지 고를 수 있습니다."
             }
 
-            val uploaded =
-                draft.photoUrls.map { uri ->
-                    // 이미 올라간 사진(재시도 등)은 그대로 쓴다.
-                    if (uri.startsWith("http")) uri else mediaRepository.uploadImage(uri, UploadPurpose.COURSE)
-                }
-            return repository.createCourseReview(courseId, draft.copy(photoUrls = uploaded))
+            return telemetry.track(AppFlow.ReviewWrite) {
+                val uploaded =
+                    draft.photoUrls.map { uri ->
+                        // 이미 올라간 사진(재시도 등)은 그대로 쓴다.
+                        if (uri.startsWith("http")) uri else mediaRepository.uploadImage(uri, UploadPurpose.COURSE)
+                    }
+                repository.createCourseReview(courseId, draft.copy(photoUrls = uploaded))
+            }
         }
     }

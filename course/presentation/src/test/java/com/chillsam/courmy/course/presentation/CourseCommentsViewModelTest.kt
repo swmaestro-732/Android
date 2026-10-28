@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.presentation
 
+import com.chillsam.courmy.common.domain.telemetry.NoOpTelemetry
 import com.chillsam.courmy.course.domain.CourseCommentRepository
 import com.chillsam.courmy.course.domain.DeleteCourseCommentUseCase
 import com.chillsam.courmy.course.domain.EditCourseCommentUseCase
@@ -87,7 +88,7 @@ class CourseCommentsViewModelTest {
     private fun createViewModel(repository: CourseCommentRepository) =
         CourseCommentsViewModel(
             getComments = GetCourseCommentsUseCase(repository),
-            writeComment = WriteCourseCommentUseCase(repository),
+            writeComment = WriteCourseCommentUseCase(repository, NoOpTelemetry),
             editComment = EditCourseCommentUseCase(repository),
             deleteComment = DeleteCourseCommentUseCase(repository),
         )
