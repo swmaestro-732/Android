@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:RootComposable.kt$@Composable fun RootComposable( modifier: Modifier = Modifier, startStack: List&lt;NavKey&gt; = listOf(GenericNavKey(HomePage.PATH)), )</ID>
+    <ID>ReturnCount:AppNavHost.kt$fun handleDeepLink( route: NavRoute, backStack: NavBackStack&lt;NavKey&gt;, )</ID>
+    <ID>ReturnCount:NavRouteUriParser.kt$fun resolveStartStack(uri: Uri?): List&lt;NavKey&gt;</ID>
+    <ID>SpreadOperator:RootComposable.kt$(*startStack.toTypedArray())</ID>
+  </CurrentIssues>
+</SmellBaseline>

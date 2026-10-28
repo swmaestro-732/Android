@@ -1,0 +1,269 @@
+package com.chillsam.courmy.main.presentation.login
+
+import android.content.Context
+import android.util.Log
+import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.telemetry.AppFailure
+import com.chillsam.courmy.common.domain.telemetry.AppFlow
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.main.domain.auth.SocialLoginUseCase
+import com.chillsam.courmy.main.entity.auth.SocialProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import javax.inject.Inject
+
+/**
+ * 로그인 화면 ViewModel. 카카오 SDK 로그인(idToken 획득)부터 서버 social-login 까지를 담당한다.
+ * 기존 회원이면 홈, 신규 회원이면 가입 플로우로 분기한다(토큰 저장은 data 레이어).
+ */
+@HiltViewModel
+class LoginViewModel
+    @Inject
+    constructor(
+        private val socialLoginUseCase: SocialLoginUseCase,
+        private val telemetry: Telemetry,
+    ) : MviViewModel<LoginIntent, LoginUiState, LoginReducerEvent>(LoginUiState.empty) {
+        private var loginJob: Job? = null
+
+        override fun onIntent(intent: LoginIntent) {
+            when (intent) {
+                is LoginIntent.KakaoLogin -> {
+                    socialLogin(SocialProvider.KAKAO, intent.context)
+                }
+
+                is LoginIntent.NaverLogin -> {
+                    socialLogin(SocialProvider.NAVER, intent.context)
+                }
+
+                is LoginIntent.GoogleLogin -> {
+                    socialLogin(SocialProvider.GOOGLE, intent.context)
+                }
+
+                LoginIntent.CancelGoogleLogin -> {
+                    if (currentState.isSelectingGoogleAccount) {
+                        loginJob?.cancel()
+                        dispatch(LoginReducerEvent.Canceled)
+                    }
+                }
+
+                LoginIntent.ConsumeResult -> {
+                    dispatch(LoginReducerEvent.ResultConsumed)
+                }
+
+                LoginIntent.ConsumeError -> {
+                    dispatch(LoginReducerEvent.ErrorConsumed)
+                }
+            }
+        }
+
+        override fun reduce(
+            state: LoginUiState,
+            event: LoginReducerEvent,
+        ): LoginUiState =
+            when (event) {
+                LoginReducerEvent.GoogleSelectionStarted -> {
+                    state.copy(isSelectingGoogleAccount = true, isLoading = false, errorMessage = null, result = null)
+                }
+
+                LoginReducerEvent.Started -> {
+                    state.copy(isLoading = true, isSelectingGoogleAccount = false, errorMessage = null, result = null)
+                }
+
+                is LoginReducerEvent.Succeeded -> {
+                    state.copy(
+                        isLoading = false,
+                        isSelectingGoogleAccount = false,
+                        result = if (event.newUser) LoginResult.NEW_USER else LoginResult.EXISTING_USER,
+                    )
+                }
+
+                is LoginReducerEvent.Failed -> {
+                    state.copy(isLoading = false, isSelectingGoogleAccount = false, errorMessage = event.message)
+                }
+
+                LoginReducerEvent.ResultConsumed -> {
+                    state.copy(result = null)
+                }
+
+                LoginReducerEvent.ErrorConsumed -> {
+                    state.copy(errorMessage = null)
+                }
+
+                LoginReducerEvent.Canceled -> {
+                    state.copy(isLoading = false, isSelectingGoogleAccount = false)
+                }
+            }
+
+        /**
+         * 소셜 SDK 로그인(토큰 획득) → 서버 social-login 을 **하나의 job** 으로 묶는다.
+         *
+         * SDK 단계를 [viewModelScope] 에서 돌리는 게 핵심이다. 이전에는 화면의
+         * `rememberCoroutineScope` 를 썼는데, 카카오톡으로 나간 사이 화면이 사라지면 스코프가 취소돼
+         * 돌아온 결과가 조용히 버려졌다 — 토스트도 로딩도 없이 로그인 화면에 그대로 머무른다.
+         *
+         * 두 단계를 한 job 으로 묶은 이유: 나눠 두면 뒤 단계가 앞 단계의 job 을 cancel 해 버리는
+         * 사고가 나기 쉽다(같은 [loginJob] 을 공유하므로 자기 자신을 취소한다).
+         */
+        private fun socialLogin(
+            provider: SocialProvider,
+            context: Context,
+        ) {
+            // 진행 중이면 무시한다. 버튼도 isLoading 으로 잠그지만, 화면 재구성 등으로 상태가
+            // 초기화되면 중복 진입이 가능하다. 그때 continuation 이 여러 개 생기면 결과가 뒤섞인다.
+            if (loginJob?.isCompleted == false) return
+            dispatch(
+                if (provider == SocialProvider.GOOGLE) {
+                    LoginReducerEvent.GoogleSelectionStarted
+                } else {
+                    LoginReducerEvent.Started
+                },
+            )
+            loginJob =
+                viewModelScope.launch {
+                    try {
+                        val token = obtainSocialToken(provider, context) ?: return@launch
+                        ensureActive()
+                        dispatch(LoginReducerEvent.Started)
+                        val completed =
+                            withTimeoutOrNull(SERVER_LOGIN_TIMEOUT_MILLIS) {
+                                requestSocialLogin(provider, token)
+                            }
+                        if (completed == null) {
+                            dispatch(LoginReducerEvent.Failed("로그인 응답이 늦어지고 있어요. 다시 시도해 주세요."))
+                        }
+                    } finally {
+                        dispatch(LoginReducerEvent.Canceled)
+                    }
+                }
+        }
+
+        /**
+         * 소셜 SDK 단계. 실패·취소는 여기서 상태로 반영하고 null 을 돌려 흐름을 끊는다.
+         *
+         * 네이버는 OIDC 미지원이라 accessToken 을 돌려준다 — 서버 social-login 의 accessToken 필드에
+         * 그대로 싣는 계약이다([NaverLoginClient] 참고).
+         */
+        private suspend fun obtainSocialToken(
+            provider: SocialProvider,
+            context: Context,
+        ): String? =
+            runCatching {
+                when (provider) {
+                    SocialProvider.KAKAO -> KakaoLoginClient.login(context)
+                    SocialProvider.NAVER -> NaverLoginClient.login(context)
+                    SocialProvider.GOOGLE -> GoogleLoginClient.login(context)
+                    SocialProvider.APPLE -> error("애플 로그인은 아직 지원하지 않습니다.")
+                }
+            }.getOrElse { e ->
+                when {
+                    e is CancellationException -> {
+                        throw e
+                    }
+
+                    // 사용자가 스스로 취소한 것은 실패가 아니다. 안내도 리포트도 남기지 않는다.
+                    e is KakaoLoginClient.CanceledException ||
+                        e is NaverLoginClient.CanceledException ||
+                        e is GoogleLoginClient.CanceledException
+                    -> {
+                        dispatch(LoginReducerEvent.Canceled)
+                    }
+
+                    // 콘솔 키 미설정(개발 중). 실패 리포트 대신 설정 안내만 띄운다.
+                    e is NaverLoginClient.NotConfiguredException ||
+                        e is GoogleLoginClient.NotConfiguredException
+                    -> {
+                        dispatch(LoginReducerEvent.Failed("${provider.label()} 로그인이 아직 준비되지 않았어요."))
+                    }
+
+                    provider == SocialProvider.KAKAO -> {
+                        reportKakaoFailure(context, e)
+                    }
+
+                    // 구글은 서명 SHA-1 미등록이 기기별 실패로 나타난다(카카오 키 해시와 같은 패턴).
+                    provider == SocialProvider.GOOGLE -> {
+                        reportSocialSdkFailure(provider, e, GoogleLoginClient.diagnostics(context))
+                    }
+
+                    else -> {
+                        reportSocialSdkFailure(provider, e)
+                    }
+                }
+                null
+            }
+
+        /** 네이버·구글 SDK 로그인 실패. 카카오처럼 원격 계측에도 남긴다(구글은 서명 SHA-1 진단 포함). */
+        private fun reportSocialSdkFailure(
+            provider: SocialProvider,
+            e: Throwable,
+            detail: String? = null,
+        ) {
+            Log.w(TAG, "${provider.name} SDK 로그인 실패: ${e.javaClass.simpleName} - ${e.message} $detail", e)
+            telemetry.recordFailure(
+                AppFailure(
+                    area = AppFlow.Login.eventName,
+                    kind = "${provider.name.lowercase()}_sdk_${e.javaClass.simpleName}",
+                    detail = detail,
+                    cause = e,
+                ),
+            )
+            dispatch(LoginReducerEvent.Failed("${provider.label()} 로그인을 완료하지 못했어요."))
+        }
+
+        /**
+         * 카카오 SDK 로그인 실패를 **원격에도** 남긴다.
+         *
+         * 이전에는 `Log.w` + 토스트뿐이라, 기기별로 갈리는 실패(예: Play 다중 서명으로 인한
+         * keyHash 불일치)를 확인하려면 테스터 폰마다 USB 를 꽂아 logcat 을 봐야 했다.
+         * [KakaoLoginClient.diagnostics] 로 그 기기가 실제로 보낸 키 해시를 함께 실어 보낸다.
+         */
+        private fun reportKakaoFailure(
+            context: Context,
+            e: Throwable,
+        ) {
+            Log.w(TAG, "카카오 SDK 로그인 실패: ${e.javaClass.simpleName} - ${e.message}", e)
+            telemetry.recordFailure(
+                AppFailure(
+                    area = AppFlow.Login.eventName,
+                    kind = "kakao_sdk_${e.javaClass.simpleName}",
+                    detail = KakaoLoginClient.diagnostics(context),
+                    cause = e,
+                ),
+            )
+            dispatch(LoginReducerEvent.Failed("카카오 로그인을 완료하지 못했어요."))
+        }
+
+        /** 서버 social-login 단계. 성공/실패 계측은 [SocialLoginUseCase] 의 track 이 담당한다. */
+        private suspend fun requestSocialLogin(
+            provider: SocialProvider,
+            idToken: String,
+        ) {
+            runCatching { socialLoginUseCase(provider, idToken) }
+                .onSuccess { dispatch(LoginReducerEvent.Succeeded(it.newUser)) }
+                .onFailure { e ->
+                    if (e is CancellationException) throw e
+                    // 원시 예외 메시지(개발자용 requireNotNull·URL 포함 등)는 로그로만 남기고,
+                    // 사용자에게는 고정 안내 문구를 보여준다.
+                    Log.w(TAG, "소셜 로그인 실패: ${e.javaClass.simpleName} - ${e.message}", e)
+                    dispatch(LoginReducerEvent.Failed("로그인에 실패했어요. 잠시 후 다시 시도해 주세요."))
+                }
+        }
+
+        private companion object {
+            const val TAG = "Login"
+            const val SERVER_LOGIN_TIMEOUT_MILLIS = 30_000L
+
+            /** 안내 문구용 한글 이름. */
+            fun SocialProvider.label(): String =
+                when (this) {
+                    SocialProvider.KAKAO -> "카카오"
+                    SocialProvider.NAVER -> "네이버"
+                    SocialProvider.GOOGLE -> "구글"
+                    SocialProvider.APPLE -> "애플"
+                }
+        }
+    }

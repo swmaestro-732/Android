@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.chillsam.courmy",
+      "sha256_cert_fingerprints": [
+        "56:35:4E:FF:49:B6:C2:5B:5F:D3:38:12:9D:37:E6:D4:F6:5F:92:52:37:35:45:A9:ED:B6:FF:FD:E1:62:A3:E2",
+        "C2:7D:66:70:12:97:9E:11:C7:63:EC:F6:1B:29:EB:80:82:47:67:7B:09:8A:9F:54:3C:CF:9D:9F:D7:FF:9B:46"
+      ]
+    }
+  }
+]

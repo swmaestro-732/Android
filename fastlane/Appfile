@@ -1,0 +1,5 @@
+package_name("com.chillsam.courmy")
+
+# Play Console API 서비스 계정 키. CD 가 secret(PLAY_SERVICE_ACCOUNT_JSON)을 파일로 복원해
+# 이 경로로 넘긴다. 로컬에서 실행할 땐 각자 키 경로를 환경변수로 준다. 키 파일은 커밋하지 않는다.
+json_key_file(ENV["PLAY_JSON_KEY_FILE"] || "")

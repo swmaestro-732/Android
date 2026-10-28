@@ -2,7 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 지도 현위치(FS-10). 정확한 위치는 지도 추적용, 대략 위치는 Android 12+ 에서 사용자가
+         "대략만 허용"을 고를 수 있게 함께 선언한다(SCRUM-634). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- 광고 전환 추적(메타·네이버 GFA)이 Android 13+ 에서 광고 ID 를 읽기 위해 필요하다. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
     <application
+        android:name=".CourmyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -11,16 +22,64 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Courmy">
+
+        <!-- 네이버 지도 인증 키. 값은 local.properties(NAVER_MAP_CLIENT_ID) → manifestPlaceholders 로 주입 -->
+        <meta-data
+            android:name="com.naver.maps.map.NCP_KEY_ID"
+            android:value="${naverMapClientId}" />
+
+        <!-- 메타(Facebook) 광고 SDK 자동 초기화. 값은 build.gradle resValue(local.properties) 로 주입.
+             비어 있으면 SDK 가 이벤트를 보내지 않을 뿐 앱은 정상 동작한다. -->
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" />
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token" />
+        <!-- 앱 이벤트 자동 수집(설치·실행 등)과 광고 ID 수집을 켠다 — 광고 전환 측정 목적.
+             광고 ID 수집은 개인정보라 개인정보처리방침·스토어 데이터 라벨 갱신이 함께 필요하다. -->
+        <meta-data
+            android:name="com.facebook.sdk.AutoLogAppEventsEnabled"
+            android:value="true" />
+        <meta-data
+            android:name="com.facebook.sdk.AdvertiserIDCollectionEnabled"
+            android:value="true" />
+
         <activity
-            android:name=".MainActivity"
+            android:name=".main.presentation.MainActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|keyboard|navigation|uiMode|density|fontScale|locale|layoutDirection"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.Courmy"
-            android:windowSoftInputMode="adjustResize">
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Courmy">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- App Links: https://www.courmy.com/* 모든 경로를 본 액티비티로 -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="www.courmy.com" />
+            </intent-filter>
+        </activity>
+
+        <!-- 카카오톡 앱 로그인 리다이렉트 처리. scheme 은 kakao{네이티브앱키}. -->
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="oauth"
+                    android:scheme="kakao${kakaoNativeAppKey}" />
             </intent-filter>
         </activity>
     </application>

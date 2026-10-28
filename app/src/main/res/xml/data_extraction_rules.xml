@@ -5,15 +5,15 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- 세션 토큰(암호문)은 백업하지 않는다. Keystore 키가 함께 넘어가지 않아 복원해도
+             복호화 불가 → 재로그인만 유발하므로 제외한다. -->
+        <exclude domain="file" path="datastore/secure_session.preferences_pb" />
+        <!-- Naver SDK 의 암호화 prefs 도 같은 이유로 제외한다. 암호문만 복원되고 Keystore 마스터 키가
+             없으면 SDK 가 앱 시작 시 KeyStoreException 으로 크래시할 수 있다(SCRUM-627). -->
+        <exclude domain="sharedpref" path="NaverOAuthLoginEncryptedPreferenceData.xml" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="file" path="datastore/secure_session.preferences_pb" />
+        <exclude domain="sharedpref" path="NaverOAuthLoginEncryptedPreferenceData.xml" />
     </device-transfer>
-    -->
 </data-extraction-rules>

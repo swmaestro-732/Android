@@ -1,0 +1,326 @@
+package com.chillsam.courmy.main.presentation.saved
+
+import android.util.Log
+import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.course.domain.CreateCourseFolderUseCase
+import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
+import com.chillsam.courmy.main.domain.saved.GetSavedCoursesUseCase
+import com.chillsam.courmy.main.entity.saved.SavedCourseFolderVO
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+/**
+ * 저장함 · 코스 탭(FS-14) ViewModel. `GET /service/v1/my/saved-courses` 로 목록을 로드하고,
+ * 저장 취소는 코스 상세·홈 피드와 같은 [SetCourseSavedUseCase] 를 쓴다(중복 구현 방지).
+ *
+ * 로그인 사용자만 진입하는 화면이라(게스트는 별도 화면) JWT 가 있다고 전제한다.
+ *
+ * 생성 시점에는 로드하지 않는다. 화면이 RefreshOnResume 으로 부르므로,
+ * init 에서도 부르면 진입할 때 같은 요청이 두 번 나간다.
+ */
+@HiltViewModel
+class SavedCoursesViewModel
+    @Inject
+    constructor(
+        private val getSavedCoursesUseCase: GetSavedCoursesUseCase,
+        private val setCourseSavedUseCase: SetCourseSavedUseCase,
+        private val createCourseFolderUseCase: CreateCourseFolderUseCase,
+    ) : MviViewModel<SavedCoursesIntent, SavedCoursesUIState, SavedCoursesReducerEvent>(
+            SavedCoursesUIState.empty,
+        ) {
+        private var loadJob: Job? = null
+        private var moreJob: Job? = null
+        private val unsaveJobs = mutableMapOf<String, Job>()
+
+        override fun onIntent(intent: SavedCoursesIntent) {
+            when (intent) {
+                is SavedCoursesIntent.SelectFolder -> {
+                    dispatch(SavedCoursesReducerEvent.FilterChanged(intent.id, currentState.completed))
+                    load()
+                }
+
+                is SavedCoursesIntent.SelectCompleted -> {
+                    dispatch(SavedCoursesReducerEvent.FilterChanged(currentState.selectedFolderId, intent.completed))
+                    load()
+                }
+
+                SavedCoursesIntent.ShowCreateFolder -> {
+                    dispatch(SavedCoursesReducerEvent.FolderDialog(true))
+                }
+
+                SavedCoursesIntent.DismissCreateFolder -> {
+                    if (!currentState.isCreatingFolder) {
+                        dispatch(SavedCoursesReducerEvent.FolderDialog(false))
+                    }
+                }
+
+                is SavedCoursesIntent.CreateFolder -> {
+                    createFolder(intent.name)
+                }
+
+                SavedCoursesIntent.Load,
+                SavedCoursesIntent.Retry,
+                -> {
+                    load()
+                }
+
+                SavedCoursesIntent.LoadMore -> {
+                    loadMore()
+                }
+
+                is SavedCoursesIntent.Unsave -> {
+                    unsave(intent.courseId)
+                }
+
+                SavedCoursesIntent.ConsumeError -> {
+                    dispatch(SavedCoursesReducerEvent.ErrorConsumed)
+                }
+            }
+        }
+
+        override fun reduce(
+            state: SavedCoursesUIState,
+            event: SavedCoursesReducerEvent,
+        ): SavedCoursesUIState =
+            when (event) {
+                is SavedCoursesReducerEvent.FilterChanged -> {
+                    state.copy(
+                        selectedFolderId = event.folderId,
+                        completed = event.completed,
+                        courses = kotlinx.collections.immutable.persistentListOf(),
+                        nextCursor = null,
+                        hasNext = false,
+                    )
+                }
+
+                is SavedCoursesReducerEvent.FolderDialog -> {
+                    state.copy(showCreateFolder = event.visible, folderError = null)
+                }
+
+                SavedCoursesReducerEvent.FolderCreating -> {
+                    state.copy(isCreatingFolder = true, folderError = null)
+                }
+
+                is SavedCoursesReducerEvent.FolderFailed -> {
+                    state.copy(isCreatingFolder = false, folderError = event.message)
+                }
+
+                is SavedCoursesReducerEvent.FolderCreated -> {
+                    state.copy(
+                        isCreatingFolder = false,
+                        showCreateFolder = false,
+                        folders = (state.folders + event.folder).distinctBy { it.id }.toImmutableList(),
+                    )
+                }
+
+                is SavedCoursesReducerEvent.SummaryLoaded -> {
+                    state.copy(
+                        totalCount = if (state.selectedFolderId == null) event.result.totalCount else state.totalCount,
+                        uncompletedCount = event.result.uncompletedCount,
+                        completedCount = event.result.completedCount,
+                        folders = event.result.folders.toImmutableList(),
+                    )
+                }
+
+                SavedCoursesReducerEvent.LoadStarted,
+                is SavedCoursesReducerEvent.Loaded,
+                SavedCoursesReducerEvent.LoadMoreStarted,
+                is SavedCoursesReducerEvent.MoreLoaded,
+                is SavedCoursesReducerEvent.MoreFailed,
+                is SavedCoursesReducerEvent.LoadFailed,
+                -> {
+                    state.reduceLoading(event)
+                }
+
+                is SavedCoursesReducerEvent.Unsaved -> {
+                    state.copy(
+                        courses = state.courses.filterNot { it.id == event.courseId }.toImmutableList(),
+                        totalCount = (state.totalCount - 1).coerceAtLeast(0),
+                    )
+                }
+
+                is SavedCoursesReducerEvent.UnsaveFailed -> {
+                    state.copy(errorMessage = event.message)
+                }
+
+                SavedCoursesReducerEvent.ErrorConsumed -> {
+                    state.copy(errorMessage = null)
+                }
+            }
+
+        private fun load() {
+            dispatch(SavedCoursesReducerEvent.LoadStarted)
+            loadJob?.cancel()
+            // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
+            moreJob?.cancel()
+            loadJob =
+                viewModelScope.launch {
+                    runCatching {
+                        getSavedCoursesUseCase(
+                            // 복귀 재로드가 1페이지로 줄이면 깊이 스크롤한 위치가 잘린다(SCRUM-631).
+                            // 이미 보여 준 개수만큼 다시 받아 위치를 보존한다(UseCase 상한으로 캡).
+                            size = maxOf(GetSavedCoursesUseCase.DEFAULT_SIZE, currentState.courses.size),
+                            folderId = currentState.selectedFolderId,
+                            completed = currentState.completed,
+                        )
+                    }.onSuccess { result ->
+                        val page = result.page
+                        dispatch(SavedCoursesReducerEvent.SummaryLoaded(result))
+                        dispatch(
+                            SavedCoursesReducerEvent.Loaded(
+                                courses = page.items,
+                                nextCursor = page.nextCursor,
+                                hasNext = page.hasNext,
+                            ),
+                        )
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
+                        Log.w(TAG, "저장 코스 로드 실패", e)
+                        dispatch(SavedCoursesReducerEvent.LoadFailed("저장한 코스를 불러오지 못했습니다."))
+                    }
+                }
+        }
+
+        /** 다음 페이지를 이어 받는다. 첫 로드 전이거나 마지막 페이지면 아무것도 하지 않는다. */
+        private fun loadMore() {
+            val state = currentState
+            if (state.isLoading || state.isLoadingMore) return
+            val cursor = state.nextCursor?.takeIf { state.hasNext } ?: return
+            dispatch(SavedCoursesReducerEvent.LoadMoreStarted)
+            moreJob?.cancel()
+            moreJob =
+                viewModelScope.launch {
+                    runCatching {
+                        getSavedCoursesUseCase(
+                            cursor = cursor,
+                            folderId = state.selectedFolderId,
+                            completed = state.completed,
+                        )
+                    }.onSuccess { result ->
+                        val page = result.page
+                        dispatch(
+                            SavedCoursesReducerEvent.MoreLoaded(
+                                courses = page.items,
+                                nextCursor = page.nextCursor,
+                                hasNext = page.hasNext,
+                            ),
+                        )
+                    }.onFailure { e ->
+                        if (e is CancellationException) throw e
+                        Log.w(TAG, "저장 코스 다음 페이지 로드 실패", e)
+                        dispatch(SavedCoursesReducerEvent.MoreFailed("더 불러오지 못했어요."))
+                    }
+                }
+        }
+
+        /**
+         * 서버가 성공을 확인한 뒤에만 목록에서 뺀다.
+         * 요청은 코스마다 독립이라 하나의 job 으로 묶어 취소하면, 앞선 취소 요청이 서버에는 반영되고
+         * 화면에는 남는 불일치가 생긴다.
+         * 먼저 지우고 실패 시 되돌리는 방식은 실패가 잦은 초기 연동에서 화면이 튀어 보이기 쉽다.
+         */
+        private fun unsave(courseId: String) {
+            val id = courseId.toLongOrNull()
+            if (id == null) {
+                Log.w(TAG, "잘못된 코스 id: $courseId")
+                dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
+                return
+            }
+            // 코스마다 독립된 요청이라 서로 취소하지 않는다. 같은 코스의 중복 탭만 무시한다.
+            if (unsaveJobs[courseId]?.isActive == true) return
+            unsaveJobs[courseId] =
+                viewModelScope.launch {
+                    try {
+                        runCatching { setCourseSavedUseCase(courseId = id, saved = false) }
+                            .onSuccess {
+                                dispatch(SavedCoursesReducerEvent.Unsaved(courseId))
+                                load()
+                            }.onFailure { e ->
+                                if (e is CancellationException) throw e
+                                Log.w(TAG, "저장 취소 실패: courseId=$courseId", e)
+                                dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
+                            }
+                    } finally {
+                        unsaveJobs.remove(courseId)
+                    }
+                }
+        }
+
+        private fun createFolder(name: String) {
+            if (currentState.isCreatingFolder) return
+            dispatch(SavedCoursesReducerEvent.FolderCreating)
+            viewModelScope.launch {
+                runCatching { createCourseFolderUseCase(name) }
+                    .onSuccess { id ->
+                        dispatch(SavedCoursesReducerEvent.FolderCreated(SavedCourseFolderVO(id, name.trim(), 0)))
+                        load()
+                    }.onFailure { error ->
+                        if (error is CancellationException) throw error
+                        Log.w(TAG, "폴더 생성 실패", error)
+                        dispatch(
+                            SavedCoursesReducerEvent.FolderFailed(
+                                if (error is IllegalArgumentException) {
+                                    error.message.orEmpty()
+                                } else {
+                                    "폴더를 만들지 못했어요. 다시 시도해 주세요."
+                                },
+                            ),
+                        )
+                    }
+            }
+        }
+
+        private companion object {
+            const val TAG = "SavedCourses"
+        }
+    }
+
+private fun SavedCoursesUIState.reduceLoading(event: SavedCoursesReducerEvent): SavedCoursesUIState =
+    when (event) {
+        SavedCoursesReducerEvent.LoadStarted -> {
+            copy(isLoading = true, isLoadingMore = false, loadErrorMessage = null)
+        }
+
+        is SavedCoursesReducerEvent.Loaded -> {
+            copy(
+                isLoading = false,
+                courses = event.courses.toImmutableList(),
+                loadErrorMessage = null,
+                nextCursor = event.nextCursor,
+                hasNext = event.hasNext,
+                isLoadingMore = false,
+            )
+        }
+
+        SavedCoursesReducerEvent.LoadMoreStarted -> {
+            copy(isLoadingMore = true)
+        }
+
+        is SavedCoursesReducerEvent.MoreLoaded -> {
+            copy(
+                // 서버가 같은 코스를 다시 줘도 두 번 그리지 않는다(LazyColumn key 중복 방지).
+                courses = (courses + event.courses).distinctBy { it.id }.toImmutableList(),
+                nextCursor = event.nextCursor,
+                hasNext = event.hasNext,
+                isLoadingMore = false,
+            )
+        }
+
+        is SavedCoursesReducerEvent.MoreFailed -> {
+            copy(isLoadingMore = false, errorMessage = event.message)
+        }
+
+        is SavedCoursesReducerEvent.LoadFailed -> {
+            copy(isLoading = false, loadErrorMessage = event.message)
+        }
+
+        else -> {
+            this
+        }
+    }

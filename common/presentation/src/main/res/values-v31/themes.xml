@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Android 12+ 시스템 스플래시(mandatory) 를 브랜드 초록 배경 + 아이콘 숨김(투명)으로.
+         기본 흰 배경/런처 아이콘 플래시가 사라지고, 순수 초록이 Compose 스플래시(초록)로 이어진다. -->
+    <style name="Theme.Courmy" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FF30623C</item>
+        <item name="android:windowSplashScreenBackground">#FF30623C</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
+    </style>
+</resources>
