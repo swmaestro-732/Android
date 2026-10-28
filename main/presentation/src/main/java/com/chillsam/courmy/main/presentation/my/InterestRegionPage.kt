@@ -140,12 +140,20 @@ fun InterestRegionPage(
                 maxLines = 2,
                 modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
             )
-            DsText(
-                text = "여러 곳을 골라도 좋아요.",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
+            // 테마 화면(InterestThemePage)과 같은 안내 — 최소 선택 개수를 명시해야
+            // "다음" 이 왜 안 눌리는지 사용자가 알 수 있다. "N개 선택됨" 만 강조색.
+            Row(modifier = Modifier.padding(bottom = 16.dp)) {
+                DsText(
+                    text = "최소 ${MIN_REGION_COUNT}개 이상 · ",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel2,
+                )
+                DsText(
+                    text = "${selected.size}개 선택됨",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentAccent,
+                )
+            }
 
             DsTextField(
                 value = query,
