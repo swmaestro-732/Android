@@ -198,8 +198,13 @@ fun InterestRegionPage(
         }
 
         DsButton(
-            // 회원가입 플로우면 "다음", 편집이면 "저장".
-            text = if (onNext != null) "다음" else "저장",
+            // 최소 개수를 못 채우면 버튼에 왜 못 넘어가는지 직접 보여 준다(테마 화면과 통일).
+            text =
+                when {
+                    selected.size < MIN_REGION_COUNT -> "최소 ${MIN_REGION_COUNT}개 이상 선택"
+                    onNext != null -> "다음"
+                    else -> "저장"
+                },
             enabled = selected.size >= MIN_REGION_COUNT,
             onClick = {
                 // 편집은 기기에 저장한 뒤 저장 완료 신호를 받아 닫는다(위 LaunchedEffect).

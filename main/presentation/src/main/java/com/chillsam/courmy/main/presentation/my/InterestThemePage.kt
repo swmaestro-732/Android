@@ -99,7 +99,7 @@ fun InterestThemePage(
         ) {
             DsText(
                 text = "어떤 곳을\n좋아하세요?",
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = color.contentDefaultLevel0,
                 maxLines = 2,
                 modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
@@ -126,8 +126,13 @@ fun InterestThemePage(
         }
 
         DsButton(
-            // 회원가입 플로우면 "다음 · N개 선택됨", 편집이면 "저장".
-            text = if (onNext != null) "다음 · ${selected.size}개 선택됨" else "저장",
+            // 최소 개수를 못 채우면 버튼에 왜 못 넘어가는지 직접 보여 준다(지역 화면과 통일).
+            text =
+                when {
+                    selected.size < MIN_THEME_COUNT -> "최소 ${MIN_THEME_COUNT}개 이상 선택"
+                    onNext != null -> "다음"
+                    else -> "저장"
+                },
             enabled = selected.size >= MIN_THEME_COUNT,
             onClick = {
                 val themes = selected.toList()
