@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.presentation.home
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.main.domain.home.GetHomeFeedUseCase
@@ -34,6 +35,7 @@ class HomeFeedViewModel
         ) {
         private var loadJob: Job? = null
         private var moreJob: Job? = null
+        private var syncJob: Job? = null
 
         override fun onIntent(intent: HomeFeedIntent) {
             when (intent) {
@@ -67,6 +69,7 @@ class HomeFeedViewModel
                         isLoading = false,
                         courses = event.courses.toImmutableList(),
                         savedCourseIds = event.savedCourseIds.toImmutableSet(),
+                        savedIdsKnown = event.savedIdsKnown,
                         errorMessage = null,
                         nextCursor = event.nextCursor,
                         hasNext = event.hasNext,
@@ -75,7 +78,19 @@ class HomeFeedViewModel
                 }
 
                 is HomeFeedReducerEvent.SavedIdsSynced -> {
-                    state.copy(savedCourseIds = event.savedCourseIds.toImmutableSet())
+                    state.copy(
+                        courses =
+                            if (state.savedIdsKnown) {
+                                updatedSaveCounts(
+                                    state,
+                                    event.savedCourseIds,
+                                )
+                            } else {
+                                state.courses
+                            },
+                        savedIdsKnown = true,
+                        savedCourseIds = event.savedCourseIds.toImmutableSet(),
+                    )
                 }
 
                 HomeFeedReducerEvent.LoadMoreStarted -> {
@@ -127,7 +142,15 @@ class HomeFeedViewModel
                 }
 
                 is HomeFeedReducerEvent.SaveFinished -> {
+                    val savedIds =
+                        if (event.saved) {
+                            state.savedCourseIds + event.courseId
+                        } else {
+                            state.savedCourseIds -
+                                event.courseId
+                        }
                     state.copy(
+                        courses = updatedSaveCounts(state, savedIds),
                         savedCourseIds =
                             if (event.saved) {
                                 (state.savedCourseIds + event.courseId).toImmutableSet()
@@ -150,10 +173,27 @@ class HomeFeedViewModel
                 }
             }
 
+        private fun updatedSaveCounts(
+            state: HomeFeedUIState,
+            savedIds: Set<String>,
+        ) = state.courses
+            .map { course ->
+                val wasSaved = course.id in state.savedCourseIds
+                val isSaved = course.id in savedIds
+                val count = course.saveCount
+                if (!state.savedIdsKnown || wasSaved == isSaved || count == null) {
+                    course
+                } else {
+                    val updated = (count.toLong() + if (isSaved) 1 else -1).coerceIn(0, Int.MAX_VALUE.toLong()).toInt()
+                    course.copy(saveCount = updated, saveCountText = formatCount(updated))
+                }
+            }.toImmutableList()
+
         /** 서버가 확정한 뒤에 아이콘을 바꾼다. 진행 중인 같은 코스의 중복 탭은 무시한다. */
         private fun toggleSave(courseId: String) {
             val state = currentState
-            if (courseId in state.savingCourseIds) return
+            if (state.isLoading || courseId in state.savingCourseIds) return
+            syncJob?.cancel()
             val id = courseId.toLongOrNull()
             if (id == null) {
                 Log.w(TAG, "잘못된 코스 id: $courseId")
@@ -182,10 +222,12 @@ class HomeFeedViewModel
                 viewModelScope.launch {
                     runCatching { getHomeFeedUseCase() }
                         .onSuccess { page ->
+                            val savedIds = loadSavedCourseIds()
                             dispatch(
                                 HomeFeedReducerEvent.Loaded(
                                     courses = page.items,
-                                    savedCourseIds = loadSavedCourseIds(),
+                                    savedCourseIds = savedIds.orEmpty(),
+                                    savedIdsKnown = savedIds != null,
                                     nextCursor = page.nextCursor,
                                     hasNext = page.hasNext,
                                 ),
@@ -237,28 +279,30 @@ class HomeFeedViewModel
          * 최신 집합을 싣고 오므로 건너뛴다.
          */
         private fun syncSavedIds() {
-            if (currentState.isLoading) return
-            viewModelScope.launch {
-                runCatching { getSavedCourseIdsUseCase() }
-                    .onSuccess { dispatch(HomeFeedReducerEvent.SavedIdsSynced(it)) }
-                    .onFailure { e ->
-                        if (e is CancellationException) throw e
-                        // 실패하면 덮어쓰지 않는다 — 빈 집합으로 바꾸면 저장 아이콘이 일괄 꺼져 보인다.
-                        Log.d(TAG, "저장 코스 id 동기화 실패(기존 표시 유지): ${e.message}")
-                    }
-            }
+            if (currentState.isLoading || currentState.savingCourseIds.isNotEmpty()) return
+            syncJob?.cancel()
+            syncJob =
+                viewModelScope.launch {
+                    runCatching { getSavedCourseIdsUseCase() }
+                        .onSuccess { dispatch(HomeFeedReducerEvent.SavedIdsSynced(it)) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            // 실패하면 덮어쓰지 않는다 — 빈 집합으로 바꾸면 저장 아이콘이 일괄 꺼져 보인다.
+                            Log.d(TAG, "저장 코스 id 동기화 실패(기존 표시 유지): ${e.message}")
+                        }
+                }
         }
 
         /**
          * 저장 여부 표시용 id 집합. 실패해도 피드는 그대로 보여준다(부가 정보이므로).
          * 비로그인이면 401 이라 빈 집합이 되고, 카드는 모두 저장 전 아이콘으로 그려진다.
          */
-        private suspend fun loadSavedCourseIds(): Set<String> =
+        private suspend fun loadSavedCourseIds(): Set<String>? =
             runCatching { getSavedCourseIdsUseCase() }
                 .getOrElse { e ->
                     if (e is CancellationException) throw e
                     Log.d(TAG, "저장 코스 id 조회 실패(피드는 그대로 표시): ${e.message}")
-                    emptySet()
+                    null
                 }
 
         private companion object {

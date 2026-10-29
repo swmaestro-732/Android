@@ -60,6 +60,7 @@ internal fun CourseFeedDTO.toVOList(): List<HomeCourseVO> =
                 coverImageUrl = item.coverImageUrl.orEmpty(),
                 categoryLabel = item.theme.toCourseTagLabel(),
                 saveCountText = formatCount(item.savesCnt ?: 0),
+                saveCount = item.savesCnt?.coerceAtLeast(0),
                 likeCountText = item.likesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
             )
         }

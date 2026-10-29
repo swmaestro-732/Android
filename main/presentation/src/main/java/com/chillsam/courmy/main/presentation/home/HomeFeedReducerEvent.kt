@@ -13,6 +13,7 @@ sealed interface HomeFeedReducerEvent : ReducerEvent {
         val savedCourseIds: Set<String>,
         val nextCursor: String?,
         val hasNext: Boolean,
+        val savedIdsKnown: Boolean = true,
     ) : HomeFeedReducerEvent
 
     /** 복귀 동기화로 받은 저장 코스 id 집합. 목록·커서는 건드리지 않는다. */

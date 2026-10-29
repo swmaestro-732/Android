@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -141,26 +142,24 @@ private fun CourseCover(
                 )
             }
         }
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(12.dp)
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(color.bgDefaultLevel1)
-                    .clickable(onClick = onBookmarkClick),
-            contentAlignment = Alignment.Center,
+        IconButton(
+            onClick = onBookmarkClick,
+            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(48.dp),
         ) {
-            Icon(
-                painter =
-                    painterResource(
-                        if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
-                    ),
-                contentDescription = if (isSaved) "저장 취소" else "저장",
-                tint = color.contentAccent,
-                modifier = Modifier.size(18.dp),
-            )
+            Box(
+                modifier = Modifier.size(34.dp).clip(CircleShape).background(color.bgDefaultLevel1),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter =
+                        painterResource(
+                            if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
+                        ),
+                    contentDescription = if (isSaved) "저장 취소" else "저장",
+                    tint = color.contentAccent,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
         DsText(
             text = course.title,

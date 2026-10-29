@@ -25,6 +25,7 @@ data class HomeFeedUIState(
      * 서버가 `hasSaved` 를 내려주면 이 집합과 대조 로직을 함께 제거한다. [wiki-needed]
      */
     val savedCourseIds: ImmutableSet<String> = persistentSetOf(),
+    val savedIdsKnown: Boolean = false,
     /** 저장 요청이 진행 중인 코스 id(중복 탭 방지). */
     val savingCourseIds: ImmutableSet<String> = persistentSetOf(),
     val actionErrorMessage: String? = null,
