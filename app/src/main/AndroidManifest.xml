@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- 광고 전환 추적(메타·네이버 GFA)이 Android 13+ 에서 광고 ID 를 읽기 위해 필요하다. -->
+    <!-- 메타(Facebook) 광고 전환 추적이 Android 13+ 에서 광고 ID 를 읽기 위해 필요하다. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
     <application
