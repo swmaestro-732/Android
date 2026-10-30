@@ -315,6 +315,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging)
 
     // Amplitude — 제품 분석. SDK 는 app 에만 두고 data 레이어에는 AmplitudeClient 인터페이스로 노출한다.
     implementation(libs.amplitude.analytics)

@@ -39,7 +39,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    // 공지·알림은 아직 상세 화면이 없어, 무반응 대신 "준비 중" 안내를 띄운다.
+    // 공지는 아직 상세 화면이 없어, 무반응 대신 "준비 중" 안내를 띄운다.
     val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
     // 브라우저가 없는 기기에서 uriHandler 가 던지면 앱이 죽으므로 안내로 대체한다.
     val openUrl = { url: String ->
@@ -64,7 +64,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
             SettingsDivider()
             SettingsMenuRow(label = "공지", onClick = notReady, hint = NOT_READY_HINT)
             SettingsDivider()
-            SettingsMenuRow(label = "알림", onClick = notReady, hint = NOT_READY_HINT)
+            NotificationPermissionRow()
             SettingsDivider()
             SettingsMenuRow(label = "문의하기", onClick = { openUrl(CONTACT_FORM_URL) })
             SettingsDivider()
