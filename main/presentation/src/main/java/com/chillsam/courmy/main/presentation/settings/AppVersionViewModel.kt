@@ -19,24 +19,20 @@ class AppVersionViewModel
     ) : MviViewModel<AppVersionIntent, AppVersionUIState, AppVersionReducerEvent>(AppVersionUIState()) {
         private var checkJob: Job? = null
 
-        init {
-            check(forceRefresh = false)
-        }
-
         override fun onIntent(intent: AppVersionIntent) {
             when (intent) {
-                AppVersionIntent.Check -> check(forceRefresh = true)
+                AppVersionIntent.Check -> check()
             }
         }
 
-        private fun check(forceRefresh: Boolean) {
+        private fun check() {
             if (checkJob?.isActive == true) return
             dispatch(AppVersionReducerEvent.CheckStarted)
             checkJob =
                 viewModelScope.launch {
                     val result =
                         try {
-                            withTimeoutOrNull(CHECK_TIMEOUT_MS) { checkAppVersion(forceRefresh) }
+                            withTimeoutOrNull(CHECK_TIMEOUT_MS) { checkAppVersion(forceRefresh = true) }
                                 ?: AppVersionCheckVO.Unavailable
                         } catch (error: CancellationException) {
                             throw error

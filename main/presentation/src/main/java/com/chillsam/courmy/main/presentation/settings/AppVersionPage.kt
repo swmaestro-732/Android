@@ -27,6 +27,7 @@ import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
@@ -47,6 +48,7 @@ fun AppVersionPage(modifier: Modifier = Modifier) {
                 info.versionName.orEmpty()
             }.getOrDefault("버전 정보를 확인할 수 없어요")
         }
+    RefreshOnResume { viewModel.onIntent(AppVersionIntent.Check) }
     AppVersionContent(
         state = state,
         installedVersion = installedVersion,
@@ -106,29 +108,27 @@ private fun AppVersionContent(
                     maxLines = Int.MAX_VALUE,
                     modifier = Modifier.weight(1f),
                 )
-                OutlinedIconButton(
-                    onClick = onCheck,
-                    enabled = state.status != AppVersionStatus.Loading,
-                    border = BorderStroke(1.dp, color.borderDefaultLevel0),
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_refresh_24),
-                        contentDescription = "버전 다시 확인",
-                        tint = color.contentDefaultLevel2,
-                    )
+                if (state.status == AppVersionStatus.Unavailable) {
+                    OutlinedIconButton(
+                        onClick = onCheck,
+                        border = BorderStroke(1.dp, color.borderDefaultLevel0),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_refresh_24),
+                            contentDescription = "버전 다시 확인",
+                            tint = color.contentDefaultLevel2,
+                        )
+                    }
                 }
             }
-            DsButton(
-                text = if (state.status == AppVersionStatus.UpdateAvailable) "업데이트하러 가기" else "Play 스토어에서 보기",
-                onClick = onStore,
-                variant =
-                    if (state.status == AppVersionStatus.UpdateAvailable) {
-                        DsButtonVariant.Primary
-                    } else {
-                        DsButtonVariant.Secondary
-                    },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            if (state.status == AppVersionStatus.UpdateAvailable) {
+                DsButton(
+                    text = "업데이트하러 가기",
+                    onClick = onStore,
+                    variant = DsButtonVariant.Primary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
