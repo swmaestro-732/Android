@@ -50,8 +50,10 @@ import com.chillsam.courmy.common.presentation.helper.StatusBarState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.onboarding.SplashPage
+import com.chillsam.courmy.main.presentation.update.AppUpdateIntent
 import com.chillsam.courmy.main.presentation.update.AppUpdateRequiredScreen
 import com.chillsam.courmy.main.presentation.update.AppUpdateViewModel
+import com.chillsam.courmy.main.presentation.update.OptionalAppUpdateDialog
 import kotlinx.coroutines.flow.Flow
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
 
@@ -84,6 +86,20 @@ fun RootComposable(
 
         val appUpdateViewModel: AppUpdateViewModel = hiltViewModel()
         val updateRequired by appUpdateViewModel.updateRequired.collectAsStateWithLifecycle()
+        val appUpdateState by appUpdateViewModel.uiState.collectAsStateWithLifecycle()
+        val isSplash = (backStack.lastOrNull() as? GenericNavKey)?.path == SplashPage.PATH
+        LaunchedEffect(isSplash, updateRequired) {
+            if (!isSplash && !updateRequired) {
+                appUpdateViewModel.onIntent(AppUpdateIntent.CheckOptionalUpdate)
+            }
+        }
+        val canShowOptionalUpdate = !isSplash && !updateRequired && oneButtonDialogEffect == null
+        if (canShowOptionalUpdate && appUpdateState.showOptionalUpdate) {
+            OptionalAppUpdateDialog(
+                onAccept = { appUpdateViewModel.onIntent(AppUpdateIntent.AcceptOptionalUpdate) },
+                onDismiss = { appUpdateViewModel.onIntent(AppUpdateIntent.DismissOptionalUpdate) },
+            )
+        }
 
         val onShowOneButtonDialog =
             remember<(MessageEffect.ShowOneButtonDialog) -> Unit> {

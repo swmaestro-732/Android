@@ -47,6 +47,8 @@ dependencies {
     implementation(project(":main:domain"))
     implementation(project(":main:entity"))
     implementation(project(":common:data"))
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.config)
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
     // Local storage (온보딩 완료 플래그)
@@ -59,4 +61,5 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
