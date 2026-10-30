@@ -30,14 +30,14 @@ class CourseDetailDtoMappingTest {
         val labels =
             listOf(
                 "데이트",
-                "힐링·산책",
-                "맛집·먹방",
+                "힐링",
+                "맛집",
                 "카페 투어",
-                "문화·예술",
-                "자연·아웃도어",
-                "야경·감성",
+                "문화",
+                "자연",
+                "야경",
                 "쇼핑",
-                "역사·전통",
+                "역사",
                 "액티비티",
                 "가족 나들이",
                 "혼놀",
@@ -284,7 +284,7 @@ class CourseDetailDtoMappingTest {
 
         assertEquals(listOf("CULTURE", "성수"), vo.themes)
         // 마스터 코드는 한글 라벨로, 코드로 알아보지 못한 값은 그대로 남긴다.
-        assertEquals(listOf("문화·예술", "성수"), vo.themeLabels)
+        assertEquals(listOf("문화", "성수"), vo.themeLabels)
     }
 
     /**
