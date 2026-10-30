@@ -28,9 +28,9 @@ name: CD
 #     GOOGLE_SERVER_CLIENT_ID / NAVER_LOGIN_CLIENT_ID / NAVER_LOGIN_CLIENT_SECRET :
 #                            소셜 로그인. 없어도 빌드는 통과하지만 출시본에서 해당
 #                            로그인이 "준비되지 않았어요" 로 실패한다. 반드시 등록할 것.
-#     FACEBOOK_APP_ID / FACEBOOK_CLIENT_TOKEN / NAVER_GFA_SITE_ID :
-#                            광고 전환 추적(메타·네이버 GFA). 없으면 해당 SDK 가 이벤트를
-#                            보내지 않을 뿐 빌드는 통과한다(광고 집행 시 등록).
+#     FACEBOOK_APP_ID / FACEBOOK_CLIENT_TOKEN :
+#                            메타 광고 전환 추적. 없으면 SDK 가 이벤트를 보내지 않을 뿐
+#                            빌드는 통과한다(광고 집행 시 등록).
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -120,7 +120,6 @@ jobs:
           NAVER_LOGIN_CLIENT_SECRET: ${{ secrets.NAVER_LOGIN_CLIENT_SECRET }}
           FACEBOOK_APP_ID: ${{ secrets.FACEBOOK_APP_ID }}
           FACEBOOK_CLIENT_TOKEN: ${{ secrets.FACEBOOK_CLIENT_TOKEN }}
-          NAVER_GFA_SITE_ID: ${{ secrets.NAVER_GFA_SITE_ID }}
           PLAY_JSON_KEY_FILE: ${{ runner.temp }}/play-key.json
         run: bundle exec fastlane android deploy
       - name: Prepare release assets
