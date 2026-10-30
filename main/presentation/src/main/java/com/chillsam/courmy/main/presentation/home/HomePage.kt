@@ -176,7 +176,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                 )
             }
             // 위치가 없으면 BFF 가 기본 좌표(성수) 기준으로 응답해 도보 시간이 틀어진다.
-            // 그래서 안내가 데이터보다 먼저고, 비로그인·빈 응답이면 섹션째 숨긴다(빈 헤더만 뜨지 않게).
+            // 그래서 안내가 데이터보다 먼저고, 조회 성공 후 빈 응답이면 지도 탐색 안내를 표시한다.
             if (session.isLoggedIn && (!hasLocationPermission || !gpsEnabled)) {
                 // 섹션이 비는 이유(위치 없음)를 그 자리에서 안내한다 — 상단 띠는 과해서 뺐다(사용자 결정).
                 item {
@@ -213,6 +213,15 @@ fun HomePage(modifier: Modifier = Modifier) {
                             MapFocusRequestStore.request(placeId)
                             navigationHelper.navigateTo(MapPage)
                         },
+                        modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                    )
+                }
+            } else if (session.isLoggedIn && homeState.showNearbyEmptyState) {
+                item {
+                    NearbyLocationPrompt(
+                        message = "근처에 저장한 장소가 없어요",
+                        actionLabel = "지도에서 장소 찾기",
+                        onAction = { navigationHelper.navigateTo(MapPage) },
                         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                     )
                 }
@@ -755,8 +764,8 @@ private fun fetchLastLocation(
 }
 
 /**
- * "근처 저장 장소" 섹션 자리에 띄우는 위치 안내. 섹션이 비는 이유를 그 맥락에서 설명하고
- * 허용·설정으로 이어 준다. 버튼은 탭하기 쉽게 카드 전체 폭을 쓴다.
+ * "근처 저장 장소" 섹션 자리에 띄우는 안내. 위치·빈 결과의 이유를 그 맥락에서 설명하고
+ * 허용·설정·지도 탐색으로 이어 준다. 버튼은 탭하기 쉽게 카드 전체 폭을 쓴다.
  */
 @Composable
 private fun NearbyLocationPrompt(
