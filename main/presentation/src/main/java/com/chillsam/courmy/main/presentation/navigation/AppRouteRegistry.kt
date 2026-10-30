@@ -52,6 +52,7 @@ import com.chillsam.courmy.main.presentation.saved.SavedPage
 import com.chillsam.courmy.main.presentation.search.SearchPage
 import com.chillsam.courmy.main.presentation.search.SearchResultPage
 import com.chillsam.courmy.main.presentation.settings.AccountManagePage
+import com.chillsam.courmy.main.presentation.settings.AppVersionPage
 import com.chillsam.courmy.main.presentation.settings.SettingsPage
 import com.chillsam.courmy.main.presentation.user.UserProfilePage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
@@ -84,6 +85,7 @@ import com.chillsam.courmy.main.domain.saved.SavedPage as SavedRoute
 import com.chillsam.courmy.main.domain.search.SearchPage as SearchRoute
 import com.chillsam.courmy.main.domain.search.SearchResultPage as SearchResultRoute
 import com.chillsam.courmy.main.domain.settings.AccountManagePage as AccountManageRoute
+import com.chillsam.courmy.main.domain.settings.AppVersionPage as AppVersionRoute
 import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
@@ -324,6 +326,10 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = SettingsRoute.PATH,
             render = { SettingsPage() },
+        ),
+        AppRoute(
+            path = AppVersionRoute.PATH,
+            render = { AppVersionPage() },
         ),
         AppRoute(
             path = AccountManageRoute.PATH,
