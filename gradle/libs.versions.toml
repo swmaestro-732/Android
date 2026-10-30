@@ -121,6 +121,7 @@ kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotli
 
 # Firebase — 버전은 BOM 이 맞추므로 개별 라이브러리에 version 을 적지 않는다.
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-config = { group = "com.google.firebase", name = "firebase-config" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 # Analytics 는 Crashlytics 리포트에 breadcrumb(화면 전환·이벤트)를 자동으로 붙여 준다.
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
