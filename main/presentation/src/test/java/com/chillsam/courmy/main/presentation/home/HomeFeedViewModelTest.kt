@@ -254,6 +254,46 @@ class HomeFeedViewModelTest {
             coVerify(exactly = 1) { setSaved(1L, true) }
         }
 
+    @Test
+    fun `초기 저장 ID 조회 실패 후 저장 성공은 서버 집계를 다시 불러온다`() =
+        runTest(dispatcher) {
+            val viewModel = loadedViewModel(course("1", 12, "12"))
+            coEvery { getSavedIds() } throws IOException("offline")
+            advanceUntilIdle()
+            coEvery { setSaved(1L, true) } returns Unit
+            coEvery { getFeed(any(), any()) } returns CursorPageVO(listOf(course("1", 13, "13")), "next", true)
+            coEvery { getSavedIds() } returns setOf("1")
+
+            viewModel.onIntent(HomeFeedIntent.ToggleSave("1"))
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.savedIdsKnown)
+            assertEquals(setOf("1"), viewModel.uiState.value.savedCourseIds)
+            assertEquals(13, viewModel.course("1").saveCount)
+            coVerify(exactly = 2) { getFeed(any(), any()) }
+        }
+
+    @Test
+    fun `새 피드 로드가 이전 동기화를 취소해 최신 집계를 유지한다`() =
+        runTest(dispatcher) {
+            val viewModel = loadedViewModel(course("1", 12, "12"))
+            advanceUntilIdle()
+            val pendingSync = CompletableDeferred<Set<String>>()
+            coEvery { getSavedIds() } coAnswers { pendingSync.await() }
+            viewModel.onIntent(HomeFeedIntent.SyncSavedIds)
+            runCurrent()
+            coEvery { getFeed(any(), any()) } returns CursorPageVO(listOf(course("1", 13, "13")), "next", true)
+            coEvery { getSavedIds() } returns setOf("1")
+
+            viewModel.onIntent(HomeFeedIntent.Load)
+            advanceUntilIdle()
+            pendingSync.complete(emptySet())
+            advanceUntilIdle()
+
+            assertEquals(setOf("1"), viewModel.uiState.value.savedCourseIds)
+            assertEquals(13, viewModel.course("1").saveCount)
+        }
+
     private fun loadedViewModel(
         vararg courses: HomeCourseVO,
         savedIds: Set<String> = emptySet(),

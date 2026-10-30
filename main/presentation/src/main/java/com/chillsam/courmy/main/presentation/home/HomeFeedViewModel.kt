@@ -79,15 +79,7 @@ class HomeFeedViewModel
 
                 is HomeFeedReducerEvent.SavedIdsSynced -> {
                     state.copy(
-                        courses =
-                            if (state.savedIdsKnown) {
-                                updatedSaveCounts(
-                                    state,
-                                    event.savedCourseIds,
-                                )
-                            } else {
-                                state.courses
-                            },
+                        courses = updatedSaveCounts(state, event.savedCourseIds),
                         savedIdsKnown = true,
                         savedCourseIds = event.savedCourseIds.toImmutableSet(),
                     )
@@ -203,8 +195,10 @@ class HomeFeedViewModel
             dispatch(HomeFeedReducerEvent.SaveStarted(courseId))
             viewModelScope.launch {
                 runCatching { setCourseSavedUseCase(courseId = id, saved = target) }
-                    .onSuccess { dispatch(HomeFeedReducerEvent.SaveFinished(courseId, target)) }
-                    .onFailure { e ->
+                    .onSuccess {
+                        dispatch(HomeFeedReducerEvent.SaveFinished(courseId, target))
+                        if (!state.savedIdsKnown) load()
+                    }.onFailure { e ->
                         if (e is CancellationException) throw e
                         Log.w(TAG, "코스 저장 토글 실패: courseId=$courseId, target=$target", e)
                         val message = if (target) "저장하지 못했어요." else "저장을 취소하지 못했어요."
@@ -214,6 +208,7 @@ class HomeFeedViewModel
         }
 
         private fun load() {
+            syncJob?.cancel()
             dispatch(HomeFeedReducerEvent.LoadStarted)
             loadJob?.cancel()
             // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
