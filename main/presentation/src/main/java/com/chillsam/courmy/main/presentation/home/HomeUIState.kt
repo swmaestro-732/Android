@@ -14,10 +14,13 @@ import kotlinx.collections.immutable.persistentListOf
 data class HomeUIState(
     val isLoading: Boolean = true,
     val courses: ImmutableList<HomeCourseVO> = persistentListOf(),
-    /** 근처 저장 장소. 비로그인이거나 근처에 저장한 곳이 없으면 비어 있고, 섹션째 숨긴다. */
+    /** 근처 저장 장소. 로그인 상태의 빈 결과는 지도 탐색 안내로 표시한다. */
     val nearbyPlaces: ImmutableList<HomeNearbyPlaceVO> = persistentListOf(),
     val errorMessage: String? = null,
 ) : UiState {
+    val showNearbyEmptyState: Boolean
+        get() = !isLoading && errorMessage == null && nearbyPlaces.isEmpty()
+
     companion object {
         val empty: HomeUIState = HomeUIState()
     }
