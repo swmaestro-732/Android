@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -44,6 +45,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -157,6 +161,7 @@ fun HomePage(modifier: Modifier = Modifier) {
             item {
                 HomeHeader(
                     profile = profile,
+                    onProfileClick = { navigationHelper.navigateTo(myPageDestination(session.isLoggedIn)) },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
@@ -312,7 +317,7 @@ private fun HomeBottomBar(
         onTabSelected = { tab ->
             when (tab) {
                 // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
-                MainTab.MY -> navigationHelper.navigateTo(if (loggedIn) MyPage else GuestMyPage)
+                MainTab.MY -> navigationHelper.navigateTo(myPageDestination(loggedIn))
 
                 MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
 
@@ -350,6 +355,7 @@ private fun myProfileForHeader(): MyProfileVO? {
 @Composable
 private fun HomeHeader(
     profile: MyProfileVO?,
+    onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -368,11 +374,18 @@ private fun HomeHeader(
                 maxLines = 2,
             )
         }
-        ProfileAvatar(
-            imageUrl = profile?.profileImageUrl.orEmpty(),
-            size = 44.dp,
-            modifier = Modifier.padding(start = 12.dp),
-        )
+        Box(
+            modifier =
+                Modifier
+                    .padding(start = 12.dp)
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = "마이로 이동", role = Role.Button, onClick = onProfileClick)
+                    .semantics { contentDescription = "내 프로필" },
+            contentAlignment = Alignment.Center,
+        ) {
+            ProfileAvatar(imageUrl = profile?.profileImageUrl.orEmpty(), size = 44.dp)
+        }
     }
 }
 
@@ -799,3 +812,5 @@ private fun NearbyLocationPrompt(
         }
     }
 }
+
+private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else GuestMyPage
