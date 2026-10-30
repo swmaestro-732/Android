@@ -1,10 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?><!-- 네이버 로그인 버튼용 "N" 로고. 초록 버튼 위에 흰색으로 올린다. -->
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Official Naver N outline: https://developers.naver.com/docs/login/bi/bi.md
+     Extracted from NAVER_login_KR.ai; centered with padding to retain the original visible width. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M6,5h4.5l5,7.2V5H18v14h-4.5l-5,-7.2V19H6V5Z" />
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <group
+        android:translateX="10"
+        android:translateY="10">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M13.5625,10.707031L6.144531,0L0,0L0,20L6.4375,20L6.4375,9.296875L13.855469,20L20,20L20,0L13.5625,0Z" />
+    </group>
 </vector>

@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -30,6 +31,9 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseReviewListVO
+
+// 네이버 브랜드 고정색: 사용자 지정 로고 색상을 테마와 무관하게 유지한다.
+private val NaverLogoGreen = Color(0xFF03C75A)
 
 /** 실제 집계가 확인된 소수 후기 장소만 외부 검색을 제안한다. */
 @Composable
@@ -80,13 +84,13 @@ internal fun ExternalPlaceReviews(
                     }.padding(vertical = 8.dp),
         ) {
             Box(
-                modifier = Modifier.size(40.dp).background(color.bgAccentSubtle, RoundedCornerShape(10.dp)),
+                modifier = Modifier.size(40.dp).background(Color.White, RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painterResource(R.drawable.ic_naver_24),
                     contentDescription = null,
-                    tint = color.contentAccent,
+                    tint = NaverLogoGreen,
                     modifier = Modifier.size(28.dp),
                 )
             }
