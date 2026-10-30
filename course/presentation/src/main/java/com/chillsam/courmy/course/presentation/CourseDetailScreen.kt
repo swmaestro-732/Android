@@ -69,7 +69,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -178,13 +177,6 @@ fun CourseDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
                     StatsRow(detail = detail)
-                    social.likeCount?.let { count ->
-                        DsText(
-                            text = "좋아요 ${formatCount(count)}",
-                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                            color = color.contentDefaultLevel2,
-                        )
-                    }
                     DsText(
                         text = detail.description,
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
@@ -452,7 +444,6 @@ private fun DetailHero(
             )
             // 내 코스는 저장할 이유가 없다. 편집·삭제가 대신 ⋮ 에 붙는다.
             if (!detail.isMine) {
-                Spacer(Modifier.width(8.dp))
                 HeroCircleButton(
                     iconRes =
                         if (detail.isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
@@ -463,7 +454,6 @@ private fun DetailHero(
                 )
             }
             if (FeatureFlags.SHARE_ENABLED) {
-                Spacer(Modifier.width(8.dp))
                 HeroCircleButton(
                     iconRes = R.drawable.ic_share_24,
                     contentDescription = "공유",
@@ -471,7 +461,6 @@ private fun DetailHero(
                 )
             }
             if (detail.isMine) {
-                Spacer(Modifier.width(8.dp))
                 CourseSettingsMenu(isDeleting = isDeleting, actions = actions)
             } else {
                 ReportAction(ReportTargetType.COURSE, courseId)
