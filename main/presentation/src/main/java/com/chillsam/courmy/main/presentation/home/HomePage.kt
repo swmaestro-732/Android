@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -44,6 +45,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -157,6 +161,7 @@ fun HomePage(modifier: Modifier = Modifier) {
             item {
                 HomeHeader(
                     profile = profile,
+                    onProfileClick = { navigationHelper.navigateTo(myPageDestination(session.isLoggedIn)) },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
@@ -176,7 +181,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                 )
             }
             // 위치가 없으면 BFF 가 기본 좌표(성수) 기준으로 응답해 도보 시간이 틀어진다.
-            // 그래서 안내가 데이터보다 먼저고, 비로그인·빈 응답이면 섹션째 숨긴다(빈 헤더만 뜨지 않게).
+            // 그래서 안내가 데이터보다 먼저고, 조회 성공 후 빈 응답이면 지도 탐색 안내를 표시한다.
             if (session.isLoggedIn && (!hasLocationPermission || !gpsEnabled)) {
                 // 섹션이 비는 이유(위치 없음)를 그 자리에서 안내한다 — 상단 띠는 과해서 뺐다(사용자 결정).
                 item {
@@ -213,6 +218,15 @@ fun HomePage(modifier: Modifier = Modifier) {
                             MapFocusRequestStore.request(placeId)
                             navigationHelper.navigateTo(MapPage)
                         },
+                        modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                    )
+                }
+            } else if (session.isLoggedIn && homeState.showNearbyEmptyState) {
+                item {
+                    NearbyLocationPrompt(
+                        message = "근처에 저장한 장소가 없어요",
+                        actionLabel = "지도에서 장소 찾기",
+                        onAction = { navigationHelper.navigateTo(MapPage) },
                         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                     )
                 }
@@ -303,7 +317,7 @@ private fun HomeBottomBar(
         onTabSelected = { tab ->
             when (tab) {
                 // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
-                MainTab.MY -> navigationHelper.navigateTo(if (loggedIn) MyPage else GuestMyPage)
+                MainTab.MY -> navigationHelper.navigateTo(myPageDestination(loggedIn))
 
                 MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
 
@@ -341,6 +355,7 @@ private fun myProfileForHeader(): MyProfileVO? {
 @Composable
 private fun HomeHeader(
     profile: MyProfileVO?,
+    onProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -359,11 +374,18 @@ private fun HomeHeader(
                 maxLines = 2,
             )
         }
-        ProfileAvatar(
-            imageUrl = profile?.profileImageUrl.orEmpty(),
-            size = 44.dp,
-            modifier = Modifier.padding(start = 12.dp),
-        )
+        Box(
+            modifier =
+                Modifier
+                    .padding(start = 12.dp)
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = "마이로 이동", role = Role.Button, onClick = onProfileClick)
+                    .semantics { contentDescription = "내 프로필" },
+            contentAlignment = Alignment.Center,
+        ) {
+            ProfileAvatar(imageUrl = profile?.profileImageUrl.orEmpty(), size = 44.dp)
+        }
     }
 }
 
@@ -755,8 +777,8 @@ private fun fetchLastLocation(
 }
 
 /**
- * "근처 저장 장소" 섹션 자리에 띄우는 위치 안내. 섹션이 비는 이유를 그 맥락에서 설명하고
- * 허용·설정으로 이어 준다. 버튼은 탭하기 쉽게 카드 전체 폭을 쓴다.
+ * "근처 저장 장소" 섹션 자리에 띄우는 안내. 위치·빈 결과의 이유를 그 맥락에서 설명하고
+ * 허용·설정·지도 탐색으로 이어 준다. 버튼은 탭하기 쉽게 카드 전체 폭을 쓴다.
  */
 @Composable
 private fun NearbyLocationPrompt(
@@ -790,3 +812,5 @@ private fun NearbyLocationPrompt(
         }
     }
 }
+
+private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else GuestMyPage

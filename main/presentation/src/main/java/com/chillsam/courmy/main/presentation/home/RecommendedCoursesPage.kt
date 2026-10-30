@@ -155,22 +155,6 @@ fun RecommendedCoursesPage(
                 ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    DsText(
-                        text = "불러온 ${feedState.selectedCategory ?: "추천"} 코스",
-                        style = DesignSystemThemeImpl.typeScale.textRegularS,
-                        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
-                    )
-                    if (!feedState.isLoading) {
-                        DsText(
-                            text = "${feedState.visibleCourses.size}",
-                            style = DesignSystemThemeImpl.typeScale.textStrongS,
-                            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
-                        )
-                    }
-                }
-            }
             when {
                 feedState.visibleCourses.isNotEmpty() -> {
                     items(feedState.visibleCourses, key = { it.id }) { course ->

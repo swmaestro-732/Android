@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.update
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -140,10 +141,11 @@ fun AppUpdateRequiredScreen(modifier: Modifier = Modifier) {
  * `market://` 을 먼저 쓰면 Play 스토어 앱이 바로 열린다. 스토어 앱이 없는 기기(에뮬레이터·일부 중국향
  * 단말)에서는 `ActivityNotFoundException` 이 나므로 웹 스토어로 떨어뜨린다.
  */
-private fun Context.openStoreListing() {
+internal fun Context.openStoreListing() {
     runCatching { startActivity(storeIntent("market://details?id=$packageName")) }
         .onFailure {
-            startActivity(storeIntent("https://play.google.com/store/apps/details?id=$packageName"))
+            runCatching { startActivity(storeIntent("https://play.google.com/store/apps/details?id=$packageName")) }
+                .onFailure { Toast.makeText(this, "스토어를 열 수 없어요. 잠시 후 다시 시도해 주세요.", Toast.LENGTH_SHORT).show() }
         }
 }
 

@@ -16,6 +16,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.ProfileEditPage
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 import com.chillsam.courmy.main.domain.settings.AccountManagePage as AccountManageRoute
+import com.chillsam.courmy.main.domain.settings.AppVersionPage as AppVersionRoute
 
 /** 문의하기: 서비스 이용 문의·오류 신고·계정 문제·게시물 신고·제휴 제안을 받는 구글 폼. */
 private const val CONTACT_FORM_URL =
@@ -68,6 +69,8 @@ fun SettingsPage(modifier: Modifier = Modifier) {
             SettingsMenuRow(label = "문의하기", onClick = { openUrl(CONTACT_FORM_URL) })
             SettingsDivider()
             SettingsMenuRow(label = "개인정보 보호", onClick = { openUrl(PRIVACY_POLICY_URL) })
+            SettingsDivider()
+            SettingsMenuRow(label = "앱 버전", onClick = { navigationHelper.navigateTo(AppVersionRoute) })
         }
     }
 }

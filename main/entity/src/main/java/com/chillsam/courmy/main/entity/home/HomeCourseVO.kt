@@ -21,4 +21,6 @@ data class HomeCourseVO(
     val saveCountText: String = "",
     /** 서버 집계 표시값. 미제공이면 빈 문자열로 숨긴다. */
     val likeCountText: String = "",
+    /** 저장 상태 변경 시 집계에 반영할 원시 값. 축약 표시 문자열로 계산하지 않는다. */
+    val saveCount: Int? = null,
 )

@@ -60,9 +60,6 @@ val facebookAppId: String =
     (localProps.getProperty("FACEBOOK_APP_ID") ?: System.getenv("FACEBOOK_APP_ID")).orEmpty()
 val facebookClientToken: String =
     (localProps.getProperty("FACEBOOK_CLIENT_TOKEN") ?: System.getenv("FACEBOOK_CLIENT_TOKEN")).orEmpty()
-// 네이버 성과형 디스플레이(GFA) 전환 추적 Site ID(네이버 공통키). 비면 NTracker 초기화를 건너뛴다.
-val naverGfaSiteId: String =
-    (localProps.getProperty("NAVER_GFA_SITE_ID") ?: System.getenv("NAVER_GFA_SITE_ID")).orEmpty()
 
 // Firebase Crashlytics — google-services.json 이 있을 때만 플러그인을 붙인다.
 // 이 파일이 없는데 플러그인을 적용하면 빌드가 통째로 깨지므로, keystore·카카오 키와 같은 방식으로
@@ -155,10 +152,13 @@ android {
         // CD 는 Play 최신 버전을 조회해 +1 한 값을 -PappVersionCode 로 주입한다(fastlane deploy).
         // 로컬·일반 빌드는 기본값을 쓴다 — 로컬 APK 는 Play 에 올리지 않으므로 충돌하지 않는다.
         versionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 8
-        // 사용자에게 보이는 표시용 문자열. 정식 출시 전이라 0.x 로 둔다.
-        // SemVer 만 쓰고 빌드 번호를 접미사로 붙이지 않는다 — Play Console 과 Crashlytics 가
-        // versionName 과 versionCode 를 이미 함께 보여주므로 중복이다. 정식 출시 때 1.0.0.
-        versionName = "1.0.0"
+        // 사용자에게 보이는 표시용 문자열. 메이저·마이너(1.0)는 여기서 수동으로 올리고,
+        // 패치는 CD 가 배포마다 자동 산정해 -PappVersionPatch 로 주입한다(fastlane deploy).
+        // 로컬·일반 빌드는 patch 0(=1.0.0)을 쓴다. 메이저·마이너를 올릴 땐 Fastfile 의
+        // PATCH_BASE_CODE 를 그 시점 versionCode 로 맞춰 패치를 0 부터 다시 시작시킨다.
+        val versionBase = "1.0"
+        val versionPatch = (project.findProperty("appVersionPatch") as String?)?.toIntOrNull() ?: 0
+        versionName = "$versionBase.$versionPatch"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -183,8 +183,6 @@ android {
         resValue("string", "facebook_client_token", facebookClientToken)
         // fb{앱ID} 는 메타 SDK 가 요구하는 리소스명. 로그인/딥링크엔 안 쓰지만 형식을 맞춰 둔다.
         resValue("string", "fb_login_protocol_scheme", "fb$facebookAppId")
-        // 네이버 GFA 전환 추적 Site ID. CourmyApplication 이 비어 있지 않을 때만 초기화한다.
-        buildConfigField("String", "NAVER_GFA_SITE_ID", "\"$naverGfaSiteId\"")
     }
 
     signingConfigs {
@@ -321,14 +319,9 @@ dependencies {
     // Amplitude — 제품 분석. SDK 는 app 에만 두고 data 레이어에는 AmplitudeClient 인터페이스로 노출한다.
     implementation(libs.amplitude.analytics)
 
-    // 광고 전환 추적.
-    // 메타(facebook-core)는 common:data 의 Telemetry 구현이 쓰지만, Manifest meta-data·resValue 가
-    // app 에 있어야 SDK 가 자동 초기화되므로 설정은 app 이 소유한다(의존성은 common:data 가 전이).
-    // 네이버 GFA(NTracker)는 CourmyApplication 에서 Site ID 로 초기화한다. Install Referrer·App Set ID
-    // 기반 어트리뷰션이라 두 보조 라이브러리가 필요하다.
-    implementation(libs.naver.ntracker)
-    implementation(libs.play.services.appset)
-    implementation(libs.install.referrer)
+    // 광고 전환 추적(메타). facebook-core 는 common:data 의 Telemetry 구현이 쓰지만,
+    // Manifest meta-data·resValue 가 app 에 있어야 SDK 가 자동 초기화되므로 설정은 app 이 소유한다
+    // (의존성은 common:data 가 전이). 네이버 GFA(NTracker)는 지원 종료되어 제거했다(SCRUM-719).
 
     // Baseline Profile: 설치 시점에 dump 된 프로필을 ART 에 등록해 주는 런타임 라이브러리.
     // minSdk 24 ~ 27 백포트를 위해 필수.

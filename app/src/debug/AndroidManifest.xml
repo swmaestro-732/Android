@@ -16,6 +16,11 @@
         <meta-data
             android:name="firebase_analytics_collection_enabled"
             android:value="false" />
+        <activity
+            android:name=".debug.OptionalUpdatePreviewActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Courmy.UpdatePreview" />
     </application>
 
 </manifest>

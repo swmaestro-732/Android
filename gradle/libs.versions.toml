@@ -50,9 +50,6 @@ firebaseBom = "34.17.0"
 amplitude = "1.35.0"
 # 광고 전환 추적 SDK.
 facebook = "19.0.0"
-naverNtracker = "2.0.0"
-playServicesAppset = "16.0.2"
-installReferrer = "2.2"
 
 [libraries]
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
@@ -124,6 +121,7 @@ kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotli
 
 # Firebase — 버전은 BOM 이 맞추므로 개별 라이브러리에 version 을 적지 않는다.
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-config = { group = "com.google.firebase", name = "firebase-config" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 # Analytics 는 Crashlytics 리포트에 breadcrumb(화면 전환·이벤트)를 자동으로 붙여 준다.
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
@@ -134,10 +132,6 @@ amplitude-analytics = { group = "com.amplitude", name = "analytics-android", ver
 # 광고 전환 추적. 메타(Facebook) 앱 이벤트는 Telemetry 구현이 보내므로 common:data 에 둔다.
 # facebook-core 만 쓴다(로그인·공유 모듈 불필요, 앱 이벤트 측정만).
 facebook-core = { group = "com.facebook.android", name = "facebook-core", version.ref = "facebook" }
-# 네이버 성과형 디스플레이(GFA) 전환 추적. app 모듈에서 Site ID 로 초기화한다.
-naver-ntracker = { group = "com.navercorp.ntracker", name = "NTrackerSDKExt", version.ref = "naverNtracker" }
-play-services-appset = { group = "com.google.android.gms", name = "play-services-appset", version.ref = "playServicesAppset" }
-install-referrer = { group = "com.android.installreferrer", name = "installreferrer", version.ref = "installReferrer" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -74,6 +74,7 @@ internal fun HomeRecommendedCourseDTO.toVO(): HomeCourseVO =
         coverImageUrl = coverImageUrl.orEmpty(),
         categoryLabel = theme.toCourseTagLabel(),
         saveCountText = formatCount(savesCnt ?: 0),
+        saveCount = savesCnt?.coerceAtLeast(0),
         likeCountText = likesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
     )
 

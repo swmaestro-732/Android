@@ -2,13 +2,14 @@ package com.chillsam.courmy.main.presentation.my
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,8 +17,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
@@ -48,6 +52,7 @@ import com.chillsam.courmy.main.presentation.component.MainTab
 fun GuestMyPage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
+    val onLogin = { navigationHelper.navigateTo(LoginPage) }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(
@@ -56,6 +61,7 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                     .weight(1f)
                     .fillMaxWidth()
                     .statusBarsPadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
             DsText(
@@ -65,7 +71,7 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(vertical = 20.dp),
             )
 
-            GuestWelcomeCard(onLogin = { navigationHelper.navigateTo(LoginPage) })
+            GuestWelcomeCard(onLogin = onLogin)
 
             DsText(
                 text = "가입하면 할 수 있어요",
@@ -73,20 +79,40 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                 color = color.contentDefaultLevel2,
                 modifier = Modifier.padding(top = 24.dp, bottom = 12.dp),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(modifier = Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 GuestBenefitCard(
                     iconRes = R.drawable.ic_tab_bookmark_24,
-                    title = "코스 저장",
-                    subtitle = "마음에 드는 코스 저장",
-                    modifier = Modifier.weight(1f),
+                    title = "장소·코스 저장",
+                    subtitle = "가고 싶은 장소와 코스를 모아보세요",
+                    onClick = onLogin,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
                 GuestBenefitCard(
-                    iconRes = R.drawable.ic_notes_24,
-                    title = "코스 만들기",
-                    subtitle = "나만의 동선 설계",
-                    modifier = Modifier.weight(1f),
+                    iconRes = R.drawable.ic_calendar_24,
+                    title = "여행 계획",
+                    subtitle = "원하는 장소로 나만의 일정을 짜보세요",
+                    onClick = onLogin,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
             }
+            Spacer(Modifier.height(12.dp))
+            Row(modifier = Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                GuestBenefitCard(
+                    iconRes = R.drawable.ic_review_write_24,
+                    title = "방문 후기",
+                    subtitle = "다녀온 장소의 경험을 나눠보세요",
+                    onClick = onLogin,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                )
+                GuestBenefitCard(
+                    iconRes = R.drawable.ic_tab_person_24,
+                    title = "친구 팔로우",
+                    subtitle = "취향이 맞는 사람의 코스를 만나보세요",
+                    onClick = onLogin,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                )
+            }
+            Spacer(Modifier.height(24.dp))
         }
 
         CourmyBottomBar(
@@ -187,6 +213,7 @@ private fun GuestBenefitCard(
     @DrawableRes iconRes: Int,
     title: String,
     subtitle: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -194,6 +221,7 @@ private fun GuestBenefitCard(
         modifier =
             modifier
                 .cardShadow(RoundedCornerShape(16.dp))
+                .clickable(role = Role.Button, onClickLabel = "로그인 화면으로 이동", onClick = onClick)
                 .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -215,6 +243,7 @@ private fun GuestBenefitCard(
         Spacer(Modifier.height(2.dp))
         DsText(
             text = title,
+            maxLines = Int.MAX_VALUE,
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel0,
         )
@@ -223,6 +252,7 @@ private fun GuestBenefitCard(
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel2,
             textAlign = TextAlign.Start,
+            maxLines = Int.MAX_VALUE,
         )
     }
 }
