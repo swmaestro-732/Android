@@ -152,10 +152,13 @@ android {
         // CD 는 Play 최신 버전을 조회해 +1 한 값을 -PappVersionCode 로 주입한다(fastlane deploy).
         // 로컬·일반 빌드는 기본값을 쓴다 — 로컬 APK 는 Play 에 올리지 않으므로 충돌하지 않는다.
         versionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 8
-        // 사용자에게 보이는 표시용 문자열. 정식 출시 전이라 0.x 로 둔다.
-        // SemVer 만 쓰고 빌드 번호를 접미사로 붙이지 않는다 — Play Console 과 Crashlytics 가
-        // versionName 과 versionCode 를 이미 함께 보여주므로 중복이다. 정식 출시 때 1.0.0.
-        versionName = "1.0.0"
+        // 사용자에게 보이는 표시용 문자열. 메이저·마이너(1.0)는 여기서 수동으로 올리고,
+        // 패치는 CD 가 배포마다 자동 산정해 -PappVersionPatch 로 주입한다(fastlane deploy).
+        // 로컬·일반 빌드는 patch 0(=1.0.0)을 쓴다. 메이저·마이너를 올릴 땐 Fastfile 의
+        // PATCH_BASE_CODE 를 그 시점 versionCode 로 맞춰 패치를 0 부터 다시 시작시킨다.
+        val versionBase = "1.0"
+        val versionPatch = (project.findProperty("appVersionPatch") as String?)?.toIntOrNull() ?: 0
+        versionName = "$versionBase.$versionPatch"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
