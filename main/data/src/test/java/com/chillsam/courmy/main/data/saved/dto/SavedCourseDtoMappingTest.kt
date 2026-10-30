@@ -43,7 +43,7 @@ class SavedCourseDtoMappingTest {
     fun `지역과 테마를 가운뎃점으로 잇는다`() {
         val vo = SavedCourseScreenDTO(savedCourses = listOf(item())).toVOList().single()
 
-        assertEquals("성수 · 문화·예술", vo.tagLabel)
+        assertEquals("성수 · 문화", vo.tagLabel)
         assertEquals("장소 4곳", vo.placeLabel)
         assertEquals("jiho_routes", vo.authorHandle)
     }
@@ -53,7 +53,7 @@ class SavedCourseDtoMappingTest {
         val noArea = SavedCourseScreenDTO(savedCourses = listOf(item(area = null))).toVOList().single()
         val noTheme = SavedCourseScreenDTO(savedCourses = listOf(item(theme = null))).toVOList().single()
 
-        assertEquals("문화·예술", noArea.tagLabel)
+        assertEquals("문화", noArea.tagLabel)
         assertEquals("성수", noTheme.tagLabel)
     }
 
