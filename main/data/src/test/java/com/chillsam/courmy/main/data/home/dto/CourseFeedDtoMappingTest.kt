@@ -41,6 +41,7 @@ class CourseFeedDtoMappingTest {
         val vo = CourseFeedDTO(courses = listOf(CourseFeedItemDTO(id = 1L, savesCnt = 1400))).toVOList().single()
 
         assertEquals("1.4k", vo.saveCountText)
+        assertEquals(1400, vo.saveCount)
     }
 
     @Test
@@ -80,5 +81,6 @@ class CourseFeedDtoMappingTest {
         assertEquals("", vo.title)
         assertEquals("", vo.coverImageUrl)
         assertEquals("0", vo.saveCountText)
+        assertEquals(null, vo.saveCount)
     }
 }
