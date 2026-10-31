@@ -2,12 +2,14 @@ package com.chillsam.courmy.main.presentation.home
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.main.domain.home.GetHomeFeedUseCase
 import com.chillsam.courmy.main.domain.saved.GetSavedCourseIdsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CancellationException
@@ -49,7 +51,7 @@ class HomeFeedViewModel
 
                 is HomeFeedIntent.ToggleSave -> toggleSave(intent.courseId)
 
-                is HomeFeedIntent.SelectCategory -> dispatch(HomeFeedReducerEvent.CategorySelected(intent.category))
+                is HomeFeedIntent.SelectCategory -> selectCategory(intent.category)
 
                 HomeFeedIntent.ConsumeError -> dispatch(HomeFeedReducerEvent.ErrorConsumed)
             }
@@ -61,7 +63,7 @@ class HomeFeedViewModel
         ): HomeFeedUIState =
             when (event) {
                 HomeFeedReducerEvent.LoadStarted -> {
-                    state.copy(isLoading = true, errorMessage = null)
+                    state.copy(isLoading = true, isLoadingMore = false, errorMessage = null)
                 }
 
                 is HomeFeedReducerEvent.Loaded -> {
@@ -115,7 +117,13 @@ class HomeFeedViewModel
                 }
 
                 is HomeFeedReducerEvent.CategorySelected -> {
-                    state.copy(selectedCategory = event.category)
+                    // 서버가 새 목록을 주기 전까지 이전 카테고리 코스가 섞여 보이지 않게 비운다(스켈레톤 노출).
+                    state.copy(
+                        selectedCategory = event.category,
+                        courses = persistentListOf(),
+                        nextCursor = null,
+                        hasNext = false,
+                    )
                 }
 
                 HomeFeedReducerEvent.ErrorConsumed -> {
@@ -207,15 +215,27 @@ class HomeFeedViewModel
             }
         }
 
+        /**
+         * 테마 필터 변경. 서버 필터로 전체를 다시 받으므로 같은 값 재선택은 무시한다
+         * — 받아 둔 페이지와 스크롤 위치를 불필요하게 날리지 않기 위함이다.
+         */
+        private fun selectCategory(category: CourseTagVO?) {
+            if (currentState.selectedCategory == category) return
+            dispatch(HomeFeedReducerEvent.CategorySelected(category))
+            load()
+        }
+
         private fun load() {
             syncJob?.cancel()
+            // dispatch 가 동기라 SelectCategory 직후 호출에서도 바뀐 카테고리가 읽힌다.
+            val category = currentState.selectedCategory
             dispatch(HomeFeedReducerEvent.LoadStarted)
             loadJob?.cancel()
             // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
             moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getHomeFeedUseCase() }
+                    runCatching { getHomeFeedUseCase(category = category) }
                         .onSuccess { page ->
                             val savedIds = loadSavedCourseIds()
                             dispatch(
@@ -248,11 +268,13 @@ class HomeFeedViewModel
             if (state.isLoading || state.isLoadingMore) return
             // 마지막 페이지면 커서가 없다. 둘 중 하나만 봐도 되지만 서버가 어긋나게 줄 때를 대비해 함께 본다.
             val cursor = state.nextCursor?.takeIf { state.hasNext } ?: return
+            // 커서는 카테고리별 목록 위에서 발급된 값이라, 이어받기도 같은 카테고리로 요청해야 맞물린다.
+            val category = state.selectedCategory
             dispatch(HomeFeedReducerEvent.LoadMoreStarted)
             moreJob?.cancel()
             moreJob =
                 viewModelScope.launch {
-                    runCatching { getHomeFeedUseCase(cursor = cursor) }
+                    runCatching { getHomeFeedUseCase(cursor = cursor, category = category) }
                         .onSuccess { page ->
                             dispatch(
                                 HomeFeedReducerEvent.MoreLoaded(

@@ -84,7 +84,7 @@ fun HomeCourseCard(
     }
 }
 
-/** 커버: 이미지 + 하단 스크림 + 카테고리 칩(좌상) · 북마크(우상) · 제목(좌하). */
+/** 커버: 이미지 + 하단 스크림 + 북마크(우상) · 제목(좌하). */
 @Composable
 private fun CourseCover(
     course: HomeCourseVO,
@@ -122,26 +122,6 @@ private fun CourseCover(
                         ),
                     ),
         )
-        // 카테고리가 없는 코스(theme 미선택)는 빈 알약이 뜨지 않도록 칩 자체를 생략한다.
-        if (course.categoryLabel.isNotBlank()) {
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = 12.dp, top = 12.dp, end = 72.dp)
-                        .clip(RoundedCornerShape(9999.dp))
-                        .background(color.bgDefaultLevel1)
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-            ) {
-                DsText(
-                    text = course.categoryLabel,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel1,
-                )
-            }
-        }
         IconButton(
             onClick = onBookmarkClick,
             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(48.dp),

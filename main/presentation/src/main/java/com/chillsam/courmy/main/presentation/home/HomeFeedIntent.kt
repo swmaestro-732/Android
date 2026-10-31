@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.home
 
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
 
 /** 홈 공개 코스 피드(FS-09) 사용자 입력. */
@@ -22,8 +23,9 @@ sealed interface HomeFeedIntent : MviIntent {
      */
     data object SyncSavedIds : HomeFeedIntent
 
+    /** 테마 필터 선택 — 해당 카테고리로 피드를 서버에서 다시 받는다. null 은 전체(추천순). */
     data class SelectCategory(
-        val category: String?,
+        val category: CourseTagVO?,
     ) : HomeFeedIntent
 
     data object ConsumeError : HomeFeedIntent

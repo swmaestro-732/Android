@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.domain.home
 
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import javax.inject.Inject
@@ -18,7 +19,8 @@ class GetHomeFeedUseCase
         suspend operator fun invoke(
             size: Int = DEFAULT_SIZE,
             cursor: String? = null,
-        ): CursorPageVO<HomeCourseVO> = repository.getCourseFeed(size.coerceIn(MIN_SIZE, MAX_SIZE), cursor)
+            category: CourseTagVO? = null,
+        ): CursorPageVO<HomeCourseVO> = repository.getCourseFeed(size.coerceIn(MIN_SIZE, MAX_SIZE), cursor, category)
 
         companion object {
             const val DEFAULT_SIZE = 20
