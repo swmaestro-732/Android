@@ -1,13 +1,18 @@
 package com.chillsam.courmy.main.presentation
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -17,6 +22,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.metrics.performance.JankStats
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
+import com.chillsam.courmy.common.domain.push.NotificationSettings
 import com.chillsam.courmy.common.domain.push.PushTarget
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.common.presentation.LocalTTIHelper
@@ -48,6 +54,14 @@ class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var telemetry: Telemetry
+
+    @Inject
+    lateinit var notificationSettings: NotificationSettings
+
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            // 허용/거절과 관계없이 앱 진입을 계속한다. 설정 화면은 OS 상태를 다시 읽는다.
+        }
 
     private var pendingPush by mutableStateOf<PushTarget?>(null)
 
@@ -101,9 +115,29 @@ class MainActivity : FragmentActivity() {
                     startStack = startStack,
                     pendingPush = pendingPush,
                     onPushConsumed = { pendingPush = null },
+                    onStartupReady = ::requestStartupNotificationPermission,
                 )
             }
         }
+    }
+
+    private fun requestStartupNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val preferences = getSharedPreferences("notification_permission", MODE_PRIVATE)
+        val granted =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        if (!shouldRequestStartupNotificationPermission(
+                permissionGranted = granted,
+                alreadyRequested = preferences.getBoolean("requested", false),
+                notificationsEnabled = notificationSettings.notificationsEnabled,
+            )
+        ) {
+            return
+        }
+        // 회전·재진입이나 거절 뒤 다음 실행에서 자동으로 다시 묻지 않는다.
+        preferences.edit().putBoolean("requested", true).apply()
+        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     /**
@@ -172,3 +206,10 @@ class MainActivity : FragmentActivity() {
         navigationHelper.navigateDeepLink(route)
     }
 }
+
+/** 자동 요청은 미응답 사용자에게만 한 번. 이후 변경은 설정 > 알림에서 한다. */
+internal fun shouldRequestStartupNotificationPermission(
+    permissionGranted: Boolean,
+    alreadyRequested: Boolean,
+    notificationsEnabled: Boolean,
+): Boolean = notificationsEnabled && !permissionGranted && !alreadyRequested

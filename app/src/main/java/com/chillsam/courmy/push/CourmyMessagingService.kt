@@ -27,6 +27,7 @@ class CourmyMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
+        if (!devices.notificationsEnabled) return
         val target = PushTarget.parse(message.data) ?: return
         // FCM은 worker thread에서 호출한다. 데이터 메시지도 로그아웃 후에는 표시하지 않는다.
         val loggedIn =
@@ -36,7 +37,7 @@ class CourmyMessagingService : FirebaseMessagingService() {
                     tokens.isLoggedIn
                 }
             }
-        if (loggedIn != true) return
+        if (loggedIn != true || !devices.notificationsEnabled) return
         notificationEvents.notifyChanged()
         PushNotificationRenderer(this).show(message, target)
     }

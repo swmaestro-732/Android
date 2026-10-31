@@ -341,6 +341,13 @@ val appRoutes: List<AppRoute> =
             render = { SettingsPage() },
         ),
         AppRoute(
+            path = com.chillsam.courmy.main.domain.settings.NotificationSettingsPage.PATH,
+            render = {
+                com.chillsam.courmy.main.presentation.settings
+                    .NotificationSettingsPage()
+            },
+        ),
+        AppRoute(
             path = AppVersionRoute.PATH,
             render = { AppVersionPage() },
         ),

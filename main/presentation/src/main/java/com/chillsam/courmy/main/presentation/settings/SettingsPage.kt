@@ -64,7 +64,14 @@ fun SettingsPage(modifier: Modifier = Modifier) {
             SettingsDivider()
             SettingsMenuRow(label = "공지", onClick = notReady, hint = NOT_READY_HINT)
             SettingsDivider()
-            NotificationPermissionRow()
+            SettingsMenuRow(
+                label = "알림",
+                onClick = {
+                    navigationHelper.navigateTo(
+                        com.chillsam.courmy.main.domain.settings.NotificationSettingsPage,
+                    )
+                },
+            )
             SettingsDivider()
             SettingsMenuRow(label = "문의하기", onClick = { openUrl(CONTACT_FORM_URL) })
             SettingsDivider()

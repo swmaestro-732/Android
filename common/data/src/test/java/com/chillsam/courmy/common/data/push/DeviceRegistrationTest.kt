@@ -29,6 +29,8 @@ class DeviceRegistrationTest {
     private val api = mockk<DeviceApi>()
     private val tokens = mockk<TokenStore>()
     private val fcm = mockk<FcmTokenClient>()
+    private val preferences = mockk<PushPreferences>()
+    private val preferenceEnabled = AtomicBoolean(true)
     private val telemetry = mockk<Telemetry>(relaxed = true)
     private val context = mockk<Context>()
     private val notifications = mockk<NotificationManager>(relaxed = true)
@@ -50,7 +52,9 @@ class DeviceRegistrationTest {
         coEvery { fcm.token() } returns "test-token"
         coEvery { fcm.delete() } returns Unit
         coEvery { api.remove(any()) } returns Response.success(DeviceResponse(2000))
-        devices = DeviceRegistration(api, tokens, fcm, telemetry, context)
+        every { preferences.enabled } answers { preferenceEnabled.get() }
+        every { preferences.enabled = any() } answers { preferenceEnabled.set(firstArg()) }
+        devices = DeviceRegistration(api, tokens, fcm, telemetry, preferences, context)
     }
 
     @After
@@ -187,5 +191,49 @@ class DeviceRegistrationTest {
 
             coVerify(exactly = 0) { api.register(any()) }
             verify(exactly = 0) { fcm.enableAutoInit() }
+        }
+
+    @Test
+    fun `disabled preference blocks restored sessions and token callbacks`() =
+        runBlocking {
+            devices.setNotificationsEnabled(false)
+            val cleanup = CompletableDeferred<Unit>()
+            coEvery { fcm.delete() } coAnswers {
+                cleanup.complete(Unit)
+                Unit
+            }
+            devices.onSessionAvailable()
+            withTimeout(3_000) { cleanup.await() }
+            // Mutex를 한 번 더 획득해 앞서 들어온 sync의 종료를 확인한다.
+            devices.unregister(removeRemote = false)
+            assertEquals(false, preferenceEnabled.get())
+            coVerify(exactly = 0) { api.register(any()) }
+            verify(exactly = 0) { fcm.enableAutoInit() }
+        }
+
+    @Test
+    fun `turning notifications back on registers a fresh token`() =
+        runBlocking {
+            devices.setNotificationsEnabled(false)
+            val registered = CompletableDeferred<RegisterDeviceRequest>()
+            coEvery { fcm.token() } returns "new-token"
+            coEvery { api.register(any()) } coAnswers {
+                registered.complete(firstArg())
+                Response.success(DeviceResponse(2000))
+            }
+            devices.setNotificationsEnabled(true)
+            assertEquals("new-token", withTimeout(3_000) { registered.await() }.token)
+            assertEquals(true, preferenceEnabled.get())
+            devices.unregister(removeRemote = false)
+        }
+
+    @Test
+    fun `delete failure preserves opt out and reports incomplete suppression`() =
+        runBlocking {
+            coEvery { fcm.delete() } throws java.io.IOException("offline")
+            val failure = runCatching { devices.setNotificationsEnabled(false) }.exceptionOrNull()
+            org.junit.Assert.assertTrue(failure is java.io.IOException)
+            assertEquals(false, preferenceEnabled.get())
+            verify { notifications.cancelAll() }
         }
 }
