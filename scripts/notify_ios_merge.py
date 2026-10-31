@@ -288,7 +288,7 @@ def notify(pr, github, slack, channel, repository=None):
             # Slack permalink retrieval is read-only; it is safe to retry if it fails.
             save()
         if not state.get("message_url"):
-            state["message_url"] = slack("chat.getPermalink", {"conversation_id": channel,
+            state["message_url"] = slack("chat.getPermalink", {"channel": channel,
                                                                "message_ts": state["thread_ts"]})["permalink"]
             save()
         trees = re.findall(r"https://github\.com/[^\s)<>]+/tree/[^\s)<>]+", pr.get("body") or "")

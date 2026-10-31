@@ -185,6 +185,7 @@ class MergeNoticeDeliveryTest(unittest.TestCase):
         if method == "chat.postMessage":
             return {"ts": "123.456"}
         if method == "chat.getPermalink":
+            self.assertEqual(payload, {"channel": "C123", "message_ts": "123.456"})
             return {"permalink": "https://example.slack.com/archives/C123/p123456"}
         if method == "files.getUploadURLExternal":
             self.upload_count += 1
