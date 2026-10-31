@@ -123,6 +123,7 @@ Courmy에서는 현재 코드의 `com.chillsam.courmy`, `DesignSystemThemeImpl`,
 
 ## develop PR의 iOS 변경사항 공유
 
+- Dependabot이 생성한 의존성·GitHub Actions 업데이트 PR은 iOS Slack 공유 대상에서 제외한다.
 - `develop` 대상 Android PR을 생성하면 Slack `#ios-update`에 PR 링크와 iOS 공유사항을 알린다. 머지 완료나 배포 완료로 표현하지 않는다.
 - PR의 base 대비 전체 diff(추가·삭제·이름 변경 포함)를 확인하고, PR 본문의 `iOS 공유사항`을 화면·기능별 세부 변경 목록으로 작성한다. 제목이나 커밋 메시지만으로 요약하지 않는다.
 - 각 항목에 변경 전 → 후, 적용 조건, iOS 확인·반영 항목, 근거 코드 링크를 적는다. 문구·수치·기본값·노출 조건·탭 동작·화면 이동·로딩/빈 화면/오류 처리·API 필드/enum/null 처리 등 작은 변경도 해당하면 빠뜨리지 않는다. API 사용 변경과 서버 계약 변경을 구분하고, 확인하지 못한 동작은 추정으로 표시한다.
