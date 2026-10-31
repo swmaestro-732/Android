@@ -83,7 +83,17 @@ def image_urls(body):
     parser = ImageParser()
     parser.feed(body)
     markdown = re.findall(r"!\[[^\]]*\]\(\s*<?(https://[^\s)>]+)>?(?:\s+[^)]*)?\)", body)
-    direct = [url for url in re.findall(r"https://[^\s<>\"')]+", body) if IMAGE_EXTENSION.search(url)]
+    direct = []
+    for url in re.findall(r"https://[^\s<>\"')]+", body):
+        if not IMAGE_EXTENSION.search(url):
+            continue
+        try:
+            parsed = urlsplit(url)
+            slack_share = (parsed.hostname or "").endswith(".slack.com") and parsed.path.startswith("/files/")
+        except ValueError:
+            slack_share = False  # Report malformed original URLs through normal source validation.
+        if not slack_share:
+            direct.append(url)
     # Source order makes captions and re-runs deterministic across Markdown and HTML.
     urls = set(html.unescape(url) for url in parser.urls + markdown + direct)
     return sorted(urls, key=lambda url: body.find(url))
@@ -172,6 +182,9 @@ def slack(method, payload):
     url = "https://slack.com/api/" + method
     if method == "chat.getPermalink":
         result = json.loads(request_bytes(url + "?" + urlencode(payload), headers, method="GET"))
+    elif method == "files.getUploadURLExternal":
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        result = json.loads(request_bytes(url, headers, urlencode(payload).encode(), "POST"))
     else:
         result = json.loads(request_bytes(url, headers,
                                          json.dumps(payload, ensure_ascii=False).encode(), "POST"))
