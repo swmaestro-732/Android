@@ -216,6 +216,65 @@ class MergeNoticeDeliveryTest(unittest.TestCase):
             self.notify(pr)
             self.assertEqual(len(self.calls), calls_before)
 
+    def test_failed_images_keep_valid_upload_and_report_original_links(self):
+        pr = pull_request()
+        urls = ["https://example.com/blocked.png",
+                "https://raw.githubusercontent.com/swmaestro-732/Android/main/docs/missing.png",
+                "https://raw.githubusercontent.com/swmaestro-732/Android/main/docs/valid.png"]
+        pr["body"] += "\n".join(f"![화면]({url})" for url in urls)
+        with patch.object(notice, "download_image", side_effect=[RuntimeError("HTTP 요청 실패: 404"),
+                          ("valid.png", "image/png", b"image")]) as download, \
+                patch.object(notice, "request_bytes", return_value=b"OK"):
+            state = self.notify(pr)
+            self.assertEqual(download.call_count, 2)  # Invalid host is rejected before download.
+            self.assertEqual(state["phase"], "complete_with_warnings")
+            payload = next(payload for method, payload in self.calls if method == "files.completeUploadExternal")
+            self.assertEqual(len(payload["files"]), 1)
+            self.assertEqual(payload["files"][0]["title"], "3. valid.png")
+            for url in urls[:2]:
+                self.assertIn(url, payload["initial_comment"])
+                self.assertIn(url, self.comments[0]["body"])
+            self.assertIn("이미지 첨부 미완료", payload["initial_comment"])
+            self.assertIn("404", payload["initial_comment"])
+            before = len(self.calls)
+            self.notify(pr)
+            self.assertEqual(len(self.calls), before)
+
+    def test_all_invalid_images_send_one_thread_fallback_without_reposting(self):
+        pr = pull_request()
+        url = "https://raw.githubusercontent.com/swmaestro-732/Android/main/docs/invalid.png"
+        pr["body"] += f"![잘못된 이미지]({url})"
+        with patch.object(notice, "download_image", side_effect=ValueError("원본 이미지 형식이 아닙니다.")):
+            state = self.notify(pr)
+            self.assertEqual(state["phase"], "complete_with_warnings")
+            messages = [payload for method, payload in self.calls if method == "chat.postMessage"]
+            self.assertEqual(len(messages), 2)
+            self.assertEqual(messages[1]["thread_ts"], "123.456")
+            self.assertIn(url, messages[1]["text"])
+            self.assertIn("이미지 첨부 미완료", messages[1]["text"])
+            self.assertNotIn("files.completeUploadExternal", [method for method, _ in self.calls])
+            before = len(self.calls)
+            self.notify(pr)
+            self.assertEqual(len(self.calls), before)
+
+    def test_uncertain_fallback_thread_send_is_not_retried(self):
+        pr = pull_request()
+        pr["body"] += "![화면](https://example.com/unsupported.png)"
+
+        def uncertain_thread(method, payload):
+            if method == "chat.postMessage" and "thread_ts" in payload:
+                self.calls.append((method, copy.deepcopy(payload)))
+                raise RuntimeError("network result unknown")
+            return self.slack(method, payload)
+
+        with self.assertRaises(RuntimeError):
+            notice.notify(pr, self.github, uncertain_thread, "C123", "swmaestro-732/Android")
+        before = len(self.calls)
+        with self.assertRaises(ValueError):
+            self.notify(pr)
+        self.assertEqual(len(self.calls), before)
+        self.assertIn('"status": "sharing"', self.comments[0]["body"])
+
     def test_uncertain_post_is_not_blindly_retried(self):
         self.fail_once = "chat.postMessage"
         with self.assertRaises(RuntimeError):

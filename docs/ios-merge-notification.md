@@ -29,6 +29,8 @@ Slack 권한: [메시지·파일 작업](https://docs.slack.dev/messaging/workin
 
 - PR의 `courmy-ios-merge-notice` 상태 댓글에서 Slack 스레드 링크와 이미지별 상태를 확인한다.
 - 요약은 채널에 한 번, 스크린샷은 같은 스레드에 최대 10장씩 묶어 보낸다. 원본 파일과 이미지 순서를 유지한다.
+- 다운로드·형식 검증에 실패한 이미지는 건너뛰고 나머지 이미지를 보낸다. 실패한 화면 번호·원본 링크·`이미지 첨부 미완료` 사유는 묶음 설명과 PR 상태 댓글에 남긴다. 묶음 전체가 실패하면 같은 스레드의 텍스트 메시지로 링크와 사유를 보낸다.
+- 이미지 누락이나 폴더 링크 경고가 있으면 상태는 `complete_with_warnings`다. 알림 전달은 끝났지만 이미지 첨부 완료는 아니며, 재실행해도 중복 전송하지 않는다. 원본 수정 후 누락 이미지 추가 공유는 별도 복구 작업으로 수행한다.
 - Actions의 해당 실행이 실패하면 로그의 오류 원인을 먼저 해결한다. 토큰·채널 미설정이나 Slack 오류를 성공으로 처리하지 않는다.
 - 실패한 실행은 **Re-run failed jobs**로 재실행한다. 또는 Actions → iOS merge notification → Run workflow에서 develop과 이미 머지된 PR 번호를 선택한다. 아직 열려 있거나 다른 브랜치에 머지된 PR은 전송하지 않는다.
 - 저장된 전송 기록을 이어서 사용한다. Slack 전송 직후 상태 기록 전에 연결이 끊기는 등 결과가 불명확하면 중복을 피하려고 중단한다. Slack에 실제 등록됐는지 확인한 뒤 상태를 복구해야 하며 댓글을 지우고 무조건 재실행하지 않는다.
@@ -40,5 +42,6 @@ Slack 권한: [메시지·파일 작업](https://docs.slack.dev/messaging/workin
 - 워크플로: `.github/workflows/ios-merge-notification.yml`.
 - `pull_request_target`에서는 PR head 코드를 실행하지 않고 이미 머지된 develop의 스크립트만 실행한다. PR 본문은 명령으로 평가하지 않는다.
 - Actions token은 repository content 읽기와 PR 상태 댓글 쓰기에 사용한다. Slack token은 Slack API에만 사용한다.
+- 이미지 URL 출처는 첫 메시지 전에 검증한다. 실제 다운로드는 이미지 하나씩 진행해 메모리 사용량을 제한하며, 접근·형식 실패는 링크 안내로 처리한다. Slack 업로드·공유 API 실패는 정상 완료로 처리하지 않는다.
 - 로컬 검증: `python3 -m unittest discover -s scripts -p 'test_notify_ios_merge.py' -v`.
 - 실전송 검증: 이미 머지된 비 Dependabot PR 하나를 지정해 실행하고 요약·이미지 묶음·상태 댓글을 확인한다. 같은 PR 재실행 시 중복 메시지가 생기지 않아야 한다.

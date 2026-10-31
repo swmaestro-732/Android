@@ -224,6 +224,8 @@ def comment_body(state):
         lines.append(f"- [Slack 스레드]({state['message_url']})")
     for index, group in enumerate(state.get("groups", []), 1):
         lines.append(f"- 스크린샷 묶음 {index}: {group['status']} ({len(group['files'])}장)")
+        for failure in group.get("failed_images", []):
+            lines.append(f"- 이미지 첨부 미완료 · 화면 {failure['number']}: {failure['reason']} — {failure['url']}")
     if state.get("error"):
         lines.append("- 오류: " + state["error"])
     if state.get("warnings"):
@@ -256,7 +258,7 @@ def notify(pr, github, slack, channel, repository=None):
         if len(comments) < 100:
             break
         page += 1
-    if state and state["phase"] == "complete":
+    if state and state["phase"] in {"complete", "complete_with_warnings"}:
         print("이미 전송 완료된 PR입니다: " + state["message_url"])
         return state
     if state and state["fingerprint"] != fingerprint:
@@ -273,6 +275,13 @@ def notify(pr, github, slack, channel, repository=None):
     if state["phase"] == "posting" or any(g["status"] == "sharing" for g in state["groups"]):
         raise ValueError("이전 Slack 전송 결과가 불확실합니다. 자동 재전송하지 않습니다. Slack과 자동화 댓글을 확인하세요.")
     state.pop("error", None)
+    # Validate sources before posting; download sequentially to bound memory to one image.
+    source_errors = {}
+    for number, url in enumerate(urls, 1):
+        try:
+            image_source(url, repository, (pr["head"]["ref"], pr["base"]["ref"]))
+        except ValueError as error:
+            source_errors[number] = str(error)
     try:
         if not state.get("thread_ts"):
             state["phase"] = "posting"
@@ -303,8 +312,16 @@ def notify(pr, github, slack, channel, repository=None):
             group = state["groups"][index]
             if group["status"] != "prepared":
                 group["files"] = []
+                group["failed_images"] = []
                 for number, url in enumerate(urls[offset:offset + 10], offset + 1):
-                    name, mime, data = download_image(url, repository, pr)
+                    try:
+                        if number in source_errors:
+                            raise ValueError(source_errors[number])
+                        name, mime, data = download_image(url, repository, pr)
+                    except (ValueError, RuntimeError) as error:
+                        group["failed_images"].append({"number": number, "url": url,
+                                                       "reason": str(error)[:500]})
+                        continue
                     upload = slack("files.getUploadURLExternal", {"filename": name, "length": len(data),
                                                                   "alt_txt": f"PR #{pr['number']} 화면 {number}: {name}"})
                     parsed = urlsplit(upload["upload_url"])
@@ -316,21 +333,33 @@ def notify(pr, github, slack, channel, repository=None):
                 save()
             group["status"] = "sharing"
             save()
+            caption = (
+                f"PR #{pr['number']} 스크린샷 {offset + 1}–{min(offset + 10, len(urls))}\n"
+                + "\n".join(item["title"] for item in group["files"])
+                + "\n" + "\n".join(
+                    f"이미지 첨부 미완료 · 화면 {item['number']}: {slack_text(item['reason'])}\n"
+                    + slack_text(item["url"]) for item in group.get("failed_images", [])
+                )
+                + "\n\n" + screenshot_context(pr.get("body") or "")
+                + "\n화면별 원본·전체 촬영 조건·검증 범위: " + pr["html_url"]
+            )
             try:
-                slack("files.completeUploadExternal", {"files": group["files"], "channel_id": channel,
-                                                        "thread_ts": state["thread_ts"],
-                                                        "initial_comment": f"PR #{pr['number']} 스크린샷 {offset + 1}–{offset + len(group['files'])}\n"
-                                                        + "\n".join(item["title"] for item in group["files"])
-                                                        + "\n\n" + screenshot_context(pr.get("body") or "")
-                                                        + "\n화면별 원본·전체 촬영 조건·검증 범위: " + pr["html_url"]})
+                if group["files"]:
+                    slack("files.completeUploadExternal", {"files": group["files"], "channel_id": channel,
+                                                            "thread_ts": state["thread_ts"],
+                                                            "initial_comment": caption})
+                else:
+                    slack("chat.postMessage", {"channel": channel, "thread_ts": state["thread_ts"],
+                                               "text": caption, "unfurl_links": False, "unfurl_media": False})
             except SlackRejected:
                 group["status"] = "prepared"
                 raise
             group["status"] = "complete"
             save()
-        state["phase"] = "complete"
+        incomplete_images = any(group.get("failed_images") for group in state["groups"])
+        state["phase"] = "complete_with_warnings" if incomplete_images or state["warnings"] else "complete"
         save()
-        print("iOS 머지 알림 완료: " + state["message_url"])
+        print("iOS 머지 알림 " + state["phase"] + ": " + state["message_url"])
         return state
     except Exception as error:
         state["error"] = str(error)[:500]
