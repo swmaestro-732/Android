@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.presentation
 
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
+import com.chillsam.courmy.course.entity.CourseCompanionVO
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CourseForkSourceVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -71,6 +72,11 @@ sealed interface CourseCreateReducerEvent : ReducerEvent {
 
     data class VisibilityChanged(
         val visibility: CourseVisibility,
+    ) : CourseCreateReducerEvent
+
+    /** 동행 선택이 바뀜. 해제(재탭)면 null 이다. */
+    data class CompanionChanged(
+        val companion: CourseCompanionVO?,
     ) : CourseCreateReducerEvent
 
     data object SaveStarted : CourseCreateReducerEvent

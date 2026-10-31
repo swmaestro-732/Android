@@ -26,6 +26,14 @@ data class CreateCourseRequest(
      * 계약 호환을 위해 유지한다.
      */
     val forkedFromId: Long? = null,
+    /**
+     * 누구와 함께했는지(`CourseCompanionVO` enum 이름, 예: `COUPLE`). 선택 입력이라 안 고르면 null 로
+     * 두고, `explicitNulls = false` 라 키 자체가 빠진다.
+     *
+     * 서버 `CreateCourseRequest` 에는 아직 이 필드가 없다(2026-10-31 기준) — Spring 은 모르는 키를
+     * 무시하므로 미리 보내도 무해하고, 서버가 필드를 추가하면 그대로 저장되기 시작한다. [wiki-needed]
+     */
+    val companion: String? = null,
     val places: List<CreateCoursePlaceRequest> = emptyList(),
     /**
      * 발행 여부. 서버 DTO 필드명이 `isPublished` 라 그대로 맞춘다.
@@ -130,6 +138,7 @@ fun CourseDraftVO.toCreateRequest(
         tags = tags,
         visibility = visibility.name,
         forkedFromId = forkedFromId,
+        companion = companionType?.name,
         isPublished = published,
         places =
             places

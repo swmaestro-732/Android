@@ -23,6 +23,12 @@ data class UpdateCourseRequest(
     val thumbnailUrl: String?,
     val tags: List<String>,
     val visibility: String,
+    /**
+     * 누구와 함께했는지(`CourseCompanionVO` enum 이름). 초안을 발행하는 PATCH 경로가 생성과 같은
+     * 값을 싣기 위한 필드다. 서버에는 아직 없고(모르는 키는 무시), null 이면 직렬화에서 빠진다.
+     * 편집 화면은 이 값을 다루지 않아 null 로 보낸다(서버 수용 뒤 편집 노출을 별도 결정).
+     */
+    val companion: String? = null,
     val places: List<UpdateCoursePlaceRequest>,
     val isPublished: Boolean,
 )
