@@ -189,16 +189,9 @@ fun RecommendedCoursesPage(
                     }
                 }
             }
+            // 다음 페이지는 스크롤 끝 감지(LoadMoreOnScrollEnd)로만 이어 받는다.
             if (feedState.isLoadingMore) {
                 item { LoadingMoreFooter() }
-            } else if (feedState.hasNext && !feedState.isLoading) {
-                item {
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        TextButton(onClick = { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }) {
-                            DsText(text = "코스 더 불러오기", style = DesignSystemThemeImpl.typeScale.textRegularS)
-                        }
-                    }
-                }
             }
         }
     }
@@ -215,7 +208,6 @@ private fun RecommendedTopBar(
     onBack: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    var filterExpanded by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
@@ -232,29 +224,7 @@ private fun RecommendedTopBar(
                 text = "오늘의 추천 코스",
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
-                modifier = Modifier.weight(1f),
             )
-            Box {
-                IconButton(onClick = { filterExpanded = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_filter_list_24),
-                        contentDescription = "테마 필터",
-                        tint = color.contentDefaultLevel0,
-                    )
-                }
-                DropdownMenu(expanded = filterExpanded, onDismissRequest = { filterExpanded = false }) {
-                    recommendedCategories.forEach { (category, label) ->
-                        DropdownMenuItem(
-                            text = { DsText(text = label, style = DesignSystemThemeImpl.typeScale.textRegularS) },
-                            modifier = Modifier.semantics { selected = selectedCategory == category },
-                            onClick = {
-                                onSelectCategory(category)
-                                filterExpanded = false
-                            },
-                        )
-                    }
-                }
-            }
         }
         Row(
             modifier =
