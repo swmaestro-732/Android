@@ -154,7 +154,7 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
                                         handle = SignupSelectionStore.handle,
                                         profileImageUrl = remoteUrl,
                                         areaCodes = SignupSelectionStore.regionCodes,
-                                        // 관심 테마는 서버 코스 카테고리 코드다(라벨을 보내면 400).
+                                        // 관심 테마는 공통 카테고리 코드다(라벨을 보내면 400).
                                         likeThemes = SignupSelectionStore.themes,
                                     ),
                                 localImageUri = picked?.takeIf { remoteUrl == null },

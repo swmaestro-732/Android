@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?><!-- 테마 타일 일러스트: 카페 투어(디자이너 SVG theme_cafe.svg 변환). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="240dp"
+    android:viewportWidth="320"
+    android:viewportHeight="240">
+    <path
+        android:fillColor="#FFF2D2B4"
+        android:pathData="M49,240 C62,193 113,144 174,110 C222,83 277,77 320,92 L320,240 Z" />
+    <group
+        android:rotation="-9"
+        android:pivotX="235"
+        android:pivotY="223">
+        <path
+            android:fillColor="#FF92C29B"
+            android:pathData="M130,223 a105,35 0 1,0 210,0 a105,35 0 1,0 -210,0" />
+    </group>
+    <path
+        android:fillColor="#FFFFF7DF"
+        android:fillType="evenOdd"
+        android:pathData="M280,159 C299,151 317,159 318,176 C320,194 304,210 283,209 L280,198 C295,198 307,188 306,177 C305,168 295,166 282,171 Z" />
+    <path
+        android:fillColor="#FFFFF9E6"
+        android:pathData="M165,164 L289,164 L283,200 C280,229 260,242 231,242 C200,242 180,226 173,200 Z" />
+    <group
+        android:rotation="-4"
+        android:pivotX="227"
+        android:pivotY="163">
+        <path
+            android:fillColor="#FFFFFCEC"
+            android:pathData="M165,163 a62,15 0 1,0 124,0 a62,15 0 1,0 -124,0" />
+    </group>
+    <group
+        android:rotation="-4"
+        android:pivotX="227"
+        android:pivotY="164">
+        <path
+            android:fillColor="#FF8B623D"
+            android:pathData="M178,164 a49,7 0 1,0 98,0 a49,7 0 1,0 -98,0" />
+    </group>
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFB08A64"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:pathData="M208,135 C226,113 194,108 211,86 M235,135 C253,113 221,108 238,86" />
+</vector>

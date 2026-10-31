@@ -1,12 +1,14 @@
 package com.chillsam.courmy.common.presentation.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
@@ -33,7 +37,7 @@ enum class DsButtonVariant {
     /** 채워진 강조 CTA (Forest600). */
     Primary,
 
-    /** 옅은 강조 배경(ForestTint) + 강조 텍스트. 보조 액션용. */
+    /** 흰 배경 + 테두리 + 강조 텍스트. 보조 액션용(기존 ForestTint 배경에서 변경, 2026-10-19). */
     Secondary,
 }
 
@@ -67,7 +71,8 @@ fun DsButton(
             }
 
             DsButtonVariant.Secondary -> {
-                DesignSystemThemeImpl.designSystemColor.bgAccentSubtle
+                // 흰 면 토큰. bgDefaultLevel0(화면 바탕)과 구분되는 카드·버튼용 흰색이다.
+                DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1
             }
         }
     val contentColor: Color =
@@ -75,16 +80,26 @@ fun DsButton(
             DsButtonVariant.Primary -> DesignSystemThemeImpl.designSystemColor.contentOnAccent
             DsButtonVariant.Secondary -> DesignSystemThemeImpl.designSystemColor.contentAccent
         }
+    // 흰 배경은 흰 화면 위에서 면이 사라져 테두리로 경계를 만든다(Secondary 전용).
+    val borderColor: Color? =
+        when (variant) {
+            DsButtonVariant.Primary -> null
+            DsButtonVariant.Secondary -> DesignSystemThemeImpl.designSystemColor.borderDefaultLevel0
+        }
 
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(ButtonHeight)
+                .heightIn(min = ButtonHeight)
                 .alpha(if (enabled) 1f else DISABLED_ALPHA)
                 .clip(RoundedCornerShape(ButtonCornerRadius))
                 .background(backgroundColor)
-                .clickable(
+                .then(
+                    borderColor?.let {
+                        Modifier.border(1.dp, it, RoundedCornerShape(ButtonCornerRadius))
+                    } ?: Modifier,
+                ).clickable(
                     interactionSource = interactionSource,
                     indication = null,
                     enabled = enabled && !loading,
@@ -102,6 +117,9 @@ fun DsButton(
                 text = text,
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = contentColor,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                textAlign = TextAlign.Center,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

@@ -22,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -115,44 +116,41 @@ fun CourseTopBar(
     onSaveDraft: () -> Unit,
     modifier: Modifier = Modifier,
     savingDraft: Boolean = false,
+    title: String = "새 코스 만들기",
+    showDraft: Boolean = true,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
-                    .clickable(onClick = onClose),
-            contentAlignment = Alignment.Center,
-        ) {
-            DsText(
-                text = "✕",
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+        IconButton(onClick = onClose, modifier = Modifier.size(48.dp)) {
+            Icon(
+                painter = painterResource(R.drawable.close_small_24),
+                contentDescription = "코스 만들기 닫기",
+                tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+                modifier = Modifier.size(24.dp),
             )
         }
         DsText(
-            text = "새 코스 만들기",
+            text = title,
             modifier = Modifier.weight(1f),
             style = DesignSystemThemeImpl.typeScale.titleExtraL,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
         )
-        DsText(
-            text = if (savingDraft) "저장 중…" else "임시저장",
-            modifier = Modifier.clickable(enabled = !savingDraft, onClick = onSaveDraft).padding(6.dp),
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color =
-                if (savingDraft) {
-                    DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
-                } else {
-                    DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2
-                },
-        )
+        if (showDraft) {
+            DsText(
+                text = if (savingDraft) "저장 중…" else "임시저장",
+                modifier = Modifier.clickable(enabled = !savingDraft, onClick = onSaveDraft).padding(6.dp),
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color =
+                    if (savingDraft) {
+                        DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3
+                    } else {
+                        DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2
+                    },
+            )
+        }
     }
 }
 
@@ -245,20 +243,24 @@ private fun FilledPhotoSlot(
             contentScale = ContentScale.Crop,
         )
         Box(
-            modifier =
-                Modifier
-                    .padding(3.dp)
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0)
-                    .clickable(onClick = onRemove),
-            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(48.dp).clickable(onClick = onRemove),
+            contentAlignment = Alignment.TopEnd,
         ) {
-            DsText(
-                text = "✕",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
-            )
+            Box(
+                modifier =
+                    Modifier
+                        .padding(3.dp)
+                        .size(16.dp)
+                        .background(DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.close_small_24),
+                    contentDescription = "사진 삭제",
+                    tint = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
     }
 }

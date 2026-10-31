@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.placeDetail.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.entity.PlaceDetailVO
 import kotlinx.serialization.Serializable
@@ -32,6 +33,13 @@ data class PlaceScreenDTO(
     val categories: List<String>? = null,
     val address: String? = null,
     val location: PlaceLocationDTO? = null,
+    /** 조회자 정보. 저장 토글의 초기값(`hasSaved`)이 여기 실려 온다. */
+    val viewer: PlaceViewerDTO? = null,
+)
+
+@Serializable
+data class PlaceViewerDTO(
+    val hasSaved: Boolean? = null,
 )
 
 /** 좌표. 코스 상세의 `CoursePlaceLocationDTO` 와 같은 표기를 쓴다. */
@@ -49,8 +57,16 @@ fun PlaceDetailScreenDTO.toVO(): PlaceDetailVO {
     return PlaceDetailVO(
         name = place?.name.orEmpty(),
         category = place?.categories.toPlaceCategoryLabel(),
+        categories =
+            place
+                ?.categories
+                .orEmpty()
+                .mapNotNull(PlaceCategoryVO::fromCode)
+                .distinct(),
         address = place?.address.orEmpty(),
         latitude = location?.latitude.takeIf { hasCoordinates },
         longitude = location?.longitude.takeIf { hasCoordinates },
+        // viewer 가 없으면(비로그인 등) 저장 안 함으로 본다 — 토글이 서버에서 다시 판정한다.
+        isSaved = place?.viewer?.hasSaved ?: false,
     )
 }

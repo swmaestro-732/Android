@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,11 +51,14 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
+import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.presentation.AddPlaceDialog
 import com.chillsam.courmy.course.presentation.PlaceSearchIntent
+import com.chillsam.courmy.course.presentation.PlaceSearchSkeleton
+import com.chillsam.courmy.course.presentation.PlaceSearchUiState
 import com.chillsam.courmy.course.presentation.PlaceSearchViewModel
 
 /**
@@ -122,6 +128,8 @@ fun PlaceSearchOverlay(
                 text =
                     when {
                         // 실패를 "결과 0" 으로 보여 주면 못 찾은 것과 구분되지 않는다.
+                        uiState.isSearching -> "장소를 찾고 있어요"
+
                         uiState.errorMessage != null -> ""
 
                         query.isBlank() && !uiState.fromMapSearch -> ""
@@ -141,11 +149,8 @@ fun PlaceSearchOverlay(
         }
         // 결과 목록/빈 상태/에러 분기는 별도 컴포저블로 뺀다(오버레이 본문 복잡도 관리).
         PlaceCandidateList(
-            results = results,
-            errorMessage = uiState.errorMessage,
-            hasQuery = query.isNotBlank(),
+            state = uiState,
             selectedIds = selectedIds,
-            isLoadingMore = uiState.isLoadingMore,
             onLoadMore = { viewModel.onIntent(PlaceSearchIntent.LoadMore) },
             onToggle = { candidate ->
                 when {
@@ -188,18 +193,19 @@ fun PlaceSearchOverlay(
 /** 후보 목록 · 빈 상태 · 에러를 분기해 렌더한다. */
 @Composable
 private fun ColumnScope.PlaceCandidateList(
-    results: List<CoursePlaceVO>,
-    errorMessage: String?,
-    hasQuery: Boolean,
+    state: PlaceSearchUiState,
     selectedIds: List<String>,
     onToggle: (CoursePlaceVO) -> Unit,
-    isLoadingMore: Boolean,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     when {
-        results.isNotEmpty() -> {
+        state.isSearching -> {
+            PlaceSearchSkeleton(modifier = modifier)
+        }
+
+        state.results.isNotEmpty() -> {
             val listState = rememberLazyListState()
             LoadMoreOnScrollEnd(listState, onLoadMore)
             LazyColumn(
@@ -207,7 +213,7 @@ private fun ColumnScope.PlaceCandidateList(
                 modifier = modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(results, key = { it.id }) { candidate ->
+                items(state.results, key = { it.id }) { candidate ->
                     val order = selectedIds.indexOf(candidate.id)
                     SearchResultRow(
                         candidate = candidate,
@@ -215,17 +221,17 @@ private fun ColumnScope.PlaceCandidateList(
                         onToggle = { onToggle(candidate) },
                     )
                 }
-                if (isLoadingMore) {
+                if (state.isLoadingMore) {
                     item { LoadingMoreFooter() }
                 }
             }
         }
 
         // 실패를 빈 목록으로 보여 주면 "못 찾음" 과 구분되지 않는다.
-        errorMessage != null -> {
+        state.errorMessage != null -> {
             Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 DsText(
-                    text = errorMessage,
+                    text = state.errorMessage,
                     style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = color.contentDefaultLevel2,
                 )
@@ -233,7 +239,7 @@ private fun ColumnScope.PlaceCandidateList(
         }
 
         else -> {
-            SearchEmptyState(hasQuery = hasQuery, modifier = modifier)
+            SearchEmptyState(hasQuery = state.query.isNotBlank(), modifier = modifier)
         }
     }
 }
@@ -252,7 +258,9 @@ private fun AddPlaceButton(
                 .clip(shape)
                 .border(1.dp, color.borderDefaultLevel1, shape)
                 .clickable(enabled = enabled, onClick = onClick)
+                .sizeIn(minHeight = 48.dp)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center,
     ) {
         DsText(
             text = "새로운 위치 추가",
@@ -314,26 +322,19 @@ private fun SearchTopBar(
                 },
             )
             if (query.isNotEmpty()) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(20.dp)
-                            .clip(CircleShape)
-                            .background(color.contentDefaultLevel3)
-                            .clickable { onQueryChange("") },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    DsText(
-                        text = "✕",
-                        style = DesignSystemThemeImpl.typeScale.textExtraXS,
-                        color = color.contentOnAccent,
+                IconButton(onClick = { onQueryChange("") }, modifier = Modifier.size(48.dp)) {
+                    Icon(
+                        painter = painterResource(R.drawable.close_small_24),
+                        contentDescription = "검색어 지우기",
+                        tint = color.contentDefaultLevel3,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
         }
         DsText(
             text = "취소",
-            modifier = Modifier.clickable(onClick = onCancel),
+            modifier = Modifier.clickable(onClick = onCancel).padding(vertical = 14.dp, horizontal = 4.dp),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentAccent,
         )
@@ -361,12 +362,11 @@ private fun SearchResultRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(color.imagePlaceholder),
+        PlaceThumbnail(
+            url = candidate.thumbnailUrl.ifBlank { null },
+            category = candidate.category,
+            modifier = Modifier.size(44.dp),
+            shape = RoundedCornerShape(10.dp),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             DsText(
@@ -422,6 +422,7 @@ private fun ConfirmBar(
             Modifier
                 .fillMaxWidth()
                 .background(color.bgDefaultLevel1)
+                .navigationBarsPadding()
                 .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -438,7 +439,9 @@ private fun ConfirmBar(
                     .clip(RoundedCornerShape(12.dp))
                     .background(if (enabled) color.bgAccent else color.borderDefaultLevel0)
                     .clickable(enabled = enabled, onClick = onConfirm)
+                    .sizeIn(minHeight = 48.dp)
                     .padding(horizontal = 20.dp, vertical = 10.dp),
+            contentAlignment = Alignment.Center,
         ) {
             DsText(
                 text = "담기 완료",

@@ -1,0 +1,4 @@
+• Improved map: current location, clustering, and search
+• Enhanced course following and reviews
+• More stable sign-in
+• Bug fixes and performance improvements

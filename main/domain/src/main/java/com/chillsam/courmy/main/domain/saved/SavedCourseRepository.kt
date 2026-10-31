@@ -1,7 +1,7 @@
 package com.chillsam.courmy.main.domain.saved
 
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
-import com.chillsam.courmy.main.entity.saved.SavedCourseVO
+import com.chillsam.courmy.main.entity.saved.SavedCoursesVO
 
 /**
  * 저장함 · 코스 탭 **조회** 계약. 구현은 data 레이어이며 실패 시 예외를 throw 한다.
@@ -15,7 +15,9 @@ interface SavedCourseRepository {
     suspend fun getSavedCourses(
         size: Int,
         cursor: String? = null,
-    ): CursorPageVO<SavedCourseVO>
+        folderId: Long? = null,
+        completed: Boolean? = null,
+    ): SavedCoursesVO
 
     /**
      * 저장한 코스 id 집합. 목록 화면이 아니라 **다른 화면의 저장 여부 표시**에 쓴다.

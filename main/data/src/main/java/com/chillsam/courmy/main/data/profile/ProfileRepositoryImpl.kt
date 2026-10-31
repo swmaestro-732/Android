@@ -1,10 +1,11 @@
 package com.chillsam.courmy.main.data.profile
 
 import com.chillsam.courmy.common.data.auth.TokenStore
+import com.chillsam.courmy.common.entity.category.CourseTagVO
+import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.main.data.profile.dto.MyPageEnvelope
 import com.chillsam.courmy.main.data.profile.dto.MyPageScreenDTO
 import com.chillsam.courmy.main.data.profile.dto.UpdateProfileRequest
-import com.chillsam.courmy.main.data.profile.dto.formatCount
 import com.chillsam.courmy.main.data.profile.dto.toMyProfileVO
 import com.chillsam.courmy.main.data.profile.dto.toUserProfileVO
 import com.chillsam.courmy.main.domain.profile.ProfileRepository
@@ -47,8 +48,10 @@ class ProfileRepositoryImpl(
      * 저장된 것처럼 보이다가 다음 실행에서 조용히 되돌아간다.
      */
     override suspend fun saveInterestThemes(themes: List<String>) {
-        dataSource.updateProfile(UpdateProfileRequest(likeThemes = themes))
-        interestStore.setThemes(themes)
+        val tags = themes.map { requireNotNull(CourseTagVO.fromCode(it)) { "알 수 없는 관심 테마: $it" } }.distinct()
+        // 서버는 CourseCategory enum 이름(대문자)으로 검증한다. 기기 캐시는 소문자 코드로 통일.
+        dataSource.updateProfile(UpdateProfileRequest(likeThemes = tags.map { it.name }))
+        interestStore.setThemes(tags.map { it.code })
     }
 
     /** 서버에는 코드만 보낸다. 지역 이름은 화면 표시용이라 캐시에만 남는다. */

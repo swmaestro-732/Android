@@ -1,13 +1,16 @@
 package com.chillsam.courmy.main.domain.saved
 
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
-import com.chillsam.courmy.main.entity.saved.SavedCourseVO
+import com.chillsam.courmy.main.entity.saved.SavedCoursesVO
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class GetSavedCoursesUseCaseTest {
     private class FakeRepository : SavedCourseRepository {
+        var requestedFolder: Long? = null
+        var requestedCompleted: Boolean? = null
+        var requestedCursor: String? = null
         var requestedSize: Int? = null
             private set
         var requestedIdsSize: Int? = null
@@ -20,9 +23,14 @@ class GetSavedCoursesUseCaseTest {
         override suspend fun getSavedCourses(
             size: Int,
             cursor: String?,
-        ): CursorPageVO<SavedCourseVO> {
+            folderId: Long?,
+            completed: Boolean?,
+        ): SavedCoursesVO {
             requestedSize = size
-            return CursorPageVO()
+            requestedFolder = folderId
+            requestedCompleted = completed
+            requestedCursor = cursor
+            return SavedCoursesVO(CursorPageVO())
         }
 
         override suspend fun getSavedCourseIds(
@@ -51,6 +59,16 @@ class GetSavedCoursesUseCaseTest {
 
             assertEquals(1, tooSmall.requestedSize)
             assertEquals(50, tooLarge.requestedSize)
+        }
+
+    @Test
+    fun `폴더와 완주 필터는 다음 페이지에도 유지한다`() =
+        runTest {
+            val repo = FakeRepository()
+            GetSavedCoursesUseCase(repo)(cursor = "next", folderId = 7L, completed = true)
+            assertEquals(7L, repo.requestedFolder)
+            assertEquals(true, repo.requestedCompleted)
+            assertEquals("next", repo.requestedCursor)
         }
 
     /** 페이지를 적게 돌수록 홈 진입이 빨라지므로 매번 서버 최대치를 요청한다. */

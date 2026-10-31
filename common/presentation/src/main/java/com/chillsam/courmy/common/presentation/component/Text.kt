@@ -22,6 +22,8 @@ fun DsText(
     overflow: TextOverflow = TextOverflow.Visible,
     softWrap: Boolean = true,
     maxLines: Int = 1,
+    // 줄 수를 미리 확보해 높이를 고정하고 싶은 자리(목록 카드 제목 등)에서 쓴다.
+    minLines: Int = 1,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
 ) {
@@ -33,7 +35,8 @@ fun DsText(
         textAlign = textAlign,
         overflow = overflow,
         softWrap = softWrap,
-        maxLines = maxLines,
+        maxLines = maxLines.coerceAtLeast(minLines),
+        minLines = minLines,
         onTextLayout = onTextLayout,
         style = style,
     )

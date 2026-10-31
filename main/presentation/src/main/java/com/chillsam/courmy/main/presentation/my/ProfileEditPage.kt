@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.chillsam.courmy.common.entity.category.CourseCategoryVO
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -73,7 +73,7 @@ private const val BIO_MAX_LENGTH = 60
 /**
  * 프로필 편집 화면(FS-26). 아바타·닉네임·아이디·소개·관심 테마/지역을 편집한다.
  *
- * 관심 테마는 서버 코스 카테고리 코드로 저장되므로 표시할 때만 라벨로 바꾼다.
+ * 관심 테마는 공통 카테고리 코드로 저장되므로 표시할 때만 라벨로 바꾼다.
  */
 @Composable
 fun ProfileEditPage(
@@ -185,7 +185,7 @@ fun ProfileEditPage(
                 // 저장된 값은 서버 코드라 라벨로 바꿔 보여준다(모르는 코드는 그대로 노출).
                 chips =
                     profile?.interestThemes.orEmpty().map { code ->
-                        CourseCategoryVO.labelOf(code).ifBlank { code }
+                        CourseTagVO.labelOf(code).ifBlank { code }
                     },
                 onEdit = { navigationHelper.navigateTo(InterestThemePage) },
             )

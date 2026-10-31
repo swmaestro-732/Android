@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.DeleteCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
+import com.chillsam.courmy.course.domain.SetCourseLikedUseCase
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.course.domain.SetFollowAuthorUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ class CourseDetailViewModel
     constructor(
         private val getCourseDetailUseCase: GetCourseDetailUseCase,
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
+        private val setCourseLikedUseCase: SetCourseLikedUseCase,
         private val setFollowAuthorUseCase: SetFollowAuthorUseCase,
         private val deleteCourseUseCase: DeleteCourseUseCase,
         private val isLoggedInUseCase: IsLoggedInUseCase,
@@ -35,6 +37,7 @@ class CourseDetailViewModel
         /** 진행 중인 로드 코루틴. 재요청 시 이전 것을 취소해 중복 실행·stale 결과 반영을 막는다. */
         private var loadJob: Job? = null
         private var saveJob: Job? = null
+        private var likeJob: Job? = null
         private var followJob: Job? = null
         private var deleteJob: Job? = null
 
@@ -47,6 +50,7 @@ class CourseDetailViewModel
                     // 같은 코스로 재구성되면 다시 부르지 않는다(화면 회전·재진입).
                     if (courseId == intent.courseId) return
                     courseId = intent.courseId
+                    dispatch(CourseDetailReducerEvent.SocialStateReset)
                     load()
                 }
 
@@ -60,6 +64,24 @@ class CourseDetailViewModel
 
                 CourseDetailIntent.ToggleFollowAuthor -> {
                     toggleFollowAuthor()
+                }
+
+                CourseDetailIntent.ToggleLike -> {
+                    toggleLike()
+                }
+
+                CourseDetailIntent.ForkCourse -> {
+                    // 팔로우와 같은 이유로 누르기 전에 가린다 — 포크는 장소를 고르고 사진까지 다 올린
+                    // 뒤에야 저장이 401 로 막히므로, 그때 알리면 작성한 것을 통째로 잃는다.
+                    if (isLoggedInUseCase()) {
+                        dispatch(CourseDetailReducerEvent.ForkRequested)
+                    } else {
+                        dispatch(CourseDetailReducerEvent.LoginRequired)
+                    }
+                }
+
+                CourseDetailIntent.ConsumeForkRequest -> {
+                    dispatch(CourseDetailReducerEvent.ForkRequestConsumed)
                 }
 
                 CourseDetailIntent.Delete -> {
@@ -86,11 +108,25 @@ class CourseDetailViewModel
                 }
 
                 is CourseDetailReducerEvent.Loaded -> {
-                    state.copy(isLoading = false, detail = event.detail, errorMessage = null)
+                    state.copy(
+                        isLoading = false,
+                        detail = event.detail,
+                        errorMessage = null,
+                        // 좋아요 여부는 상세 응답(viewer.hasLiked)이 진실이다. 재조회 때도 서버 값으로 맞춘다.
+                        social = state.social.copy(isLiked = event.detail.isLiked),
+                    )
                 }
 
                 is CourseDetailReducerEvent.Failed -> {
                     state.copy(isLoading = false, errorMessage = event.message)
+                }
+
+                CourseDetailReducerEvent.LikeToggled,
+                is CourseDetailReducerEvent.LikeConfirmed,
+                is CourseDetailReducerEvent.LikeFailed,
+                CourseDetailReducerEvent.SocialStateReset,
+                -> {
+                    reduceSocial(state, event)
                 }
 
                 else -> {
@@ -98,6 +134,9 @@ class CourseDetailViewModel
                 }
             }
 
+        // 이미 reduce 에서 로드/액션으로 한 번 쪼갠 뒤다. 남은 복잡도는 이벤트 종류 수 그 자체이고
+        // 각 갈래는 copy 한 줄이라, 더 쪼개면 상태 변이가 흩어져 MVI 의 "한 곳에서만 변이" 가 흐려진다.
+        @Suppress("CyclomaticComplexMethod")
         private fun reduceAction(
             state: CourseDetailUIState,
             event: CourseDetailReducerEvent,
@@ -142,6 +181,14 @@ class CourseDetailViewModel
                     state.copy(needsLogin = false)
                 }
 
+                CourseDetailReducerEvent.ForkRequested -> {
+                    state.copy(isForkRequested = true)
+                }
+
+                CourseDetailReducerEvent.ForkRequestConsumed -> {
+                    state.copy(isForkRequested = false)
+                }
+
                 CourseDetailReducerEvent.DeleteStarted -> {
                     state.copy(isDeleting = true, actionErrorMessage = null)
                 }
@@ -158,6 +205,101 @@ class CourseDetailViewModel
                     state
                 }
             }
+
+        private fun reduceSocial(
+            state: CourseDetailUIState,
+            event: CourseDetailReducerEvent,
+        ): CourseDetailUIState =
+            when (event) {
+                CourseDetailReducerEvent.LikeToggled -> {
+                    val liked = !state.social.isLiked
+                    state.copy(
+                        social =
+                            state.social.copy(
+                                isLiked = liked,
+                                // 집계를 모르는 상태(null)에서는 ±1 할 기준이 없다 — 숫자는 서버 응답을 기다린다.
+                                likeCount =
+                                    state.social.likeCount
+                                        ?.plus(if (liked) 1 else -1)
+                                        ?.coerceAtLeast(0),
+                            ),
+                    )
+                }
+
+                is CourseDetailReducerEvent.LikeConfirmed -> {
+                    state.copy(
+                        social =
+                            state.social.copy(
+                                isLiked = event.liked,
+                                likeCount = event.likeCount,
+                            ),
+                    )
+                }
+
+                is CourseDetailReducerEvent.LikeFailed -> {
+                    state.copy(
+                        actionErrorMessage = event.message,
+                        social =
+                            state.social.copy(
+                                isLiked = event.liked,
+                                likeCount = event.likeCount,
+                            ),
+                    )
+                }
+
+                CourseDetailReducerEvent.SocialStateReset -> {
+                    state.copy(social = CourseSocialUIState())
+                }
+
+                else -> {
+                    state
+                }
+            }
+
+        /**
+         * 좋아요 토글. 저장과 달리 **낙관적으로 먼저 바꾼다** — 하트는 누르는 순간 칠해지는 것이
+         * 기대 동작이라, 서버 확정을 기다리면 연타·느린 망에서 버튼이 죽은 것처럼 보인다.
+         * 실패하면 토글 전 값으로 되돌리고 [CourseDetailUIState.actionErrorMessage] 로 한 번 알린다.
+         *
+         * 비로그인 차단은 아래에서 저장·팔로우와 같은 방식(needsLogin)으로 처리한다.
+         * 연타는 이전 요청을 취소하고 마지막 목표 상태만 보낸다 — 요청마다 줄 세우면 POST/DELETE 가
+         * 엇갈려 끝난 순서에 따라 화면과 서버가 어긋난다.
+         */
+        private fun toggleLike() {
+            val id = courseId
+            if (id == null || currentState.detail == null) return
+            if (!isLoggedInUseCase()) {
+                dispatch(CourseDetailReducerEvent.LoginRequired)
+                return
+            }
+            val before = currentState.social
+            val target = !before.isLiked
+            dispatch(CourseDetailReducerEvent.LikeToggled)
+            likeJob?.cancel()
+            likeJob =
+                viewModelScope.launch {
+                    runCatching { setCourseLikedUseCase(courseId = id, liked = target) }
+                        .onSuccess { result ->
+                            // 요청 중에 다른 코스로 이동했으면 그 코스의 상태를 바꾸면 안 된다(저장과 동일).
+                            // 서버가 집계를 돌려줬을 때만 보정한다 — 낙관적 값은 이미 맞는 상태다.
+                            if (courseId == id && result != null) {
+                                dispatch(CourseDetailReducerEvent.LikeConfirmed(result.liked, result.likeCount))
+                            }
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "좋아요 토글 실패: courseId=$id, target=$target", e)
+                            if (courseId == id) {
+                                dispatch(
+                                    CourseDetailReducerEvent.LikeFailed(
+                                        message = if (target) "좋아요하지 못했어요." else "좋아요를 취소하지 못했어요.",
+                                        liked = before.isLiked,
+                                        likeCount = before.likeCount,
+                                    ),
+                                )
+                            }
+                        }
+                }
+        }
 
         /**
          * 작성자 팔로우 토글. 저장과 같은 이유로 서버가 확정한 뒤에 상태를 바꾼다.

@@ -35,11 +35,12 @@ class FollowListViewModel
 
         /** 조회 대상. null 이면 내 목록(서버가 JWT 로 식별). 타유저 프로필에서 넘어올 때만 채워진다. */
         private var targetUserId: Long? = null
+        private var hasTarget = false
 
         override fun onIntent(intent: FollowListIntent) {
             when (intent) {
-                is FollowListIntent.SetTarget -> {
-                    targetUserId = intent.userId
+                is FollowListIntent.Refresh -> {
+                    refresh(intent)
                 }
 
                 is FollowListIntent.SelectTab -> {
@@ -75,8 +76,12 @@ class FollowListViewModel
                     state.copy(selectedTab = event.tab, loadErrorMessage = null)
                 }
 
+                is FollowListReducerEvent.RefreshStarted -> {
+                    refreshedState(state, event.initialTab)
+                }
+
                 FollowListReducerEvent.LoadStarted -> {
-                    state.copy(isLoading = true, loadErrorMessage = null)
+                    state.copy(isLoading = true, isLoadingMore = false, loadErrorMessage = null)
                 }
 
                 is FollowListReducerEvent.Loaded -> {
@@ -130,6 +135,34 @@ class FollowListViewModel
                     state.copy(errorMessage = null)
                 }
             }
+
+        private fun refreshedState(
+            state: FollowListUIState,
+            initialTab: FollowTab?,
+        ): FollowListUIState =
+            initialTab?.let { FollowListUIState(selectedTab = it) }
+                ?: state.copy(
+                    loadedTabs = emptySet(),
+                    followerCursor = null,
+                    followerHasNext = false,
+                    followingCursor = null,
+                    followingHasNext = false,
+                    isLoadingMore = false,
+                )
+
+        private fun refresh(intent: FollowListIntent.Refresh) {
+            val targetChanged = !hasTarget || targetUserId != intent.userId
+            loadJob?.cancel()
+            moreJob?.cancel()
+            if (targetChanged) {
+                unfollowJobs.values.forEach { it.cancel() }
+                unfollowJobs.clear()
+            }
+            targetUserId = intent.userId
+            hasTarget = true
+            dispatch(FollowListReducerEvent.RefreshStarted(intent.initialTab.takeIf { targetChanged }))
+            load(currentState.selectedTab)
+        }
 
         private fun load(tab: FollowTab) {
             dispatch(FollowListReducerEvent.LoadStarted)

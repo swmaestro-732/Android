@@ -1,4 +1,5 @@
 [versions]
+desugarJdkLibs = "2.1.5"
 compileSdk = "37"
 targetSdk = "37"
 minSdk = "24"
@@ -28,6 +29,10 @@ lottieCompose = "6.7.1"
 coil = "3.6.3"
 naverMapCompose = "1.9.0"
 kakaoSdk = "2.20.6"
+naverOauth = "5.10.0"
+credentials = "1.5.0"
+playServicesLocation = "21.0.1"
+googleid = "1.1.1"
 datastore = "1.1.7"
 mockk = "1.14.11"
 benchmark = "1.5.0-alpha05"
@@ -42,8 +47,12 @@ constraintlayout = "2.2.0"
 googleServices = "4.5.0"
 firebaseCrashlyticsPlugin = "3.0.8"
 firebaseBom = "34.19.0"
+amplitude = "1.35.0"
+# 광고 전환 추적 SDK.
+facebook = "19.0.0"
 
 [libraries]
+desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -88,6 +97,12 @@ coil = { group = "io.coil-kt.coil3", name = "coil", version.ref = "coil" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 naver-map-compose = { group = "io.github.fornewid", name = "naver-map-compose", version.ref = "naverMapCompose" }
 kakao-user = { group = "com.kakao.sdk", name = "v2-user", version.ref = "kakaoSdk" }
+naver-oauth = { group = "com.navercorp.nid", name = "oauth", version.ref = "naverOauth" }
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+# 홈 현위치(마지막 위치 1회 조회). 지도 추적은 naver-map-compose 가 전이로 쓴다.
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+androidx-credentials-play-services = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
+googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 coil-gif = { group = "io.coil-kt.coil3", name = "coil-gif", version.ref = "coil" }
 coil-video = { group = "io.coil-kt.coil3", name = "coil-video", version.ref = "coil" }
@@ -106,9 +121,17 @@ kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotli
 
 # Firebase — 버전은 BOM 이 맞추므로 개별 라이브러리에 version 을 적지 않는다.
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-config = { group = "com.google.firebase", name = "firebase-config" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 # Analytics 는 Crashlytics 리포트에 breadcrumb(화면 전환·이벤트)를 자동으로 붙여 준다.
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+
+# Amplitude — 제품 분석. SDK 의존성은 app 모듈에만 두고, data 레이어는 AmplitudeClient 인터페이스만 안다.
+amplitude-analytics = { group = "com.amplitude", name = "analytics-android", version.ref = "amplitude" }
+
+# 광고 전환 추적. 메타(Facebook) 앱 이벤트는 Telemetry 구현이 보내므로 common:data 에 둔다.
+# facebook-core 만 쓴다(로그인·공유 모듈 불필요, 앱 이벤트 측정만).
+facebook-core = { group = "com.facebook.android", name = "facebook-core", version.ref = "facebook" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

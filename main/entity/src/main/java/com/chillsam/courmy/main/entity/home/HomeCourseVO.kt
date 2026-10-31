@@ -1,12 +1,12 @@
 package com.chillsam.courmy.main.entity.home
 
 /**
- * 홈 화면(FS-09) 공개 코스 피드 카드 1건. `GET /service/v1/courses` 응답을 변환한 결과다.
+ * 홈 화면(FS-09) 공개 코스 피드 카드 1건. `GET /service/v1/home` 응답을 변환한 결과다.
  *
  * - [id]             코스 식별자(상세 이동에 사용)
  * - [title]          커버 위 코스 제목
  * - [coverImageUrl]  커버 이미지 URL(없으면 placeholder)
- * - [categoryLabel]  커버 좌상단 카테고리 칩. 서버 `theme`(CourseCategory) 을 한글로 옮긴 값
+ * - [categoryLabel]  커버 좌상단 카테고리 칩. 서버 `theme`(공통 카테고리) 을 한글로 옮긴 값
  * - [saveCountText]  저장 수 표시 텍스트(예: "342")
  *
  * TODO-API-SPEC: Figma 의 카드에는 작성자(이름·아바타), 코스 속 장소 사진·장소명, 저장 여부가 있으나
@@ -19,4 +19,8 @@ data class HomeCourseVO(
     val coverImageUrl: String = "",
     val categoryLabel: String = "",
     val saveCountText: String = "",
+    /** 서버 집계 표시값. 미제공이면 빈 문자열로 숨긴다. */
+    val likeCountText: String = "",
+    /** 저장 상태 변경 시 집계에 반영할 원시 값. 축약 표시 문자열로 계산하지 않는다. */
+    val saveCount: Int? = null,
 )

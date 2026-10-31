@@ -17,6 +17,7 @@ enum class LoginResult {
  */
 data class LoginUiState(
     val isLoading: Boolean = false,
+    val isSelectingGoogleAccount: Boolean = false,
     val errorMessage: String? = null,
     val result: LoginResult? = null,
 ) : UiState {

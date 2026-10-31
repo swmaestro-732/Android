@@ -83,6 +83,7 @@ fun DsTextField(
     val shape = RoundedCornerShape(TextFieldCornerRadius)
 
     Box(
+        propagateMinConstraints = true,
         modifier =
             modifier
                 .fillMaxWidth()
@@ -117,7 +118,7 @@ fun DsTextField(
             decorationBox = { innerTextField ->
                 Row(
                     modifier = Modifier.fillMaxSize(),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
                 ) {
                     if (leadingIcon != null) {
                         leadingIcon()

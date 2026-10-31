@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chillsam.courmy.common.entity.category.CourseCategoryVO
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -36,12 +36,12 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 
 /**
- * 선택지는 서버 코스 카테고리와 같은 목록이다([CourseCategoryVO]).
+ * 선택지는 코스 태그 12종이다([CourseTagVO]). 장소 카테고리 10종과 별개 체계다.
  *
- * 선택 상태·저장은 코드(`CAFETOUR` …)로 하고 칩에는 라벨을 보여준다 — 서버가 `likeThemes` 를
- * enum 으로 검증해서, 라벨을 보내면 `400 "존재하지 않는 관심 테마가 포함되어 있습니다"` 로 거부한다.
+ * 선택 상태·저장은 소문자 코드(`date` …)로 하고 칩에는 라벨을 보여준다. 서버 `likeThemes` 는
+ * CourseCategory enum 이름(대문자)으로 검증하므로, 대문자 변환은 data 레이어가 요청 직전에 한다.
  */
-private val THEME_OPTIONS = CourseCategoryVO.entries
+private val THEME_OPTIONS = CourseTagVO.entries
 private const val MIN_THEME_COUNT = 3
 
 /** 관심 테마 편집 화면(FS-06). 최소 [MIN_THEME_COUNT]개 이상 칩을 선택한다. */
@@ -61,7 +61,9 @@ fun InterestThemePage(
     val editState by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(editing) { if (editing) viewModel.onIntent(InterestEditIntent.Load) }
     // 회원가입은 빈 선택으로 시작하고, 편집은 불러온 값이 도착하면 그 값으로 다시 채운다.
-    var selected by remember(editState.loaded) { mutableStateOf(editState.themes.toSet()) }
+    var selected by remember(editState.loaded) {
+        mutableStateOf(editState.themes.mapNotNull { CourseTagVO.fromCode(it)?.code }.toSet())
+    }
     LaunchedEffect(editState.saved) { if (editState.saved) navigationHelper.navigateToBack() }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
@@ -97,7 +99,7 @@ fun InterestThemePage(
         ) {
             DsText(
                 text = "어떤 곳을\n좋아하세요?",
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
+                style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = color.contentDefaultLevel0,
                 maxLines = 2,
                 modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
@@ -124,8 +126,13 @@ fun InterestThemePage(
         }
 
         DsButton(
-            // 회원가입 플로우면 "다음 · N개 선택됨", 편집이면 "저장".
-            text = if (onNext != null) "다음 · ${selected.size}개 선택됨" else "저장",
+            // 최소 개수를 못 채우면 버튼에 왜 못 넘어가는지 직접 보여 준다(지역 화면과 통일).
+            text =
+                when {
+                    selected.size < MIN_THEME_COUNT -> "최소 ${MIN_THEME_COUNT}개 이상 선택"
+                    onNext != null -> "다음"
+                    else -> "저장"
+                },
             enabled = selected.size >= MIN_THEME_COUNT,
             onClick = {
                 val themes = selected.toList()
@@ -155,8 +162,8 @@ private fun ThemeChips(
             // 선택 상태는 서버 코드로 관리하고 화면에는 라벨만 보여준다.
             DsChip(
                 text = theme.label,
-                selected = theme.name in selected,
-                onClick = { onToggle(theme.name) },
+                selected = theme.code in selected,
+                onClick = { onToggle(theme.code) },
             )
         }
     }

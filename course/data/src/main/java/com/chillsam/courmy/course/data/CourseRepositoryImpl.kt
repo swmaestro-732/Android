@@ -2,6 +2,7 @@ package com.chillsam.courmy.course.data
 
 import com.chillsam.courmy.course.data.courseCreate.CourseCreateDataSource
 import com.chillsam.courmy.course.data.courseCreate.dto.toCreateRequest
+import com.chillsam.courmy.course.data.courseCreate.dto.toForkRequest
 import com.chillsam.courmy.course.data.courseDetail.CourseDetailDataSource
 import com.chillsam.courmy.course.data.courseDetail.dto.toVO
 import com.chillsam.courmy.course.data.courseManage.CourseManageDataSource
@@ -111,8 +112,24 @@ class CourseRepositoryImpl(
         draft: CourseDraftVO,
         thumbnailUrl: String?,
         published: Boolean,
+        draftCourseId: Long?,
     ): Long {
-        val envelope = courseCreateDataSource.createCourse(draft.toCreateRequest(thumbnailUrl, published))
+        if (draftCourseId != null) {
+            courseManageDataSource.updateCourse(
+                draftCourseId,
+                draft.copy(thumbnailUrl = thumbnailUrl.orEmpty()).toDraftUpdateRequest(published),
+            )
+            return draftCourseId
+        }
+        val request = draft.toCreateRequest(thumbnailUrl, published)
+        // 포크로 시작한 코스는 생성 API 대신 포크 API 로 보낸다. 포크 API 가 코스 생성까지 해 주는
+        // 구조(응답이 생성과 같은 courseId 엔벨로프)인 데다, 원본 장소 유지 규칙(CourseForkRule)과
+        // 원본 존재 검증도 이 경로에서만 수행되기 때문이다. 포크 호출이 곧 저장이므로 실패하면
+        // 저장 실패로 그대로 올린다 — 생성 API 로 폴백하면 포크 기록 없는 코스가 몰래 만들어진다.
+        val envelope =
+            draft.forkedFromId?.let { originCourseId ->
+                courseCreateDataSource.forkCourse(originCourseId, request.toForkRequest())
+            } ?: courseCreateDataSource.createCourse(request)
         val data =
             requireNotNull(envelope.data) {
                 envelope.message ?: "코스 생성 응답에 data 가 없습니다."

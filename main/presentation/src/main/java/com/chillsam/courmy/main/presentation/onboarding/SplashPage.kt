@@ -6,7 +6,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -126,8 +125,10 @@ fun SplashPage(
                                 )
                         },
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                DsText(
+                    text = "Courmy",
+                    style = logoStyle,
+                    color = color.contentOnAccent,
                     modifier =
                         Modifier
                             .offset(y = (-38).dp)
@@ -136,31 +137,7 @@ fun SplashPage(
                                 // 아주 작은 alpha 를 유지해 첫 등장 프레임의 글리프 래스터화 히치를 예열한다.
                                 alpha = ((progress.value - 0.36f) / 0.16f).coerceIn(0f, 1f).coerceAtLeast(0.02f)
                             },
-                ) {
-                    DsText(
-                        text = "Courmy",
-                        style = logoStyle,
-                        color = color.contentOnAccent,
-                    )
-                    DsText(
-                        text = ".",
-                        style = logoStyle,
-                        color = color.contentOnAccent.copy(alpha = 0.72f),
-                        modifier =
-                            Modifier.graphicsLayer {
-                                val p = progress.value
-                                alpha = ((p - 0.54f) / 0.1f).coerceIn(0f, 1f)
-                                val d =
-                                    lerp(
-                                        0.35f,
-                                        1f,
-                                        FastOutSlowInEasing.transform(((p - 0.54f) / 0.16f).coerceIn(0f, 1f)),
-                                    )
-                                scaleX = d
-                                scaleY = d
-                            },
-                    )
-                }
+                )
                 DsText(
                     text = "나만의 코스, 나만의 동네",
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,

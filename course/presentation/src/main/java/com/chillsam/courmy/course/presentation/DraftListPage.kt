@@ -17,8 +17,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -90,31 +90,9 @@ fun DraftListPage(
 
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when {
-                    uiState.isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center),
-                            color = color.contentAccent,
-                        )
-                    }
-
-                    uiState.loadFailed -> {
-                        DraftListRetry(
-                            message = uiState.errorMessage ?: "임시저장한 코스를 불러오지 못했어요.",
-                            onRetry = { viewModel.onIntent(DraftListIntent.Load) },
-                            modifier = Modifier.align(Alignment.Center),
-                        )
-                    }
-
-                    uiState.isEmpty -> {
-                        DsText(
-                            text = "임시저장한 코스가 없어요",
-                            modifier = Modifier.align(Alignment.Center),
-                            style = DesignSystemThemeImpl.typeScale.textRegularS,
-                            color = color.contentDefaultLevel2,
-                        )
-                    }
-
-                    else -> {
+                    // 복귀 재로드 중에도 기존 목록을 유지한다 — 스피너로 바꾸면 목록이 내려갔다가
+                    // 다시 그려지며 스크롤이 최상단으로 튄다(SCRUM-631).
+                    uiState.drafts.isNotEmpty() -> {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -136,6 +114,27 @@ fun DraftListPage(
                                 )
                             }
                         }
+                    }
+
+                    uiState.isLoading -> {
+                        DraftListSkeleton()
+                    }
+
+                    uiState.loadFailed -> {
+                        DraftListRetry(
+                            message = uiState.errorMessage ?: "임시저장한 코스를 불러오지 못했어요.",
+                            onRetry = { viewModel.onIntent(DraftListIntent.Load) },
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+
+                    else -> {
+                        DsText(
+                            text = "임시저장한 코스가 없어요",
+                            modifier = Modifier.align(Alignment.Center),
+                            style = DesignSystemThemeImpl.typeScale.textRegularS,
+                            color = color.contentDefaultLevel2,
+                        )
                     }
                 }
             }
@@ -169,18 +168,12 @@ private fun DraftListHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center,
-            ) {
-                DsText(
-                    text = "‹",
-                    style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                    color = color.contentDefaultLevel0,
+            IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_left_24),
+                    contentDescription = "뒤로",
+                    tint = color.contentDefaultLevel0,
+                    modifier = Modifier.size(24.dp),
                 )
             }
             DsText(
@@ -271,7 +264,7 @@ private fun DraftCourseCard(
         Box(
             modifier =
                 Modifier
-                    .size(32.dp)
+                    .size(48.dp)
                     .clip(RoundedCornerShape(9999.dp))
                     .clickable(onClick = onDelete),
             contentAlignment = Alignment.Center,

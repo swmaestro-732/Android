@@ -31,7 +31,7 @@ class CourseFeedDtoMappingTest {
         assertEquals("7", vo.id)
         assertEquals("비 오는 날 성수 감성 카페 코스", vo.title)
         assertEquals("https://cdn.example.com/1.jpg", vo.coverImageUrl)
-        assertEquals("카페투어", vo.categoryLabel)
+        assertEquals("카페 투어", vo.categoryLabel)
         assertEquals("342", vo.saveCountText)
     }
 
@@ -41,6 +41,7 @@ class CourseFeedDtoMappingTest {
         val vo = CourseFeedDTO(courses = listOf(CourseFeedItemDTO(id = 1L, savesCnt = 1400))).toVOList().single()
 
         assertEquals("1.4k", vo.saveCountText)
+        assertEquals(1400, vo.saveCount)
     }
 
     @Test
@@ -80,5 +81,6 @@ class CourseFeedDtoMappingTest {
         assertEquals("", vo.title)
         assertEquals("", vo.coverImageUrl)
         assertEquals("0", vo.saveCountText)
+        assertEquals(null, vo.saveCount)
     }
 }

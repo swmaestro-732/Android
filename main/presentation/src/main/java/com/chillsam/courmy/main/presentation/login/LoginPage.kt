@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.login
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,6 +46,9 @@ import com.chillsam.courmy.main.domain.login.ProfileSetupPage
 
 private val KakaoYellow = Color(0xFFFEE500)
 
+/** 네이버 브랜드 고정색. 디자인 토큰이 아니라 브랜드 가이드 값이라 raw hex 를 쓴다(카카오와 동일). */
+private val NaverGreen = Color(0xFF03C75A)
+
 /**
  * 로그인·시작하기 화면(FS-03). "카카오로 시작하기" → 카카오 SDK 로그인(idToken) → 서버 social-login.
  * 기존 회원이면 홈으로, 신규 회원이면 회원가입 플로우(프로필→…→완료)로 진입한다.
@@ -59,6 +63,11 @@ fun LoginPage(modifier: Modifier = Modifier) {
     val viewModel: LoginViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val canStartLogin = !uiState.isLoading && !uiState.isSelectingGoogleAccount
+
+    BackHandler(enabled = uiState.isSelectingGoogleAccount) {
+        viewModel.onIntent(LoginIntent.CancelGoogleLogin)
+    }
 
     // 로그인 성공 → 분기 내비게이션(1회성). 기존 회원은 세션 로그인 후 홈, 신규 회원은 가입 플로우.
     LaunchedEffect(uiState.result) {
@@ -111,13 +120,44 @@ fun LoginPage(modifier: Modifier = Modifier) {
             Spacer(Modifier.weight(1f))
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (uiState.isSelectingGoogleAccount) {
+                    DsText(
+                        text = "Google 계정을 선택해 주세요.\n선택창이 열리지 않으면 취소 후 다시 시도해 주세요.",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel1,
+                    )
+                    SocialButton(
+                        text = "Google 로그인 취소",
+                        iconRes = null,
+                        background = color.bgDefaultLevel0,
+                        textColor = color.contentDefaultLevel0,
+                        onClick = { viewModel.onIntent(LoginIntent.CancelGoogleLogin) },
+                    )
+                }
                 SocialButton(
                     text = "카카오로 시작하기",
                     iconRes = R.drawable.ic_kakao_24,
                     background = KakaoYellow,
                     textColor = color.contentDefaultLevel0,
-                    enabled = !uiState.isLoading,
+                    enabled = canStartLogin,
                     onClick = { viewModel.onIntent(LoginIntent.KakaoLogin(context)) },
+                )
+                SocialButton(
+                    text = "네이버로 시작하기",
+                    iconRes = R.drawable.ic_naver_24,
+                    background = NaverGreen,
+                    textColor = color.contentOnAccent,
+                    enabled = canStartLogin,
+                    onClick = { viewModel.onIntent(LoginIntent.NaverLogin(context)) },
+                )
+                SocialButton(
+                    text = "Google로 시작하기",
+                    iconRes = R.drawable.ic_google_24,
+                    background = color.bgDefaultLevel1,
+                    textColor = color.contentDefaultLevel0,
+                    border = color.borderDefaultLevel0,
+                    enabled = canStartLogin,
+                    onClick = { viewModel.onIntent(LoginIntent.GoogleLogin(context)) },
                 )
                 SocialButton(
                     text = "게스트로 돌아가기",
@@ -125,7 +165,10 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     background = color.bgDefaultLevel0,
                     textColor = color.contentDefaultLevel1,
                     enabled = !uiState.isLoading,
-                    onClick = { navigationHelper.navigateToBack() },
+                    onClick = {
+                        viewModel.onIntent(LoginIntent.CancelGoogleLogin)
+                        navigationHelper.navigateToBack()
+                    },
                 )
             }
             DsText(

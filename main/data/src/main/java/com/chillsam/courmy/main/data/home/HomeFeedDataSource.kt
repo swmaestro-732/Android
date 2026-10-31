@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.data.home
 
 import com.chillsam.courmy.common.data.BaseRemoteDataSource
 import com.chillsam.courmy.main.data.home.dto.CourseFeedEnvelope
+import com.chillsam.courmy.main.data.home.dto.HomeEnvelope
 
 class HomeFeedDataSource(
     private val apiService: HomeFeedApiService,
@@ -10,4 +11,9 @@ class HomeFeedDataSource(
         size: Int,
         cursor: String?,
     ): CourseFeedEnvelope = checkResponse(apiService.getCourseFeed(size, cursor))
+
+    suspend fun getHome(
+        userLat: Double?,
+        userLng: Double?,
+    ): HomeEnvelope = checkResponse(apiService.getHome(userLat, userLng))
 }

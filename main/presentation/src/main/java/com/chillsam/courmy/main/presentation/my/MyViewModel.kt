@@ -3,7 +3,9 @@ package com.chillsam.courmy.main.presentation.my
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.course.domain.GetPlansUseCase
 import com.chillsam.courmy.main.domain.my.GetMyProfileUseCase
+import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -27,11 +29,13 @@ class MyViewModel
     @Inject
     constructor(
         private val getMyProfileUseCase: GetMyProfileUseCase,
+        private val getPlansUseCase: GetPlansUseCase,
     ) : MviViewModel<MyProfileIntent, MyProfileUIState, MyProfileReducerEvent>(
             MyProfileUIState.empty,
         ) {
         private var loadJob: Job? = null
         private var moreJob: Job? = null
+        private var planJob: Job? = null
 
         override fun onIntent(intent: MyProfileIntent) {
             when (intent) {
@@ -40,6 +44,8 @@ class MyViewModel
                 -> load()
 
                 MyProfileIntent.LoadMore -> loadMore()
+
+                is MyProfileIntent.SelectTab -> dispatch(MyProfileReducerEvent.TabSelected(intent.tab))
             }
         }
 
@@ -88,22 +94,68 @@ class MyViewModel
                 MyProfileReducerEvent.MoreFailed -> {
                     state.copy(isLoadingMore = false)
                 }
+
+                is MyProfileReducerEvent.TabSelected -> {
+                    state.copy(selectedTab = event.tab)
+                }
+
+                is MyProfileReducerEvent.PlanFailed -> {
+                    state.copy(planError = event.message)
+                }
+
+                is MyProfileReducerEvent.PlanLoaded -> {
+                    state.copy(planCourses = event.courses.toImmutableList(), planError = null)
+                }
             }
 
         private fun load() {
             dispatch(MyProfileReducerEvent.LoadStarted)
+            loadPlans()
             loadJob?.cancel()
             // 진행 중인 이어받기를 끊는다. 안 끊으면 뒤늦게 도착한 옛 페이지가 새 목록 뒤에 붙는다.
             moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getMyProfileUseCase() }
-                        .onSuccess { profile -> dispatch(MyProfileReducerEvent.Loaded(profile)) }
+                    // 복귀 재로드가 1페이지로 줄이면 깊이 스크롤한 위치가 잘린다(SCRUM-631).
+                    // 이미 보여 준 개수만큼 다시 받아 위치를 보존한다(UseCase 상한으로 캡).
+                    runCatching {
+                        getMyProfileUseCase(size = maxOf(GetMyProfileUseCase.DEFAULT_SIZE, currentState.courses.size))
+                    }.onSuccess { profile -> dispatch(MyProfileReducerEvent.Loaded(profile)) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "마이 프로필 로드 실패", e)
                             dispatch(MyProfileReducerEvent.Failed("프로필을 불러오지 못했습니다."))
+                        }
+                }
+        }
+
+        /**
+         * 계획 탭 목록(`GET /api/v1/plans`). 프로필과 독립 호출이라 서로 막지 않는다.
+         *
+         * 실패는 재시도 안내로 표시한다. 예시 계획을 실제 저장 데이터처럼 표시하지 않는다.
+         */
+        private fun loadPlans() {
+            planJob?.cancel()
+            planJob =
+                viewModelScope.launch {
+                    runCatching { getPlansUseCase() }
+                        .onSuccess { list ->
+                            dispatch(
+                                MyProfileReducerEvent.PlanLoaded(
+                                    list.plans.map { plan ->
+                                        ProfileCourseVO(
+                                            // 코스 id 와 섞이지 않게 접두사를 유지한다(상세 이동 시 접두사를 제거한다).
+                                            id = "plan-${plan.planId}",
+                                            title = plan.title.ifBlank { "제목 없는 계획" },
+                                        )
+                                    },
+                                ),
+                            )
+                        }.onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "계획 목록 로드 실패", e)
+                            dispatch(MyProfileReducerEvent.PlanFailed("계획을 불러오지 못했어요. 다시 시도해 주세요."))
                         }
                 }
         }
@@ -116,7 +168,8 @@ class MyViewModel
          */
         private fun loadMore() {
             val state = currentState
-            if (state.isLoading || state.isLoadingMore) return
+            // 계획 탭은 페이징이 없어, 그쪽을 보는 동안 스크롤이 끝에 닿아도 코스를 더 받지 않는다.
+            if (state.selectedTab != ProfileTab.COURSES || state.isLoading || state.isLoadingMore) return
             // 마지막 페이지면 커서가 없다. 서버가 어긋나게 줄 때를 대비해 둘을 함께 본다.
             val cursor = state.nextCursor?.takeIf { state.hasNext } ?: return
             dispatch(MyProfileReducerEvent.LoadMoreStarted)

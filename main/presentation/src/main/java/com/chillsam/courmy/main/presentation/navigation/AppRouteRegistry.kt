@@ -1,12 +1,18 @@
 package com.chillsam.courmy.main.presentation.navigation
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsButtonVariant
+import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.course.presentation.CourseCompletePage
 import com.chillsam.courmy.course.presentation.CourseCompleteViewModel
-import com.chillsam.courmy.course.presentation.CourseCreateIntent
 import com.chillsam.courmy.course.presentation.CourseCreatePage
 import com.chillsam.courmy.course.presentation.CourseCreateViewModel
 import com.chillsam.courmy.course.presentation.CourseDetailPage
@@ -14,16 +20,24 @@ import com.chillsam.courmy.course.presentation.CourseDetailPageActions
 import com.chillsam.courmy.course.presentation.CourseDetailViewModel
 import com.chillsam.courmy.course.presentation.CourseEditPage
 import com.chillsam.courmy.course.presentation.CourseEditViewModel
+import com.chillsam.courmy.course.presentation.CourseFollowPage
+import com.chillsam.courmy.course.presentation.CourseFollowPageActions
+import com.chillsam.courmy.course.presentation.CourseReviewListPage
+import com.chillsam.courmy.course.presentation.CourseReviewListViewModel
 import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
+import com.chillsam.courmy.course.presentation.PlanDetailPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.home.HomePage
+import com.chillsam.courmy.main.presentation.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.presentation.login.LoginPage
 import com.chillsam.courmy.main.presentation.login.OnboardingCompletePage
 import com.chillsam.courmy.main.presentation.login.ProfileSetupPage
 import com.chillsam.courmy.main.presentation.login.SignupSelectionStore
 import com.chillsam.courmy.main.presentation.login.TermsAgreementPage
+import com.chillsam.courmy.main.presentation.map.MapPage
+import com.chillsam.courmy.main.presentation.map.MapSearchResultPage
 import com.chillsam.courmy.main.presentation.my.FollowListPage
 import com.chillsam.courmy.main.presentation.my.FollowTab
 import com.chillsam.courmy.main.presentation.my.GuestMyPage
@@ -35,21 +49,30 @@ import com.chillsam.courmy.main.presentation.onboarding.OnboardingPage
 import com.chillsam.courmy.main.presentation.onboarding.OnboardingViewModel
 import com.chillsam.courmy.main.presentation.onboarding.SplashPage
 import com.chillsam.courmy.main.presentation.saved.SavedPage
+import com.chillsam.courmy.main.presentation.search.SearchPage
+import com.chillsam.courmy.main.presentation.search.SearchResultPage
 import com.chillsam.courmy.main.presentation.settings.AccountManagePage
+import com.chillsam.courmy.main.presentation.settings.AppVersionPage
 import com.chillsam.courmy.main.presentation.settings.SettingsPage
 import com.chillsam.courmy.main.presentation.user.UserProfilePage
 import com.chillsam.courmy.course.domain.CourseCompletePage as CourseCompleteRoute
 import com.chillsam.courmy.course.domain.CourseCreatePage as CourseCreateRoute
 import com.chillsam.courmy.course.domain.CourseDetailPage as CourseDetailRoute
 import com.chillsam.courmy.course.domain.CourseEditPage as CourseEditRoute
+import com.chillsam.courmy.course.domain.CourseFollowPage as CourseFollowRoute
+import com.chillsam.courmy.course.domain.CourseReviewListPage as CourseReviewListRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
+import com.chillsam.courmy.course.domain.PlanDetailPage as PlanDetailRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
+import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage as RecommendedCoursesRoute
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
 import com.chillsam.courmy.main.domain.login.OnboardingCompletePage as CompleteRoute
 import com.chillsam.courmy.main.domain.login.ProfileSetupPage as ProfileSetupRoute
 import com.chillsam.courmy.main.domain.login.SignupRegionPage as SignupRegionRoute
 import com.chillsam.courmy.main.domain.login.SignupThemePage as SignupThemeRoute
 import com.chillsam.courmy.main.domain.login.TermsAgreementPage as TermsRoute
+import com.chillsam.courmy.main.domain.map.MapPage as MapRoute
+import com.chillsam.courmy.main.domain.map.MapSearchResultPage as MapSearchResultRoute
 import com.chillsam.courmy.main.domain.my.FollowListPage as FollowListRoute
 import com.chillsam.courmy.main.domain.my.GuestMyPage as GuestMyRoute
 import com.chillsam.courmy.main.domain.my.InterestRegionPage as InterestRegionRoute
@@ -59,7 +82,10 @@ import com.chillsam.courmy.main.domain.my.ProfileEditPage as ProfileEditRoute
 import com.chillsam.courmy.main.domain.onboarding.OnboardingPage as OnboardingRoute
 import com.chillsam.courmy.main.domain.onboarding.SplashPage as SplashRoute
 import com.chillsam.courmy.main.domain.saved.SavedPage as SavedRoute
+import com.chillsam.courmy.main.domain.search.SearchPage as SearchRoute
+import com.chillsam.courmy.main.domain.search.SearchResultPage as SearchResultRoute
 import com.chillsam.courmy.main.domain.settings.AccountManagePage as AccountManageRoute
+import com.chillsam.courmy.main.domain.settings.AppVersionPage as AppVersionRoute
 import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
@@ -146,19 +172,72 @@ val appRoutes: List<AppRoute> =
             path = HomeRoute.PATH,
             render = { HomePage() },
         ),
+        // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다.
+        AppRoute(
+            path = RecommendedCoursesRoute.PATH,
+            render = { args ->
+                RecommendedCoursesPage(initialCategory = args[RecommendedCoursesRoute.ARG_CATEGORY])
+            },
+        ),
+        // 입력 화면은 공유하며 홈은 코스 결과, 지도는 장소 결과로 이동한다.
+        AppRoute(
+            path = SearchRoute.PATH,
+            render = { args ->
+                SearchPage(
+                    target = args[SearchRoute.ARG_TARGET] ?: SearchRoute.TARGET_COURSE,
+                    query = args[SearchRoute.ARG_QUERY].orEmpty(),
+                    latitude = args[SearchRoute.ARG_LATITUDE]?.toDoubleOrNull(),
+                    longitude = args[SearchRoute.ARG_LONGITUDE]?.toDoubleOrNull(),
+                )
+            },
+        ),
+        AppRoute(
+            path = SearchResultRoute.PATH,
+            render = { args ->
+                SearchResultPage(
+                    query = args[SearchResultRoute.ARG_QUERY].orEmpty(),
+                )
+            },
+        ),
+        // 지도 탭(FS-10). 검색 결과는 시트만 갈아 끼우는 한 화면이라 라우트도 하나다.
+        AppRoute(
+            path = MapRoute.PATH,
+            isBottomTab = true,
+            render = { MapPage() },
+        ),
+        AppRoute(
+            path = MapSearchResultRoute.PATH,
+            syntheticStack = { args ->
+                listOf(GenericNavKey(MapRoute.PATH), GenericNavKey(MapSearchResultRoute.PATH, args))
+            },
+            render = { args ->
+                MapSearchResultPage(
+                    query = args[MapSearchResultRoute.ARG_QUERY].orEmpty(),
+                    listMode = args[MapSearchResultRoute.ARG_LIST_MODE].toBoolean(),
+                    latitude = args[MapSearchResultRoute.ARG_LATITUDE]?.toDoubleOrNull(),
+                    longitude = args[MapSearchResultRoute.ARG_LONGITUDE]?.toDoubleOrNull(),
+                )
+            },
+        ),
         // 코스 만들기: course 모듈의 실제 MVI 화면(SCRUM-234).
         // 상단바·저장바 네비게이션은 대상 화면(홈/코스 완성)이 main 모듈이라 여기서 주입한다.
+        //
+        // 이 화면은 세 가지로 열린다 — 빈 코스(인자 없음), 임시저장 이어쓰기(draftId),
+        // 남의 코스 포크(forkFromId). 어느 쪽인지는 라우트 인자로만 구분되므로 여기서 읽어 넘긴다.
         AppRoute(
             path = CourseCreateRoute.PATH,
-            render = {
+            render = { args ->
                 val navigationHelper = LocalNavigationHelper.current
                 val viewModel = hiltViewModel<CourseCreateViewModel>()
+                val isPlan = args[CourseCreateRoute.ARG_IS_PLAN].toBoolean()
                 CourseCreatePage(
                     viewModel = viewModel,
+                    isPlan = isPlan,
+                    draftCourseId = args[CourseCreateRoute.ARG_DRAFT_ID]?.toLongOrNull(),
+                    forkFromCourseId = args[CourseCreateRoute.ARG_FORK_FROM_ID]?.toLongOrNull(),
                     onClose = { navigationHelper.navigateToBack() },
                     onSaveDraft = {
                         // 임시저장하고 작성 화면을 빠져나온다(들어온 곳으로 되돌아간다).
-                        viewModel.onIntent(CourseCreateIntent.SaveDraft)
                         navigationHelper.navigateToBack()
                     },
                     // 서버 저장 성공 후 CourseCreatePage 가 호출한다(저장 인텐트는 Page 내부에서 발행).
@@ -171,7 +250,11 @@ val appRoutes: List<AppRoute> =
                     // 둔 값이라 작성 화면이 사라져도 문제없고, courseId 도 쓰지 않는다.
                     onSaveCourse = {
                         navigationHelper.navigateToBack()
-                        navigationHelper.navigateTo(CourseCompleteRoute)
+                        if (isPlan) {
+                            navigationHelper.navigateByRoute(MyRoute.plansRoute())
+                        } else {
+                            navigationHelper.navigateTo(CourseCompleteRoute)
+                        }
                     },
                 )
             },
@@ -201,7 +284,7 @@ val appRoutes: List<AppRoute> =
         ),
         AppRoute(
             path = MyRoute.PATH,
-            render = { MyPage() },
+            render = { args -> MyPage(showPlans = args[MyRoute.ARG_TAB] == "plans") },
         ),
         AppRoute(
             path = FollowListRoute.PATH,
@@ -245,6 +328,10 @@ val appRoutes: List<AppRoute> =
             render = { SettingsPage() },
         ),
         AppRoute(
+            path = AppVersionRoute.PATH,
+            render = { AppVersionPage() },
+        ),
+        AppRoute(
             path = AccountManageRoute.PATH,
             render = { AccountManagePage() },
         ),
@@ -253,10 +340,40 @@ val appRoutes: List<AppRoute> =
             render = { SavedPage() },
         ),
         AppRoute(
+            path = PlanDetailRoute.PATH,
+            render = { args ->
+                val navigationHelper = LocalNavigationHelper.current
+                PlanDetailPage(
+                    planId = args[PlanDetailRoute.ARG_PLAN_ID]?.toLongOrNull() ?: 0L,
+                    onBack = { navigationHelper.navigateToBack() },
+                    onSourceCourse = { navigationHelper.navigateByRoute(CourseDetailRoute.route(it.toString())) },
+                )
+            },
+        ),
+        AppRoute(
             path = CourseDetailRoute.PATH,
             render = { args ->
                 val navigationHelper = LocalNavigationHelper.current
                 val context = LocalContext.current
+                var showCopyChoice by remember { mutableStateOf(false) }
+                if (showCopyChoice) {
+                    val sourceId = args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull()
+                    DsDialogScaffold(
+                        title = "어떻게 복제할까요?",
+                        description = "계획은 나만 볼 수 있고, 방문할 장소와 메모를 담을 수 있어요.",
+                        onDismiss = { showCopyChoice = false },
+                    ) {
+                        DsButton(text = "계획하기", onClick = {
+                            showCopyChoice = false
+                            sourceId?.let { navigationHelper.navigateByRoute(CourseCreateRoute.planRoute(it)) }
+                        })
+                        DsButton(text = "후기 작성", variant = DsButtonVariant.Secondary, onClick = {
+                            showCopyChoice = false
+                            sourceId?.let { navigationHelper.navigateByRoute(CourseCreateRoute.forkRoute(it)) }
+                        })
+                        DsButton(text = "취소", variant = DsButtonVariant.Secondary, onClick = { showCopyChoice = false })
+                    }
+                }
                 CourseDetailPage(
                     viewModel = hiltViewModel<CourseDetailViewModel>(),
                     courseId = args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
@@ -271,11 +388,52 @@ val appRoutes: List<AppRoute> =
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
                                 context.copyShareLink(CourseDetailRoute.route(courseId))
                             },
+                            onForkCourse = {
+                                showCopyChoice = true
+                            },
+                            onFollowCourse = {
+                                args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull()?.let { courseId ->
+                                    navigationHelper.navigateByRoute(CourseFollowRoute.route(courseId))
+                                }
+                            },
                             onEditCourse = {
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
                                 navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
                             },
                             onLogin = { navigationHelper.navigateTo(LoginRoute) },
+                            onSeeAllReviews = {
+                                val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
+                                navigationHelper.navigateByRoute(CourseReviewListRoute.route(courseId))
+                            },
+                        ),
+                )
+            },
+        ),
+        AppRoute(
+            path = CourseReviewListRoute.PATH,
+            render = { args ->
+                val navigationHelper = LocalNavigationHelper.current
+                CourseReviewListPage(
+                    viewModel = hiltViewModel<CourseReviewListViewModel>(),
+                    courseId = args[CourseReviewListRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L,
+                    onBack = { navigationHelper.navigateToBack() },
+                )
+            },
+        ),
+        AppRoute(
+            path = CourseFollowRoute.PATH,
+            render = { args ->
+                val navigationHelper = LocalNavigationHelper.current
+                val courseId = args[CourseFollowRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L
+                CourseFollowPage(
+                    courseId = courseId,
+                    actions =
+                        CourseFollowPageActions(
+                            onBack = { navigationHelper.navigateToBack() },
+                            // 후기 작성은 후기 전체보기(FS-37) 위의 오버레이가 맡는다 — 그 화면으로 보낸다.
+                            onLeaveReview = {
+                                navigationHelper.navigateByRoute(CourseReviewListRoute.route(courseId.toString()))
+                            },
                         ),
                 )
             },

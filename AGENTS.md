@@ -87,6 +87,15 @@ AndroidArchi는 구현 패턴의 참고 자료다. 다음 템플릿 값을 Courm
 Courmy에서는 현재 코드의 `com.chillsam.courmy`, `DesignSystemThemeImpl`, `DsText`,
 `AppRouteRegistry`와 Courmy API·디자인 계약을 사용한다.
 
+## 카테고리·테마 기준
+
+카테고리·테마를 구현·수정할 때는 항상 `../.ai/taxonomy.md`를 참조한다. **두 체계가 별개다.**
+
+- **장소 카테고리 10종**(`PlaceCategoryVO`, `cafe` …): 지도 필터, 장소 상세·검색·저장함 장소 탭. 지도 `category` 요청은 대문자 enum 이름. 라벨은 `toPlaceCategoryLabel()`. 디저트·갤러리·편집숍을 별도 카테고리로 만들지 않는다.
+- **코스 태그 12종**(`CourseTagVO`, `date`·`cafetour` …): 홈 테마 타일, 추천 코스 필터, 관심 테마(가입·편집), 코스 카드 좌상단. 라벨은 `toCourseTagLabel()`. 서버 `likeThemes` 요청·`theme(s)` 응답은 enum 이름(대문자)이고, UI 선택·캐시는 소문자 코드다.
+
+표시용 코드는 소문자이며 요청은 엔드포인트별 계약을 따른다. 작성자의 자유 입력 해시태그만 별도로 취급한다.
+
 ## 핵심 아키텍처 규칙
 
 1. 의존 방향은 `presentation → domain → entity`, `data → domain → entity`다.
@@ -111,6 +120,12 @@ Courmy에서는 현재 코드의 `com.chillsam.courmy`, `DesignSystemThemeImpl`,
 - Gradle·Manifest·리소스·DI 변경은 APK 조립까지 확인한다.
 - 테스트나 빌드를 실행하지 못했으면 통과로 보고하지 않고 미실행 사유를 남긴다.
 - 테스트를 삭제하거나 lint·detekt baseline을 늘려 통과시키지 않는다.
+
+## UI 스크린샷 동기화
+
+UI가 변경되면 최신 빌드에서 해당 화면을 캡처하고 [Courmy UI Flow](https://www.notion.so/3f6b448bdf9d81bea9f1f35597ec3d54)의 대응 이미지를 교체한다.
+기존 화면 순서·설명은 유지하고 캡처 날짜·화면 상태를 표시한다. 실제 화면을 확인한 이미지만 올린다.
+로그인·서버 데이터·진입 조건 때문에 촬영할 수 없으면 기존 이미지를 유지하고 미갱신 화면과 사유를 명시한다.
 
 ## 위키 동기화
 

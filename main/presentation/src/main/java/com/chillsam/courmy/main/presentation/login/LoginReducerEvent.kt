@@ -3,6 +3,8 @@ package com.chillsam.courmy.main.presentation.login
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
 
 sealed interface LoginReducerEvent : ReducerEvent {
+    data object GoogleSelectionStarted : LoginReducerEvent
+
     data object Started : LoginReducerEvent
 
     data class Succeeded(

@@ -49,11 +49,14 @@ data class CourseDetailVO(
     val reviews: List<CourseReviewVO>,
     /** 내가 이 코스를 저장했는지(서버 viewer.hasSaved). 하단 저장 버튼 상태에 쓴다. */
     val isSaved: Boolean = false,
+    /** 내가 좋아요를 눌렀는지(서버 viewer.hasLiked). 진입 시 좋아요 토글의 초기 상태로 시딩한다. */
+    val isLiked: Boolean = false,
     /**
      * 내가 만든 코스인지. 서버가 내려주지 않아 작성자 id 와 세션 사용자 id 를 비교해 채운다.
      * true 면 저장 대신 편집·삭제를 노출하고 작성자 팔로우 버튼을 숨긴다.
      */
     val isMine: Boolean = false,
+    val forkedFromId: Long? = null,
 )
 
 /**
@@ -90,19 +93,43 @@ data class CourseDetailPlaceVO(
 /**
  * 코스 리뷰 1건.
  *
+ * - [id]          리뷰 식별자. 삭제(`DELETE .../reviews/{reviewId}`) 요청 키다. 0 이면 서버가 주지 않은 것.
+ * - [authorId]    리뷰어 id. [isMine] 판정 근거다.
  * - [author]      리뷰어 이름
  * - [authorImageUrl] 리뷰어 프로필 이미지 URL
  * - [rating]      별점(1~5)
- * - [dateText]    상대 날짜 (예: "2일 전")
- * - [body]        리뷰 본문
+ * - [dateText]    상대 날짜 (예: "2일 전"). 서버는 `createdAt`(UTC)만 주므로 변환해서 채운다.
+ * - [body]        리뷰 본문. 별점만 남긴 리뷰는 빈 문자열이다(서버 content 가 nullable).
  * - [photoUrls]   첨부 사진 URL 목록 (비면 미표시)
+ * - [tags]        리뷰어가 고른 태그. 상세 미리보기 카드(FS-11)는 감추고 후기 목록(FS-37)만 보여준다.
+ * - [isMine]      내가 쓴 리뷰인지. 서버가 주지 않아 [authorId] 와 세션 사용자 id 를 비교해 채운다.
+ *                 true 일 때만 삭제 메뉴를 노출한다.
  */
 @Serializable
 data class CourseReviewVO(
+    val id: Long = 0L,
+    val authorId: Long = 0L,
     val author: String,
     val authorImageUrl: String = "",
     val rating: Int,
     val dateText: String,
     val body: String,
     val photoUrls: List<String> = emptyList(),
+    val tags: List<CourseReviewTagVO> = emptyList(),
+    val isMine: Boolean = false,
+)
+
+/**
+ * 리뷰 태그 1개. 서버가 코드(`packed`)와 표기(문구·이모지)를 함께 내려준다.
+ *
+ * - [code]  서버 `CourseReviewTag` enum 이름의 소문자 (예: "packed"). 작성 요청의 `tagCodes` 에 싣는 값이라
+ *           화면에 그리지 않더라도 버리지 않는다.
+ * - [label] 태그 문구 (예: "구성이 알차요")
+ * - [icon]  앞에 붙는 이모지. 서버가 안 주면 빈 문자열이고, 그때는 문구만 그린다.
+ */
+@Serializable
+data class CourseReviewTagVO(
+    val code: String = "",
+    val label: String,
+    val icon: String = "",
 )

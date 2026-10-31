@@ -62,11 +62,12 @@ private const val SCRIM_ALPHA = 0.4f
  * 홈의 "코스 만들기" FAB 클러스터.
  *
  * - 닫힘: 우하단에 `+` FAB 한 개.
- * - 열림: 배경 스크림 + `새 코스 만들기` / `임시저장 가져오기` 메뉴가 펼쳐지고, FAB 는 `x` 로 회전.
+ * - 열림: 배경 스크림 + `새 코스 만들기` / `계획하기` / `임시저장 가져오기` 메뉴가 펼쳐지고, FAB 는 `x` 로 회전.
  *
  * 열림 여부([expanded])는 호출부(HomePage)가 소유하는 순수 UI 상태다.
- * 메뉴 선택([onNewCourse]·[onLoadDraft])의 실제 네비게이션은 호출부(HomePage)가 연결한다.
+ * 메뉴 선택([onNewCourse]·[onLoadDraft]·[onNewPlan])의 실제 동작은 호출부(HomePage)가 연결한다.
  * `새 코스 만들기` → course 모듈 실제 화면(CourseCreatePage, `/courseCreate`).
+ * `계획하기` → 같은 작성 화면에서 장소·메모를 담는 비공개 계획을 만든다.
  */
 @Composable
 fun BoxScope.CreateCourseMenu(
@@ -74,6 +75,7 @@ fun BoxScope.CreateCourseMenu(
     onToggle: () -> Unit,
     onNewCourse: () -> Unit,
     onLoadDraft: () -> Unit,
+    onNewPlan: () -> Unit,
 ) {
     // 배경 스크림: 열림 상태에서 화면 전체를 덮고, 눌러서 닫는다.
     AnimatedVisibility(
@@ -102,15 +104,21 @@ fun BoxScope.CreateCourseMenu(
     ) {
         MenuEntry(
             visible = expanded,
-            label = stringResource(R.string.home_menu_load_draft),
-            iconRes = R.drawable.ic_draft_24,
-            onClick = onLoadDraft,
-        )
-        MenuEntry(
-            visible = expanded,
             label = stringResource(R.string.home_menu_new_course),
             iconRes = null, // `+` 아이콘은 벡터 대신 코드로 그린다.
             onClick = onNewCourse,
+        )
+        MenuEntry(
+            visible = expanded,
+            label = stringResource(R.string.home_menu_new_plan),
+            iconRes = R.drawable.ic_calendar_24,
+            onClick = onNewPlan,
+        )
+        MenuEntry(
+            visible = expanded,
+            label = stringResource(R.string.home_menu_load_draft),
+            iconRes = R.drawable.ic_draft_24,
+            onClick = onLoadDraft,
         )
         CreateCourseFab(expanded = expanded, onClick = onToggle)
     }

@@ -15,6 +15,7 @@ import kotlinx.collections.immutable.persistentSetOf
  */
 data class HomeFeedUIState(
     val isLoading: Boolean = true,
+    val selectedCategory: String? = null,
     val courses: ImmutableList<HomeCourseVO> = persistentListOf(),
     val errorMessage: String? = null,
     /**
@@ -24,6 +25,7 @@ data class HomeFeedUIState(
      * 서버가 `hasSaved` 를 내려주면 이 집합과 대조 로직을 함께 제거한다. [wiki-needed]
      */
     val savedCourseIds: ImmutableSet<String> = persistentSetOf(),
+    val savedIdsKnown: Boolean = false,
     /** 저장 요청이 진행 중인 코스 id(중복 탭 방지). */
     val savingCourseIds: ImmutableSet<String> = persistentSetOf(),
     val actionErrorMessage: String? = null,
@@ -33,6 +35,9 @@ data class HomeFeedUIState(
     /** 다음 페이지를 받는 중. 목록 아래 로딩 표시에 쓴다. */
     val isLoadingMore: Boolean = false,
 ) : UiState {
+    val visibleCourses: List<HomeCourseVO>
+        get() = courses.filter { selectedCategory == null || it.categoryLabel == selectedCategory }
+
     companion object {
         val empty: HomeFeedUIState = HomeFeedUIState()
     }

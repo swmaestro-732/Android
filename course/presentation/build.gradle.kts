@@ -31,12 +31,16 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         buildConfig = true
         compose = true
+    }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -60,6 +64,10 @@ composeCompiler {
 }
 
 dependencies {
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(project(":course:domain"))
     implementation(project(":course:entity"))
     implementation(project(":common:presentation"))

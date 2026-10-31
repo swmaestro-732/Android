@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,11 +34,14 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
+import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
+import com.chillsam.courmy.main.presentation.component.CourseLikeCount
+import com.chillsam.courmy.main.presentation.component.ProfileContentSkeleton
 
 // 마이(FS-15)·타유저(FS-15 OtherUserPage) 프로필이 공유하는 구성요소.
 // 두 화면은 상단 프로필·코스 그리드가 같고, 상단 좌우 버튼(뒤로 가기·공유·설정)과 소개 유무,
@@ -92,14 +94,20 @@ fun ProfileHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (onBack != null) {
-                ProfileHeaderIconButton(
-                    iconRes = R.drawable.ic_chevron_left_24,
-                    contentDescription = "뒤로 가기",
-                    onClick = onBack,
-                )
+                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    ProfileHeaderIconButton(
+                        iconRes = R.drawable.ic_chevron_left_24,
+                        contentDescription = "뒤로 가기",
+                        onClick = onBack,
+                    )
+                }
             }
             Spacer(Modifier.weight(1f))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), content = actions)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                content = actions,
+            )
         }
 
         Row(
@@ -112,6 +120,8 @@ fun ProfileHeader(
             Column(modifier = Modifier.weight(1f)) {
                 DsText(
                     text = nickname,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     style = DesignSystemThemeImpl.typeScale.titleExtraL,
                     color = color.contentDefaultLevel0,
                 )
@@ -120,6 +130,8 @@ fun ProfileHeader(
                     Spacer(Modifier.height(2.dp))
                     DsText(
                         text = "@$handle",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel2,
                     )
@@ -364,6 +376,22 @@ private fun ProfileCourseCard(
                     contentScale = ContentScale.Crop,
                 )
             }
+            if (course.categoryLabel.isNotBlank()) {
+                DsText(
+                    text = course.categoryLabel,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel1,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(color.bgDefaultLevel1)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+            }
         }
         DsText(
             text = course.title,
@@ -373,27 +401,34 @@ private fun ProfileCourseCard(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
         )
+        CourseLikeCount(
+            count = course.likeCountText,
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
+        )
     }
 }
 
-/** 프로필 로딩 중 스피너. */
+/** 프로필 로딩 중 콘텐츠 자리. */
 @Composable
-fun ProfileLoading(modifier: Modifier = Modifier) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(color = color.contentAccent)
-    }
+fun ProfileLoading(
+    modifier: Modifier = Modifier,
+    showTabs: Boolean = true,
+) {
+    ProfileContentSkeleton(modifier, showTabs)
 }
 
-/** 프로필 로드 실패 시 안내 + 재시도. */
+/**
+ * 프로필 로드 실패 시 안내 + 재시도.
+ *
+ * @param onGoHome 딥링크처럼 뒤로 갈 곳이 없는 진입에서 막다른 화면이 되지 않도록 홈 이동을
+ *   제공할 때만 넘긴다. 하단 탭이 있는 화면(마이)은 null 로 둔다.
+ */
 @Composable
 fun ProfileError(
     message: String?,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    onGoHome: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(
@@ -409,5 +444,9 @@ fun ProfileError(
         )
         Spacer(Modifier.height(16.dp))
         DsButton(text = "다시 시도", onClick = onRetry)
+        if (onGoHome != null) {
+            Spacer(Modifier.height(8.dp))
+            DsButton(text = "홈으로 돌아가기", variant = DsButtonVariant.Secondary, onClick = onGoHome)
+        }
     }
 }

@@ -10,7 +10,9 @@ class SavedCourseDataSource(
     suspend fun getSavedCourses(
         size: Int,
         cursor: String?,
-    ): SavedCourseEnvelope = checkResponse(apiService.getSavedCourses(size, cursor))
+        folderId: Long?,
+        completed: Boolean?,
+    ): SavedCourseEnvelope = checkResponse(apiService.getSavedCourses(size, cursor, folderId, completed))
 
     suspend fun getSavedCourseIds(
         size: Int,

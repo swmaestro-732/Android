@@ -32,12 +32,16 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         buildConfig = true
         compose = true
+    }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -61,6 +65,7 @@ composeCompiler {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(project(":main:domain"))
     implementation(project(":main:entity"))
     implementation(project(":common:presentation"))
@@ -74,6 +79,10 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     // 프로필 이미지: 시스템 Photo Picker 로 고른 이미지 렌더(Coil).
     implementation(libs.coil.compose)
+    // 지도 탭(FS-10): 네이버 지도 렌더·마커 오버레이.
+    implementation(libs.naver.map.compose)
+    // 홈 현위치: 권한 허용 시 마지막 위치를 한 번 읽어 근처 저장 장소 기준점으로 쓴다(SCRUM-634).
+    implementation(libs.play.services.location)
     // 상세화면 Fragment 호스팅(FragmentActivity, FragmentContainerView).
     implementation(libs.androidx.fragment.ktx)
     api(libs.androidx.navigation3.runtime)
@@ -83,9 +92,18 @@ dependencies {
 
     // 카카오 로그인 SDK — UserApiClient 로 카카오 로그인(idToken 획득)
     implementation(libs.kakao.user)
+    // 네이버 로그인(OAuth accessToken)·구글 로그인(Credential Manager, OIDC idToken)
+    implementation(libs.naver.oauth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
 
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
 }

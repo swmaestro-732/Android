@@ -7,13 +7,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -64,6 +70,9 @@ data class RouteFitPadding(
  *
  * 드래그·확대로 둘러볼 수 있고, [focus] 가 바뀌면(이전/다음·핀 탭) 그 위치로 카메라가 따라간다.
  * [overview] 면 대신 모든 핀이 들어오도록 경계에 맞춘다.
+ *
+ * [onMapClick] 은 핀 밖 지도 영역을 눌렀을 때다. 미니맵처럼 지도 자체가 "눌러서 크게 보기"
+ * 진입점인 자리에서 쓴다(핀 탭은 [onMarkerClick] 으로 따로 받는다).
  */
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
@@ -76,6 +85,7 @@ fun CourseRouteMap(
     modifier: Modifier = Modifier,
     fitPadding: RouteFitPadding = RouteFitPadding(),
     scrollEnabled: Boolean = true,
+    onMapClick: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val density = LocalDensity.current
@@ -83,8 +93,13 @@ fun CourseRouteMap(
         rememberCameraPositionState {
             position = CameraPosition(focus, PLACE_MAP_ZOOM)
         }
+    var loaded by remember { mutableStateOf(false) }
+    var viewport by remember { mutableStateOf(IntSize.Zero) }
     // 전체 보기면 모든 핀이 들어오게, 아니면 지금 장소로 확대해 맞춘다.
-    LaunchedEffect(focus, overview, points) {
+    LaunchedEffect(focus, overview, points, loaded, viewport, fitPadding) {
+        if (!loaded || viewport == IntSize.Zero) return@LaunchedEffect
+        // 네이티브 지도에 변경된 레이아웃 크기가 적용된 다음 카메라 경계를 맞춘다.
+        withFrameNanos { }
         val coords = points.map { it.second }
         if (overview && coords.size >= 2) {
             val bounds = LatLngBounds.Builder().apply { coords.forEach { include(it) } }.build()
@@ -106,8 +121,10 @@ fun CourseRouteMap(
         }
     }
     NaverMap(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().onSizeChanged { viewport = it },
+        onMapLoaded = { loaded = true },
         cameraPositionState = cameraPositionState,
+        onMapClick = { _, _ -> onMapClick?.invoke() },
         uiSettings =
             MapUiSettings(
                 // 드래그·확대로 주변을 둘러볼 수 있게 연다. 기울이기·회전은 길 파악에 도움이 안 돼 막는다.

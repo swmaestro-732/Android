@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -19,18 +19,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.report.ReportAction
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
-import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
+import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.FollowListPage
+import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
@@ -43,7 +47,6 @@ import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
-import com.chillsam.courmy.main.presentation.profile.ProfileSectionLabel
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 
 /**
@@ -100,7 +103,7 @@ fun UserProfilePage(
         }
 
         uiState.isLoading -> {
-            ProfileLoading(modifier = modifier)
+            ProfileLoading(modifier = modifier, showTabs = false)
         }
 
         else -> {
@@ -108,6 +111,9 @@ fun UserProfilePage(
                 message = uiState.errorMessage,
                 onRetry = { viewModel.onIntent(UserProfileIntent.Retry) },
                 modifier = modifier,
+                // 공유 링크·딥링크로 바로 들어오면 뒤로 갈 화면이 없어 "다시 시도"만으로는 막다른
+                // 화면이 된다. 현재 화면을 홈으로 바꿔 끼워 탈출구를 만든다.
+                onGoHome = { navigationHelper.navigateReplace(HomePage) },
             )
         }
     }
@@ -123,6 +129,7 @@ private fun UserProfileContent(
     modifier: Modifier = Modifier,
 ) {
     val navigationHelper = LocalNavigationHelper.current
+    val session = LocalSessionUiState.current
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
     val shareProfile = { context.copyShareLink(UserProfileRoute.route(profile.handle)) }
@@ -158,6 +165,14 @@ private fun UserProfileContent(
                 // 소개가 비어 있으면 줄 자체를 두지 않는다.
                 bio = profile.bio.ifBlank { null },
             ) {
+                if (!profile.isMe) {
+                    FollowButton(
+                        relation = profile.relation,
+                        onClick = onToggleFollow,
+                        inFlight = isFollowInFlight,
+                        modifier = Modifier.width(116.dp).height(40.dp),
+                    )
+                }
                 if (FeatureFlags.SHARE_ENABLED) {
                     ProfileHeaderIconButton(
                         iconRes = R.drawable.ic_share_24,
@@ -165,24 +180,13 @@ private fun UserProfileContent(
                         onClick = shareProfile,
                     )
                 }
-            }
-            // 자기 자신을 연 경우(응답 id == 내 id)에는 팔로우 버튼을 노출하지 않는다.
-            if (!profile.isMe) {
-                FollowButton(
-                    relation = profile.relation,
-                    onClick = onToggleFollow,
-                    inFlight = isFollowInFlight,
-                    modifier =
-                        Modifier.padding(
-                            start = ScreenHorizontalPadding,
-                            end = ScreenHorizontalPadding,
-                            bottom = 20.dp,
-                        ),
-                )
+                if (!profile.isMe) {
+                    ReportAction(ReportTargetType.USER, profile.id)
+                }
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
             HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
-            ProfileSectionLabel(text = "코스 ${profile.courseCount}")
+            Spacer(Modifier.height(20.dp))
             ProfileCoursesGrid(
                 courses = courses,
                 onCourseClick = { courseId ->
@@ -197,9 +201,23 @@ private fun UserProfileContent(
             selectedTab = null,
             onTabSelected = { tab ->
                 when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
-                    MainTab.MY -> navigationHelper.navigateTo(MyPage)
+                    MainTab.HOME -> {
+                        navigationHelper.navigateTo(HomePage)
+                    }
+
+                    MainTab.MAP -> {
+                        navigationHelper.navigateTo(MapPage)
+                    }
+
+                    MainTab.SAVED -> {
+                        navigationHelper.navigateTo(SavedPage)
+                    }
+
+                    // 비로그인으로 MyPage 에 들어가면 프로필 조회가 401 로 떨어져 오류 화면만 남는다.
+                    // 그 화면에는 탭바가 없어 뒤로가기 말고는 빠져나갈 길도 없다.
+                    MainTab.MY -> {
+                        navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
+                    }
                 }
             },
         )

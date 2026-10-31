@@ -54,7 +54,17 @@ enum class AppFlow(
     CourseUpdate("course_update"),
     CourseDetailLoad("course_detail_load"),
     CourseSave("course_save"),
+    CourseLike("course_like"),
     FollowAuthor("follow_author"),
+
+    /** 장소 저장(북마크). 광고 캠페인의 참여 전환으로도 쓴다. 저장만 집계하고 해제는 제외한다. */
+    PlaceSave("place_save"),
+
+    /** 장소·코스 리뷰 작성. 고관여 전환 지표. */
+    ReviewWrite("review_write"),
+
+    /** 코스 댓글 작성. 커뮤니티 참여 지표. */
+    CommentWrite("comment_write"),
 }
 
 enum class FlowResult {

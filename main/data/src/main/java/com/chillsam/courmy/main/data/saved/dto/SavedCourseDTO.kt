@@ -2,15 +2,16 @@ package com.chillsam.courmy.main.data.saved.dto
 
 import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
+import com.chillsam.courmy.main.entity.saved.SavedCourseFolderVO
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
+import com.chillsam.courmy.main.entity.saved.SavedCoursesVO
 import kotlinx.serialization.Serializable
 
 /**
  * `GET /service/v1/my/saved-courses`(저장함 · 코스 탭) 응답 DTO.
  * 봉투는 공통 계약 `{ code, message, data }`.
  *
- * 응답에는 폴더별 개수(`folders`)·상태 필터 개수(`uncompletedCount`·`completedCount`)와
- * 필터·페이징 UI 가 생기면 함께 되살린다. [wiki-needed]
+ * 폴더·완주 필터의 개수와 커서 페이징 정보를 함께 변환한다.
  */
 @Serializable
 data class SavedCourseEnvelope(
@@ -22,6 +23,9 @@ data class SavedCourseEnvelope(
 @Serializable
 data class SavedCourseScreenDTO(
     val totalCount: Int? = null,
+    val uncompletedCount: Int? = null,
+    val completedCount: Int? = null,
+    val folders: List<SavedCourseFolderDTO>? = null,
     val savedCourses: List<SavedCourseItemDTO>? = null,
     /** 다음 페이지 커서. 마지막 페이지면 null. */
     val nextCursor: String? = null,
@@ -34,6 +38,8 @@ data class SavedCourseItemDTO(
     val id: Long? = null,
     val courseId: Long? = null,
     val completed: Boolean = false,
+    val completedAt: String? = null,
+    val isMine: Boolean = false,
     val course: SavedCourseSummaryDTO? = null,
 )
 
@@ -43,9 +49,10 @@ data class SavedCourseSummaryDTO(
     val coverImageUrl: String? = null,
     /** 지역(예: "성수"). 코스에 값이 없으면 null 이라 칩에서 생략한다. */
     val area: String? = null,
-    /** 서버 `CourseCategory` enum 이름. */
+    /** 공통 카테고리 소문자 코드. */
     val theme: String? = null,
     val placeCount: Int? = null,
+    val durationText: String? = null,
     val author: SavedCourseAuthorDTO? = null,
 )
 
@@ -78,6 +85,13 @@ internal fun SavedCourseScreenDTO.toVOList(): List<SavedCourseVO> =
                 // 핸들이 없는 작성자는 닉네임으로 대신 표기한다(카드에 빈 줄을 남기지 않게).
                 authorHandle = course?.author?.handle ?: course?.author?.nickname.orEmpty(),
                 thumbnailUrl = course?.coverImageUrl.orEmpty(),
+                durationText = course?.durationText.orEmpty(),
+                isMine = item.isMine,
+                completedAt =
+                    item.completedAt
+                        ?.takeIf { item.completed }
+                        ?.substringBefore("T")
+                        .orEmpty(),
             )
         }
 
@@ -90,3 +104,22 @@ private fun tagLabelOf(
         area?.takeIf { it.isNotBlank() },
         theme.toCourseTagLabel().takeIf { it.isNotBlank() },
     ).joinToString(" · ")
+
+@Serializable
+data class SavedCourseFolderDTO(
+    val id: Long? = null,
+    val name: String? = null,
+    val count: Int? = null,
+)
+
+fun SavedCourseScreenDTO.toScreenVO() =
+    SavedCoursesVO(
+        page = toPageVO(),
+        totalCount = totalCount ?: 0,
+        uncompletedCount = uncompletedCount ?: 0,
+        completedCount = completedCount ?: 0,
+        folders =
+            folders.orEmpty().mapNotNull { folder ->
+                folder.id?.let { SavedCourseFolderVO(it, folder.name.orEmpty(), folder.count ?: 0) }
+            },
+    )
