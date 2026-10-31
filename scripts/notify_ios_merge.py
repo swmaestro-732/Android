@@ -169,8 +169,12 @@ def github(method, path, payload=None):
 def slack(method, payload):
     headers = {"Authorization": "Bearer " + os.environ["SLACK_BOT_TOKEN"],
                "Content-Type": "application/json; charset=utf-8"}
-    result = json.loads(request_bytes("https://slack.com/api/" + method, headers,
-                                     json.dumps(payload, ensure_ascii=False).encode(), "POST"))
+    url = "https://slack.com/api/" + method
+    if method == "chat.getPermalink":
+        result = json.loads(request_bytes(url + "?" + urlencode(payload), headers, method="GET"))
+    else:
+        result = json.loads(request_bytes(url, headers,
+                                         json.dumps(payload, ensure_ascii=False).encode(), "POST"))
     if not result.get("ok"):
         # Slack error identifiers are safe; don't echo the response payload.
         error = re.sub(r"[^a-zA-Z0-9_]", "", str(result.get("error", "unknown_error")))

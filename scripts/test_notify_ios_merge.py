@@ -33,6 +33,30 @@ def pull_request():
 
 
 class MergeNoticeContentTest(unittest.TestCase):
+    def test_slack_read_methods_encode_query_and_keep_token_in_header(self):
+        cases = [
+            ("chat.getPermalink", {"channel": "C123", "message_ts": "123.456"}),
+        ]
+        for method, payload in cases:
+            with self.subTest(method=method), patch.dict(os.environ, {"SLACK_BOT_TOKEN": "test-token"}), \
+                    patch.object(notice, "request_bytes", return_value=b'{"ok":true}') as request:
+                notice.slack(method, payload)
+                args, kwargs = request.call_args
+                self.assertEqual(kwargs, {"method": "GET"})
+                self.assertEqual(parse_qs(urlsplit(args[0]).query),
+                                 {key: [str(value)] for key, value in payload.items()})
+                self.assertEqual(args[1]["Authorization"], "Bearer test-token")
+                self.assertNotIn("test-token", args[0])
+
+    def test_slack_write_methods_keep_json_post(self):
+        with patch.dict(os.environ, {"SLACK_BOT_TOKEN": "test-token"}), \
+                patch.object(notice, "request_bytes", return_value=b'{"ok":true}') as request:
+            payload = {"channel": "C123", "text": "알림"}
+            notice.slack("chat.postMessage", payload)
+            args = request.call_args.args
+            self.assertEqual(args[3], "POST")
+            self.assertEqual(json.loads(args[2]), payload)
+
     def test_only_merged_develop_non_dependabot_pr_is_eligible(self):
         pr = pull_request()
         self.assertTrue(notice.eligible_pr(pr))
