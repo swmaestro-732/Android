@@ -48,6 +48,19 @@ class MergeNoticeContentTest(unittest.TestCase):
                 self.assertEqual(args[1]["Authorization"], "Bearer test-token")
                 self.assertNotIn("test-token", args[0])
 
+    def test_upload_url_uses_form_post_and_encodes_filename(self):
+        with patch.dict(os.environ, {"SLACK_BOT_TOKEN": "test-token"}), \
+                patch.object(notice, "request_bytes", return_value=b'{"ok":true}') as request:
+            payload = {"filename": "화면 1.png", "length": 12, "alt_txt": "화면 설명"}
+            notice.slack("files.getUploadURLExternal", payload)
+            args = request.call_args.args
+            self.assertEqual(args[0], "https://slack.com/api/files.getUploadURLExternal")
+            self.assertEqual(args[1]["Content-Type"], "application/x-www-form-urlencoded")
+            self.assertEqual(args[1]["Authorization"], "Bearer test-token")
+            self.assertEqual(parse_qs(args[2].decode()), {key: [str(value)] for key, value in payload.items()})
+            self.assertEqual(args[3], "POST")
+            self.assertNotIn(b"test-token", args[2])
+
     def test_slack_write_methods_keep_json_post(self):
         with patch.dict(os.environ, {"SLACK_BOT_TOKEN": "test-token"}), \
                 patch.object(notice, "request_bytes", return_value=b'{"ok":true}') as request:
@@ -113,6 +126,15 @@ class MergeNoticeContentTest(unittest.TestCase):
         self.assertEqual(set(urls), {a, b, c})
         self.assertEqual(len(urls), 3)
         self.assertEqual(notice.image_urls(f"[최신 화면]({b})"), [b])
+
+    def test_slack_file_share_records_are_not_original_image_candidates(self):
+        shared = "https://soma-73.slack.com/files/U123/F123/screen.png"
+        original = "https://raw.githubusercontent.com/swmaestro-732/Android/main/docs/screen.png"
+        body = f"[Slack 공유 기록]({shared})\n{shared}\n[원본]({original})"
+        self.assertEqual(notice.image_urls(body), [original])
+        # Explicit image markup is still examined, even when its source is unsupported.
+        self.assertEqual(notice.image_urls(f'<img src="{shared}" />'), [shared])
+        self.assertEqual(notice.image_urls(f'![화면]({shared})'), [shared])
 
     def test_only_approved_sources_can_receive_image_requests(self):
         repo = "swmaestro-732/Android"
