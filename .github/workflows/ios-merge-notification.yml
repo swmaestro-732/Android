@@ -1,0 +1,48 @@
+name: iOS merge notification
+
+on:
+  pull_request_target:
+    branches: [develop]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: '이미 develop에 머지된 PR 번호 (실패한 알림 재실행)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-merge-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       github.event.pull_request.user.login != 'dependabot[bot]' &&
+       !startsWith(github.event.pull_request.head.ref, 'dependabot/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # pull_request_target에서는 PR head 코드를 실행하지 않는다.
+      # develop에 이미 반영된 신뢰된 자동화 코드만 사용한다.
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          persist-credentials: false
+          sparse-checkout: scripts
+      - name: Send merged PR summary and grouped screenshots
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ vars.SLACK_IOS_CHANNEL_ID }}
+        run: python3 scripts/notify_ios_merge.py
