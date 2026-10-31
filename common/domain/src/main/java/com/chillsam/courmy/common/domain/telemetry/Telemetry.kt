@@ -65,6 +65,9 @@ enum class AppFlow(
 
     /** 코스 댓글 작성. 커뮤니티 참여 지표. */
     CommentWrite("comment_write"),
+
+    /** 회원 탈퇴. 이탈 지표 — 앱 삭제(`app_remove`, Firebase 자동 수집)와 함께 본다. */
+    Withdraw("withdraw"),
 }
 
 enum class FlowResult {

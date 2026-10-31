@@ -20,6 +20,10 @@ import javax.inject.Singleton
  *
  * SDK 의존성을 app 에만 두기 위한 경계다. API 키가 비면(local.properties·CI secret 미설정)
  * 분석만 꺼진 no-op 으로 폴백한다 — 분석은 없어도 앱은 돌아야 한다.
+ *
+ * debug 빌드도 no-op 이다. Firebase 는 매니페스트(`app/src/debug/AndroidManifest.xml`)로 수집을
+ * 끄지만 Amplitude 는 그런 스위치가 없어 여기서 막는다 — 개발 중 이벤트가 운영 지표에 섞이면
+ * 전환·세션 집계가 왜곡된다. 로컬에서 전송 자체를 확인하고 싶으면 아래 가드를 잠시 지운다.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -31,6 +35,10 @@ object AnalyticsModule {
     fun provideAmplitudeClient(
         @ApplicationContext context: Context,
     ): AmplitudeClient {
+        if (BuildConfig.DEBUG) {
+            Log.i(TAG, "debug 빌드 — Amplitude 비활성 (Firebase 와 동일하게 테스트 이벤트를 운영 지표에서 분리)")
+            return NoOpAmplitudeClient
+        }
         val apiKey = BuildConfig.AMPLITUDE_API_KEY
         if (apiKey.isBlank()) {
             // 조용히 꺼지면 "왜 이벤트가 안 오지"를 한참 찾게 되므로 한 줄은 남긴다.
