@@ -376,22 +376,6 @@ private fun ProfileCourseCard(
                     contentScale = ContentScale.Crop,
                 )
             }
-            if (course.categoryLabel.isNotBlank()) {
-                DsText(
-                    text = course.categoryLabel,
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel1,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(color.bgDefaultLevel1)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
-            }
         }
         DsText(
             text = course.title,
