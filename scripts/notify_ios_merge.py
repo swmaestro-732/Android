@@ -170,7 +170,7 @@ def slack(method, payload):
     headers = {"Authorization": "Bearer " + os.environ["SLACK_BOT_TOKEN"],
                "Content-Type": "application/json; charset=utf-8"}
     url = "https://slack.com/api/" + method
-    if method in {"chat.getPermalink", "files.getUploadURLExternal"}:
+    if method == "chat.getPermalink":
         result = json.loads(request_bytes(url + "?" + urlencode(payload), headers, method="GET"))
     else:
         result = json.loads(request_bytes(url, headers,

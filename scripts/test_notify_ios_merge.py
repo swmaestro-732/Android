@@ -36,7 +36,6 @@ class MergeNoticeContentTest(unittest.TestCase):
     def test_slack_read_methods_encode_query_and_keep_token_in_header(self):
         cases = [
             ("chat.getPermalink", {"channel": "C123", "message_ts": "123.456"}),
-            ("files.getUploadURLExternal", {"filename": "화면 1.png", "length": 12}),
         ]
         for method, payload in cases:
             with self.subTest(method=method), patch.dict(os.environ, {"SLACK_BOT_TOKEN": "test-token"}), \
