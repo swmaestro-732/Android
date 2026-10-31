@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.presentation
 
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
+import com.chillsam.courmy.course.entity.CourseCompanionVO
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseVisibility
@@ -76,6 +77,11 @@ sealed interface CourseCreateIntent : MviIntent {
 
     data class ChangeVisibility(
         val visibility: CourseVisibility,
+    ) : CourseCreateIntent
+
+    /** 동행 칩 탭. 선택 입력이라 이미 선택된 칩을 다시 탭하면 해제된다. */
+    data class ToggleCompanion(
+        val companion: CourseCompanionVO,
     ) : CourseCreateIntent
 
     /**

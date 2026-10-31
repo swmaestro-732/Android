@@ -21,6 +21,7 @@ fun CourseDraftVO.toDraftUpdateRequest(published: Boolean = false): UpdateCourse
         thumbnailUrl = request.thumbnailUrl,
         tags = request.tags,
         visibility = request.visibility,
+        companion = request.companion,
         isPublished = request.isPublished,
         places =
             request.places.map { place ->

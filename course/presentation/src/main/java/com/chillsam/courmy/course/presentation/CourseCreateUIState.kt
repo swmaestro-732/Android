@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.presentation
 
 import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.course.entity.CourseCompanionVO
 import com.chillsam.courmy.course.entity.CourseForkRule
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseVisibility
@@ -27,6 +28,8 @@ data class CourseCreateUIState(
     val suggestedTags: ImmutableList<String> = persistentListOf(),
     val places: ImmutableList<CoursePlaceVO> = persistentListOf(),
     val visibility: CourseVisibility = CourseVisibility.PUBLIC,
+    /** 누구와 함께했는지(혼자·연인·가족·친구). 선택 입력이라 null(선택 안 함)이 기본이다. */
+    val companionType: CourseCompanionVO? = null,
     val isSaving: Boolean = false,
     /** 서버 저장이 끝나면 채워진다. 코스 상세로 넘어가는 신호. */
     val savedCourseId: Long? = null,

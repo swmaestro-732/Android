@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
  * - [suggestedTags] 추천 태그 (탭하면 [tags] 로 추가)
  * - [places]        담은 장소 목록 (드래그로 순서 변경)
  * - [visibility]    공개 범위
+ * - [companionType] 누구와 함께했는지(혼자·연인·가족·친구). 선택 입력이라 null 이면 요청에서 빠진다
  * - [thumbnailUrl]  코스 대표 사진. 임시저장이 서버에 남게 되면서 초안도 커버를 들고 있어야
  *                   이어서 작성할 때 되살아난다. 저장 전에는 로컬 URI(content://), 서버에서 되읽으면 공개 URL
  * - [forkedFromId]  이 초안이 남의 코스를 포크해 시작한 것이면 그 원본 코스 id. 생성 요청에 실려
@@ -24,6 +25,7 @@ data class CourseDraftVO(
     val suggestedTags: List<String> = emptyList(),
     val places: List<CoursePlaceVO> = emptyList(),
     val visibility: CourseVisibility = CourseVisibility.PUBLIC,
+    val companionType: CourseCompanionVO? = null,
     val thumbnailUrl: String = "",
     val forkedFromId: Long? = null,
 ) {

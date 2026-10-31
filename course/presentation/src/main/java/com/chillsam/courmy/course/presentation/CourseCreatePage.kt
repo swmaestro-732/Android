@@ -60,6 +60,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseStopVO
+import com.chillsam.courmy.course.presentation.component.CourseCompanionCard
 import com.chillsam.courmy.course.presentation.component.CourseInfoCard
 import com.chillsam.courmy.course.presentation.component.CourseInfoCardActions
 import com.chillsam.courmy.course.presentation.component.CoursePlaceCard
@@ -728,6 +729,11 @@ private fun VisibilitySection(
         suggestedTags = uiState.suggestedTags,
         onAddTag = { onIntent(CourseCreateIntent.AddTag(it)) },
         onRemoveTag = { onIntent(CourseCreateIntent.RemoveTag(it)) },
+    )
+    Spacer(Modifier.height(12.dp))
+    CourseCompanionCard(
+        selected = uiState.companionType,
+        onToggle = { onIntent(CourseCreateIntent.ToggleCompanion(it)) },
     )
     Spacer(Modifier.height(12.dp))
     CourseVisibilitySegment(
