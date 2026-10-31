@@ -1,5 +1,6 @@
 package com.chillsam.courmy.common.data.auth
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +44,10 @@ class TokenStore
         var registrationToken: String? = null
             private set
 
+        @Volatile
+        var isLoaded: Boolean = false
+            private set
+
         val isLoggedIn: Boolean
             get() = accessToken != null
 
@@ -51,13 +56,24 @@ class TokenStore
          * 복호화 실패(재설치·기기 복원 등)면 조용히 세션 없음으로 둔다.
          */
         suspend fun load() {
-            val tokens = runCatching { secureStorage.read() }.getOrNull()
-            accessToken = tokens?.accessToken
-            refreshToken = tokens?.refreshToken
-            userId = userIdFromAccessToken(tokens?.accessToken)
+            if (isLoaded) return
+            val tokens =
+                runCatching { secureStorage.read() }.getOrElse {
+                    if (it is CancellationException) throw it
+                    null
+                }
+            // 저장소를 읽는 동안 로그인/로그아웃한 새 세션을 이전 값으로 덮지 않는다.
+            synchronized(this) {
+                if (isLoaded) return
+                accessToken = tokens?.accessToken
+                refreshToken = tokens?.refreshToken
+                userId = userIdFromAccessToken(tokens?.accessToken)
+                isLoaded = true
+            }
         }
 
         /** 로그인/가입/재발급 성공 시 세션 토큰을 저장한다. registrationToken 은 더 필요 없으므로 비운다. */
+        @Synchronized
         fun updateSession(
             accessToken: String,
             refreshToken: String,
@@ -66,6 +82,7 @@ class TokenStore
             this.refreshToken = refreshToken
             this.userId = userIdFromAccessToken(accessToken)
             this.registrationToken = null
+            isLoaded = true
             scope.launch { runCatching { secureStorage.write(accessToken, refreshToken) } }
         }
 
@@ -73,11 +90,13 @@ class TokenStore
             this.registrationToken = token
         }
 
+        @Synchronized
         fun clear() {
             accessToken = null
             refreshToken = null
             userId = null
             registrationToken = null
+            isLoaded = true
             scope.launch { runCatching { secureStorage.clear() } }
         }
     }

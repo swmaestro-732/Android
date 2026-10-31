@@ -21,6 +21,12 @@
             android:exported="true"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Courmy.UpdatePreview" />
+        <activity
+            android:name=".debug.NotificationPreviewActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Courmy" />
     </application>
 
 </manifest>

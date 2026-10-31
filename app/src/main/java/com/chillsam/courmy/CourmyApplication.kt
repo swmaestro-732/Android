@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import com.chillsam.courmy.common.data.push.DeviceRegistration
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.main.presentation.login.GoogleLoginClient
 import com.chillsam.courmy.main.presentation.login.NaverLoginClient
@@ -16,8 +17,12 @@ class CourmyApplication : Application() {
     @Inject
     lateinit var telemetry: Telemetry
 
+    @Inject
+    lateinit var devices: DeviceRegistration
+
     override fun onCreate() {
         super.onCreate()
+        devices.sync()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
                 NotificationChannel("courmy_activity", "활동 알림", NotificationManager.IMPORTANCE_DEFAULT),

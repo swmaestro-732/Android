@@ -96,6 +96,19 @@ import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
 val appRoutes: List<AppRoute> =
     listOf(
         AppRoute(
+            path = com.chillsam.courmy.main.domain.notification.NotificationInboxPage.PATH,
+            syntheticStack = {
+                listOf(
+                    GenericNavKey(MyRoute.PATH),
+                    GenericNavKey(com.chillsam.courmy.main.domain.notification.NotificationInboxPage.PATH),
+                )
+            },
+            render = {
+                com.chillsam.courmy.main.presentation.notification
+                    .NotificationInboxPage()
+            },
+        ),
+        AppRoute(
             path = SplashRoute.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current

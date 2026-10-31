@@ -151,6 +151,7 @@ class ApiLogInterceptor(
         /** 로그에 평문으로 남기면 안 되는 필드(값을 `***` 로 대체). 키는 소문자로 대소문자 무시 비교한다. */
         val SENSITIVE =
             setOf(
+                "token",
                 "idtoken",
                 "id_token",
                 "accesstoken",
@@ -166,7 +167,7 @@ class ApiLogInterceptor(
         /** 비-JSON 본문(폼 인코딩 등)에서 토큰류 값을 가리기 위한 정규식. */
         val SENSITIVE_TEXT_REGEX =
             Regex(
-                "(?i)(id_?token|access_?token|refresh_?token|" +
+                "(?i)(token|id_?token|access_?token|refresh_?token|" +
                     "registration_?token|password|authorization)=[^&\\s]+",
             )
 

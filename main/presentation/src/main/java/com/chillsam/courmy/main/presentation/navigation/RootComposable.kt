@@ -40,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.chillsam.courmy.common.domain.message.MessageEffect
+import com.chillsam.courmy.common.domain.push.PushTarget
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
@@ -61,6 +62,8 @@ import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
 fun RootComposable(
     modifier: Modifier = Modifier,
     startStack: List<NavKey> = listOf(GenericNavKey(SplashPage.PATH)),
+    pendingPush: PushTarget? = null,
+    onPushConsumed: () -> Unit = {},
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
     var oneButtonDialogEffect by remember {
@@ -93,6 +96,13 @@ fun RootComposable(
                 appUpdateViewModel.onIntent(AppUpdateIntent.CheckOptionalUpdate)
             }
         }
+        PushNavigationEffect(
+            target = pendingPush,
+            currentPath = (backStack.lastOrNull() as? GenericNavKey)?.path,
+            sessionState = sessionState,
+            blocked = updateRequired,
+            onConsumed = onPushConsumed,
+        )
         val canShowOptionalUpdate = !isSplash && !updateRequired && oneButtonDialogEffect == null
         if (canShowOptionalUpdate && appUpdateState.showOptionalUpdate) {
             OptionalAppUpdateDialog(

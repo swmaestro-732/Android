@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.data.auth
 
 import com.chillsam.courmy.common.data.auth.TokenStore
+import com.chillsam.courmy.common.data.push.DeviceRegistration
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.main.data.auth.dto.LogoutRequest
 import com.chillsam.courmy.main.data.auth.dto.SignupRequest
@@ -17,6 +18,7 @@ import com.chillsam.courmy.main.entity.auth.SocialProvider
 class AuthRepositoryImpl(
     private val dataSource: AuthDataSource,
     private val tokenStore: TokenStore,
+    private val devices: DeviceRegistration,
 ) : AuthRepository {
     override suspend fun socialLogin(
         provider: SocialProvider,
@@ -47,6 +49,7 @@ class AuthRepositoryImpl(
                 refreshToken = data.refreshToken.orEmpty(),
             )
         }
+        if (!data.newUser) devices.onSessionAvailable()
         return SocialLoginResult(newUser = data.newUser)
     }
 
@@ -77,27 +80,37 @@ class AuthRepositoryImpl(
             accessToken = requireNotNull(data.accessToken) { "가입 응답에 accessToken 이 없습니다." },
             refreshToken = data.refreshToken.orEmpty(),
         )
+        devices.onSessionAvailable()
     }
 
     override suspend fun restoreSession() {
         tokenStore.load()
+        devices.sync()
     }
 
     override val isLoggedIn: Boolean
         get() = tokenStore.isLoggedIn
 
     override suspend fun logout() {
-        // 서버 세션 무효화는 best-effort(실패해도 로컬 세션은 반드시 정리).
-        tokenStore.refreshToken?.takeIf { it.isNotBlank() }?.let { refresh ->
-            runCatching { dataSource.logout(LogoutRequest(refresh)) }
+        try {
+            devices.unregister()
+            // 서버 세션 무효화는 best-effort. 로컬 세션 정리는 취소에도 보장한다.
+            tokenStore.refreshToken?.takeIf { it.isNotBlank() }?.let { refresh ->
+                runCatching { dataSource.logout(LogoutRequest(refresh)) }
+            }
+        } finally {
+            tokenStore.clear()
         }
-        tokenStore.clear()
     }
 
     override suspend fun withdraw() {
-        // 탈퇴 대상은 서버가 accessToken(JWT) 으로 식별하므로 userId 를 보내지 않는다.
+        // 탈퇴 API 실패 시에는 로그인 상태를 유지한다.
         dataSource.withdraw()
-        tokenStore.clear()
+        try {
+            devices.unregister(removeRemote = false)
+        } finally {
+            tokenStore.clear()
+        }
     }
 
     override suspend fun isHandleAvailable(handle: String): Boolean = dataSource.checkHandleAvailability(handle)
