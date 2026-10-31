@@ -1,160 +1,78 @@
-# Courmy
+# Courmy Android
 
-Kotlin · Jetpack Compose 기반 Android 애플리케이션.
-**멀티모듈 클린아키텍처 + DDD + MVI** 구조를 가짐.
+장소를 탐색하고 코스를 만들고 저장하며 여행 계획과 방문 기록을 관리하는 Kotlin·Jetpack Compose 앱입니다. `com.chillsam.courmy` 패키지와 멀티모듈 Clean Architecture·MVI 구조를 사용합니다.
 
-> 현재는 아키텍처·CI·공용 인프라(미디어 검색, 즐겨찾기, 디자인 시스템, 성능 계측)를 갖춘 **초기 단계**입니다.
-> 홈 화면은 최소 골격이며, 여기에 feature 를 붙여 나갑니다.
+## 문서와 작업 추적
 
----
+- [Android 작업 현황·담당자 확인 사항](https://github.com/swmaestro-732/.ai/blob/main/android/work-status.md): 작업별 PR/커밋, 미머지·로컬 상태, 백엔드·iOS 확인 항목, 실제 화면 캡처.
+- [열린 PR](https://github.com/swmaestro-732/Android/pulls) · [머지된 PR](https://github.com/swmaestro-732/Android/pulls?q=is%3Apr+is%3Amerged): 최신 리뷰·통합 상태. PR 등록이나 develop 머지는 배포 완료를 뜻하지 않습니다.
+- [Android 위키](https://github.com/swmaestro-732/.ai/blob/main/android/README.md) · [API 명세](https://github.com/swmaestro-732/.ai/blob/main/api-spec.md) · [카테고리/테마](https://github.com/swmaestro-732/.ai/blob/main/taxonomy.md).
+- [Courmy UI Flow](https://www.notion.so/3f6b448bdf9d81bea9f1f35597ec3d54): 확인한 화면과 상태. PR 첨부 캡처의 촬영 날짜·예시 데이터 여부도 확인합니다.
+- [작업 지침](AGENTS.md): 위키 확인·검증·동기화 기준.
 
-## 기술 스택
+## 구현 범위
 
-| 영역 | 사용 기술 |
-|---|---|
-| 언어 | Kotlin 2.3 (JDK 17) |
-| UI | Jetpack Compose (BOM 2026.04) · Navigation 3 · Material 3 |
-| DI | Hilt · KSP |
-| 네트워크 | Retrofit · OkHttp · kotlinx.serialization |
-| 이미지/애니메이션 | Coil 3 · Lottie |
-| 비동기 | Coroutines |
-| 테스트 | JUnit · MockK · Kover(커버리지) |
-| 정적분석/포맷 | Detekt · ktlint |
-| 성능 | Baseline Profile · Macrobenchmark · JankStats · TTI 계측 |
+2026-10-31 develop `b87bc5f` 기준으로 로그인·온보딩, 홈 추천, 지도·장소 검색, 장소/코스 상세, 코스 작성·임시저장·복제, 저장함, 계획, 따라가기·후기, 프로필·팔로우, 설정·앱 업데이트 흐름을 포함합니다. 서버 배포와 실제 동작 검증은 기능별 PR에서 확인합니다.
 
-- `compileSdk` / `targetSdk` 37, `minSdk` 24
+알림함·FCM·알림 설정, 분석 이벤트 보완, 추천 필터/UI 정리, 동행 선택 등 진행 중인 변경은 [작업 현황](https://github.com/swmaestro-732/.ai/blob/main/android/work-status.md)에 별도로 기록합니다. 해당 PR의 코드를 develop에 포함된 기능으로 간주하지 않습니다.
 
----
+## 기술 스택과 구조
 
-## 아키텍처
+Kotlin·JDK 17, Compose·Material3·Navigation3, Hilt/KSP, Coroutines, Retrofit/OkHttp/kotlinx.serialization, Coil, Firebase 및 Amplitude를 사용합니다. 정확한 버전과 SDK 수준은 [버전 카탈로그](gradle/libs.versions.toml)와 [앱 Gradle 설정](app/build.gradle.kts)이 기준입니다.
 
-계층은 아래 한 방향으로만 의존합니다. `data` 는 `domain` 이 정의한 인터페이스(Repository/UseCase)를 구현합니다.
-
-```
-presentation ─▶ domain ─▶ entity
-     │            ▲
-     └─ data ─────┘   (domain 의 인터페이스를 구현)
+```text
+presentation → domain → entity
+data         → domain → entity
 ```
 
-- **entity** — 순수 데이터 모델(VO). 어떤 프레임워크에도 의존하지 않음
-- **domain** — 비즈니스 규칙. UseCase / Repository 인터페이스 정의
-- **data** — Repository 구현. Retrofit ApiService · DTO · DataSource
-- **presentation** — Compose UI + MVI ViewModel(`MviViewModel`)
-
-각 기능 도메인은 `common`(여러 feature 공용)과 `main`(앱 진입·네비게이션) 두 축으로 나뉘며, 축마다 위 4계층을 갖습니다.
-
----
-
-## 모듈 구조
+presentation과 data는 직접 의존하지 않으며 app에서 구현을 조립합니다. entity/domain은 순수 Kotlin/JVM으로 유지하고, DTO→VO 변환은 data에서 수행합니다. 화면 입력은 Intent, 상태 변경은 ReducerEvent와 reduce(), 이동은 Navigation3 공통 계약과 AppRouteRegistry를 사용합니다.
 
 | 모듈 | 역할 |
 |---|---|
-| `common:entity` | 공용 VO — 미디어(`MediaItemVO`), 즐겨찾기(`FavoriteItemVO`) |
-| `common:domain` | 미디어 검색·즐겨찾기 UseCase/Repository, 에러·네비게이션·메시지 헬퍼 규약 |
-| `common:data` | 미디어 검색 API(카카오 다음 검색) 구현, 네트워크 모듈 |
-| `common:presentation` | 디자인 시스템(토큰·타이포·컬러), 공용 컴포넌트, MVI 베이스, JankStats |
-| `main:entity` | 앱 전용 엔티티 |
-| `main:domain` | 홈, 딥링크 라우팅(`RouteMatcher`·`RoutePattern`) |
-| `main:data` | 앱 전용 데이터 |
-| `main:presentation` | `MainActivity`, 네비게이션 호스트, 홈 화면 |
-| `tti` | Time-To-Interaction(초기 상호작용 시점) 계측 |
-| `baselineprofile` | Baseline Profile 생성 + 시작 성능 벤치마크 |
-| `app` | 모듈 조립 진입점 |
+| `app` | 앱 진입점, SDK 초기화, DI 조립, 빌드·서명 설정 |
+| `common/{entity,domain,data,presentation}` | 공통 모델·네트워크·인증 기반·네비게이션 계약·디자인 시스템·MVI·계측 |
+| `main/{entity,domain,data,presentation}` | 로그인·가입, 홈·지도·검색·저장함·프로필·설정 및 네비게이션 호스트 |
+| `course/{entity,domain,data,presentation}` | 코스/장소 상세, 코스 작성·초안·계획·따라가기·후기 |
+| `tti` | 초기 상호작용 시간 계측 |
+| `baselineprofile` | Baseline Profile 생성과 시작 성능 벤치마크 |
 
----
+색상·타이포는 DesignSystemThemeImpl과 공통 컴포넌트를 사용합니다. 장소 카테고리 10종과 코스 태그 12종은 별도 체계입니다. 아키텍처 상세는 [Android 위키](https://github.com/swmaestro-732/.ai/blob/main/android/architecture.md)를 참고합니다.
 
-## 프로젝트 구조
+## 로컬 설정과 실행
 
-```
-courmy/
-├── app/                        # 앱 진입점 · 모듈 조립
-├── common/
-│   ├── entity/                 # 공용 VO
-│   ├── domain/                 # 공용 UseCase · Repository 규약
-│   ├── data/                   # 미디어 검색 API 구현
-│   └── presentation/           # 디자인 시스템 · 공용 컴포넌트 · MVI 베이스
-├── main/
-│   ├── entity/
-│   ├── domain/                 # 홈 · 딥링크 라우팅
-│   ├── data/
-│   └── presentation/           # MainActivity · 네비게이션 · 홈 화면
-├── tti/                        # TTI 성능 계측
-├── baselineprofile/            # Baseline Profile · Macrobenchmark
-├── config/detekt/              # Detekt 룰셋
-├── gradle/libs.versions.toml   # 버전 카탈로그
-└── .github/workflows/ci.yml    # CI 파이프라인
-```
+JDK 17과 [버전 카탈로그](gradle/libs.versions.toml)에 지정된 Android SDK가 필요합니다. `local.properties`에 SDK 경로와 필요한 앱 설정을 준비합니다. API 주소 설정은 [common/data Gradle](common/data/build.gradle.kts), SDK 설정은 [app Gradle](app/build.gradle.kts)을 확인합니다.
 
----
+| 설정 | 용도 |
+|---|---|
+| `API_BASE_URL` | Courmy API 주소 |
+| `NAVER_MAP_CLIENT_ID` | 지도 인증 |
+| `KAKAO_NATIVE_APP_KEY` | 카카오 로그인 |
+| `NAVER_LOGIN_CLIENT_ID`, `NAVER_LOGIN_CLIENT_SECRET` | 네이버 로그인 |
+| `GOOGLE_SERVER_CLIENT_ID` | Google 로그인용 웹 OAuth 클라이언트 ID |
+| `AMPLITUDE_API_KEY` | 제품 분석 |
+| `FACEBOOK_APP_ID`, `FACEBOOK_CLIENT_TOKEN` | 광고 전환 SDK |
 
-## 빌드 & 실행
+Firebase 설정 파일 `app/google-services.json`은 프로젝트 담당자에게 받아 로컬에 둡니다. 파일이 없어도 debug 빌드는 가능하지만 Firebase 기능 검증 환경으로 사용할 수는 없습니다. debug Firebase Analytics/Crashlytics 수집은 [debug Manifest](app/src/debug/AndroidManifest.xml)에서 비활성화합니다. Amplitude의 debug 차단 변경은 PR #120 상태를 확인합니다.
 
-요구사항: **JDK 17**, Android SDK(compileSdk 37)
-
-### 로컬 설정 — `app/google-services.json`
-
-Firebase Crashlytics 설정 파일이다. API key 를 담고 있어 저장소에 커밋하지 않으므로
-[Firebase 콘솔](https://console.firebase.google.com/project/courmy-qa732/settings/general)에서
-각자 받아 `app/` 아래에 둔다.
-
-- **없어도 debug 빌드는 된다** — 크래시 리포팅만 빠진다.
-- **release 빌드는 실패한다.** 크래시 리포팅 없이 출시하는 걸 막기 위한 의도적인 동작이다.
-  CI 는 `GOOGLE_SERVICES_JSON_BASE64` secret 으로 주입한다(`.github/workflows/cd.yml`).
-- debug 빌드는 수집이 꺼져 있다. 개발 중 낸 크래시가 운영 대시보드에 섞이지 않게 하기 위함이며,
-  로컬에서 리포팅을 확인해야 하면 `app/src/debug/AndroidManifest.xml` 의 값을 잠깐 `true` 로 바꾼다.
+`local.properties`, `google-services.json`, keystore·서명 비밀번호·토큰은 커밋하지 않습니다. release APK/AAB 패키징에는 Firebase 설정, 카카오·네이버 지도 키와 완전한 release 서명 설정이 필요하며 누락 시 빌드를 실패시킵니다.
 
 ```bash
-# 디버그 APK 빌드
-./gradlew assembleDebug
-
-# 유닛 테스트
-./gradlew testDebugUnitTest
-
-# 정적분석 · 포맷
+./gradlew :app:compileDebugKotlin
+./gradlew test
+./gradlew :app:assembleDebug :app:lintDebug
 ./gradlew detekt
-ktlint --relative        # 포맷 검사 (.editorconfig 기준)
-
-# 커버리지 리포트
-./gradlew koverXmlReport
 ```
 
----
+변경 범위의 좁은 task를 먼저 실행하고 PR 전에 전체 영향을 확인합니다. Gradle·Manifest·리소스·DI 변경은 APK 조립까지 검증합니다. 검사 통과를 위해 테스트를 삭제하거나 lint/detekt baseline을 늘리지 않습니다. 포맷·시크릿 검사는 [pre-commit 설정](.pre-commit-config.yaml)을 따릅니다.
 
-## 품질 · 성능 전략
+## CI/CD
 
-- **테스트/커버리지** — MockK 기반 UseCase 유닛테스트, Kover 로 커버리지 리포트
-- **정적분석** — Detekt(코드 스멜·복잡도, 기존 위반은 모듈별 baseline 으로 동결) + ktlint(포맷)
-- **런타임 성능**
-  - `baselineprofile` 모듈이 Baseline Profile 을 생성해 앱 시작·핵심 경로를 사전 컴파일
-  - `JankStats` 로 프레임 드랍(jank) 모니터링
-  - `tti` 모듈로 초기 상호작용 도달 시점(Time-To-Interaction) 계측
-- **Compose 안정성** — `compose_stability.conf` 로 안정성 힌트 제공, `-Pcomposecompiler.reports=true` 로 리포트 생성
+[CI](.github/workflows/ci.yml)는 PR의 빌드·테스트·정적 분석·보안 검사를 수행합니다. 정확한 실행 조건은 워크플로 파일이 기준입니다.
 
----
+[CD](.github/workflows/cd.yml)는 **release push 또는 수동 실행에서 Fastlane으로 Google Play 프로덕션 심사를 제출**하고 APK/AAB를 GitHub Pre-release에도 게시합니다. 내부 테스트 파일만 만드는 흐름이 아닙니다. Play 심사 제출과 실제 게시 완료는 구분합니다.
 
-## CI/CD · 컨벤션
+[Fastlane](fastlane/Fastfile)은 Play 최신 versionCode를 조회해 다음 번호로 빌드하며 versionName 패치와 출시 노트를 처리합니다. 현재 게시 버전은 [Play Console 상태 위키](https://github.com/swmaestro-732/.ai/blob/main/android/play-console-state.md)와 실제 Console에서 확인합니다. Firebase Remote Config의 최신 버전 값과 Play 게시 버전은 자동 동기화된다고 가정하지 않습니다.
 
-**GitHub Actions** — PR(→ `develop`/`release`/`main`) 마다 실행하고 결과를 단일 PR 코멘트로 통합합니다.
+## 협업
 
-| 잡 | 내용 |
-|---|---|
-| ktlint | 포맷 검사(로컬 pre-commit 과 동일 룰) |
-| detekt | 정적분석(신규 위반 차단) |
-| build & test | 빌드 · 유닛테스트 · Android Lint · Kover |
-| code security | Gitleaks 시크릿 스캔(히스토리 포함, 발견 시 차단) |
-
-**CD** (GitHub Actions + Fastlane) — 서명 release 아티팩트 빌드부터 단계적으로 배포를 자동화합니다.
-
-| 단계 | 내용 | 트리거 | 상태 |
-|---|---|---|---|
-| 1. 내부 테스트 배포 | 서명 release AAB/APK를 GitHub Pre-release Assets로 업로드 | `release` push 또는 수동 | ✅ 도입 |
-| 2. QA 배포 | Firebase App Distribution | develop 자동 | MVP 이후 |
-| 3. 스토어 배포 | Google Play | release/tag | 출시 이후 |
-| 4. 릴리스 운영 | 버전 자동화 · Sentry | tag/main | 이후 |
-
-> 서명은 `KEYSTORE_*` secret 등록 시 실서명, 없으면 debug 서명 폴백.
-
-- **pre-commit** — 커밋 전 로컬 검사: 포맷(ktlint, CI와 버전 일치) · 시크릿(gitleaks, staged diff) · 기본 파일/커밋 규칙
-- **Dependabot** — 의존성 버전 업데이트 자동 PR (gradle · github-actions)
-- **브랜치 전략** — 기능은 `develop`에 통합하고, 내부 테스트 대상은 `develop → release`, 검증을 마친 버전은 `release → main` PR로 승격합니다.
-- **커밋** — Conventional Commits, PR 제목에 SCRUM 이슈 키 표기
+기능 변경은 develop 대상 PR로 검토합니다. PR에는 구현·검증 범위와 서버/iOS 영향, 실제 화면 근거를 남기고 [공통 컨벤션](https://github.com/swmaestro-732/.ai/blob/main/conventions.md)의 iOS 공유 절차를 따릅니다. 위키는 별도 저장소이므로 같은 작업에서 갱신하고 PR에 위키 커밋을 연결합니다. 배포는 release 흐름과 필요한 Console 검토를 따릅니다.
