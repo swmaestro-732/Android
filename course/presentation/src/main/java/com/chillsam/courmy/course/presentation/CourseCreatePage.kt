@@ -68,7 +68,7 @@ import com.chillsam.courmy.course.presentation.component.CourseRouteConnector
 import com.chillsam.courmy.course.presentation.component.CourseSectionHeader
 import com.chillsam.courmy.course.presentation.component.CourseTagCard
 import com.chillsam.courmy.course.presentation.component.CourseTopBar
-import com.chillsam.courmy.course.presentation.component.CourseVisibilitySegment
+import com.chillsam.courmy.course.presentation.component.CourseVisibilityCard
 import com.chillsam.courmy.course.presentation.component.PlaceSearchOverlay
 import com.chillsam.courmy.course.presentation.component.PlanInfoCard
 import com.chillsam.courmy.course.presentation.component.dashedBorder
@@ -736,7 +736,7 @@ private fun VisibilitySection(
         onToggle = { onIntent(CourseCreateIntent.ToggleCompanion(it)) },
     )
     Spacer(Modifier.height(12.dp))
-    CourseVisibilitySegment(
+    CourseVisibilityCard(
         selected = uiState.visibility,
         onSelect = { onIntent(CourseCreateIntent.ChangeVisibility(it)) },
     )
