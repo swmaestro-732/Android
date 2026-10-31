@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.domain.home
 
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.entity.home.HomeVO
@@ -16,12 +17,17 @@ class GetHomeFeedUseCaseTest {
         var requestedCursor: String? = null
             private set
 
+        var requestedCategory: CourseTagVO? = null
+            private set
+
         override suspend fun getCourseFeed(
             size: Int,
             cursor: String?,
+            category: CourseTagVO?,
         ): CursorPageVO<HomeCourseVO> {
             requestedSize = size
             requestedCursor = cursor
+            requestedCategory = category
             return CursorPageVO()
         }
 
@@ -66,5 +72,19 @@ class GetHomeFeedUseCaseTest {
             // 첫 페이지는 커서 없이 나가야 한다(있으면 서버가 중간부터 준다).
             assertEquals(null, first.requestedCursor)
             assertEquals("MjoxNzg1OTE5MTE3OjQzMDgwMzAwMDo0", next.requestedCursor)
+        }
+
+    @Test
+    fun `카테고리는 손대지 않고 그대로 넘긴다`() =
+        runTest {
+            val all = FakeRepository()
+            val filtered = FakeRepository()
+
+            GetHomeFeedUseCase(all)()
+            GetHomeFeedUseCase(filtered)(category = CourseTagVO.DATE)
+
+            // 전체 조회는 category 없이 나가야 한다(서버가 null 이면 전체를 준다).
+            assertEquals(null, all.requestedCategory)
+            assertEquals(CourseTagVO.DATE, filtered.requestedCategory)
         }
 }

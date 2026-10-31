@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.home
 
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.mvi.UiState
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import kotlinx.collections.immutable.ImmutableList
@@ -15,7 +16,8 @@ import kotlinx.collections.immutable.persistentSetOf
  */
 data class HomeFeedUIState(
     val isLoading: Boolean = true,
-    val selectedCategory: String? = null,
+    /** 선택된 코스 태그. 서버 category 필터로 전달되며 null 이면 전체(추천순)다. */
+    val selectedCategory: CourseTagVO? = null,
     val courses: ImmutableList<HomeCourseVO> = persistentListOf(),
     val errorMessage: String? = null,
     /**
@@ -35,9 +37,6 @@ data class HomeFeedUIState(
     /** 다음 페이지를 받는 중. 목록 아래 로딩 표시에 쓴다. */
     val isLoadingMore: Boolean = false,
 ) : UiState {
-    val visibleCourses: List<HomeCourseVO>
-        get() = courses.filter { selectedCategory == null || it.categoryLabel == selectedCategory }
-
     companion object {
         val empty: HomeFeedUIState = HomeFeedUIState()
     }

@@ -70,18 +70,20 @@ import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 private fun FeedEntryEffects(
     feedState: HomeFeedUIState,
     listState: LazyListState,
-    initialCategory: String?,
+    initialCategory: CourseTagVO?,
     onIntent: (HomeFeedIntent) -> Unit,
 ) {
     var initialCategoryApplied by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        // SelectCategory 가 서버 재조회까지 겸하므로, 초기 카테고리를 적용한 진입에서는
+        // 아래 Load 를 또 보내지 않는다(같은 요청 두 번 방지).
         if (!initialCategoryApplied) {
             initialCategoryApplied = true
-            initialCategory?.let { onIntent(HomeFeedIntent.SelectCategory(it)) }
+            if (initialCategory != null) {
+                onIntent(HomeFeedIntent.SelectCategory(initialCategory))
+                return@LaunchedEffect
+            }
         }
-    }
-
-    LaunchedEffect(Unit) {
         if (feedState.courses.isEmpty()) onIntent(HomeFeedIntent.Load)
     }
     RefreshOnResume { onIntent(HomeFeedIntent.SyncSavedIds) }
@@ -117,7 +119,8 @@ fun RecommendedCoursesPage(
     FeedEntryEffects(
         feedState = feedState,
         listState = listState,
-        initialCategory = initialCategory,
+        // 홈 테마 타일은 코드("date")를 싣지만, 과거 라우트가 라벨("데이트")을 싣던 시기가 있어 둘 다 받는다.
+        initialCategory = CourseTagVO.fromCodeOrLabel(initialCategory),
         onIntent = feedViewModel::onIntent,
     )
     LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
@@ -156,8 +159,8 @@ fun RecommendedCoursesPage(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             when {
-                feedState.visibleCourses.isNotEmpty() -> {
-                    items(feedState.visibleCourses, key = { it.id }) { course ->
+                feedState.courses.isNotEmpty() -> {
+                    items(feedState.courses, key = { it.id }) { course ->
                         HomeCourseCard(
                             course = course,
                             isSaved = course.id in feedState.savedCourseIds,
@@ -179,7 +182,7 @@ fun RecommendedCoursesPage(
                                     ?: if (feedState.selectedCategory == null) {
                                         "아직 공개된 코스가 없어요."
                                     } else {
-                                        "불러온 코스에 해당 테마가 없어요."
+                                        "해당 테마의 코스가 아직 없어요."
                                     },
                             onRetry = feedState.errorMessage?.let { { feedViewModel.onIntent(HomeFeedIntent.Retry) } },
                         )
@@ -201,14 +204,14 @@ fun RecommendedCoursesPage(
     }
 }
 
-// 코스 피드 필터이므로 코스 태그 12종을 쓴다(카드 라벨과 같은 값이어야 필터가 맞물린다).
-private val recommendedCategories =
-    listOf(null to "추천순") + CourseTagVO.entries.map { it.label to it.label }
+// 코스 피드 필터이므로 코스 태그 12종을 쓴다. null 은 전체(추천순)이고 서버에는 category 를 빼고 보낸다.
+private val recommendedCategories: List<Pair<CourseTagVO?, String>> =
+    listOf<Pair<CourseTagVO?, String>>(null to "추천순") + CourseTagVO.entries.map { it to it.label }
 
 @Composable
 private fun RecommendedTopBar(
-    selectedCategory: String?,
-    onSelectCategory: (String?) -> Unit,
+    selectedCategory: CourseTagVO?,
+    onSelectCategory: (CourseTagVO?) -> Unit,
     onBack: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor

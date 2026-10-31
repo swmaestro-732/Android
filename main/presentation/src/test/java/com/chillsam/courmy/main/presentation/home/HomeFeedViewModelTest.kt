@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.home
 
 import android.util.Log
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.main.domain.home.GetHomeFeedUseCase
@@ -152,7 +153,6 @@ class HomeFeedViewModelTest {
                     savedIds = setOf("2", "3"),
                 )
             advanceUntilIdle()
-            viewModel.onIntent(HomeFeedIntent.SelectCategory("데이트"))
             coEvery { getSavedIds() } returns setOf("1", "3", "99")
 
             repeat(2) {
@@ -171,10 +171,79 @@ class HomeFeedViewModelTest {
                     .map { it.id },
             )
             assertEquals(setOf("1", "3", "99"), viewModel.uiState.value.savedCourseIds)
-            assertEquals("데이트", viewModel.uiState.value.selectedCategory)
             assertEquals("next", viewModel.uiState.value.nextCursor)
             assertTrue(viewModel.uiState.value.hasNext)
-            coVerify(exactly = 1) { getFeed(any(), any()) }
+            coVerify(exactly = 1) { getFeed(any(), any(), any()) }
+        }
+
+    @Test
+    fun `카테고리 선택은 목록을 비우고 해당 카테고리로 다시 불러온다`() =
+        runTest(dispatcher) {
+            val viewModel = loadedViewModel(course("1", 10, "10"))
+            advanceUntilIdle()
+            coEvery { getFeed(any(), null, CourseTagVO.DATE) } returns
+                CursorPageVO(listOf(course("9", 1, "1")), "d1", true)
+
+            viewModel.onIntent(HomeFeedIntent.SelectCategory(CourseTagVO.DATE))
+            // 서버 응답 전에도 이전 카테고리 목록이 남아 보이지 않는다.
+            assertTrue(
+                viewModel.uiState.value.courses
+                    .isEmpty(),
+            )
+            advanceUntilIdle()
+
+            assertEquals(CourseTagVO.DATE, viewModel.uiState.value.selectedCategory)
+            assertEquals(
+                listOf("9"),
+                viewModel.uiState.value.courses
+                    .map { it.id },
+            )
+            assertEquals("d1", viewModel.uiState.value.nextCursor)
+            coVerify(exactly = 1) { getFeed(any(), null, CourseTagVO.DATE) }
+        }
+
+    @Test
+    fun `같은 카테고리를 다시 선택하면 재요청하지 않는다`() =
+        runTest(dispatcher) {
+            val viewModel = loadedViewModel(course("1", 10, "10"))
+            advanceUntilIdle()
+            coEvery { getFeed(any(), any(), CourseTagVO.DATE) } returns
+                CursorPageVO(listOf(course("9", 1, "1")), null, false)
+            viewModel.onIntent(HomeFeedIntent.SelectCategory(CourseTagVO.DATE))
+            advanceUntilIdle()
+
+            viewModel.onIntent(HomeFeedIntent.SelectCategory(CourseTagVO.DATE))
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { getFeed(any(), any(), CourseTagVO.DATE) }
+            assertEquals(
+                listOf("9"),
+                viewModel.uiState.value.courses
+                    .map { it.id },
+            )
+        }
+
+    @Test
+    fun `다음 페이지도 선택한 카테고리로 요청해 커서가 맞물린다`() =
+        runTest(dispatcher) {
+            val viewModel = loadedViewModel(course("1", 10, "10"))
+            advanceUntilIdle()
+            coEvery { getFeed(any(), null, CourseTagVO.DATE) } returns
+                CursorPageVO(listOf(course("9", 1, "1")), "d1", true)
+            viewModel.onIntent(HomeFeedIntent.SelectCategory(CourseTagVO.DATE))
+            advanceUntilIdle()
+            coEvery { getFeed(any(), "d1", CourseTagVO.DATE) } returns
+                CursorPageVO(listOf(course("10", 2, "2")), null, false)
+
+            viewModel.onIntent(HomeFeedIntent.LoadMore)
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf("9", "10"),
+                viewModel.uiState.value.courses
+                    .map { it.id },
+            )
+            coVerify(exactly = 1) { getFeed(any(), "d1", CourseTagVO.DATE) }
         }
 
     @Test
@@ -218,7 +287,7 @@ class HomeFeedViewModelTest {
             assertTrue(viewModel.uiState.value.savedIdsKnown)
             assertEquals(setOf("1"), viewModel.uiState.value.savedCourseIds)
             assertEquals(original, viewModel.course("1"))
-            coVerify(exactly = 1) { getFeed(any(), any()) }
+            coVerify(exactly = 1) { getFeed(any(), any(), any()) }
         }
 
     @Test
@@ -261,7 +330,7 @@ class HomeFeedViewModelTest {
             coEvery { getSavedIds() } throws IOException("offline")
             advanceUntilIdle()
             coEvery { setSaved(1L, true) } returns Unit
-            coEvery { getFeed(any(), any()) } returns CursorPageVO(listOf(course("1", 13, "13")), "next", true)
+            coEvery { getFeed(any(), any(), any()) } returns CursorPageVO(listOf(course("1", 13, "13")), "next", true)
             coEvery { getSavedIds() } returns setOf("1")
 
             viewModel.onIntent(HomeFeedIntent.ToggleSave("1"))
@@ -270,7 +339,7 @@ class HomeFeedViewModelTest {
             assertTrue(viewModel.uiState.value.savedIdsKnown)
             assertEquals(setOf("1"), viewModel.uiState.value.savedCourseIds)
             assertEquals(13, viewModel.course("1").saveCount)
-            coVerify(exactly = 2) { getFeed(any(), any()) }
+            coVerify(exactly = 2) { getFeed(any(), any(), any()) }
         }
 
     @Test
@@ -282,7 +351,7 @@ class HomeFeedViewModelTest {
             coEvery { getSavedIds() } coAnswers { pendingSync.await() }
             viewModel.onIntent(HomeFeedIntent.SyncSavedIds)
             runCurrent()
-            coEvery { getFeed(any(), any()) } returns CursorPageVO(listOf(course("1", 13, "13")), "next", true)
+            coEvery { getFeed(any(), any(), any()) } returns CursorPageVO(listOf(course("1", 13, "13")), "next", true)
             coEvery { getSavedIds() } returns setOf("1")
 
             viewModel.onIntent(HomeFeedIntent.Load)
@@ -298,7 +367,7 @@ class HomeFeedViewModelTest {
         vararg courses: HomeCourseVO,
         savedIds: Set<String> = emptySet(),
     ): HomeFeedViewModel {
-        coEvery { getFeed(any(), any()) } returns CursorPageVO(courses.toList(), "next", true)
+        coEvery { getFeed(any(), any(), any()) } returns CursorPageVO(courses.toList(), "next", true)
         coEvery { getSavedIds() } returns savedIds
         return HomeFeedViewModel(getFeed, setSaved, getSavedIds).also { it.onIntent(HomeFeedIntent.Load) }
     }

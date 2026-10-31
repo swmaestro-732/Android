@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.home
 
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.data.home.dto.toPageVO
 import com.chillsam.courmy.main.data.home.dto.toVO
@@ -13,8 +14,10 @@ class HomeFeedRepositoryImpl(
     override suspend fun getCourseFeed(
         size: Int,
         cursor: String?,
+        category: CourseTagVO?,
     ): CursorPageVO<HomeCourseVO> {
-        val envelope = dataSource.getCourseFeed(size, cursor)
+        // 서버 category 쿼리는 CourseCategory enum 이름(대문자)만 받는다(taxonomy.md).
+        val envelope = dataSource.getCourseFeed(size, cursor, category?.name)
         val data =
             requireNotNull(envelope.data) {
                 envelope.message ?: "코스 피드 응답에 data 가 없습니다."

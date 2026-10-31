@@ -692,7 +692,8 @@ private fun ThemeBrowseSection(
                 rowTiles.forEach { theme ->
                     ThemeTile(
                         category = theme,
-                        onClick = { onThemeClick(theme.label) },
+                        // 라우트 인자는 taxonomy 컨벤션대로 소문자 코드("date")를 싣는다. 라벨은 표시 전용.
+                        onClick = { onThemeClick(theme.code) },
                         modifier = Modifier.weight(1f),
                     )
                 }
