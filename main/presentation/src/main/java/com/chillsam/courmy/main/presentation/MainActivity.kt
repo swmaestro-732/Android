@@ -1,10 +1,18 @@
 package com.chillsam.courmy.main.presentation
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -14,6 +22,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.metrics.performance.JankStats
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
+import com.chillsam.courmy.common.domain.push.NotificationSettings
+import com.chillsam.courmy.common.domain.push.PushTarget
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.common.presentation.LocalTTIHelper
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
@@ -45,13 +55,24 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var telemetry: Telemetry
 
+    @Inject
+    lateinit var notificationSettings: NotificationSettings
+
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            // 허용/거절과 관계없이 앱 진입을 계속한다. 설정 화면은 OS 상태를 다시 읽는다.
+        }
+
+    private var pendingPush by mutableStateOf<PushTarget?>(null)
+
     private var jankStats: JankStats? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // App Link 진입 시 Intent.data 에서 시작 백스택을 구성한다.
-        val startStack = resolveStartStack(intent?.data)
+        pendingPush = readPush(savedInstanceState?.getBundle("pendingPush") ?: intent?.extras)
+        val startStack = resolveStartStack(if (pendingPush != null) null else intent?.data)
 
         // JankStats 는 DecorView 가 생성된 이후에만 만들 수 있다. setContent 가 DecorView 를
         // 보장하므로 lifecycle observer 안에서 lazy 하게 생성하고, tracking on/off 와 백그라운드
@@ -90,9 +111,33 @@ class MainActivity : FragmentActivity() {
                 LocalTTIHelper provides ttiHelper,
                 LocalTelemetry provides telemetry,
             ) {
-                RootComposable(startStack = startStack)
+                RootComposable(
+                    startStack = startStack,
+                    pendingPush = pendingPush,
+                    onPushConsumed = { pendingPush = null },
+                    onStartupReady = ::requestStartupNotificationPermission,
+                )
             }
         }
+    }
+
+    private fun requestStartupNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val preferences = getSharedPreferences("notification_permission", MODE_PRIVATE)
+        val granted =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        if (!shouldRequestStartupNotificationPermission(
+                permissionGranted = granted,
+                alreadyRequested = preferences.getBoolean("requested", false),
+                notificationsEnabled = notificationSettings.notificationsEnabled,
+            )
+        ) {
+            return
+        }
+        // 회전·재진입이나 거절 뒤 다음 실행에서 자동으로 다시 묻지 않는다.
+        preferences.edit().putBoolean("requested", true).apply()
+        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     /**
@@ -124,12 +169,47 @@ class MainActivity : FragmentActivity() {
      * 웜 스타트는 콜드 스타트의 synthetic 스택과 달리 기존 스택을 보존하고 대상만 최전면으로 올린다
      * (bring-to-front, [com.chillsam.courmy.main.presentation.navigation.handleDeepLink]).
      */
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // 빈 Bundle도 저장해 소비한 알림을 Activity 재생성 때 다시 열지 않는다.
+        outState.putBundle(
+            "pendingPush",
+            Bundle().apply {
+                pendingPush?.let {
+                    putString("type", it.type)
+                    putString("targetType", it.targetType)
+                    putString("targetId", it.targetId.toString())
+                    putString("notificationId", it.notificationId.toString())
+                }
+            },
+        )
+    }
+
+    private fun readPush(bundle: Bundle?): PushTarget? =
+        bundle?.let {
+            PushTarget.parse(
+                listOf("type", "targetType", "targetId", "notificationId").associateWith { key ->
+                    it.getString(key).orEmpty()
+                },
+            )
+        }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
 
-        val uri = intent.data ?: return
-        val route = resolveNewIntentRoute(uri) ?: return
+        readPush(intent.extras)?.let {
+            pendingPush = it
+            return
+        }
+        val route = intent.data?.let(::resolveNewIntentRoute) ?: return
         navigationHelper.navigateDeepLink(route)
     }
 }
+
+/** 자동 요청은 미응답 사용자에게만 한 번. 이후 변경은 설정 > 알림에서 한다. */
+internal fun shouldRequestStartupNotificationPermission(
+    permissionGranted: Boolean,
+    alreadyRequested: Boolean,
+    notificationsEnabled: Boolean,
+): Boolean = notificationsEnabled && !permissionGranted && !alreadyRequested

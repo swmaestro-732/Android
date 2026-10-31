@@ -315,9 +315,11 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging)
 
     // Amplitude — 제품 분석. SDK 는 app 에만 두고 data 레이어에는 AmplitudeClient 인터페이스로 노출한다.
     implementation(libs.amplitude.analytics)
+    debugImplementation(libs.kotlinx.collections.immutable)
 
     // 광고 전환 추적(메타). facebook-core 는 common:data 의 Telemetry 구현이 쓰지만,
     // Manifest meta-data·resValue 가 app 에 있어야 SDK 가 자동 초기화되므로 설정은 app 이 소유한다

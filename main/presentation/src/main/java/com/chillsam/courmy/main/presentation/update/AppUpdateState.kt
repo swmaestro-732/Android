@@ -14,6 +14,7 @@ sealed interface AppUpdateIntent : MviIntent {
 
 data class AppUpdateUIState(
     val checked: Boolean = false,
+    val checkCompleted: Boolean = false,
     val showOptionalUpdate: Boolean = false,
 ) : UiState
 

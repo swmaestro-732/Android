@@ -58,6 +58,7 @@ class AppUpdateViewModelTest {
             advanceUntilIdle()
 
             assertFalse(viewModel.uiState.value.showOptionalUpdate)
+            assertTrue(viewModel.uiState.value.checkCompleted)
             coVerify(exactly = 1) { checker(forceRefresh = false) }
         }
 
@@ -69,6 +70,7 @@ class AppUpdateViewModelTest {
             viewModel.onIntent(AppUpdateIntent.CheckOptionalUpdate)
             advanceUntilIdle()
             assertFalse(viewModel.uiState.value.showOptionalUpdate)
+            assertTrue(viewModel.uiState.value.checkCompleted)
         }
 
     @Test
@@ -79,6 +81,7 @@ class AppUpdateViewModelTest {
             viewModel.onIntent(AppUpdateIntent.CheckOptionalUpdate)
             advanceUntilIdle()
             assertFalse(viewModel.uiState.value.showOptionalUpdate)
+            assertTrue(viewModel.uiState.value.checkCompleted)
             assertFalse(viewModel.updateRequired.value)
         }
 
@@ -91,6 +94,7 @@ class AppUpdateViewModelTest {
             advanceUntilIdle()
             assertTrue(viewModel.uiState.value.checked)
             assertFalse(viewModel.uiState.value.showOptionalUpdate)
+            assertTrue(viewModel.uiState.value.checkCompleted)
         }
 
     @Test
@@ -106,6 +110,7 @@ class AppUpdateViewModelTest {
             advanceUntilIdle()
             assertTrue(viewModel.updateRequired.value)
             assertFalse(viewModel.uiState.value.showOptionalUpdate)
+            assertTrue(viewModel.uiState.value.checkCompleted)
         }
 
     @Test
@@ -126,6 +131,7 @@ class AppUpdateViewModelTest {
             viewModel.onIntent(AppUpdateIntent.CheckOptionalUpdate)
             advanceUntilIdle()
             assertFalse(viewModel.uiState.value.showOptionalUpdate)
+            assertTrue(viewModel.uiState.value.checkCompleted)
             coVerify(exactly = 0) { checker(forceRefresh = false) }
         }
 
@@ -137,5 +143,20 @@ class AppUpdateViewModelTest {
             verify(exactly = 0) { reminder.dismissForToday() }
             viewModel.onIntent(AppUpdateIntent.DismissOptionalUpdate)
             verify(exactly = 1) { reminder.dismissForToday() }
+        }
+
+    @Test
+    fun `시작 권한 요청은 업데이트 조회가 끝날 때까지 기다릴 수 있다`() =
+        runTest(dispatcher) {
+            val response = CompletableDeferred<AppVersionCheckVO>()
+            coEvery { checker(forceRefresh = false) } coAnswers { response.await() }
+            val viewModel = AppUpdateViewModel(bus, checker, reminder)
+            assertFalse(viewModel.uiState.value.checkCompleted)
+            viewModel.onIntent(AppUpdateIntent.CheckOptionalUpdate)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.checkCompleted)
+            response.complete(AppVersionCheckVO.Checked(2L, 2L))
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.checkCompleted)
         }
 }
