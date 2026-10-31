@@ -63,7 +63,7 @@ class HomeFeedViewModel
         ): HomeFeedUIState =
             when (event) {
                 HomeFeedReducerEvent.LoadStarted -> {
-                    state.copy(isLoading = true, errorMessage = null)
+                    state.copy(isLoading = true, isLoadingMore = false, errorMessage = null)
                 }
 
                 is HomeFeedReducerEvent.Loaded -> {

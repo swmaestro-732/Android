@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -189,9 +190,11 @@ fun RecommendedCoursesPage(
                     }
                 }
             }
-            // 다음 페이지는 스크롤 끝 감지(LoadMoreOnScrollEnd)로만 이어 받는다.
-            if (feedState.isLoadingMore) {
-                item { LoadingMoreFooter() }
+            // 로딩 전후 아이템 수·높이를 유지해 실패 시 끝 감지가 자동 재시도를 반복하지 않게 한다.
+            item(key = "paging-footer") {
+                Box(Modifier.fillMaxWidth().height(54.dp)) {
+                    if (feedState.isLoadingMore) LoadingMoreFooter()
+                }
             }
         }
     }

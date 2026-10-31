@@ -247,6 +247,36 @@ class HomeFeedViewModelTest {
         }
 
     @Test
+    fun `이어받기 중 카테고리를 바꾼 뒤 첫 조회가 실패해도 로딩이 남지 않는다`() =
+        runTest(dispatcher) {
+            val viewModel = loadedViewModel(course("1", 10, "10"))
+            advanceUntilIdle()
+            val pendingPage = CompletableDeferred<CursorPageVO<HomeCourseVO>>()
+            coEvery { getFeed(any(), any(), null) } coAnswers { pendingPage.await() }
+            viewModel.onIntent(HomeFeedIntent.LoadMore)
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isLoadingMore)
+            coEvery { getFeed(any(), null, CourseTagVO.DATE) } throws IOException("offline")
+
+            viewModel.onIntent(HomeFeedIntent.SelectCategory(CourseTagVO.DATE))
+            advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertFalse(viewModel.uiState.value.isLoadingMore)
+            assertEquals("코스를 불러오지 못했습니다.", viewModel.uiState.value.errorMessage)
+            assertTrue(
+                viewModel.uiState.value.courses
+                    .isEmpty(),
+            )
+            pendingPage.complete(CursorPageVO(listOf(course("2", 1, "1")), null, false))
+            advanceUntilIdle()
+            assertTrue(
+                viewModel.uiState.value.courses
+                    .isEmpty(),
+            )
+        }
+
+    @Test
     fun `같은 저장 결과를 동기화해도 이중 증가하지 않고 미제공 집계는 추정하지 않는다`() =
         runTest(dispatcher) {
             val unknown = course("2", null, "")
