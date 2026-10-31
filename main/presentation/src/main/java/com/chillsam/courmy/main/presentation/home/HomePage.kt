@@ -513,26 +513,6 @@ private fun RecommendedCourseCard(
                     contentScale = ContentScale.Crop,
                 )
             }
-            // 카테고리가 없는 코스(theme 미선택)는 빈 알약이 뜨지 않도록 칩 자체를 생략한다.
-            if (course.categoryLabel.isNotBlank()) {
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopStart)
-                            .padding(10.dp)
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(color.bgDefaultLevel1)
-                            .padding(horizontal = 10.dp, vertical = 5.dp),
-                ) {
-                    DsText(
-                        text = course.categoryLabel,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                        color = color.contentDefaultLevel1,
-                    )
-                }
-            }
         }
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
             DsText(
@@ -692,7 +672,8 @@ private fun ThemeBrowseSection(
                 rowTiles.forEach { theme ->
                     ThemeTile(
                         category = theme,
-                        onClick = { onThemeClick(theme.label) },
+                        // 라우트 인자는 taxonomy 컨벤션대로 소문자 코드("date")를 싣는다. 라벨은 표시 전용.
+                        onClick = { onThemeClick(theme.code) },
                         modifier = Modifier.weight(1f),
                     )
                 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -70,18 +71,20 @@ import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 private fun FeedEntryEffects(
     feedState: HomeFeedUIState,
     listState: LazyListState,
-    initialCategory: String?,
+    initialCategory: CourseTagVO?,
     onIntent: (HomeFeedIntent) -> Unit,
 ) {
     var initialCategoryApplied by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        // SelectCategory 가 서버 재조회까지 겸하므로, 초기 카테고리를 적용한 진입에서는
+        // 아래 Load 를 또 보내지 않는다(같은 요청 두 번 방지).
         if (!initialCategoryApplied) {
             initialCategoryApplied = true
-            initialCategory?.let { onIntent(HomeFeedIntent.SelectCategory(it)) }
+            if (initialCategory != null) {
+                onIntent(HomeFeedIntent.SelectCategory(initialCategory))
+                return@LaunchedEffect
+            }
         }
-    }
-
-    LaunchedEffect(Unit) {
         if (feedState.courses.isEmpty()) onIntent(HomeFeedIntent.Load)
     }
     RefreshOnResume { onIntent(HomeFeedIntent.SyncSavedIds) }
@@ -117,7 +120,8 @@ fun RecommendedCoursesPage(
     FeedEntryEffects(
         feedState = feedState,
         listState = listState,
-        initialCategory = initialCategory,
+        // 홈 테마 타일은 코드("date")를 싣지만, 과거 라우트가 라벨("데이트")을 싣던 시기가 있어 둘 다 받는다.
+        initialCategory = CourseTagVO.fromCodeOrLabel(initialCategory),
         onIntent = feedViewModel::onIntent,
     )
     LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
@@ -156,8 +160,8 @@ fun RecommendedCoursesPage(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             when {
-                feedState.visibleCourses.isNotEmpty() -> {
-                    items(feedState.visibleCourses, key = { it.id }) { course ->
+                feedState.courses.isNotEmpty() -> {
+                    items(feedState.courses, key = { it.id }) { course ->
                         HomeCourseCard(
                             course = course,
                             isSaved = course.id in feedState.savedCourseIds,
@@ -179,40 +183,34 @@ fun RecommendedCoursesPage(
                                     ?: if (feedState.selectedCategory == null) {
                                         "아직 공개된 코스가 없어요."
                                     } else {
-                                        "불러온 코스에 해당 테마가 없어요."
+                                        "해당 테마의 코스가 아직 없어요."
                                     },
                             onRetry = feedState.errorMessage?.let { { feedViewModel.onIntent(HomeFeedIntent.Retry) } },
                         )
                     }
                 }
             }
-            if (feedState.isLoadingMore) {
-                item { LoadingMoreFooter() }
-            } else if (feedState.hasNext && !feedState.isLoading) {
-                item {
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        TextButton(onClick = { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }) {
-                            DsText(text = "코스 더 불러오기", style = DesignSystemThemeImpl.typeScale.textRegularS)
-                        }
-                    }
+            // 로딩 전후 아이템 수·높이를 유지해 실패 시 끝 감지가 자동 재시도를 반복하지 않게 한다.
+            item(key = "paging-footer") {
+                Box(Modifier.fillMaxWidth().height(54.dp)) {
+                    if (feedState.isLoadingMore) LoadingMoreFooter()
                 }
             }
         }
     }
 }
 
-// 코스 피드 필터이므로 코스 태그 12종을 쓴다(카드 라벨과 같은 값이어야 필터가 맞물린다).
-private val recommendedCategories =
-    listOf(null to "추천순") + CourseTagVO.entries.map { it.label to it.label }
+// 코스 피드 필터이므로 코스 태그 12종을 쓴다. null 은 전체(추천순)이고 서버에는 category 를 빼고 보낸다.
+private val recommendedCategories: List<Pair<CourseTagVO?, String>> =
+    listOf<Pair<CourseTagVO?, String>>(null to "추천순") + CourseTagVO.entries.map { it to it.label }
 
 @Composable
 private fun RecommendedTopBar(
-    selectedCategory: String?,
-    onSelectCategory: (String?) -> Unit,
+    selectedCategory: CourseTagVO?,
+    onSelectCategory: (CourseTagVO?) -> Unit,
     onBack: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    var filterExpanded by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
@@ -229,29 +227,7 @@ private fun RecommendedTopBar(
                 text = "오늘의 추천 코스",
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
-                modifier = Modifier.weight(1f),
             )
-            Box {
-                IconButton(onClick = { filterExpanded = true }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_filter_list_24),
-                        contentDescription = "테마 필터",
-                        tint = color.contentDefaultLevel0,
-                    )
-                }
-                DropdownMenu(expanded = filterExpanded, onDismissRequest = { filterExpanded = false }) {
-                    recommendedCategories.forEach { (category, label) ->
-                        DropdownMenuItem(
-                            text = { DsText(text = label, style = DesignSystemThemeImpl.typeScale.textRegularS) },
-                            modifier = Modifier.semantics { selected = selectedCategory == category },
-                            onClick = {
-                                onSelectCategory(category)
-                                filterExpanded = false
-                            },
-                        )
-                    }
-                }
-            }
         }
         Row(
             modifier =

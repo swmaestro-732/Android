@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.home
 
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 
@@ -54,8 +55,9 @@ sealed interface HomeFeedReducerEvent : ReducerEvent {
         val message: String,
     ) : HomeFeedReducerEvent
 
+    /** 테마 필터가 바뀜. 이전 카테고리 목록·커서를 비우고 서버 재조회를 기다린다. */
     data class CategorySelected(
-        val category: String?,
+        val category: CourseTagVO?,
     ) : HomeFeedReducerEvent
 
     data object ErrorConsumed : HomeFeedReducerEvent

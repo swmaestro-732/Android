@@ -60,6 +60,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseStopVO
+import com.chillsam.courmy.course.presentation.component.CourseCompanionCard
 import com.chillsam.courmy.course.presentation.component.CourseInfoCard
 import com.chillsam.courmy.course.presentation.component.CourseInfoCardActions
 import com.chillsam.courmy.course.presentation.component.CoursePlaceCard
@@ -67,7 +68,7 @@ import com.chillsam.courmy.course.presentation.component.CourseRouteConnector
 import com.chillsam.courmy.course.presentation.component.CourseSectionHeader
 import com.chillsam.courmy.course.presentation.component.CourseTagCard
 import com.chillsam.courmy.course.presentation.component.CourseTopBar
-import com.chillsam.courmy.course.presentation.component.CourseVisibilitySegment
+import com.chillsam.courmy.course.presentation.component.CourseVisibilityCard
 import com.chillsam.courmy.course.presentation.component.PlaceSearchOverlay
 import com.chillsam.courmy.course.presentation.component.PlanInfoCard
 import com.chillsam.courmy.course.presentation.component.dashedBorder
@@ -730,7 +731,12 @@ private fun VisibilitySection(
         onRemoveTag = { onIntent(CourseCreateIntent.RemoveTag(it)) },
     )
     Spacer(Modifier.height(12.dp))
-    CourseVisibilitySegment(
+    CourseCompanionCard(
+        selected = uiState.companionType,
+        onToggle = { onIntent(CourseCreateIntent.ToggleCompanion(it)) },
+    )
+    Spacer(Modifier.height(12.dp))
+    CourseVisibilityCard(
         selected = uiState.visibility,
         onSelect = { onIntent(CourseCreateIntent.ChangeVisibility(it)) },
     )

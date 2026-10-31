@@ -41,12 +41,16 @@ import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.FollowListPage
+import com.chillsam.courmy.main.domain.notification.NotificationInboxPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
+import com.chillsam.courmy.main.presentation.notification.NotificationBellButton
+import com.chillsam.courmy.main.presentation.notification.NotificationInboxIntent
+import com.chillsam.courmy.main.presentation.notification.NotificationInboxViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileCoursesGrid
 import com.chillsam.courmy.main.presentation.profile.ProfileError
 import com.chillsam.courmy.main.presentation.profile.ProfileHeader
@@ -70,11 +74,14 @@ fun MyPage(
     modifier: Modifier = Modifier,
     viewModel: MyViewModel = hiltViewModel(),
     showPlans: Boolean = false,
+    notifications: NotificationInboxViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(showPlans) {
         if (showPlans) viewModel.onIntent(MyProfileIntent.SelectTab(ProfileTab.PLAN))
     }
+    val notificationState by notifications.uiState.collectAsStateWithLifecycle()
+    RefreshOnResume { notifications.onIntent(NotificationInboxIntent.RefreshUnread) }
     val profile = uiState.profile
     // 프로필 편집에서 돌아왔을 때 수정된 값이 보이도록 다시 보일 때마다 새로 불러온다.
     RefreshOnResume { viewModel.onIntent(MyProfileIntent.Retry) }
@@ -82,6 +89,7 @@ fun MyPage(
         profile != null -> {
             MyContent(
                 profile = profile,
+                unreadCount = notificationState.unreadCount,
                 uiState = uiState,
                 onLoadMore = { viewModel.onIntent(MyProfileIntent.LoadMore) },
                 onRetryPlans = { viewModel.onIntent(MyProfileIntent.Retry) },
@@ -178,13 +186,14 @@ private fun EmptyPlanCourses() {
 
 /** 프로필 로드 성공 시 실제 마이 화면(상단 프로필, 코스 그리드, 하단 탭바). */
 @Composable
-private fun MyContent(
+fun MyContent(
     profile: MyProfileVO,
     uiState: MyProfileUIState,
     onLoadMore: () -> Unit,
     onRetryPlans: () -> Unit,
     onSelectTab: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier,
+    unreadCount: Long? = null,
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
@@ -226,6 +235,7 @@ private fun MyContent(
                         onClick = shareProfile,
                     )
                 }
+                NotificationBellButton(unreadCount) { navigationHelper.navigateTo(NotificationInboxPage) }
                 ProfileHeaderIconButton(
                     iconRes = R.drawable.ic_settings_24,
                     contentDescription = "설정",

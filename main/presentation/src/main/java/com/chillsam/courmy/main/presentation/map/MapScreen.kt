@@ -71,7 +71,6 @@ fun MapScreen(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val categoryLabels = remember { MapCategory.entries.map { it.label() }.toImmutableList() }
 
     // 현위치 추적(SCRUM-634). 권한 요청·위치 구독은 FusedLocationSource 가 담당하고,
     // 버튼은 추적 모드만 켠다. 지도를 끌면 카메라 추적(Follow)만 풀고 오버레이는 유지한다(NoFollow).
@@ -123,12 +122,7 @@ fun MapScreen(
                 onClick = actions.onSearchClick,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 8.dp),
             )
-            MapChipRow(
-                labels = categoryLabels,
-                selectedIndex = MapCategory.entries.indexOf(uiState.category),
-                onSelect = { index -> actions.onCategorySelect(MapCategory.entries[index]) },
-                horizontalPadding = ScreenHorizontalPadding,
-            )
+            // 카테고리 칩(필터)은 필터 기획이 확정될 때까지 숨긴다(2026-10-31, 동작 코드는 유지).
         }
 
         // 컨트롤을 시트와 같은 Column 에 묶는다 — 시트보다 먼저(BottomEnd) 그리면

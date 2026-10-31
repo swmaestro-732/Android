@@ -17,6 +17,11 @@ interface HomeFeedApiService {
         @Query("size") size: Int,
         /** 이전 응답의 `nextCursor`. 첫 페이지면 null 이며, null 이면 Retrofit 이 파라미터를 뺀다. */
         @Query("cursor") cursor: String? = null,
+        /**
+         * 서버 CourseCategory enum 이름(예: `DATE`). null 이면 전체 카테고리이고,
+         * 알 수 없는 값은 400(4001)으로 거절되므로 enum `name` 외의 값을 보내지 않는다.
+         */
+        @Query("category") category: String? = null,
     ): Response<CourseFeedEnvelope>
 
     /**

@@ -40,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.chillsam.courmy.common.domain.message.MessageEffect
+import com.chillsam.courmy.common.domain.push.PushTarget
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
@@ -61,6 +62,9 @@ import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
 fun RootComposable(
     modifier: Modifier = Modifier,
     startStack: List<NavKey> = listOf(GenericNavKey(SplashPage.PATH)),
+    pendingPush: PushTarget? = null,
+    onPushConsumed: () -> Unit = {},
+    onStartupReady: () -> Unit = {},
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
     var oneButtonDialogEffect by remember {
@@ -93,7 +97,21 @@ fun RootComposable(
                 appUpdateViewModel.onIntent(AppUpdateIntent.CheckOptionalUpdate)
             }
         }
+        PushNavigationEffect(
+            target = pendingPush,
+            currentPath = (backStack.lastOrNull() as? GenericNavKey)?.path,
+            sessionState = sessionState,
+            blocked = updateRequired,
+            onConsumed = onPushConsumed,
+        )
         val canShowOptionalUpdate = !isSplash && !updateRequired && oneButtonDialogEffect == null
+        StartupNotificationPermissionEffect(
+            canShowDialog = canShowOptionalUpdate,
+            updateState = appUpdateState,
+            pendingPush = pendingPush,
+            onReady = onStartupReady,
+        )
+
         if (canShowOptionalUpdate && appUpdateState.showOptionalUpdate) {
             OptionalAppUpdateDialog(
                 onAccept = { appUpdateViewModel.onIntent(AppUpdateIntent.AcceptOptionalUpdate) },
@@ -202,6 +220,23 @@ fun RootComposable(
                     },
             )
         }
+    }
+}
+
+/** 스플래시·업데이트·푸시 초기 이동 중에는 OS 권한 창을 겹쳐 띄우지 않는다. */
+@Composable
+private fun StartupNotificationPermissionEffect(
+    canShowDialog: Boolean,
+    updateState: com.chillsam.courmy.main.presentation.update.AppUpdateUIState,
+    pendingPush: PushTarget?,
+    onReady: () -> Unit,
+) {
+    val updateFinished = updateState.checkCompleted && !updateState.showOptionalUpdate
+    val ready = canShowDialog && updateFinished && pendingPush == null
+    val currentOnReady by androidx.compose.runtime.rememberUpdatedState(onReady)
+    androidx.lifecycle.compose.LifecycleResumeEffect(ready) {
+        if (ready) currentOnReady()
+        onPauseOrDispose {}
     }
 }
 

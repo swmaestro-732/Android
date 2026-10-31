@@ -1,6 +1,10 @@
 package com.chillsam.courmy
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
+import com.chillsam.courmy.common.data.push.DeviceRegistration
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.main.presentation.login.GoogleLoginClient
 import com.chillsam.courmy.main.presentation.login.NaverLoginClient
@@ -13,8 +17,17 @@ class CourmyApplication : Application() {
     @Inject
     lateinit var telemetry: Telemetry
 
+    @Inject
+    lateinit var devices: DeviceRegistration
+
     override fun onCreate() {
         super.onCreate()
+        devices.sync()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            getSystemService(NotificationManager::class.java).createNotificationChannel(
+                NotificationChannel("courmy_activity", "활동 알림", NotificationManager.IMPORTANCE_DEFAULT),
+            )
+        }
         // 소셜 로그인 SDK 초기화(키는 local.properties → BuildConfig 로 주입).
         // 키가 비면 초기화를 건너뛰고, 해당 로그인 버튼은 "준비되지 않았어요" 안내를 띄운다.
         if (BuildConfig.KAKAO_NATIVE_APP_KEY.isNotBlank()) {

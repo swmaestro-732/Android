@@ -46,7 +46,10 @@ class AppUpdateViewModel
         private fun checkOptionalUpdate() {
             if (currentState.checked || updateRequired.value) return
             dispatch(AppUpdateReducerEvent.CheckStarted)
-            if (reminder.isDismissedToday()) return
+            if (reminder.isDismissedToday()) {
+                dispatch(AppUpdateReducerEvent.Checked(false))
+                return
+            }
             viewModelScope.launch {
                 val available =
                     try {
@@ -68,9 +71,20 @@ class AppUpdateViewModel
             event: AppUpdateReducerEvent,
         ): AppUpdateUIState =
             when (event) {
-                AppUpdateReducerEvent.CheckStarted -> state.copy(checked = true)
-                is AppUpdateReducerEvent.Checked -> state.copy(showOptionalUpdate = event.available)
-                AppUpdateReducerEvent.Dismissed -> state.copy(showOptionalUpdate = false)
+                AppUpdateReducerEvent.CheckStarted -> {
+                    state.copy(checked = true)
+                }
+
+                is AppUpdateReducerEvent.Checked -> {
+                    state.copy(
+                        checkCompleted = true,
+                        showOptionalUpdate = event.available,
+                    )
+                }
+
+                AppUpdateReducerEvent.Dismissed -> {
+                    state.copy(showOptionalUpdate = false)
+                }
             }
 
         private companion object {

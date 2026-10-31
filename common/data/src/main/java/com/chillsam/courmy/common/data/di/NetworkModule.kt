@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.data.auth.TokenReissueApi
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.common.data.logging.ApiLogInterceptor
 import com.chillsam.courmy.common.data.network.AppVersionInterceptor
+import com.chillsam.courmy.common.data.network.DeviceIdInterceptor
 import com.chillsam.courmy.common.data.network.UpdateRequiredInterceptor
 import com.chillsam.courmy.common.data.network.apiHost
 import com.chillsam.courmy.common.data.session.SessionEventBusImpl
@@ -51,6 +52,7 @@ object NetworkModule {
         telemetry: Telemetry,
         appUpdateEventBus: AppUpdateEventBus,
         appVersionInterceptor: AppVersionInterceptor,
+        deviceIdInterceptor: DeviceIdInterceptor,
         json: Json,
     ): OkHttpClient {
         // request/response 를 'API' 태그로 남기는 debug 전용 로깅(토큰 자동 마스킹).
@@ -61,6 +63,7 @@ object NetworkModule {
             .addInterceptor(authInterceptor(tokenStore))
             // 로깅보다 앞에 둬야 debug 로그에 실제로 나간 X-App-* 가 찍힌다.
             .addInterceptor(appVersionInterceptor)
+            .addInterceptor(deviceIdInterceptor)
             .addInterceptor(apiLogging)
             // 릴리스에서도 동작 — 실패만 원격으로 남긴다(본문·헤더 미포함).
             .addInterceptor(TelemetryInterceptor(telemetry))
@@ -111,6 +114,7 @@ object NetworkModule {
         telemetry: Telemetry,
         appUpdateEventBus: AppUpdateEventBus,
         appVersionInterceptor: AppVersionInterceptor,
+        deviceIdInterceptor: DeviceIdInterceptor,
         json: Json,
     ): OkHttpClient {
         val apiLogging = ApiLogInterceptor(json, enabled = BuildConfig.DEBUG)
@@ -119,6 +123,7 @@ object NetworkModule {
             // 재발급도 우리 API 다. 헤더를 빼면 서버가 버전을 못 보고 통과시켜, 낡은 앱이 토큰만
             // 계속 갱신하며 나머지 요청은 전부 426 으로 죽는 어중간한 상태가 된다.
             .addInterceptor(appVersionInterceptor)
+            .addInterceptor(deviceIdInterceptor)
             .addInterceptor(apiLogging)
             // 재발급 실패는 토큰 만료 시점에 강제 로그아웃으로 이어지므로 운영에서 반드시 보여야 한다.
             .addInterceptor(TelemetryInterceptor(telemetry))

@@ -121,25 +121,10 @@ internal fun SearchCourseCard(
                 .background(color.bgDefaultLevel1)
                 .clickable(onClick = onClick),
     ) {
-        Box {
-            ResultImage(
-                url = course.coverImageUrl.ifEmpty { null },
-                modifier = Modifier.fillMaxWidth().height(150.dp),
-            )
-            if (course.categoryLabel.isNotEmpty()) {
-                DsText(
-                    text = course.categoryLabel,
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel1,
-                    modifier =
-                        Modifier
-                            .padding(12.dp)
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(color.bgDefaultLevel1)
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                )
-            }
-        }
+        ResultImage(
+            url = course.coverImageUrl.ifEmpty { null },
+            modifier = Modifier.fillMaxWidth().height(150.dp),
+        )
         Column(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),

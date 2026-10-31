@@ -134,6 +134,12 @@ class CourseCreateViewModel
                     dispatch(CourseCreateReducerEvent.VisibilityChanged(intent.visibility))
                 }
 
+                is CourseCreateIntent.ToggleCompanion -> {
+                    // 선택 입력이라 같은 칩 재탭은 해제로 처리한다.
+                    val next = intent.companion.takeIf { it != currentState.companionType }
+                    dispatch(CourseCreateReducerEvent.CompanionChanged(next))
+                }
+
                 CourseCreateIntent.SaveDraft -> {
                     saveDraft()
                 }
@@ -285,6 +291,10 @@ class CourseCreateViewModel
 
                 is CourseCreateReducerEvent.VisibilityChanged -> {
                     state.copy(visibility = event.visibility)
+                }
+
+                is CourseCreateReducerEvent.CompanionChanged -> {
+                    state.copy(companionType = event.companion)
                 }
 
                 CourseCreateReducerEvent.SaveStarted -> {
@@ -615,6 +625,7 @@ private fun CourseCreateUIState.toDraftVO(): CourseDraftVO =
         suggestedTags = suggestedTags,
         places = places,
         visibility = visibility,
+        companionType = companionType,
         // 대표 사진은 한 장만 쓴다. 로컬 URI 는 UseCase 가 업로드해 공개 URL 로 바꾼다.
         thumbnailUrl = thumbnailPhotos.firstOrNull().orEmpty(),
         // 포크면 원본 id 를 실어 서버가 출처를 남기게 한다. 직접 만든 코스면 null 이다.

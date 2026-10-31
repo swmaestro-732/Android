@@ -1,9 +1,13 @@
 package com.chillsam.courmy.course.data.courseCreate.dto
 
+import com.chillsam.courmy.course.entity.CourseCompanionVO
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -68,6 +72,26 @@ class CreateCourseDtoMappingTest {
 
         assertEquals(listOf(0, 1, 2), request.places.map { it.orderNo })
         assertEquals(listOf(7L, 3L, 5L), request.places.map { it.placeId })
+    }
+
+    @Test
+    fun `동행을 고르면 enum 이름으로 실어 보낸다`() {
+        val request =
+            draft(place("1"), place("2"))
+                .copy(companionType = CourseCompanionVO.COUPLE)
+                .toCreateRequest()
+
+        assertEquals("COUPLE", request.companion)
+        assertTrue(Json.encodeToString(CreateCourseRequest.serializer(), request).contains("\"companion\":\"COUPLE\""))
+    }
+
+    /** 동행은 선택 입력이다. 안 고르면 null 이 아니라 **키 자체가 빠져야** 서버 기본값과 충돌하지 않는다. */
+    @Test
+    fun `동행을 안 고르면 요청에서 키가 빠진다`() {
+        val request = draft(place("1"), place("2")).toCreateRequest()
+
+        assertNull(request.companion)
+        assertFalse(Json.encodeToString(CreateCourseRequest.serializer(), request).contains("companion"))
     }
 
     private fun CourseDraftVO.toCreateRequest() = toCreateRequest(thumbnailUrl = null, published = true)
