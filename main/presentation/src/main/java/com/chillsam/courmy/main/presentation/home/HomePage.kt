@@ -83,12 +83,12 @@ import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.RecommendedCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.hasLocationPermission
+import com.chillsam.courmy.main.presentation.component.themeImageRes
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.google.android.gms.location.LocationServices
-import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
@@ -693,22 +693,6 @@ private fun ThemeTile(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    // 일러스트는 기존 장소 테마 세트를 가장 가까운 코스 태그에 재사용한다(family·solo 만 신규).
-    val imageRes =
-        when (category) {
-            CourseTagVO.DATE -> MainR.drawable.img_theme_date
-            CourseTagVO.HEALING -> MainR.drawable.img_theme_wellness
-            CourseTagVO.FOOD -> MainR.drawable.img_theme_restaurant
-            CourseTagVO.CAFETOUR -> MainR.drawable.img_theme_cafe
-            CourseTagVO.CULTURE -> MainR.drawable.img_theme_culture
-            CourseTagVO.NATURE -> MainR.drawable.img_theme_nature
-            CourseTagVO.NIGHTVIEW -> MainR.drawable.img_theme_drinks
-            CourseTagVO.SHOPPING -> MainR.drawable.img_theme_shopping
-            CourseTagVO.TRADITION -> MainR.drawable.img_theme_landmark
-            CourseTagVO.ACTIVITY -> MainR.drawable.img_theme_experience
-            CourseTagVO.FAMILY -> MainR.drawable.img_theme_family
-            CourseTagVO.SOLO -> MainR.drawable.img_theme_solo
-        }
     Box(
         modifier =
             modifier
@@ -719,7 +703,7 @@ private fun ThemeTile(
                 .clickable(onClick = onClick),
     ) {
         Image(
-            painter = painterResource(imageRes),
+            painter = painterResource(category.themeImageRes),
             contentDescription = null,
             contentScale = ContentScale.Fit,
             alignment = Alignment.BottomEnd,
