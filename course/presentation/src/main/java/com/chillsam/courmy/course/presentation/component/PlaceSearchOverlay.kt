@@ -44,6 +44,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -379,6 +380,17 @@ private fun SearchResultRow(
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
+            // 같은 이름의 지점(스타벅스 ○○점 등)을 주소로 구분한다. 외부 지도 검색처럼
+            // 카테고리 자리에 이미 주소가 들어간 경우는 같은 줄이 두 번 보이므로 생략한다.
+            if (candidate.address.isNotBlank() && candidate.address != candidate.category) {
+                DsText(
+                    text = candidate.address,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         if (orderNumber != null) {
             // 선택 순서를 번호로 표시(담기 순서와 동일).

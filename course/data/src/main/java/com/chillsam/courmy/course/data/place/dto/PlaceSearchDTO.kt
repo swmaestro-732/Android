@@ -32,6 +32,7 @@ data class PlaceDTO(
     val name: String? = null,
     val imageUrl: String? = null,
     val categories: List<String>? = null,
+    val address: String? = null,
     val averageRating: Double? = null,
     val reviewCount: Int? = null,
     val walkingMinutes: Int? = null,
@@ -65,6 +66,7 @@ fun PlaceDTO.toVO(): CoursePlaceVO =
         id = (id ?: 0L).toString(),
         name = name.orEmpty(),
         category = categories.toPlaceCategoryLabel(),
+        address = address.orEmpty(),
         thumbnailUrl = imageUrl.orEmpty(),
         // 좌표는 한쪽만 있으면 쓸 수 없어 둘 다 있을 때만 채운다.
         latitude = location?.latitude?.takeIf { location.longitude != null },
