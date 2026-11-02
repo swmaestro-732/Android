@@ -370,16 +370,28 @@ private fun SearchResultRow(
             shape = RoundedCornerShape(10.dp),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            DsText(
-                text = candidate.name,
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-            )
-            DsText(
-                text = candidate.category,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-            )
+            // 장소명 옆에 카테고리를 나란히 둔다(장소 추가 시안). 둘 다 한 줄을 넘으면 말줄임하고,
+            // 이름이 길어도 카테고리가 먼저 잘리지 않도록 이름 쪽에 남는 폭만 준다.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DsText(
+                    text = candidate.name,
+                    style = DesignSystemThemeImpl.typeScale.textStrongM,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.alignByBaseline().weight(1f, fill = false),
+                )
+                if (candidate.category.isNotBlank()) {
+                    DsText(
+                        text = candidate.category,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                }
+            }
             // 같은 이름의 지점(스타벅스 ○○점 등)을 주소로 구분한다. 외부 지도 검색처럼
             // 카테고리 자리에 이미 주소가 들어간 경우는 같은 줄이 두 번 보이므로 생략한다.
             if (candidate.address.isNotBlank() && candidate.address != candidate.category) {
