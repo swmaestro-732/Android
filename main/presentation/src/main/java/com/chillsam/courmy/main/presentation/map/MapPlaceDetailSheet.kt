@@ -43,6 +43,7 @@ internal fun MapPlaceDetailSheet(
                 longitude = detail?.longitude ?: place.longitude,
             ),
         address = detail?.address?.takeIf { it.isNotBlank() } ?: place.address,
+        openingHours = detail?.openingHours.orEmpty(),
         reviews = state.reviews,
         reviewCategories = state.place?.categories.orEmpty(),
         onReviewWritten = viewModel::refreshReviews,
