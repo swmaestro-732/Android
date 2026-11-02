@@ -113,9 +113,6 @@ fun InterestThemePage(
                     color = color.contentAccent,
                 )
             }
-            if (editing) {
-                ThemeLoadStatus(editState) { viewModel.onIntent(InterestEditIntent.Load) }
-            }
             InterestThemeCards(
                 selected = selected,
                 enabled = canEdit,
@@ -125,6 +122,11 @@ fun InterestThemePage(
             )
         }
 
+        if (editing) {
+            InterestLoadFeedback(editState.isLoading, editState.loadError) {
+                viewModel.onIntent(InterestEditIntent.Load)
+            }
+        }
         ThemeSaveButton(editState, editing, selected.size, canEdit) {
             val themes = selected.toList()
             // 서버 저장이 성공한 경우에만 완료 신호를 받아 닫는다.
@@ -165,24 +167,4 @@ private fun ThemeSaveButton(
                 .navigationBarsPadding()
                 .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
     )
-}
-
-@Composable
-private fun ThemeLoadStatus(
-    state: InterestEditUiState,
-    onRetry: () -> Unit,
-) {
-    if (state.loaded) return
-    DsText(
-        text = if (state.loadError) "관심 테마를 불러오지 못했어요." else "관심 테마를 불러오는 중이에요.",
-        style = DesignSystemThemeImpl.typeScale.textRegularS,
-        modifier = Modifier.padding(bottom = 12.dp),
-    )
-    if (state.loadError) {
-        DsButton(
-            text = "다시 시도",
-            onClick = onRetry,
-            modifier = Modifier.padding(bottom = 12.dp),
-        )
-    }
 }
