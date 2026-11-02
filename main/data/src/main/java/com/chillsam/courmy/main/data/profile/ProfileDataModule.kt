@@ -24,7 +24,7 @@ object ProfileDataModule {
     @Singleton
     fun provideProfileDataSource(apiService: ProfileApiService): ProfileDataSource = ProfileDataSource(apiService)
 
-    /** TODO-API-SPEC: 마이페이지 응답에 관심 테마·지역이 실리면 이 provider 를 제거한다. [wiki-needed] */
+    /** 기존 가입·저장 호환 캐시. 표시 값은 계정 프로필 GET 응답을 사용한다. */
     @Provides
     @Singleton
     fun provideInterestDataStore(

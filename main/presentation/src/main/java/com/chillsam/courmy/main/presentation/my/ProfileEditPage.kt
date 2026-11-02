@@ -86,7 +86,7 @@ fun ProfileEditPage(
     StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    // 편집 원본값은 실제 내 프로필(GET /service/v1/mypage)에서 가져온다.
+    // 편집 원본과 관심사는 계정 프로필(GET /api/v1/users) 응답을 사용한다.
     val myState by myViewModel.uiState.collectAsStateWithLifecycle()
     // MyViewModel 은 init 에서 로드하지 않는다. 여기서 부르지 않으면 편집 원본이 빈 값이 된다.
     RefreshOnResume { myViewModel.onIntent(MyProfileIntent.Retry) }
@@ -147,6 +147,7 @@ fun ProfileEditPage(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
+            ProfileLoadStatus(myState) { myViewModel.onIntent(MyProfileIntent.Retry) }
             AvatarEditor(
                 // 새로 고른 게 없으면 현재 프로필 사진을 그대로 보여준다.
                 imageUri = profileImageUri?.toString() ?: profile?.profileImageUrl.orEmpty(),
@@ -202,7 +203,7 @@ fun ProfileEditPage(
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
                 text = "변경 사항 저장",
-                enabled = hasChanges && !editState.isSaving,
+                enabled = profile != null && hasChanges && !editState.isSaving,
                 loading = editState.isSaving,
                 onClick = {
                     // 바뀐 항목만 넘긴다(아이디를 그대로 다시 보내면 중복으로 거부될 수 있다).
@@ -222,6 +223,28 @@ fun ProfileEditPage(
                         .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun ProfileLoadStatus(
+    state: MyProfileUIState,
+    onRetry: () -> Unit,
+) {
+    if (state.errorMessage != null) {
+        DsText(
+            text = state.errorMessage,
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            maxLines = 3,
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+        )
+        DsButton(text = "다시 시도", onClick = onRetry)
+    } else if (state.isLoading && state.profile == null) {
+        DsText(
+            text = "프로필을 불러오는 중이에요.",
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            modifier = Modifier.padding(top = 16.dp),
+        )
     }
 }
 

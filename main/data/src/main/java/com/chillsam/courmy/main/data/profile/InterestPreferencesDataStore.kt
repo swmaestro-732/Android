@@ -17,11 +17,8 @@ private val Context.interestDataStore: DataStore<Preferences> by preferencesData
 /**
  * 관심 테마·지역을 기기에 보관하는 로컬 데이터소스.
  *
- * TODO-API-SPEC: **마이페이지 응답에 관심 테마·지역이 없어서 두는 임시 저장소다.**
- * 서버는 가입(`SignupRequest`)과 프로필 수정(`UpdateProfileRequest`)의 `areaCodes`·`likeThemes` 로
- * 받아 저장하지만, `GET /service/v1/mypage`(MyPageProfileResponse)로는 내려주지 않아 화면이
- * 되읽을 길이 없다. 응답에 필드가 생기면 이 파일과 [ProfileRepositoryImpl] 의 병합·저장 호출을
- * 함께 제거한다. [wiki-needed]
+ * 기존 가입·저장 흐름과 호환하기 위한 캐시다. 프로필 표시의 정본은 GET /api/v1/users이며,
+ * 이 캐시로 서버 응답을 덮거나 서버 조회 실패를 성공으로 바꾸지 않는다.
  *
  * 지역은 라벨만으로는 부족하다 — 회원가입 요청에 실을 법정동코드([AreaVO.code])까지 있어야 해서
  * [AreaVO] 를 통째로 JSON 직렬화해 담는다.
