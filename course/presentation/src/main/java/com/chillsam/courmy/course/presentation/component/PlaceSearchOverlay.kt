@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
@@ -245,30 +246,21 @@ private fun ColumnScope.PlaceCandidateList(
     }
 }
 
-/** "새로운 위치 추가" 액션. 등록된 장소 검색으로 못 찾은 곳을 이름으로 직접 찾아 담을 때 쓴다. */
+/**
+ * "새로운 위치 추가" 액션. 등록된 장소 검색으로 못 찾은 곳을 이름으로 직접 찾아 담을 때 쓴다.
+ * 앱 공통 알약([DsChip])을 그대로 써서 다른 화면의 칩과 크기·모양을 맞춘다.
+ */
 @Composable
 private fun AddPlaceButton(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val shape = RoundedCornerShape(9999.dp)
-    Box(
-        modifier =
-            Modifier
-                .clip(shape)
-                .border(1.dp, color.borderDefaultLevel1, shape)
-                .clickable(enabled = enabled, onClick = onClick)
-                .sizeIn(minHeight = 48.dp)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        DsText(
-            text = "새로운 위치 추가",
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = if (enabled) color.contentAccent else color.contentDefaultLevel3,
-        )
-    }
+    DsChip(
+        text = "새로운 위치 추가",
+        selected = false,
+        enabled = enabled,
+        onClick = onClick,
+    )
 }
 
 @Composable
@@ -422,6 +414,8 @@ private fun SearchResultRow(
                     Modifier
                         .size(24.dp)
                         .clip(CircleShape)
+                        // 행 배경(level0)과 구분되도록 미선택 칩과 같은 흰 배경을 깐다.
+                        .background(color.bgDefaultLevel1)
                         .border(1.dp, color.borderDefaultLevel0, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
