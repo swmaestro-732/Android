@@ -141,7 +141,7 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
                     enabled = !uiState.isLoading,
                     onClick = {
                         // 홀더에 담아둔 프로필로 회원가입 API 호출.
-                        // 관심 지역은 검색 API 가 주는 법정동코드를 그대로 areaCodes 로 보낸다.
+                        // 선택 prefix는 가입 data 레이어에서 활성 법정동 10자리 코드 배열로 변환한다.
                         // 이미지가 이미 http URL 이면 그대로 싣고, 로컬 uri 면 가입 성공 후 업로드하도록 넘긴다
                         // (presign 은 액세스 토큰이 필요해 가입 전에는 호출할 수 없다).
                         val picked = SignupSelectionStore.profileImageUrl
