@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -25,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,17 +40,21 @@ import com.chillsam.courmy.common.presentation.component.DsSwitch
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R
 
 /** 뒤 화면을 덮는 스크림 농도. [DsConfirmDialog] 와 동일값. */
 private const val SCRIM_ALPHA = 0.4f
 
 private val SheetCornerRadius = 20.dp
+private val HandleWidth = 36.dp
+private val HandleHeight = 4.dp
 
 /**
  * 홈 최초 진입 알림 수신 동의 팝업(SCRUM-725). 하단 시트 형태의 전면 Dialog 다.
  *
- * 필수(서비스 알림) 동의를 받아야 하므로 바깥 탭·뒤로가기로 닫을 수 없고,
- * 확인 버튼으로만 끝난다. 확인 직후 Android 13+ 라면 OS 알림 권한을 이어서 요청한다
+ * 동의 항목이 모두 선택이라 동의 없이도 계속할 수 있지만, 응답 자체는 받아야 해서
+ * 바깥 탭·뒤로가기로는 닫히지 않고 확인 버튼으로만 끝난다.
+ * 광고 알림을 켠 채 확인하면 Android 13+ OS 알림 권한을 이어서 요청한다
  * (시작 시 자동 요청은 동의 전에는 건너뛴다 — MainActivity).
  */
 @Composable
@@ -66,8 +73,12 @@ fun NotificationConsentSheet(
         state = state,
         onIntent = onIntent,
         onConfirm = {
+            val wantsNotification = state.marketingAgreed
             onIntent(NotificationConsentIntent.Confirm)
-            if (canRequestNotificationPermission(context, permissionPreferences.getBoolean("requested", false))) {
+            // "알림 없이 계속하기"를 고른 사용자에게 바로 OS 권한을 묻는 건 모순이라 켠 경우에만 잇는다.
+            if (wantsNotification &&
+                canRequestNotificationPermission(context, permissionPreferences.getBoolean("requested", false))
+            ) {
                 // 시작 시 자동 요청과 같은 키를 써서 어느 쪽이든 설치당 한 번만 묻는다.
                 permissionPreferences.edit().putBoolean("requested", true).apply()
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -92,7 +103,7 @@ private fun NotificationConsentContent(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Dialog(
-        // 필수 동의 전에는 닫을 수 없다. 확인 버튼이 유일한 출구다.
+        // 응답 없이 닫을 수 없다. 확인 버튼이 유일한 출구다.
         onDismissRequest = {},
         properties =
             DialogProperties(
@@ -114,47 +125,59 @@ private fun NotificationConsentContent(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(topStart = SheetCornerRadius, topEnd = SheetCornerRadius))
                         .background(color.bgDefaultLevel1)
-                        .padding(20.dp)
+                        .padding(horizontal = 20.dp)
                         .navigationBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                DsText(
-                    text = "알림 수신 동의",
-                    style = DesignSystemThemeImpl.typeScale.textStrongM,
-                    color = color.contentDefaultLevel0,
-                )
                 Spacer(modifier = Modifier.height(8.dp))
-                DsText(
-                    text = "북마크·좋아요 소식과 혜택 알림을 받으려면 동의가 필요해요.",
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = color.contentDefaultLevel1,
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                ConsentRow(
-                    title = "서비스 알림 (필수)",
-                    description = "북마크·좋아요 등 내 활동 알림",
-                    checked = state.serviceAgreed,
-                    onToggle = { onIntent(NotificationConsentIntent.ToggleService) },
-                )
-                ConsentRow(
-                    title = "광고성 정보 수신 (선택)",
-                    description = "이벤트·혜택 알림",
-                    checked = state.marketingAgreed,
-                    onToggle = { onIntent(NotificationConsentIntent.ToggleMarketing) },
-                )
-                ConsentRow(
-                    title = "야간 수신 (선택)",
-                    description = "21시~8시에도 받기, 광고성 동의 시 선택 가능",
-                    checked = state.nightAgreed,
-                    onToggle = { onIntent(NotificationConsentIntent.ToggleNight) },
-                    enabled = state.marketingAgreed,
+                Box(
+                    modifier =
+                        Modifier
+                            .size(width = HandleWidth, height = HandleHeight)
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(color.bgSwitchOff),
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                DsButton(
-                    text = "동의하고 시작하기",
-                    enabled = state.confirmEnabled,
-                    loading = state.saving,
-                    onClick = onConfirm,
-                )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    DsText(
+                        text = "추천 코스 알림을 받아볼까요?",
+                        style = DesignSystemThemeImpl.typeScale.textStrongM,
+                        color = color.contentDefaultLevel0,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    DsText(
+                        text = "나중에 설정에서 바꿀 수 있어요.",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel1,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ConsentRow(
+                        title = "광고 알림 (선택)",
+                        description = "추천 코스와 이벤트 소식을 받아요",
+                        checked = state.marketingAgreed,
+                        onToggle = { onIntent(NotificationConsentIntent.ToggleMarketing) },
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ConsentRow(
+                        title = "야간에도 받기 (선택)",
+                        description = "밤 9시부터 오전 8시까지도 받아요",
+                        checked = state.nightAgreed,
+                        onToggle = { onIntent(NotificationConsentIntent.ToggleNight) },
+                        enabled = state.marketingAgreed,
+                        iconRes = R.drawable.ic_moon_24,
+                        modifier =
+                            Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(color.bgDefaultLevel0),
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    DsButton(
+                        text = if (state.marketingAgreed) "동의하고 계속하기" else "알림 없이 계속하기",
+                        loading = state.saving,
+                        onClick = onConfirm,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
         }
     }
@@ -166,21 +189,32 @@ private fun ConsentRow(
     description: String,
     checked: Boolean,
     onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    iconRes: Int? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .toggleable(
                     value = checked,
                     enabled = enabled,
                     role = Role.Switch,
                     onValueChange = { onToggle() },
-                ).padding(vertical = 10.dp),
+                ).padding(horizontal = if (iconRes != null) 12.dp else 0.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (iconRes != null) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = color.contentDefaultLevel0,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+        }
         Column(modifier = Modifier.weight(1f)) {
             DsText(
                 text = title,
@@ -212,7 +246,6 @@ private fun NotificationConsentContentPreview() {
             state =
                 NotificationConsentUIState(
                     visible = true,
-                    serviceAgreed = true,
                     marketingAgreed = true,
                 ),
             onIntent = {},

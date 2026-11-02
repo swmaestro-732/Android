@@ -71,7 +71,7 @@ class NotificationConsentViewModelTest {
     }
 
     @Test
-    fun `confirm is ignored without the required service consent`() =
+    fun `confirm without any consent still records the decision`() =
         runTest {
             val store = FakeConsentStore()
             val model = NotificationConsentViewModel(store)
@@ -79,8 +79,11 @@ class NotificationConsentViewModelTest {
             model.onIntent(NotificationConsentIntent.Confirm)
             advanceUntilIdle()
 
-            assertEquals(0, store.saveCount)
-            assertTrue(model.uiState.value.visible)
+            assertEquals(1, store.saveCount)
+            assertTrue(store.isDecided)
+            assertFalse(store.marketingAgreed)
+            assertFalse(store.nightAgreed)
+            assertFalse(model.uiState.value.visible)
         }
 
     @Test
@@ -88,7 +91,6 @@ class NotificationConsentViewModelTest {
         runTest {
             val store = FakeConsentStore()
             val model = NotificationConsentViewModel(store)
-            model.onIntent(NotificationConsentIntent.ToggleService)
             model.onIntent(NotificationConsentIntent.ToggleMarketing)
 
             model.onIntent(NotificationConsentIntent.Confirm)
