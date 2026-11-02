@@ -1,41 +1,46 @@
 package com.chillsam.courmy.main.domain.map
 
-import com.chillsam.courmy.common.entity.paging.CursorPageVO
+import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import com.chillsam.courmy.main.entity.map.MapPlacesVO
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
 
 class SearchMapPlacesUseCaseTest {
+    private val bounds = MapBounds(35.1, 129.0, 35.2, 129.1)
+
     private class FakeRepository : MapPlaceSearchRepository {
-        val page = CursorPageVO<MapPlaceVO>(nextCursor = "next+/=", hasNext = true)
+        override suspend fun suggestions(query: String): List<MapPlaceVO> = error("영역 조회에서 제안을 요청하면 안 됩니다.")
+
+        val page = MapPlacesVO()
         var requestedQuery: String? = null
-        var requestedCursor: String? = null
+        var requestedBounds: MapBounds? = null
         var requestedLocation: Pair<Double?, Double?>? = null
 
         override suspend fun search(
             query: String,
-            cursor: String?,
+            bounds: MapBounds,
             latitude: Double?,
             longitude: Double?,
-        ): CursorPageVO<MapPlaceVO> {
+        ): MapPlacesVO {
             requestedQuery = query
-            requestedCursor = cursor
+            requestedBounds = bounds
             requestedLocation = latitude to longitude
             return page
         }
     }
 
     @Test
-    fun `검색어 공백을 제거하고 커서와 현재 위치를 전달하며 응답을 보존한다`() =
+    fun `검색어 공백을 제거하고 영역과 현재 위치를 전달하며 응답을 보존한다`() =
         runTest {
             val repository = FakeRepository()
 
-            val result = SearchMapPlacesUseCase(repository)("  카페 \n", "current+/=", 35.15, 129.05)
+            val result = SearchMapPlacesUseCase(repository)("  카페 \n", bounds, 35.15, 129.05)
 
             assertEquals("카페", repository.requestedQuery)
-            assertEquals("current+/=", repository.requestedCursor)
+            assertEquals(bounds, repository.requestedBounds)
             assertEquals(35.15 to 129.05, repository.requestedLocation)
             assertSame(repository.page, result)
         }
@@ -45,10 +50,10 @@ class SearchMapPlacesUseCaseTest {
         runTest {
             val repository = FakeRepository()
 
-            SearchMapPlacesUseCase(repository)(" \t\n ", cursor = "next")
+            SearchMapPlacesUseCase(repository)(" \t\n ", bounds = bounds)
 
             assertEquals("", repository.requestedQuery)
-            assertEquals("next", repository.requestedCursor)
+            assertEquals(bounds, repository.requestedBounds)
             assertEquals(null to null, repository.requestedLocation)
         }
 
@@ -72,7 +77,7 @@ class SearchMapPlacesUseCaseTest {
                 )
 
             invalidLocations.forEach { (latitude, longitude) ->
-                useCase("카페", latitude = latitude, longitude = longitude)
+                useCase("카페", bounds, latitude = latitude, longitude = longitude)
 
                 assertEquals("좌표: $latitude, $longitude", null to null, repository.requestedLocation)
             }
@@ -85,7 +90,7 @@ class SearchMapPlacesUseCaseTest {
             val useCase = SearchMapPlacesUseCase(repository)
 
             listOf(0.0 to 0.0, -90.0 to -180.0, 90.0 to 180.0).forEach { (latitude, longitude) ->
-                useCase("카페", latitude = latitude, longitude = longitude)
+                useCase("카페", bounds, latitude = latitude, longitude = longitude)
 
                 assertEquals(latitude to longitude, repository.requestedLocation)
             }

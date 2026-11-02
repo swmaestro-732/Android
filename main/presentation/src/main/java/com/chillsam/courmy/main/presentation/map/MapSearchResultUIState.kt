@@ -1,6 +1,9 @@
 package com.chillsam.courmy.main.presentation.map
 
 import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.entity.map.MapCameraMove
+import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -11,6 +14,10 @@ data class MapSearchResultUIState(
     val query: String = "",
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val bounds: MapBounds? = null,
+    val cameraMove: MapCameraMove? = null,
+    val isCameraMoving: Boolean = false,
+    val clusters: ImmutableList<MapClusterVO> = persistentListOf(),
     val isLoading: Boolean = true,
     val isLoadingMore: Boolean = false,
     val places: ImmutableList<MapPlaceVO> = persistentListOf(),

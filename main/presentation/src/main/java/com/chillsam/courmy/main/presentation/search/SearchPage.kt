@@ -10,6 +10,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.main.domain.map.MapSearchResultPage
+import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.domain.search.SearchPage as SearchRoute
 import com.chillsam.courmy.main.domain.search.SearchResultPage as SearchResultRoute
 
@@ -25,19 +26,20 @@ fun SearchPage(
     query: String = "",
     latitude: Double? = null,
     longitude: Double? = null,
+    bounds: MapBounds? = null,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(query) {
-        viewModel.onIntent(SearchIntent.Load)
+    LaunchedEffect(query, target) {
+        viewModel.onIntent(SearchIntent.Load(target == SearchRoute.TARGET_PLACE))
         viewModel.onIntent(SearchIntent.ChangeQuery(query))
     }
 
     val actions =
-        remember(viewModel, navigationHelper, target, latitude, longitude) {
+        remember(viewModel, navigationHelper, target, latitude, longitude, bounds) {
             SearchActions(
                 onQueryChange = { viewModel.onIntent(SearchIntent.ChangeQuery(it)) },
                 onClearQuery = { viewModel.onIntent(SearchIntent.ClearQuery) },
@@ -50,7 +52,12 @@ fun SearchPage(
                         navigationHelper.navigateToBack()
                         navigationHelper.navigateByRoute(
                             if (target == SearchRoute.TARGET_PLACE) {
-                                MapSearchResultPage.route(trimmed, latitude = latitude, longitude = longitude)
+                                MapSearchResultPage.route(
+                                    trimmed,
+                                    latitude = latitude,
+                                    longitude = longitude,
+                                    bounds = bounds,
+                                )
                             } else {
                                 SearchResultRoute.route(trimmed)
                             },
@@ -58,6 +65,23 @@ fun SearchPage(
                     }
                 },
                 onBack = { navigationHelper.navigateToBack() },
+                onSuggestionClick = { place ->
+                    val keyword =
+                        viewModel.uiState.value.query
+                            .trim()
+                    viewModel.onIntent(SearchIntent.Submit(keyword))
+                    navigationHelper.navigateToBack()
+                    navigationHelper.navigateByRoute(
+                        MapSearchResultPage.route(
+                            keyword,
+                            latitude = latitude,
+                            longitude = longitude,
+                            bounds = bounds,
+                            targetLatitude = place.latitude,
+                            targetLongitude = place.longitude,
+                        ),
+                    )
+                },
             )
         }
 

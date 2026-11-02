@@ -32,6 +32,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.presentation.component.PlaceRowsSkeleton
 import com.chillsam.courmy.main.presentation.home.FeedMessage
 import com.chillsam.courmy.main.presentation.map.component.MapBottomSheet
@@ -65,6 +66,9 @@ fun MapSearchResultScreen(
     uiState: MapSearchResultUIState,
     actions: MapSearchResultActions,
     modifier: Modifier = Modifier,
+    initialLatitude: Double? = null,
+    initialLongitude: Double? = null,
+    initialBounds: MapBounds? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val isList = uiState.sheetMode == MapSheetMode.LIST
@@ -80,10 +84,18 @@ fun MapSearchResultScreen(
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         MapCanvas(
             places = uiState.places,
-            clusters = emptyList(),
-            showAllPlaces = true,
+            cameraMove = uiState.cameraMove,
+            initialBounds = initialBounds,
+            hidePins = uiState.isCameraMoving || uiState.isLoading,
+            onCameraMoving = actions.onCameraMoving,
+            onDestinationReached = actions.onDestinationReached,
+            clusters = uiState.clusters,
+            onBoundsChanged = actions.onBoundsChanged,
             selectedPlaceId = uiState.selectedPlaceId,
-            initialPosition = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
+            initialPosition =
+                remember(initialLatitude, initialLongitude) {
+                    searchInitialPosition(initialLatitude, initialLongitude)
+                },
             onPlaceClick = actions.onPlaceSelect,
             onMapClick = { actions.onPlaceSelect(null) },
             contentPadding = PaddingValues(top = 100.dp, bottom = if (isList) listSheetHeight else MarkerSheetInset),
@@ -122,15 +134,19 @@ fun MapSearchResultScreen(
                     .padding(horizontal = ScreenHorizontalPadding, vertical = ControlBottomGap),
         )
 
-        if (uiState.places.isEmpty()) {
+        if (uiState.isCameraMoving || uiState.isLoading || uiState.places.isEmpty()) {
             MapBottomSheet(modifier = Modifier.align(Alignment.BottomCenter)) {
-                if (uiState.isLoading) {
+                if (uiState.isCameraMoving || uiState.isLoading) {
                     PlaceRowsSkeleton(
                         Modifier.padding(horizontal = SheetHorizontalPadding, vertical = 12.dp),
                         count = 1,
                     )
                 } else {
-                    FeedMessage(uiState.errorMessage ?: "검색 결과가 없어요", uiState.errorMessage?.let { actions.onRetry })
+                    FeedMessage(
+                        uiState.errorMessage
+                            ?: if (uiState.clusters.isNotEmpty()) "지도를 확대해 장소를 확인해 주세요" else "검색 결과가 없어요",
+                        uiState.errorMessage?.let { actions.onRetry },
+                    )
                 }
             }
         } else if (isList) {
@@ -217,7 +233,7 @@ private fun ResultListSheet(
         ) {
             ResultCountLabel(count = "${uiState.places.size}${if (uiState.hasNext) "+" else ""}")
         }
-        if (uiState.places.isEmpty()) {
+        if (uiState.isCameraMoving || uiState.isLoading || uiState.places.isEmpty()) {
             EmptyResults(loading = uiState.isLoading)
         } else {
             LazyColumn(
@@ -287,5 +303,18 @@ private fun ColumnScope.EmptyResults(
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel3,
         )
+    }
+}
+
+private fun searchInitialPosition(
+    initialLatitude: Double?,
+    initialLongitude: Double?,
+): LatLng {
+    val validLatitude = initialLatitude?.takeIf { it in -90.0..90.0 }
+    val validLongitude = initialLongitude?.takeIf { it in -180.0..180.0 }
+    return if (validLatitude != null && validLongitude != null) {
+        LatLng(validLatitude, validLongitude)
+    } else {
+        LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE)
     }
 }

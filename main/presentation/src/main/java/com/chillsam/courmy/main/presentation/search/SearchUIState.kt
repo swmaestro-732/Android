@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.search
 
 import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.search.TrendingKeywordVO
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -8,6 +9,10 @@ import kotlinx.collections.immutable.persistentListOf
 /** 검색어 입력 화면(FS-17)의 상태. */
 data class SearchUIState(
     val query: String = "",
+    val placeSearch: Boolean = false,
+    val suggestions: ImmutableList<MapPlaceVO> = persistentListOf(),
+    val suggestionsLoading: Boolean = false,
+    val suggestionsError: String? = null,
     val recentKeywords: ImmutableList<String> = persistentListOf(),
     val trendingKeywords: ImmutableList<TrendingKeywordVO> = persistentListOf(),
     val trendingBaseTime: String = "",

@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.main.domain.search.SearchPage
+import com.chillsam.courmy.main.entity.map.MapBounds
 
 /**
  * 지도 검색 결과(FS-10-ResultMap / FS-10-List)의 라우팅 진입점.
@@ -28,6 +29,9 @@ fun MapSearchResultPage(
     listMode: Boolean,
     latitude: Double? = null,
     longitude: Double? = null,
+    bounds: MapBounds? = null,
+    targetLatitude: Double? = null,
+    targetLongitude: Double? = null,
     modifier: Modifier = Modifier,
     viewModel: MapSearchResultViewModel = hiltViewModel(),
 ) {
@@ -36,8 +40,8 @@ fun MapSearchResultPage(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var detailPlaceId by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    LaunchedEffect(query, listMode, latitude, longitude) {
-        viewModel.onIntent(MapSearchResultIntent.Load(query, latitude, longitude))
+    LaunchedEffect(query, listMode, latitude, longitude, targetLatitude, targetLongitude) {
+        viewModel.onIntent(MapSearchResultIntent.Load(query, latitude, longitude, targetLatitude, targetLongitude))
         // 지도 탭의 목록 버튼으로 들어오면 리스트가 펼쳐진 채로 시작한다.
         if (listMode) viewModel.onIntent(MapSearchResultIntent.ShowList)
     }
@@ -52,13 +56,29 @@ fun MapSearchResultPage(
     // 입력 화면은 제출 시 교체되므로, 뒤로가기에서도 검색 조건을 복원한다.
     val editQuery: (String) -> Unit = { value ->
         navigationHelper.navigateToBack()
-        navigationHelper.navigateByRoute(SearchPage.route(SearchPage.TARGET_PLACE, value, latitude, longitude))
+        navigationHelper.navigateByRoute(
+            SearchPage.route(
+                SearchPage.TARGET_PLACE,
+                value,
+                latitude,
+                longitude,
+                uiState.bounds ?: bounds,
+            ),
+        )
     }
     BackHandler(enabled = detailPlaceId == null) { editQuery(query) }
 
     val actions =
-        remember(viewModel, navigationHelper, query, latitude, longitude) {
+        remember(viewModel, navigationHelper, query, latitude, longitude, uiState.bounds, bounds) {
             MapSearchResultActions(
+                onBoundsChanged = { viewModel.onIntent(MapSearchResultIntent.BoundsChanged(it)) },
+                onCameraMoving = { viewModel.onIntent(MapSearchResultIntent.CameraMoving) },
+                onDestinationReached = {
+                    id,
+                    bounds,
+                    ->
+                    viewModel.onIntent(MapSearchResultIntent.DestinationReached(id, bounds))
+                },
                 onBackClick = { editQuery(query) },
                 onQueryClick = { editQuery(query) },
                 onClearQuery = { editQuery("") },
@@ -77,6 +97,9 @@ fun MapSearchResultPage(
 
     MapSearchResultScreen(
         uiState = uiState,
+        initialLatitude = latitude,
+        initialLongitude = longitude,
+        initialBounds = bounds,
         actions = actions,
         modifier = modifier.fillMaxSize(),
     )

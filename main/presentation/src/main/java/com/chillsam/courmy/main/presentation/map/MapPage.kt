@@ -50,6 +50,7 @@ fun MapPage(
                     navigationHelper.navigateByRoute(
                         SearchPage.route(
                             target = SearchPage.TARGET_PLACE,
+                            bounds = bounds,
                             latitude = bounds?.let { (it.swLat + it.neLat) / 2 } ?: uiState.myLat,
                             longitude = bounds?.let { (it.swLng + it.neLng) / 2 } ?: uiState.myLng,
                         ),

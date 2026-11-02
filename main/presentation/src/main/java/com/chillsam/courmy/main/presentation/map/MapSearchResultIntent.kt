@@ -1,12 +1,26 @@
 package com.chillsam.courmy.main.presentation.map
 
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
+import com.chillsam.courmy.main.entity.map.MapBounds
 
 sealed interface MapSearchResultIntent : MviIntent {
     data class Load(
         val query: String,
         val latitude: Double? = null,
         val longitude: Double? = null,
+        val targetLatitude: Double? = null,
+        val targetLongitude: Double? = null,
+    ) : MapSearchResultIntent
+
+    data class BoundsChanged(
+        val bounds: MapBounds,
+    ) : MapSearchResultIntent
+
+    data object CameraMoving : MapSearchResultIntent
+
+    data class DestinationReached(
+        val moveId: Long,
+        val bounds: MapBounds,
     ) : MapSearchResultIntent
 
     data object Retry : MapSearchResultIntent

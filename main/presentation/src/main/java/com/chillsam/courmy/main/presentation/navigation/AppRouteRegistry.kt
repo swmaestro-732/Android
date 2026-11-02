@@ -28,6 +28,7 @@ import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.course.presentation.PlanDetailPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
+import com.chillsam.courmy.main.domain.map.searchBounds
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.home.RecommendedCoursesPage
@@ -201,6 +202,7 @@ val appRoutes: List<AppRoute> =
                     query = args[SearchRoute.ARG_QUERY].orEmpty(),
                     latitude = args[SearchRoute.ARG_LATITUDE]?.toDoubleOrNull(),
                     longitude = args[SearchRoute.ARG_LONGITUDE]?.toDoubleOrNull(),
+                    bounds = searchBounds(args[SearchRoute.ARG_BOUNDS]),
                 )
             },
         ),
@@ -229,6 +231,9 @@ val appRoutes: List<AppRoute> =
                     listMode = args[MapSearchResultRoute.ARG_LIST_MODE].toBoolean(),
                     latitude = args[MapSearchResultRoute.ARG_LATITUDE]?.toDoubleOrNull(),
                     longitude = args[MapSearchResultRoute.ARG_LONGITUDE]?.toDoubleOrNull(),
+                    bounds = searchBounds(args[MapSearchResultRoute.ARG_BOUNDS]),
+                    targetLatitude = args[MapSearchResultRoute.ARG_TARGET_LATITUDE]?.toDoubleOrNull(),
+                    targetLongitude = args[MapSearchResultRoute.ARG_TARGET_LONGITUDE]?.toDoubleOrNull(),
                 )
             },
         ),
