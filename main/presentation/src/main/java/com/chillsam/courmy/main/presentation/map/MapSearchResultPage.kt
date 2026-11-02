@@ -72,6 +72,7 @@ fun MapSearchResultPage(
         remember(viewModel, navigationHelper, query, latitude, longitude, uiState.bounds, bounds) {
             MapSearchResultActions(
                 onBoundsChanged = { viewModel.onIntent(MapSearchResultIntent.BoundsChanged(it)) },
+                onCategorySelect = { viewModel.onIntent(MapSearchResultIntent.SelectCategory(it)) },
                 onCameraMoving = { viewModel.onIntent(MapSearchResultIntent.CameraMoving) },
                 onDestinationReached = {
                     id,

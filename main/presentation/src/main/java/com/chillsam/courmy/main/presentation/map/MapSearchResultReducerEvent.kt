@@ -4,6 +4,7 @@ import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
 import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapCameraMove
+import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 
@@ -22,6 +23,7 @@ sealed interface MapSearchResultReducerEvent : ReducerEvent {
         val longitude: Double?,
         val append: Boolean,
         val bounds: MapBounds? = null,
+        val category: MapCategory = MapCategory.ALL,
     ) : MapSearchResultReducerEvent
 
     data class Loaded(

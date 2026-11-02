@@ -21,6 +21,8 @@ interface PlaceSearchApiService {
         @Query("swLng") swLng: Double,
         @Query("neLat") neLat: Double,
         @Query("neLng") neLng: Double,
+        /** 서버 요청 enum 이름(예: "CAFE"). null 이면 전체([PlaceMapApiService] 와 같은 계약). */
+        @Query("category") category: String? = null,
         @Query("userLat") latitude: Double? = null,
         @Query("userLng") longitude: Double? = null,
     ): Response<PlaceMapEnvelope>

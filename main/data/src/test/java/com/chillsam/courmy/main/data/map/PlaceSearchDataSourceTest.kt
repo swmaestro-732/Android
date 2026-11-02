@@ -106,6 +106,21 @@ class PlaceSearchDataSourceTest {
         }
 
     @Test
+    fun `카테고리를 지정하면 category 파라미터로 보내고 없으면 생략한다`() =
+        runBlocking {
+            val fixture = SearchApiFixture()
+
+            fixture.dataSource.search("카페", bounds, category = "CAFE")
+            val url = requireNotNull(fixture.requestedUrl)
+
+            assertEquals("CAFE", url.queryParameter("category"))
+            assertEquals(setOf("q", "swLat", "swLng", "neLat", "neLng", "category"), url.queryParameterNames)
+
+            fixture.dataSource.search("카페", bounds, category = null)
+            assertNull(requireNotNull(fixture.requestedUrl).queryParameter("category"))
+        }
+
+    @Test
     fun `위치를 모르면 검색 URL에서 두 좌표를 생략한다`() =
         runBlocking {
             val fixture = SearchApiFixture()

@@ -1,10 +1,8 @@
 package com.chillsam.courmy.main.entity.map
 
 /**
- * 지도 탭 상단의 고정 카테고리 필터(FS-10).
- *
- * 검색 결과 화면(FS-10-ResultMap)의 칩은 검색어에 따라 달라지는 세분화 라벨이라 여기 넣지 않는다.
- * 그쪽은 서버가 주는 문자열을 그대로 쓴다.
+ * 지도 위 고정 카테고리 필터(FS-10). 지도 탭과 지도 검색 결과(FS-10-ResultMap)가 같은 칩을 쓰고,
+ * 서버 요청은 전체(ALL)를 뺀 대문자 enum 이름이다(`GET /api/v1/places/map` 의 `category`).
  */
 enum class MapCategory {
     ALL,

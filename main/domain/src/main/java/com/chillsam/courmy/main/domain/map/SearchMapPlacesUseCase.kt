@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.domain.map
 
 import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapPlacesVO
 import javax.inject.Inject
@@ -11,6 +12,7 @@ interface MapPlaceSearchRepository {
     suspend fun search(
         query: String,
         bounds: MapBounds,
+        category: MapCategory,
         latitude: Double?,
         longitude: Double?,
     ): MapPlacesVO
@@ -25,6 +27,7 @@ class SearchMapPlacesUseCase
         suspend operator fun invoke(
             query: String,
             bounds: MapBounds,
+            category: MapCategory = MapCategory.ALL,
             latitude: Double? = null,
             longitude: Double? = null,
         ): MapPlacesVO {
@@ -34,6 +37,7 @@ class SearchMapPlacesUseCase
             return repository.search(
                 query.trim(),
                 bounds,
+                category,
                 latitude.takeIf { validLocation },
                 longitude.takeIf { validLocation },
             )

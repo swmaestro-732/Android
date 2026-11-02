@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.domain.map
 
 import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapPlacesVO
 import kotlinx.coroutines.test.runTest
@@ -17,16 +18,19 @@ class SearchMapPlacesUseCaseTest {
         val page = MapPlacesVO()
         var requestedQuery: String? = null
         var requestedBounds: MapBounds? = null
+        var requestedCategory: MapCategory? = null
         var requestedLocation: Pair<Double?, Double?>? = null
 
         override suspend fun search(
             query: String,
             bounds: MapBounds,
+            category: MapCategory,
             latitude: Double?,
             longitude: Double?,
         ): MapPlacesVO {
             requestedQuery = query
             requestedBounds = bounds
+            requestedCategory = category
             requestedLocation = latitude to longitude
             return page
         }
@@ -37,12 +41,25 @@ class SearchMapPlacesUseCaseTest {
         runTest {
             val repository = FakeRepository()
 
-            val result = SearchMapPlacesUseCase(repository)("  카페 \n", bounds, 35.15, 129.05)
+            val result = SearchMapPlacesUseCase(repository)("  카페 \n", bounds, latitude = 35.15, longitude = 129.05)
 
             assertEquals("카페", repository.requestedQuery)
             assertEquals(bounds, repository.requestedBounds)
             assertEquals(35.15 to 129.05, repository.requestedLocation)
             assertSame(repository.page, result)
+        }
+
+    @Test
+    fun `카테고리를 그대로 전달하고 기본값은 전체다`() =
+        runTest {
+            val repository = FakeRepository()
+            val useCase = SearchMapPlacesUseCase(repository)
+
+            useCase("카페", bounds)
+            assertEquals(MapCategory.ALL, repository.requestedCategory)
+
+            useCase("카페", bounds, category = MapCategory.CAFE)
+            assertEquals(MapCategory.CAFE, repository.requestedCategory)
         }
 
     @Test

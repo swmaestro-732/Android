@@ -13,10 +13,20 @@ class PlaceSearchDataSource(
     suspend fun search(
         query: String,
         bounds: MapBounds,
+        category: String? = null,
         latitude: Double? = null,
         longitude: Double? = null,
     ): PlaceMapEnvelope =
         checkResponse(
-            apiService.search(query, bounds.swLat, bounds.swLng, bounds.neLat, bounds.neLng, latitude, longitude),
+            apiService.search(
+                query = query,
+                swLat = bounds.swLat,
+                swLng = bounds.swLng,
+                neLat = bounds.neLat,
+                neLng = bounds.neLng,
+                category = category,
+                latitude = latitude,
+                longitude = longitude,
+            ),
         )
 }

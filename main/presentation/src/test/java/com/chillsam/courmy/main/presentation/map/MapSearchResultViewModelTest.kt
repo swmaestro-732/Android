@@ -4,6 +4,7 @@ import com.chillsam.courmy.main.domain.map.MapPlaceSearchRepository
 import com.chillsam.courmy.main.domain.map.SearchMapPlacesUseCase
 import com.chillsam.courmy.main.domain.map.SuggestMapPlacesUseCase
 import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapPlacesVO
@@ -49,6 +50,7 @@ class MapSearchResultViewModelTest {
                 override suspend fun search(
                     query: String,
                     bounds: MapBounds,
+                    category: MapCategory,
                     latitude: Double?,
                     longitude: Double?,
                 ): MapPlacesVO = search(query, bounds)
@@ -81,6 +83,43 @@ class MapSearchResultViewModelTest {
             assertEquals(clusters, vm.uiState.value.clusters)
             assertFalse(vm.uiState.value.isLoading)
             assertFalse(vm.uiState.value.canLoadMore)
+        }
+
+    @Test
+    fun `카테고리 칩을 고르면 같은 영역을 그 카테고리로 다시 조회하고 같은 선택은 무시한다`() =
+        runTest(dispatcher) {
+            val categories = mutableListOf<MapCategory>()
+            val repository =
+                object : MapPlaceSearchRepository {
+                    override suspend fun suggestions(query: String): List<MapPlaceVO> = emptyList()
+
+                    override suspend fun search(
+                        query: String,
+                        bounds: MapBounds,
+                        category: MapCategory,
+                        latitude: Double?,
+                        longitude: Double?,
+                    ): MapPlacesVO {
+                        categories += category
+                        return MapPlacesVO()
+                    }
+                }
+            val vm =
+                MapSearchResultViewModel(
+                    SearchMapPlacesUseCase(repository),
+                    mockk(),
+                    SuggestMapPlacesUseCase(repository),
+                )
+            vm.onIntent(MapSearchResultIntent.Load("카페"))
+            vm.onIntent(MapSearchResultIntent.BoundsChanged(bounds))
+            advanceUntilIdle()
+            vm.onIntent(MapSearchResultIntent.SelectCategory(MapCategory.CAFE))
+            advanceUntilIdle()
+            vm.onIntent(MapSearchResultIntent.SelectCategory(MapCategory.CAFE))
+            advanceUntilIdle()
+
+            assertEquals(listOf(MapCategory.ALL, MapCategory.CAFE), categories)
+            assertEquals(MapCategory.CAFE, vm.uiState.value.category)
         }
 
     @Test
