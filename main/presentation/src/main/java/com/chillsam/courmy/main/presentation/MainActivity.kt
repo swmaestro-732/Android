@@ -22,6 +22,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.metrics.performance.JankStats
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
+import com.chillsam.courmy.common.domain.push.NotificationConsentStore
 import com.chillsam.courmy.common.domain.push.NotificationSettings
 import com.chillsam.courmy.common.domain.push.PushTarget
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
@@ -57,6 +58,9 @@ class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var notificationSettings: NotificationSettings
+
+    @Inject
+    lateinit var notificationConsent: NotificationConsentStore
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -131,6 +135,7 @@ class MainActivity : FragmentActivity() {
                 permissionGranted = granted,
                 alreadyRequested = preferences.getBoolean("requested", false),
                 notificationsEnabled = notificationSettings.notificationsEnabled,
+                consentDecided = notificationConsent.isDecided,
             )
         ) {
             return
@@ -207,9 +212,13 @@ class MainActivity : FragmentActivity() {
     }
 }
 
-/** 자동 요청은 미응답 사용자에게만 한 번. 이후 변경은 설정 > 알림에서 한다. */
+/**
+ * 자동 요청은 미응답 사용자에게만 한 번. 이후 변경은 설정 > 알림에서 한다.
+ * 홈 동의 팝업을 거치지 않았으면 미루고, 팝업 확인 직후의 요청이 첫 요청이 되게 한다.
+ */
 internal fun shouldRequestStartupNotificationPermission(
     permissionGranted: Boolean,
     alreadyRequested: Boolean,
     notificationsEnabled: Boolean,
-): Boolean = notificationsEnabled && !permissionGranted && !alreadyRequested
+    consentDecided: Boolean,
+): Boolean = consentDecided && notificationsEnabled && !permissionGranted && !alreadyRequested

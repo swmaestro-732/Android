@@ -23,6 +23,27 @@ data class DeviceResponse(
     val code: Int? = null,
 )
 
+/** 비로그인 기기 갱신(SCRUM-756). null 필드는 서버가 바꾸지 않는다. */
+@Serializable
+data class UpdateDeviceRequest(
+    val fcmToken: String? = null,
+    val marketing: Boolean? = null,
+    val night: Boolean? = null,
+)
+
+/** 동의 처리 시각. null 이면 미동의. 앱은 이 시각으로 처리 결과를 안내한다. */
+@Serializable
+data class DeviceConsentDTO(
+    val marketingAgreedAt: String? = null,
+    val nightAgreedAt: String? = null,
+)
+
+@Serializable
+data class DeviceConsentResponse(
+    val code: Int? = null,
+    val data: DeviceConsentDTO? = null,
+)
+
 interface DeviceApi {
     @PUT("api/v1/my/devices")
     suspend fun register(
@@ -33,4 +54,10 @@ interface DeviceApi {
     suspend fun remove(
         @Body request: RemoveDeviceRequest,
     ): Response<DeviceResponse>
+
+    /** 로그인 불필요. 기기는 X-Device-Id 헤더로 식별한다. */
+    @PUT("api/v1/devices")
+    suspend fun updateDevice(
+        @Body request: UpdateDeviceRequest,
+    ): Response<DeviceConsentResponse>
 }

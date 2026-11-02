@@ -86,6 +86,8 @@ import com.chillsam.courmy.main.presentation.component.hasLocationPermission
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
+import com.chillsam.courmy.main.presentation.notification.NotificationConsentSheet
+import com.chillsam.courmy.main.presentation.notification.NotificationConsentViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.google.android.gms.location.LocationServices
 import com.chillsam.courmy.main.presentation.R as MainR
@@ -141,6 +143,13 @@ fun HomePage(modifier: Modifier = Modifier) {
     RefreshOnResume {
         homeViewModel.onIntent(HomeIntent.Retry)
         locationTick++
+    }
+
+    // 홈 최초 진입 시 알림 수신 동의를 받는다(SCRUM-725). 기기 단위라 게스트에게도 띄운다.
+    val consentViewModel: NotificationConsentViewModel = hiltViewModel()
+    val consentState by consentViewModel.uiState.collectAsStateWithLifecycle()
+    if (consentState.visible) {
+        NotificationConsentSheet(state = consentState, onIntent = consentViewModel::onIntent)
     }
 
     Box(
