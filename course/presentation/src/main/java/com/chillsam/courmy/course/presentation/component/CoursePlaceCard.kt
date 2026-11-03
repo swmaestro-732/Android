@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
@@ -67,6 +68,9 @@ fun CoursePlaceCard(
             dragHandleModifier = dragHandleModifier,
             showDragHandle = showDragHandle,
             showRemove = showRemove,
+            // Step 1(장소 고르기)만 장소 담기 검색 결과와 같은 배치로 보여 지점을 구분한다.
+            // 기록을 펴는 Step 2 는 헤더를 컴팩트하게 유지한다.
+            detailed = !showRecord,
         )
         if (!showRecord) return@Column
         // 메모 유무와 무관하게 동일한 컴포저블 트리를 유지하고 배경색만 토글해, 입력 중 포커스가 끊기지 않게 한다.
@@ -106,6 +110,7 @@ private fun PlaceHeader(
     dragHandleModifier: Modifier = Modifier,
     showDragHandle: Boolean = true,
     showRemove: Boolean = true,
+    detailed: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(10.dp),
@@ -126,17 +131,57 @@ private fun PlaceHeader(
             modifier = Modifier.size(48.dp),
             shape = RoundedCornerShape(11.dp),
         )
-        Column(modifier = Modifier.weight(1f)) {
-            DsText(
-                text = place.name,
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
-            )
-            DsText(
-                text = place.category,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
-            )
+        if (detailed) {
+            // Step 1(장소 고르기): 장소 담기 검색 결과와 동일 배치 — 볼드 이름 + 옆 카테고리 / 아래 주소.
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                // 장소명 옆에 카테고리를 나란히 둔다. 둘 다 한 줄 말줄임이고, 이름이 길어도 카테고리가
+                // 먼저 잘리지 않도록 이름 쪽에 남는 폭만 준다.
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DsText(
+                        text = place.name,
+                        style = DesignSystemThemeImpl.typeScale.textStrongM,
+                        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.alignByBaseline().weight(1f, fill = false),
+                    )
+                    if (place.category.isNotBlank()) {
+                        DsText(
+                            text = place.category,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.alignByBaseline(),
+                        )
+                    }
+                }
+                // 같은 이름의 지점(프랜차이즈 ○○점 등)을 주소로 구분한다(장소 담기와 동일 규칙).
+                // 카테고리 자리에 이미 주소가 들어간 외부 검색 결과는 중복이므로 생략한다.
+                if (place.address.isNotBlank() && place.address != place.category) {
+                    DsText(
+                        text = place.address,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        } else {
+            // Step 2(장소별 기록): 아래에 메모·사진 입력을 펴므로 헤더는 컴팩트하게 유지한다.
+            Column(modifier = Modifier.weight(1f)) {
+                DsText(
+                    text = place.name,
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
+                )
+                DsText(
+                    text = place.category,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+                )
+            }
         }
         if (showRemove) {
             Box(
