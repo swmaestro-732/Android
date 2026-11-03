@@ -2,6 +2,8 @@
 
 - 브랜치: `fix/SCRUM-709-comment-author-profile`
 - 작성자 ID/`나` 대신 서버 `authorNickname`을 표시하고 `authorProfileImageUrl`을 36dp 원형 이미지에 연결한다. 누락/null은 `알 수 없는 사용자`와 기본 사람 아이콘이다. 긴 닉네임은 한 줄 말줄임으로 날짜를 보호한다.
+- 프로필 이미지는 1.5dp 흰색(`bgDefaultLevel1`) 원형 테두리와 2dp 그림자로 배경에서 분리한다.
+- 본인/타인 더보기 버튼은 모두 48dp 터치 영역, 34dp 원형 배경(`bgDefaultLevel1`), 22dp 가로 점 3개(`contentDefaultLevel0`)로 통일한다. 본인 메뉴는 수정·삭제, 타인 메뉴는 신고하기를 유지한다.
 - 이미지 버튼은 48dp다. 내 댓글은 시트를 닫고 마이페이지로 이동한다. 타인 댓글은 `authorHandle`이 제공된 경우에만 시트를 닫고 기존 타인 프로필 라우트로 이동한다. handle이 없는 타인 이미지는 비활성이다.
 - 작성·수정 요청은 기존 content 계약을 유지하며 프로필 정보는 조회 응답에서만 읽는다.
 

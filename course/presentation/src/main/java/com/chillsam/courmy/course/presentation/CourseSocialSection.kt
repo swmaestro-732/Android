@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -44,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -414,7 +416,11 @@ private fun CommentRow(
         ) {
             CourseImage(
                 url = comment.authorProfileImageUrl,
-                modifier = Modifier.size(COMMENT_AVATAR_SIZE),
+                modifier =
+                    Modifier
+                        .size(COMMENT_AVATAR_SIZE)
+                        .shadow(2.dp, CircleShape, clip = false)
+                        .border(1.5.dp, color.bgDefaultLevel1, CircleShape),
                 shape = CircleShape,
                 emptyIconRes = R.drawable.ic_tab_person_24,
             )
@@ -460,13 +466,18 @@ private fun MyCommentMenu(
     val color = DesignSystemThemeImpl.designSystemColor
     var expanded by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { expanded = true }, modifier = Modifier.size(28.dp)) {
-            Icon(
-                painter = painterResource(R.drawable.ic_more_vert_24),
-                contentDescription = "내 댓글 메뉴",
-                tint = color.contentDefaultLevel3,
-                modifier = Modifier.size(18.dp),
-            )
+        IconButton(onClick = { expanded = true }, modifier = Modifier.size(48.dp)) {
+            Box(
+                modifier = Modifier.size(34.dp).background(color.bgDefaultLevel1, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_more_horizontal_24),
+                    contentDescription = "내 댓글 메뉴",
+                    tint = color.contentDefaultLevel0,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
         }
         DropdownMenu(
             expanded = expanded,
