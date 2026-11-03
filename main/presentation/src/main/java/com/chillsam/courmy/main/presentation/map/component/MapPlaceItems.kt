@@ -36,6 +36,9 @@ import com.chillsam.courmy.main.entity.map.MapPlaceVO
 private val CardShape = RoundedCornerShape(12.dp)
 private val ThumbShape = RoundedCornerShape(10.dp)
 
+/** 상단맞춤 행에서 순위·북마크를 첫 줄 텍스트 윗선에 얼추 맞추기 위한 top padding(textStrongS 높이 보정). */
+private val RowTopAlignPadding = 1.dp
+
 /** 캐러셀 카드 한 장의 너비(FS-10). 옆 카드가 살짝 보여 "옆으로 넘길 수 있다"는 게 드러나는 폭. */
 private val CarouselCardWidth = 180.dp
 private val CarouselImageHeight = 108.dp
@@ -168,13 +171,16 @@ internal fun MapRankedPlaceRow(
                 .semantics { selected = isSelected }
                 .clickable(onClick = onClick)
                 .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        // 3줄까지 늘어나므로 순위·썸네일·북마크를 세로 가운데가 아닌 상단에 맞춘다.
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         DsText(
             text = rank.toString(),
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel2,
+            // 썸네일·첫 줄 텍스트 윗선에 숫자 baseline을 얼추 맞춘다.
+            modifier = Modifier.padding(top = RowTopAlignPadding),
         )
         PlaceThumbnail(
             url = place.thumbnailUrl,
@@ -186,16 +192,108 @@ internal fun MapRankedPlaceRow(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
+            PlaceNameAndCategoryLine(place = place)
+            RankedPlaceMetaLine(place = place)
+            if (place.address.isNotBlank()) {
+                DsText(
+                    text = place.address,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        SaveToggleIcon(
+            saved = place.saved,
+            onClick = onSaveClick,
+            // 북마크도 첫 줄 텍스트 윗선에 맞춘다.
+            modifier = Modifier.padding(top = RowTopAlignPadding),
+        )
+    }
+}
+
+/** 첫 줄: 장소명 옆에 카테고리(+세부 카테고리)를 인라인으로 붙인다. 이름은 공간을 양보하며 줄지 않는다. */
+@Composable
+private fun PlaceNameAndCategoryLine(
+    place: MapPlaceVO,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val category = place.categoryLabel()
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        DsText(
+            text = place.name,
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel0,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.alignByBaseline().weight(1f, fill = false),
+        )
+        if (category.isNotEmpty()) {
             DsText(
-                text = place.name,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentDefaultLevel0,
+                text = category,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.alignByBaseline(),
+            )
+        }
+    }
+}
+
+/**
+ * 결과 행 둘째 줄: `★ 4.8 · 도보 6분 · 영업 중 · 22:00 종료`.
+ * 지도엔 위치가 이미 있어 영업 상태가 핵심이라 색을 달리 주려고 평점·도보와 따로 그린다.
+ * (카테고리는 첫 줄로 올라가 여기선 뺀다.)
+ */
+@Composable
+private fun RankedPlaceMetaLine(
+    place: MapPlaceVO,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val style = DesignSystemThemeImpl.typeScale.textRegularXS
+    // 평점 → 도보 → 영업 상태 순서로, 앞 항목이 있으면 가운뎃점을 붙여 잇는다.
+    val hasRating = place.rating > 0
+    val walk = place.walkingMinutes?.let { "도보 ${it}분" }
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        if (hasRating) {
+            Icon(
+                painter = painterResource(R.drawable.ic_star_24),
+                contentDescription = null,
+                tint = color.contentRating,
+                modifier = Modifier.size(13.dp),
+            )
+            DsText(text = place.rating.toString(), style = style, color = color.contentDefaultLevel1)
+        }
+        if (walk != null) {
+            DsText(
+                text = if (hasRating) "· $walk" else walk,
+                style = style,
+                color = color.contentDefaultLevel2,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            PlaceSummaryLine(place = place)
         }
-        SaveToggleIcon(saved = place.saved, onClick = onSaveClick)
+        val statusPrefix = hasRating || walk != null
+        val status = place.rankedOpenStatusText()
+        DsText(
+            text = if (statusPrefix) "· $status" else status,
+            style = style,
+            // 영업 중은 강조색, 영업 종료는 흐린 색으로 상태를 색으로 구분한다.
+            color = if (place.openNow) color.contentAccent else color.contentDefaultLevel3,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -299,6 +397,20 @@ private fun MapPlaceVO.openStatusText(): String {
     val status = if (openNow) "영업 중" else "영업 종료"
     return if (closingTime != null) "$status · $closingTime 종료" else status
 }
+
+/** 첫 줄에 인라인으로 붙는 카테고리 라벨. 세부 카테고리가 있으면 `카페 · 베이커리`처럼 잇는다. */
+private fun MapPlaceVO.categoryLabel(): String = listOfNotNull(category, subCategory).joinToString(" · ")
+
+/**
+ * 결과 행용 영업 상태 문구.
+ * 영업 중이면 `영업 중`(마감 시간 있으면 `영업 중 · 22:00 종료`), 영업 종료면 `영업 종료`만 보여준다.
+ */
+private fun MapPlaceVO.rankedOpenStatusText(): String =
+    when {
+        openNow && closingTime != null -> "영업 중 · $closingTime 종료"
+        openNow -> "영업 중"
+        else -> "영업 종료"
+    }
 
 @Preview
 @Composable

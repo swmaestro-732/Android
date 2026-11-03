@@ -578,7 +578,11 @@ private fun NearbySavedSection(
     }
 }
 
-/** 근처 저장 장소 카드: 썸네일 + 이름·평점·카테고리·도보 시간 + 방문 여부 칩. 탭하면 지도에서 그 장소를 보여준다. */
+/**
+ * 근처 저장 장소 카드: 썸네일 + [이름·카테고리 / 도보 시간·평점] + 방문 여부 칩. 탭하면 지도에서 그 장소를 보여준다.
+ *
+ * "지금 들를까" 판단을 돕게 도보 시간을 메타 맨 앞에 accent 색으로 강조하고, 카테고리는 이름 줄로 올렸다.
+ */
 @Composable
 private fun NearbyPlaceCard(
     place: HomeNearbyPlaceVO,
@@ -605,29 +609,64 @@ private fun NearbyPlaceCard(
             shape = RoundedCornerShape(12.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
-            DsText(
-                text = place.name,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentDefaultLevel0,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            // 1줄: 장소명 + 카테고리 라벨 인라인. 카테고리는 이름 뒤에 베이스라인을 맞춰 붙는다.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DsText(
+                    text = place.name,
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.alignByBaseline().weight(1f, fill = false),
+                )
+                if (place.categoryLabel.isNotBlank()) {
+                    DsText(
+                        text = place.categoryLabel,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                }
+            }
+            // 2줄: "지금 들를까" 판단을 돕게 도보 시간을 맨 앞에 accent 로 강조하고, 뒤에 평점을 붙인다.
             Row(
                 modifier = Modifier.padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(3.dp),
             ) {
-                // 평가가 없는 장소는 별 아이콘째 숨긴다("0.0"이 뜨지 않게).
-                if (place.ratingText.isNotBlank()) {
-                    DsRatingStar(starSize = 12.dp)
+                val hasWalking = place.walkingMinutes != null
+                val hasRating = place.ratingText.isNotBlank()
+                // 도보 소요 시간: 거리 1순위 정보라 accent 색으로 강조한다. 계산 불가(null)면 생략.
+                place.walkingMinutes?.let { minutes ->
+                    DsText(
+                        text = "도보 ${minutes}분",
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentAccent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
-                DsText(
-                    text = nearbyPlaceMeta(place),
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel3,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                // 도보와 평점이 모두 있을 때만 가운뎃점 구분자를 끼운다.
+                if (hasWalking && hasRating) {
+                    DsText(
+                        text = "·",
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.borderDefaultLevel1,
+                    )
+                }
+                // 평가가 없는 장소는 별 아이콘째 숨긴다("0.0"이 뜨지 않게).
+                if (hasRating) {
+                    DsRatingStar(starSize = 13.dp)
+                    DsText(
+                        text = place.ratingText,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel3,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
         Box(
@@ -645,14 +684,6 @@ private fun NearbyPlaceCard(
         }
     }
 }
-
-/** 평점·카테고리·도보 시간을 " · "로 이은 메타 한 줄(예: "4.8 · 카페·디저트 · 도보 6분"). */
-private fun nearbyPlaceMeta(place: HomeNearbyPlaceVO): String =
-    buildList {
-        if (place.ratingText.isNotBlank()) add(place.ratingText)
-        if (place.categoryLabel.isNotBlank()) add(place.categoryLabel)
-        place.walkingMinutes?.let { add("도보 ${it}분") }
-    }.joinToString(" · ")
 
 /** "테마별 둘러보기" 섹션: 3열 그리드 타일 10개. 탭하면 추천 코스의 해당 카테고리 필터를 연다. */
 @Composable
