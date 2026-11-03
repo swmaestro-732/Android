@@ -282,6 +282,7 @@ fun CourseDetailScreen(
                     places = detail.places,
                 ),
             address = placeDetailState.place?.address.orEmpty(),
+            openingHours = placeDetailState.place?.openingHours.orEmpty(),
             reviews = placeDetailState.reviews,
             reviewCategories = placeDetailState.place?.categories.orEmpty(),
             onReviewWritten = placeDetailViewModel::refreshReviews,

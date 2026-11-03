@@ -58,6 +58,30 @@ class PlaceDetailDtoMappingTest {
     }
 
     @Test
+    fun `운영시간 원문은 줄바꿈으로 나누고 빈 줄과 양끝 공백을 걷어낸다`() {
+        val vo =
+            PlaceDetailScreenDTO(
+                place =
+                    PlaceScreenDTO(
+                        openingHoursText = "월 10:00 - 20:00\n 화 휴무 \n\n수 10:00 - 20:00\n",
+                    ),
+            ).toVO()
+
+        assertEquals(listOf("월 10:00 - 20:00", "화 휴무", "수 10:00 - 20:00"), vo.openingHours)
+    }
+
+    @Test
+    fun `운영시간이 없으면 빈 목록이다`() {
+        assertTrue(PlaceDetailScreenDTO(place = PlaceScreenDTO()).toVO().openingHours.isEmpty())
+        assertTrue(
+            PlaceDetailScreenDTO(place = PlaceScreenDTO(openingHoursText = "  \n "))
+                .toVO()
+                .openingHours
+                .isEmpty(),
+        )
+    }
+
+    @Test
     fun `place가 없어도 빈 값으로 안전하게 변환한다`() {
         val vo = PlaceDetailScreenDTO().toVO()
 

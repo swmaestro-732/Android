@@ -404,6 +404,7 @@ private fun PlanPlaceDetail(
                 longitude = state.place?.longitude ?: place.longitude,
             ),
         address = state.place?.address?.takeIf { it.isNotBlank() } ?: initialAddress,
+        openingHours = state.place?.openingHours.orEmpty(),
         reviews = state.reviews,
         reviewCategories = state.place?.categories.orEmpty(),
         onReviewWritten = viewModel::refreshReviews,
