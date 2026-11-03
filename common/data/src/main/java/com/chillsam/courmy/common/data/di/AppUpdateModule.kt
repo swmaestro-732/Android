@@ -1,6 +1,7 @@
 package com.chillsam.courmy.common.data.di
 
 import android.content.Context
+import com.chillsam.courmy.common.data.BuildConfig
 import com.chillsam.courmy.common.data.appUpdate.AppUpdateEventBusImpl
 import com.chillsam.courmy.common.data.network.AppVersionInterceptor
 import com.chillsam.courmy.common.data.network.apiHost
@@ -33,5 +34,8 @@ object AppUpdateModule {
     @Singleton
     fun provideAppVersionInterceptor(
         @ApplicationContext context: Context,
-    ): AppVersionInterceptor = AppVersionInterceptor(apiHost, context.appBuildNumber())
+    ): AppVersionInterceptor =
+        // debug(테스트) 빌드는 X-App-Build 헤더를 생략해 서버의 강제 업데이트(426)를 받지 않는다.
+        // 릴리스 빌드는 그대로 실제 versionCode 를 보내 정책을 따른다.
+        AppVersionInterceptor(apiHost, if (BuildConfig.DEBUG) null else context.appBuildNumber())
 }
