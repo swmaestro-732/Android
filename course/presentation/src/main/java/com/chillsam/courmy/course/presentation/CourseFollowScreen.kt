@@ -395,6 +395,7 @@ private fun FollowMap(
                 overview = focusIndex == null,
                 onMarkerClick = {},
                 routePaths = routePaths,
+                showMyLocation = true,
             )
         }
     }
