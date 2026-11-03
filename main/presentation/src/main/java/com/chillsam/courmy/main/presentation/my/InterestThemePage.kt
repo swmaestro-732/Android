@@ -64,6 +64,7 @@ fun InterestThemePage(
     var selected by remember(editState.loaded) {
         mutableStateOf(editState.themes.mapNotNull { CourseTagVO.fromCode(it)?.code }.toSet())
     }
+    val canEdit = !editing || (editState.loaded && !editState.isSaving)
     LaunchedEffect(editState.saved) { if (editState.saved) navigationHelper.navigateToBack() }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
@@ -117,33 +118,76 @@ fun InterestThemePage(
                     color = color.contentAccent,
                 )
             }
+            if (editing) {
+                ThemeLoadStatus(editState) { viewModel.onIntent(InterestEditIntent.Load) }
+            }
             ThemeChips(
                 selected = selected,
+                enabled = canEdit,
                 onToggle = { theme ->
                     selected = if (theme in selected) selected - theme else selected + theme
                 },
             )
         }
 
-        DsButton(
-            // 최소 개수를 못 채우면 버튼에 왜 못 넘어가는지 직접 보여 준다(지역 화면과 통일).
-            text =
-                when {
-                    selected.size < MIN_THEME_COUNT -> "최소 ${MIN_THEME_COUNT}개 이상 선택"
-                    onNext != null -> "다음"
-                    else -> "저장"
-                },
-            enabled = selected.size >= MIN_THEME_COUNT,
-            onClick = {
-                val themes = selected.toList()
-                // 편집은 기기에 저장한 뒤 저장 완료 신호를 받아 닫는다(위 LaunchedEffect).
-                onNext?.invoke(themes) ?: viewModel.onIntent(InterestEditIntent.SaveThemes(themes))
+        ThemeSaveButton(editState, editing, selected.size, canEdit) {
+            val themes = selected.toList()
+            // 서버 저장이 성공한 경우에만 완료 신호를 받아 닫는다.
+            onNext?.invoke(themes) ?: viewModel.onIntent(InterestEditIntent.SaveThemes(themes))
+        }
+    }
+}
+
+@Composable
+private fun ThemeSaveButton(
+    state: InterestEditUiState,
+    editing: Boolean,
+    selectedCount: Int,
+    canEdit: Boolean,
+    onContinue: () -> Unit,
+) {
+    if (editing && state.saveError) {
+        DsText(
+            text = "저장하지 못했어요. 선택한 테마를 유지했으니 다시 시도해 주세요.",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            maxLines = 2,
+            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+        )
+    }
+    DsButton(
+        text =
+            when {
+                selectedCount < MIN_THEME_COUNT -> "최소 ${MIN_THEME_COUNT}개 이상 선택"
+                editing -> "저장"
+                else -> "다음"
             },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+        enabled = canEdit && selectedCount >= MIN_THEME_COUNT,
+        loading = editing && state.isSaving,
+        onClick = onContinue,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+    )
+}
+
+@Composable
+private fun ThemeLoadStatus(
+    state: InterestEditUiState,
+    onRetry: () -> Unit,
+) {
+    if (state.loaded) return
+    DsText(
+        text = if (state.loadError) "관심 테마를 불러오지 못했어요." else "관심 테마를 불러오는 중이에요.",
+        style = DesignSystemThemeImpl.typeScale.textRegularS,
+        modifier = Modifier.padding(bottom = 12.dp),
+    )
+    if (state.loadError) {
+        DsButton(
+            text = "다시 시도",
+            onClick = onRetry,
+            modifier = Modifier.padding(bottom = 12.dp),
         )
     }
 }
@@ -152,6 +196,7 @@ fun InterestThemePage(
 @Composable
 private fun ThemeChips(
     selected: Set<String>,
+    enabled: Boolean,
     onToggle: (String) -> Unit,
 ) {
     FlowRow(
@@ -163,6 +208,7 @@ private fun ThemeChips(
             DsChip(
                 text = theme.label,
                 selected = theme.code in selected,
+                enabled = enabled,
                 onClick = { onToggle(theme.code) },
             )
         }
