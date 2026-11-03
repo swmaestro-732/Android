@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -394,6 +395,9 @@ private fun ProfileCourseCard(
                     contentScale = ContentScale.Crop,
                 )
             }
+        }
+        if (showPlanPlaceholder) {
+            HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel1)
         }
         DsText(
             text = course.title,
