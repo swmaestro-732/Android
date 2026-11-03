@@ -290,12 +290,6 @@ fun PlaceDetailSheet(
                         onDismiss = animatedDismiss,
                         onDeleteReview = onDeleteReview,
                         onWriteReview = { isWriting = true },
-                        onOverview =
-                            if (course != null) {
-                                { overview = true }
-                            } else {
-                                null
-                            },
                     )
                 }
             }
@@ -547,7 +541,6 @@ private fun ColumnScope.PlaceInfoLayout(
     onDismiss: () -> Unit,
     onDeleteReview: (Long) -> Unit = {},
     onWriteReview: () -> Unit,
-    onOverview: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val reviewItems = reviews?.reviews.orEmpty()
@@ -584,14 +577,6 @@ private fun ColumnScope.PlaceInfoLayout(
         }
         Spacer(Modifier.height(16.dp))
         PlaceInfoActions(coursePlace = coursePlace, isSaved = isSaved, onToggleSave = onToggleSave)
-        if (onOverview != null) {
-            DsText(
-                text = "코스 한눈에 보기",
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentAccent,
-                modifier = Modifier.clickable(onClick = onOverview).padding(vertical = 12.dp),
-            )
-        }
         if (address.isNotBlank()) {
             Spacer(Modifier.height(14.dp))
             HeroAddressCard(address = address)
