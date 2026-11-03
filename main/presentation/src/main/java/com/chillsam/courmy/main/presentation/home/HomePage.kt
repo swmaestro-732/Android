@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -60,7 +61,6 @@ import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
-import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
@@ -838,8 +838,11 @@ private fun NearbyLocationPrompt(
 private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else GuestMyPage
 
 /**
- * 홈 "진행 중인 코스" 섹션. 따라가는 중 세션이 있을 때만(=[course] 가 있을 때만) 노출한다.
- * 카드를 누르거나 "이어가기"를 누르면 그 코스 따라가기를 다시 연다.
+ * 홈 "진행 중인 코스" 카드. 따라가는 중 세션이 있을 때만(=[course] 가 있을 때만) 노출한다.
+ * 어두운 카드 · 커버의 재생 버튼 · 진행도 막대로 보여 주고, 카드를 누르면 그 코스 따라가기를 이어간다.
+ *
+ * 어두운 면이라 테마에 on-dark 슬롯이 없어 기존 토큰 값을 그대로 재사용한다(새 토큰 추가 없음):
+ * 배경 [contentDefaultLevel0](Black) · 흰 글자 [contentOnAccent](White) · 재생 버튼 [contentLocation](Blue).
  */
 @Composable
 private fun InProgressCourseSection(
@@ -848,24 +851,19 @@ private fun InProgressCourseSection(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        DsText(
-            text = "진행 중인 코스",
-            style = DesignSystemThemeImpl.typeScale.textStrongM,
-            color = color.contentDefaultLevel0,
-        )
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(color.bgDefaultLevel1)
-                    .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(16.dp))
-                    .clickable { onResume(course.courseId) }
-                    .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(color.contentDefaultLevel0)
+                .clickable { onResume(course.courseId) }
+                .padding(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // 커버 + 재생 버튼(커버 오른쪽 아래 모서리에 겹친다).
+        Box {
             AsyncImage(
                 model = course.coverImageUrl,
                 contentDescription = null,
@@ -876,51 +874,79 @@ private fun InProgressCourseSection(
                         .clip(RoundedCornerShape(12.dp))
                         .background(color.imagePlaceholder),
             )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 4.dp, y = 4.dp)
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(color.contentLocation),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_play_24),
+                    contentDescription = null,
+                    tint = color.contentOnAccent,
+                    modifier = Modifier.size(13.dp),
+                )
+            }
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            DsText(
+                text = "진행 중인 코스",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel3,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 DsText(
                     text = course.title,
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
-                    color = color.contentDefaultLevel0,
+                    color = color.contentOnAccent,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
-                val progressLine =
-                    listOfNotNull(
-                        course.progressText.takeIf { it.isNotBlank() }?.let { "$it 완료" },
-                        course.nextPlaceName.takeIf { it.isNotBlank() }?.let { "다음 · $it" },
-                    ).joinToString(" · ")
-                if (progressLine.isNotBlank()) {
+                if (course.progressText.isNotBlank()) {
                     DsText(
-                        text = progressLine,
-                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                        color = color.contentDefaultLevel3,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (course.totalCount > 0) {
-                    StepProgressBar(
-                        step = course.visitedCount.coerceIn(0, course.totalCount),
-                        total = course.totalCount,
+                        text = course.progressText,
+                        style = DesignSystemThemeImpl.typeScale.textStrongS,
+                        color = color.contentOnAccent,
                     )
                 }
             }
-            Box(
-                modifier =
-                    Modifier
-                        .clip(CircleShape)
-                        .background(color.bgAccentSubtle)
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-            ) {
-                DsText(
-                    text = "이어가기",
-                    style = DesignSystemThemeImpl.typeScale.textStrongS,
-                    color = color.contentAccent,
-                )
-            }
+            InProgressBar(
+                fraction = if (course.totalCount > 0) course.visitedCount.toFloat() / course.totalCount else 0f,
+            )
         }
+    }
+}
+
+/** 진행도 막대. 어두운 카드 위라 트랙은 짙은 회색([contentDefaultLevel1]), 채움은 흰색([contentOnAccent]). */
+@Composable
+private fun InProgressBar(fraction: Float) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(RoundedCornerShape(9999.dp))
+                .background(color.contentDefaultLevel1),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(9999.dp))
+                    .background(color.contentOnAccent),
+        )
     }
 }
