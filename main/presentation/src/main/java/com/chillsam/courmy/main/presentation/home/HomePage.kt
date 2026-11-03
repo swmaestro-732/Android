@@ -890,30 +890,23 @@ private fun InProgressCourseSection(
                 )
                 StopButton(onClick = { onStop(course.courseId) })
             }
-            // 제목 옆(원위치)에 진행도를 둔다.
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            DsText(
+                text = course.title,
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = color.contentOnAccent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            // 진행도(방문 수)는 홈 응답에 없어, 지역·장소 수 요약을 보여 준다.
+            if (course.summaryText.isNotBlank()) {
                 DsText(
-                    text = course.title,
-                    style = DesignSystemThemeImpl.typeScale.textStrongS,
-                    color = color.contentOnAccent,
+                    text = course.summaryText,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
                 )
-                if (course.progressText.isNotBlank()) {
-                    DsText(
-                        text = course.progressText,
-                        style = DesignSystemThemeImpl.typeScale.textStrongS,
-                        color = color.contentOnAccent,
-                    )
-                }
             }
-            InProgressBar(
-                fraction = if (course.totalCount > 0) course.visitedCount.toFloat() / course.totalCount else 0f,
-            )
         }
     }
 }
@@ -937,29 +930,6 @@ private fun StopButton(onClick: () -> Unit) {
                     .size(14.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .background(color.contentDefaultLevel3),
-        )
-    }
-}
-
-/** 진행도 막대. 어두운 카드 위라 트랙은 짙은 회색([contentDefaultLevel1]), 채움은 흰색([contentOnAccent]). */
-@Composable
-private fun InProgressBar(fraction: Float) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .clip(RoundedCornerShape(9999.dp))
-                .background(color.contentDefaultLevel1),
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(9999.dp))
-                    .background(color.contentOnAccent),
         )
     }
 }
