@@ -241,7 +241,7 @@ class DeviceRegistrationTest {
                 Response.success(DeviceResponse(2000))
             }
             devices.setNotificationsEnabled(true)
-            assertEquals("new-token", withTimeout(3_000) { registered.await() }.token)
+            assertEquals("new-token", withTimeout(3_000) { registered.await() }.fcmToken)
             assertEquals(true, preferenceEnabled.get())
             devices.unregister(removeRemote = false)
         }

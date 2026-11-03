@@ -168,7 +168,7 @@ class DeviceRegistration
                         require(
                             checkResponse(
                                 api.register(
-                                    RegisterDeviceRequest(token = token, platform = "ANDROID", appBuild = build),
+                                    RegisterDeviceRequest(fcmToken = token, platform = "ANDROID", appBuild = build),
                                 ),
                             ).code ==
                                 2000,

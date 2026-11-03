@@ -1,5 +1,6 @@
 package com.chillsam.courmy.common.data.push
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.Response
 import retrofit2.http.Body
@@ -7,16 +8,19 @@ import retrofit2.http.GET
 import retrofit2.http.HTTP
 import retrofit2.http.PUT
 
+// 전송 키는 `token` 유지(@SerialName) — 현재 배포 백엔드가 `token` 만 받는다. 코드에선 auth 토큰과
+// 헷갈리지 않게 `fcmToken` 으로 부른다. SCRUM-756 배포 후 서버가 `fcmToken`(alias `token`)도 받으면
+// 전송 키도 `fcmToken` 으로 옮길 수 있다.
 @Serializable
 data class RegisterDeviceRequest(
-    val token: String,
+    @SerialName("token") val fcmToken: String,
     val platform: String,
     val appBuild: Long,
 )
 
 @Serializable
 data class RemoveDeviceRequest(
-    val token: String,
+    @SerialName("token") val fcmToken: String,
 )
 
 @Serializable
