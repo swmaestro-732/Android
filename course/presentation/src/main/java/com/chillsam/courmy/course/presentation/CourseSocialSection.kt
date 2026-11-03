@@ -87,7 +87,7 @@ private const val DISMISS_DRAG_FRACTION = 0.2f
 private const val SHEET_ANIM_MS = 220
 
 /** 댓글 작성자 아바타 크기. */
-private val COMMENT_AVATAR_SIZE = 36.dp
+private val COMMENT_AVATAR_SIZE = 40.dp
 
 /** 하단 입력줄의 원형 등록 버튼. 입력창 높이와 비슷해야 한 줄로 읽힌다. */
 private val SUBMIT_BUTTON_SIZE = 44.dp
