@@ -25,7 +25,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
@@ -156,7 +160,11 @@ private fun ColumnScope.PreviewPhase(
             }
         }
         Spacer(Modifier.height(14.dp))
-        FollowPrimaryButton(text = "이 코스 따라가기", iconRes = R.drawable.ic_footprint_24) {
+        FollowPrimaryButton(
+            text = "이 코스 따라가기",
+            iconRes = R.drawable.ic_footprint_24,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             onIntent(CourseFollowIntent.Start)
         }
     }
@@ -171,6 +179,7 @@ private fun ColumnScope.TrackingPhase(
     onBack: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    var showEndConfirm by remember { mutableStateOf(false) }
     FollowTopBar(
         title = "${detail.title} · ${state.visitedCount + 1}/${detail.places.size} 진행 중",
         subtitle = "",
@@ -210,13 +219,32 @@ private fun ColumnScope.TrackingPhase(
                 next = state.nextPlace,
             )
         }
-        FollowPrimaryButton(
-            text = if (state.isRecording) "방문 기록 저장 중…" else "도착 · 방문 체크",
-            iconRes = R.drawable.ic_check_24,
-            enabled = !state.isRecording,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            onIntent(CourseFollowIntent.CheckArrival)
+            FollowPrimaryButton(
+                text = if (state.isRecording) "방문 기록 저장 중…" else "도착 · 방문 체크",
+                iconRes = R.drawable.ic_check_24,
+                modifier = Modifier.weight(1f),
+                enabled = !state.isRecording,
+            ) {
+                onIntent(CourseFollowIntent.CheckArrival)
+            }
+            FollowEndButton(onClick = { showEndConfirm = true })
         }
+    }
+    if (showEndConfirm) {
+        DsConfirmDialog(
+            title = "따라가기를 종료할까요?",
+            description = "지금 종료하면 진행 화면을 나가요. 나중에 코스에서 다시 이어갈 수 있어요.",
+            onConfirm = {
+                showEndConfirm = false
+                onBack()
+            },
+            onDismiss = { showEndConfirm = false },
+        )
     }
 }
 
@@ -315,7 +343,12 @@ private fun ColumnScope.DonePhase(
                 .padding(bottom = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        FollowPrimaryButton(text = "리뷰 남기기", iconRes = null, onClick = onLeaveReview)
+        FollowPrimaryButton(
+            text = "리뷰 남기기",
+            iconRes = null,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onLeaveReview,
+        )
         DsText(
             text = "건너뛰기",
             style = DesignSystemThemeImpl.typeScale.textRegularS,
@@ -658,19 +691,19 @@ private fun RowScope.FollowStatCard(
     }
 }
 
-/** 각 단계의 주 버튼. 하단 액션바 주 버튼과 같은 결(강조 배경 + 풀폭)이다. */
+/** 각 단계의 주 버튼. 하단 액션바 주 버튼과 같은 결(강조 배경)이다. 폭은 [modifier] 로 정한다. */
 @Composable
 private fun FollowPrimaryButton(
     text: String,
     iconRes: Int?,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
+            modifier
                 .height(52.dp)
                 .clip(FOLLOW_BUTTON_SHAPE)
                 .background(color.bgAccent)
@@ -691,6 +724,28 @@ private fun FollowPrimaryButton(
             text = text,
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentOnAccent,
+        )
+    }
+}
+
+/** 진행 중 "도착·방문 체크" 옆의 정사각형 종료 버튼. 눌러도 바로 나가지 않고 확인 모달을 한 번 더 띄운다. */
+@Composable
+private fun FollowEndButton(onClick: () -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            Modifier
+                .size(52.dp)
+                .clip(FOLLOW_BUTTON_SHAPE)
+                .background(color.bgDefaultLevel0)
+                .border(1.dp, color.borderDefaultLevel1, FOLLOW_BUTTON_SHAPE)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        DsText(
+            text = "종료",
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel1,
         )
     }
 }
