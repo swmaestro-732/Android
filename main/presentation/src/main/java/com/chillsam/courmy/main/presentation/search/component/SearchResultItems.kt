@@ -36,7 +36,12 @@ import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 private val CardShape = RoundedCornerShape(14.dp)
 private val ThumbShape = RoundedCornerShape(10.dp)
 
-/** 검색 결과의 장소 한 줄(FS-18). 썸네일 · 이름 · 요약 · 저장 토글. */
+/**
+ * 검색 결과의 장소 한 줄(FS-18). 썸네일 · (이름+카테고리 / 평점 / 상세 주소) · 저장 토글.
+ *
+ * 1줄: 이름 옆에 카테고리를 인라인으로, 2줄: ★평점, 3줄: 상세 주소.
+ * 주소가 비었거나 1줄 카테고리와 같으면(외부 검색 폴백 중복) 3줄은 생략해 2줄로 줄어든다.
+ */
 @Composable
 internal fun SearchPlaceRow(
     place: MapPlaceVO,
@@ -45,6 +50,9 @@ internal fun SearchPlaceRow(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val categoryLine = place.categoryLine()
+    val showAddress =
+        place.address.isNotBlank() && place.address != categoryLine
     Row(
         modifier =
             modifier
@@ -53,7 +61,7 @@ internal fun SearchPlaceRow(
                 .background(color.bgDefaultLevel1)
                 .clickable(onClick = onClick)
                 .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         PlaceThumbnail(
@@ -66,27 +74,55 @@ internal fun SearchPlaceRow(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            DsText(
-                text = place.name,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentDefaultLevel0,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_star_24),
-                    contentDescription = null,
-                    tint = color.contentRating,
-                    modifier = Modifier.size(13.dp),
-                )
                 DsText(
-                    text = place.summaryLine(),
+                    text = place.name,
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.alignByBaseline().weight(1f, fill = false),
+                )
+                if (categoryLine.isNotEmpty()) {
+                    DsText(
+                        text = categoryLine,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                }
+            }
+            // 평점만 보여 준다(평가 없는 장소는 별 아이콘째 숨긴다). 도보 시간은 표시하지 않는다.
+            if (place.rating > 0) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_star_24),
+                        contentDescription = null,
+                        tint = color.contentRating,
+                        modifier = Modifier.size(13.dp),
+                    )
+                    DsText(
+                        text = place.rating.toString(),
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (showAddress) {
+                DsText(
+                    text = place.address,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel2,
+                    color = color.contentDefaultLevel3,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -96,13 +132,11 @@ internal fun SearchPlaceRow(
     }
 }
 
-/** `4.8 · 카페 · 베이커리 · 도보 6분` — 앞의 별 아이콘은 호출부가 따로 그린다. */
-private fun MapPlaceVO.summaryLine(): String =
+/** `카페 · 베이커리` — 1줄에서 이름 옆에 붙는 카테고리. 둘 다 비면 빈 문자열. */
+private fun MapPlaceVO.categoryLine(): String =
     listOfNotNull(
-        rating.takeIf { it > 0 }?.toString(),
-        category,
+        category.takeIf { it.isNotBlank() },
         subCategory,
-        walkingMinutes?.let { "도보 ${it}분" },
     ).joinToString(" · ")
 
 /** 검색 결과의 코스 카드(FS-18 코스 탭). 커버 위 카테고리 배지 + 제목 + 요약. */

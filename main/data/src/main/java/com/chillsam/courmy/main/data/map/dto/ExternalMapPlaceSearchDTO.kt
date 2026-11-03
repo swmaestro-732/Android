@@ -42,8 +42,7 @@ internal fun ExternalMapPlaceSearchDTO.toPageVO(): CursorPageVO<MapPlaceVO> =
                         id = requireNotNull(place.id),
                         name = place.name.orEmpty(),
                         category = place.category.toPlaceCategoryLabel(),
-                        subCategory = address?.takeIf { it.isNotBlank() },
-                        address = address.orEmpty(),
+                        address = address?.takeIf { it.isNotBlank() }.orEmpty(),
                         latitude = place.latitude?.takeIf { place.longitude != null },
                         longitude = place.longitude?.takeIf { place.latitude != null },
                     )

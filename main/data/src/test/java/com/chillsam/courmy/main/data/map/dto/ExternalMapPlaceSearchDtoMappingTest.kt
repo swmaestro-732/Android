@@ -26,7 +26,7 @@ class ExternalMapPlaceSearchDtoMappingTest {
         assertEquals(42L, place.id)
         assertEquals("성수 카페", place.name)
         assertEquals("카페·디저트", place.category)
-        assertEquals("서울 성동구 성수이로 1", place.subCategory)
+        assertEquals("서울 성동구 성수이로 1", place.address)
         assertEquals(37.54, requireNotNull(place.latitude), 0.0)
         assertEquals(127.05, requireNotNull(place.longitude), 0.0)
         assertFalse(place.saved)
@@ -68,7 +68,7 @@ class ExternalMapPlaceSearchDtoMappingTest {
                         ),
                 ).toPageVO().items.single()
 
-            assertEquals("서울 성동구 성수동 1", place.subCategory)
+            assertEquals("서울 성동구 성수동 1", place.address)
         }
     }
 

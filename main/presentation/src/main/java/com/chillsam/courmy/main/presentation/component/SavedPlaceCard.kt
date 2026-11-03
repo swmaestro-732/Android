@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,27 +61,65 @@ fun SavedPlaceCard(
                     .weight(1f)
                     .padding(horizontal = 12.dp),
         ) {
-            DsText(
-                text = place.name,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentDefaultLevel0,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            DsText(
-                // "카테고리 · 지역 · 방문함". 빈 값은 빼고 이어 붙여 빈 칸·고아 구분점을 남기지 않는다.
-                text =
-                    listOfNotNull(
-                        place.categoryLabel.takeIf { it.isNotBlank() },
-                        place.area.takeIf { it.isNotBlank() },
-                        "방문함".takeIf { place.visited },
-                    ).joinToString(" · "),
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 4.dp),
-            )
+            // 1줄: 장소명 + 카테고리 라벨 인라인. 카테고리가 비면 이름만.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DsText(
+                    text = place.name,
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier =
+                        Modifier
+                            .alignByBaseline()
+                            .weight(1f, fill = false),
+                )
+                if (place.categoryLabel.isNotBlank()) {
+                    DsText(
+                        text = place.categoryLabel,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                }
+            }
+            // 2줄: 지역 + 방문함 칩. 둘 다 없으면 2줄 자체를 생략한다.
+            if (place.area.isNotBlank() || place.visited) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    if (place.area.isNotBlank()) {
+                        DsText(
+                            text = place.area,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel2,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
+                    if (place.visited) {
+                        DsText(
+                            text = "방문함",
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentAccent,
+                            maxLines = 1,
+                            modifier =
+                                Modifier
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(color.bgAccentSubtle)
+                                    .padding(horizontal = 9.dp, vertical = 3.dp),
+                        )
+                    }
+                }
+            }
         }
         Box(
             modifier =

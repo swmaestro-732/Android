@@ -17,5 +17,7 @@ data class HomeNearbyPlaceVO(
     val ratingText: String = "",
     /** 현재 위치 기준 도보 소요 시간(분). 계산할 수 없으면 null. */
     val walkingMinutes: Int? = null,
+    /** 상세 주소(예: "서울 성동구 성수이로7길 ..."). 서버가 주지 않으면 빈 문자열이며 주소 줄을 숨긴다. */
+    val address: String = "",
     val visited: Boolean = false,
 )

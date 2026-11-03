@@ -21,7 +21,8 @@ data class MapPlaceVO(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val saved: Boolean = false,
-    val openNow: Boolean = false,
+    /** 현재 영업 중 여부. 서버가 영업 정보를 주지 않으면 null 이며, 이때 상태 텍스트를 표시하지 않는다. */
+    val openNow: Boolean? = null,
     /** 영업 종료 시각 표기(예: "22:00"). 영업 정보가 없으면 null. */
     val closingTime: String? = null,
     val address: String = "",

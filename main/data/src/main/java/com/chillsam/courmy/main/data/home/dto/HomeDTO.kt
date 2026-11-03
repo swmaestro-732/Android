@@ -49,6 +49,7 @@ data class HomeNearbyPlaceDTO(
     val rating: Double? = null,
     val ratingCount: Int? = null,
     val walkingMinutes: Int? = null,
+    val address: String? = null,
     val visited: Boolean = false,
 )
 
@@ -91,5 +92,6 @@ internal fun HomeNearbyPlaceDTO.toVO(): HomeNearbyPlaceVO =
                 ?.toString()
                 .orEmpty(),
         walkingMinutes = walkingMinutes,
+        address = address.orEmpty(),
         visited = visited,
     )
