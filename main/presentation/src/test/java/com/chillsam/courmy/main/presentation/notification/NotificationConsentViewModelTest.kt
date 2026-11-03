@@ -53,20 +53,25 @@ class NotificationConsentViewModelTest {
     }
 
     @Test
-    fun `night consent requires marketing consent`() {
+    fun `night consent keeps the marketing precondition`() {
         val model = NotificationConsentViewModel(FakeConsentStore())
 
-        // 광고성 동의 전에는 야간 토글이 무시된다.
+        // 광고성 동의 전에 야간을 켜면 광고성 동의가 함께 켜진다(서버 선행 규칙).
         model.onIntent(NotificationConsentIntent.ToggleNight)
-        assertFalse(model.uiState.value.nightAgreed)
-
-        model.onIntent(NotificationConsentIntent.ToggleMarketing)
-        model.onIntent(NotificationConsentIntent.ToggleNight)
+        assertTrue(model.uiState.value.marketingAgreed)
         assertTrue(model.uiState.value.nightAgreed)
 
         // 광고성 동의를 철회하면 야간 동의도 함께 철회된다.
         model.onIntent(NotificationConsentIntent.ToggleMarketing)
         assertFalse(model.uiState.value.marketingAgreed)
+        assertFalse(model.uiState.value.nightAgreed)
+
+        // 광고성 동의가 켜진 상태에서는 야간만 독립적으로 토글된다.
+        model.onIntent(NotificationConsentIntent.ToggleMarketing)
+        model.onIntent(NotificationConsentIntent.ToggleNight)
+        assertTrue(model.uiState.value.nightAgreed)
+        model.onIntent(NotificationConsentIntent.ToggleNight)
+        assertTrue(model.uiState.value.marketingAgreed)
         assertFalse(model.uiState.value.nightAgreed)
     }
 

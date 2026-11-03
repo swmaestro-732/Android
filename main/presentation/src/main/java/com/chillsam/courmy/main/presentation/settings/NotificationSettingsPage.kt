@@ -156,13 +156,13 @@ internal fun NotificationSettingsContent(
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
         )
         SettingsDivider()
+        // 야간을 먼저 켜면 광고 동의가 함께 켜진다 — 토글을 흐리게 두지 않고 모양을 통일한다.
         NotificationToggleRow(
             title = "야간에도 받기",
             description = "밤 9시부터 오전 8시까지도 받아요",
             checked = night,
             onToggle = { onNightChange(!night) },
-            // 야간 수신 동의는 광고성 동의가 선행돼야 한다(서버 규칙과 동일).
-            enabled = !saving && marketing,
+            enabled = !saving,
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
         )
         SettingsDivider()

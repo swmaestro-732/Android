@@ -99,8 +99,11 @@ class NotificationSettingsViewModel
                 }
 
                 is NotificationSettingsIntent.SetNight -> {
-                    if (!consent.marketingAgreed) return
-                    saveConsent(marketing = true, night = intent.enabled)
+                    // 야간을 먼저 켜면 광고 동의도 함께 켠다(서버 규칙: 야간은 광고 선행 필수).
+                    saveConsent(
+                        marketing = consent.marketingAgreed || intent.enabled,
+                        night = intent.enabled,
+                    )
                 }
             }
         }

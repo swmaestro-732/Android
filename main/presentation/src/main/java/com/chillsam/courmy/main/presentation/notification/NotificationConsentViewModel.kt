@@ -91,7 +91,12 @@ class NotificationConsentViewModel
                 }
 
                 NotificationConsentReducerEvent.NightToggled -> {
-                    if (state.marketingAgreed) state.copy(nightAgreed = !state.nightAgreed) else state
+                    if (state.marketingAgreed) {
+                        state.copy(nightAgreed = !state.nightAgreed)
+                    } else {
+                        // 야간 수신은 광고성 동의가 선행돼야 한다(서버 규칙). 끄인 광고를 함께 켠다.
+                        state.copy(marketingAgreed = true, nightAgreed = true)
+                    }
                 }
 
                 NotificationConsentReducerEvent.SaveStarted -> {

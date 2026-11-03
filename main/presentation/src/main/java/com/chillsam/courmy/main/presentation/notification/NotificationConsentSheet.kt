@@ -179,13 +179,13 @@ private fun NotificationConsentContent(
                         checked = state.marketingAgreed,
                         onToggle = { onIntent(NotificationConsentIntent.ToggleMarketing) },
                     )
+                    // 야간을 먼저 켜면 광고 동의가 함께 켜진다 — 토글을 흐리게 두지 않고 모양을 통일한다.
                     NotificationToggleRow(
                         title = "야간에도 받기",
                         tag = "(선택)",
                         description = "밤 9시부터 오전 8시까지도 받아요",
                         checked = state.nightAgreed,
                         onToggle = { onIntent(NotificationConsentIntent.ToggleNight) },
-                        enabled = state.marketingAgreed,
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     DsButton(

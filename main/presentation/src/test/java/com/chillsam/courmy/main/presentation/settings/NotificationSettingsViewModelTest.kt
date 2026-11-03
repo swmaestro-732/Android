@@ -94,23 +94,24 @@ class NotificationSettingsViewModelTest {
         }
 
     @Test
-    fun `night consent is ignored without marketing consent`() =
+    fun `turning night on first also turns marketing consent on`() =
         runTest {
             val model = NotificationSettingsViewModel(settings, consent)
 
             model.onIntent(NotificationSettingsIntent.SetNight(true))
             advanceUntilIdle()
 
-            assertFalse(consent.nightAgreed)
-            assertFalse(model.uiState.value.night)
-
-            model.onIntent(NotificationSettingsIntent.SetMarketing(true))
-            advanceUntilIdle()
-            model.onIntent(NotificationSettingsIntent.SetNight(true))
-            advanceUntilIdle()
-
+            assertTrue(consent.marketingAgreed)
             assertTrue(consent.nightAgreed)
+            assertTrue(model.uiState.value.marketing)
             assertTrue(model.uiState.value.night)
+
+            // 야간만 끄면 광고 동의는 유지된다.
+            model.onIntent(NotificationSettingsIntent.SetNight(false))
+            advanceUntilIdle()
+
+            assertTrue(consent.marketingAgreed)
+            assertFalse(consent.nightAgreed)
         }
 
     @Test
