@@ -32,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,7 +44,6 @@ import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.presentation.component.CourseRouteMap
 import com.chillsam.courmy.course.presentation.component.latLngOrNull
-import com.chillsam.courmy.course.presentation.component.openExternalWalkingRoute
 import com.chillsam.courmy.course.presentation.component.toRoutePoints
 import com.naver.maps.geometry.LatLng
 import java.util.Locale
@@ -215,7 +213,6 @@ private fun ColumnScope.TrackingPhase(
             )
             WalkingRouteSection(
                 status = state.currentRouteStatus,
-                current = current,
                 next = state.nextPlace,
             )
         }
@@ -445,47 +442,32 @@ private fun Map<Long, FollowRouteStatus>.toRoutePaths(): Map<Long, List<LatLng>>
 /**
  * 진행 중 "현재 → 다음" 구간의 상세 도보 경로.
  * - 걸을 수 있으면 거리·시간과 Tmap 턴바이턴 안내를 보여 준다.
- * - 도보 불가·조회 실패면 외부 지도(네이버 지도) 길안내로 넘기는 버튼을 보여 준다.
- * - 조회 중·마지막 장소면 아무것도 그리지 않는다.
+ * - 조회 중이면 안내 문구만, 도보 불가·조회 실패·마지막 장소면 아무것도 그리지 않는다.
  */
 @Composable
 private fun WalkingRouteSection(
     status: FollowRouteStatus?,
-    current: CourseDetailPlaceVO,
     next: CourseDetailPlaceVO?,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     when (status) {
-        null, FollowRouteStatus.Loading -> {
-            Unit
+        FollowRouteStatus.Loading -> {
+            DsText(
+                text = "도보 경로 불러오는 중…",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel3,
+            )
         }
 
         is FollowRouteStatus.Ready -> {
             if (status.route.walkable && status.route.guides.isNotEmpty()) {
                 WalkingRouteGuides(route = status.route, nextName = next?.name.orEmpty())
-            } else {
-                ExternalRouteFallback(
-                    message = "이 구간은 앱에서 도보 경로를 그릴 수 없어요.",
-                    current = current,
-                    next = next,
-                )
             }
         }
 
-        FollowRouteStatus.Failed -> {
-            ExternalRouteFallback(
-                message = "도보 경로를 불러오지 못했어요.",
-                current = current,
-                next = next,
-            )
+        null, FollowRouteStatus.Failed -> {
+            Unit
         }
-    }
-    if (status == FollowRouteStatus.Loading) {
-        DsText(
-            text = "도보 경로 불러오는 중…",
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = color.contentDefaultLevel3,
-        )
     }
 }
 
@@ -536,56 +518,6 @@ private fun WalkingRouteGuides(
                         modifier = Modifier.weight(1f),
                     )
                 }
-            }
-        }
-    }
-}
-
-/** 도보 경로를 앱에서 못 그릴 때: 안내 문구 + 네이버 지도 길안내 버튼. 좌표가 없으면 버튼은 숨긴다. */
-@Composable
-private fun ExternalRouteFallback(
-    message: String,
-    current: CourseDetailPlaceVO,
-    next: CourseDetailPlaceVO?,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val context = LocalContext.current
-    val fromLat = current.latitude
-    val fromLng = current.longitude
-    val toLat = next?.latitude
-    val toLng = next?.longitude
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        DsText(
-            text = message,
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = color.contentDefaultLevel3,
-        )
-        if (fromLat != null && fromLng != null && toLat != null && toLng != null) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(44.dp)
-                        .clip(FOLLOW_BUTTON_SHAPE)
-                        .border(1.dp, color.borderDefaultLevel1, FOLLOW_BUTTON_SHAPE)
-                        .clickable {
-                            context.openExternalWalkingRoute(
-                                fromLatitude = fromLat,
-                                fromLongitude = fromLng,
-                                fromName = current.name,
-                                toLatitude = toLat,
-                                toLongitude = toLng,
-                                toName = next.name,
-                            )
-                        },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                DsText(
-                    text = "네이버 지도로 길안내",
-                    style = DesignSystemThemeImpl.typeScale.textStrongS,
-                    color = color.contentDefaultLevel0,
-                )
             }
         }
     }
