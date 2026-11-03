@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -862,55 +861,29 @@ private fun InProgressCourseSection(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 커버 + 재생 버튼(커버 오른쪽 아래 모서리에 겹친다).
-        Box {
-            AsyncImage(
-                model = course.coverImageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier =
-                    Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(color.imagePlaceholder),
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = 4.dp, y = 4.dp)
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(color.contentLocation),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_play_24),
-                    contentDescription = null,
-                    tint = color.contentOnAccent,
-                    modifier = Modifier.size(13.dp),
-                )
-            }
-        }
+        AsyncImage(
+            model = course.coverImageUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(color.imagePlaceholder),
+        )
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            DsText(
-                text = "진행 중인 코스",
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel3,
-            )
+            // 라벨은 왼쪽, 진행도는 우측 상단으로 보낸다.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 DsText(
-                    text = course.title,
-                    style = DesignSystemThemeImpl.typeScale.textStrongS,
-                    color = color.contentOnAccent,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text = "진행 중인 코스",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
                     modifier = Modifier.weight(1f),
                 )
                 if (course.progressText.isNotBlank()) {
@@ -921,6 +894,13 @@ private fun InProgressCourseSection(
                     )
                 }
             }
+            DsText(
+                text = course.title,
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = color.contentOnAccent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             InProgressBar(
                 fraction = if (course.totalCount > 0) course.visitedCount.toFloat() / course.totalCount else 0f,
             )
