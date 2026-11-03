@@ -138,7 +138,6 @@ fun PlanInfoCard(
     onMemoChange: (String) -> Unit,
     onDateChange: (String) -> Unit,
 ) {
-    val context = LocalContext.current
     Column(
         modifier = Modifier.fillMaxWidth().cardShadow(RoundedCornerShape(18.dp)).padding(17.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -161,6 +160,23 @@ fun PlanInfoCard(
         )
         Divider()
         FieldLabel("가려는 날 (선택)")
+        PlannedDateField(plannedDate = plannedDate, onDateChange = onDateChange)
+    }
+}
+
+/**
+ * 방문 예정일 선택 줄. 탭하면 네이티브 날짜 선택 다이얼로그가 열리고 고른 날짜(yyyy-MM-dd)를 돌려준다.
+ * 손으로 형식을 맞춰 적을 필요 없이 달력에서 고르게 한다. 날짜가 있으면 아래에 "날짜 미정으로 변경"을 둔다.
+ * 계획 작성 카드와 계획 상세 수정 다이얼로그가 같이 쓴다.
+ */
+@Composable
+internal fun PlannedDateField(
+    plannedDate: String,
+    onDateChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    Column(modifier = modifier.fillMaxWidth()) {
         DsText(
             text = plannedDate.ifEmpty { "미정 · 날짜 선택" },
             style = DesignSystemThemeImpl.typeScale.textRegularS,
