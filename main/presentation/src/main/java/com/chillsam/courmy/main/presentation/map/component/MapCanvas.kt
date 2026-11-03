@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.chillsam.courmy.common.presentation.component.placeCategoryIcon
+import com.chillsam.courmy.common.presentation.component.placeIcon
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapCameraMove
@@ -208,7 +208,7 @@ private fun MapOverlays(
         val position = place.latLngOrNull() ?: return@forEach
         val selected = place.id == selectedPlaceId
         val icon =
-            remember(place.category, selected, density, color, context) {
+            remember(place.category, place.detailCategory, selected, density, color, context) {
                 placePinIcon(
                     density = density,
                     style =
@@ -219,7 +219,10 @@ private fun MapOverlays(
                             labelTextArgb = color.contentOnAccent.toArgb(),
                             categoryIcon =
                                 requireNotNull(
-                                    ContextCompat.getDrawable(context, placeCategoryIcon(place.category)),
+                                    ContextCompat.getDrawable(
+                                        context,
+                                        placeIcon(place.category, place.detailCategory),
+                                    ),
                                 ).mutate().apply {
                                     setTint(color.contentAccent.toArgb())
                                 },

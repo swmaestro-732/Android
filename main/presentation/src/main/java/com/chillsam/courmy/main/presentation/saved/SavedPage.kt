@@ -282,6 +282,7 @@ private fun SavedPlaceList(
                     id = place.placeId,
                     name = place.name,
                     category = place.categoryLabel,
+                    detailCategory = place.detailCategory,
                     thumbnailUrl = place.imageUrl,
                     saved = true,
                 ),

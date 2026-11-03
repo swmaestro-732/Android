@@ -1,0 +1,390 @@
+<!doctype html><html lang="ko"><head><title>장소 상세 아이콘 · 최종 확정 · 2026-11-03</title><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  [hidden]{display:none!important}
+  button,select,textarea{font:inherit}
+  button,select{cursor:pointer}
+  button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .review-toolbar{position:sticky;top:12px;z-index:5;padding:18px;margin-bottom:28px;border:1px solid var(--hairline);border-radius:12px;background:#fff;box-shadow:0 6px 24px #14211d0c}
+  .review-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .review-summary{font-weight:600;margin-right:auto}
+  .review-toolbar select,.copy-review{padding:8px 12px;border:1px solid var(--hairline);border-radius:8px;background:white;color:var(--ink)}
+  .copy-review{background:var(--ink);color:white;border-color:var(--ink)}
+  .review-help{font-size:12px;color:var(--muted);margin-top:10px}
+  .review-actions{display:flex;gap:6px;margin-top:2px}
+  .review-button{flex:1;padding:8px 4px;border:1px solid var(--hairline);border-radius:7px;background:white;color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
+  .review-button[data-choice="like"][aria-pressed="true"]{background:#E6F3EE;border-color:#0F8A6B;color:#0A5E49}
+  .review-button[data-choice="revise"][aria-pressed="true"]{background:#FFF1EB;border-color:#C06540;color:#994323}
+  .card[data-review="like"]{border-color:#75B59D}
+  .card[data-review="revise"]{border-color:#D59980}
+  .review-note{resize:vertical;min-height:52px;width:100%;padding:8px;border:1px solid var(--hairline);border-radius:7px;background:#FAFBFA;color:var(--ink);font-size:12px;line-height:1.5}
+  .review-empty{padding:28px;text-align:center;color:var(--muted)}
+  .copy-fallback{display:block;width:100%;height:180px;margin-top:12px;padding:12px;border:1px solid var(--hairline);border-radius:8px}
+.revision-note{font-size:12px;line-height:1.6;color:#805732;background:#FFF6E8;border-radius:7px;padding:9px;margin:0}
+</style></head><body>
+<style>
+  :root{
+    --ground:#F6F8F7;
+    --surface:#FFFFFF;
+    --ink:#14211D;
+    --muted:#5C6B64;
+    --faint:#8A978F;
+    --hairline:#E3EAE6;
+    --accent:#0F8A6B;
+    --accent-weak:#E6F3EE;
+    --accent-ink:#0A5E49;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+  }
+  *{box-sizing:border-box}
+  body,h1,h2,h3,p,ul,li{margin:0;padding:0}
+  .page{background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100%}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 80px}
+
+  .mast{display:flex;flex-direction:column;gap:18px;padding-bottom:28px;margin-bottom:34px;border-bottom:1px solid var(--hairline)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);font-weight:600}
+  h1{font-size:clamp(28px,4vw,40px);line-height:1.08;letter-spacing:-.02em;text-wrap:balance;font-weight:700}
+  .lede{max-width:62ch;color:var(--muted);font-size:16px}
+  .lede b{color:var(--ink);font-weight:600}
+  .stats{display:flex;flex-wrap:wrap;gap:0;margin-top:4px;border:1px solid var(--hairline);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .stat{flex:1 1 150px;padding:14px 18px;border-right:1px solid var(--hairline)}
+  .stat:last-child{border-right:0}
+  .stat .n{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .stat .k{font-size:12.5px;color:var(--faint);margin-top:2px}
+
+  .note{display:flex;gap:14px;align-items:flex-start;background:var(--accent-weak);border:1px solid #CFE7DD;border-radius:12px;padding:16px 18px;margin-bottom:38px}
+  .note .tag{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:var(--accent);border-radius:6px;padding:4px 8px;white-space:nowrap;margin-top:1px}
+  .note p{font-size:13.5px;color:#235043}
+  .note code{font-family:var(--mono);font-size:12.5px;background:#fff;border:1px solid #CFE7DD;border-radius:5px;padding:1px 5px;color:var(--accent-ink)}
+
+  .cat{margin-bottom:40px}
+  .cat-head{display:flex;align-items:baseline;gap:12px;padding:0 2px 12px;margin-bottom:16px;border-bottom:1px solid var(--hairline)}
+  .cat-head .label{font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .cat-head .enum{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.04em}
+  .cat-head .count{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--accent-ink);background:var(--accent-weak);border-radius:20px;padding:3px 10px;font-weight:600}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .card{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease}
+  .card:hover{border-color:#BBD9CE;box-shadow:0 6px 20px -12px rgba(15,138,107,.4);transform:translateY(-1px)}
+  .card .top{display:flex;align-items:center;gap:12px}
+  .glyph{width:48px;height:48px;flex:none;border-radius:11px;background:#F4F5F4;display:grid;place-items:center}
+  .ic{width:30px;height:30px;stroke:#202522;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+  .ic .dot{fill:#202522;stroke:none}
+  .ic .fx{fill:var(--accent-ink);stroke:none;font-family:var(--sans);font-weight:700}
+  .names{min-width:0}
+  .ko{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+  .code{font-family:var(--mono);font-size:11.5px;color:var(--accent-ink);margin-top:1px;word-break:break-all}
+  .kakao{font-size:11.5px;color:var(--faint);border-top:1px dashed var(--hairline);padding-top:9px;line-height:1.45}
+  .kakao b{color:var(--muted);font-weight:600}
+
+  .foot{margin-top:46px;padding-top:22px;border-top:1px solid var(--hairline);color:var(--faint);font-size:12.5px;display:flex;flex-direction:column;gap:6px}
+  .foot code{font-family:var(--mono);color:var(--muted)}
+</style>
+
+<div class="page">
+<div class="wrap">
+
+  <header class="mast">
+    <div class="eyebrow">SCRUM-764 · 장소 아이콘 고도화 · 최종 확정 · 2026-11-03</div>
+    <h1>상세값 기반 장소 아이콘 48종</h1>
+    <p class="lede">장소 상세 아이콘 <b>48종과 폴백 핀 1종, 총 49종의 디자인을 최종 확정</b>했습니다. 빵은 v12 바게트, 수예·자수는 v13 가위이며 나머지는 승인한 모양을 유지합니다. 상위 카테고리 10종과 상세값 코드는 유지합니다.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">10</div><div class="k">상위 카테고리 (유지)</div></div>
+      <div class="stat"><div class="n">48</div><div class="k">상세값 (1:1 아이콘)</div></div>
+      <div class="stat"><div class="n">1</div><div class="k">폴백 핀 (상세값 없음)</div></div>
+      <div class="stat"><div class="n">24dp</div><div class="k">벡터 드로어블 규격</div></div>
+    </div>
+  </header>
+
+  <div class="note">
+    <span class="tag">가정 계약</span>
+    <p>서버는 아직 상세값을 내려주지 않습니다. 장소 응답에 선택 필드 <code>detailCategory</code>(enum 이름 대문자, 예: <code>BAKERY</code>)가 추가될 것으로 <b>가정</b>하고 Android를 선구축합니다. 값이 오면 상세 아이콘, <b>없으면 기존 카테고리 아이콘으로 폴백</b>합니다. 각 카드 하단은 매핑 근거가 되는 카카오 원본 경로입니다.</p>
+  </div>
+
+  <div class="review-toolbar">
+    <div class="review-summary">전체 49종 디자인 확정 · 2026-11-03</div>
+    <p class="review-help">확정 범위: 이 HTML의 아이콘 디자인. Android 벡터 리소스 적용과 서버 API 계약 확정은 별도입니다.</p>
+  </div>
+
+  <!-- ============ CAFE ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">카페·디저트</span><span class="enum">CAFE</span><span class="count">2</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h12v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4Z"/><path d="M16 9h2a3 3 0 0 1 0 6h-2"/><path d="M3 21h15M8 3v2M12 3v2"/></svg></div>
+        <div class="names"><div class="ko">카페</div><div class="code">cafe</div></div></div>
+        <div class="kakao"><b>카카오</b> 음식점 &gt; 카페</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M5 21c-2 0-3-2-2-5C5 10 10 5 16 3c3-1 5 0 5 2 0 5-11 16-16 16Z"/><path d="m13 5 3 3M9 9l3 3M5 13l3 3"/></svg></div>
+        <div class="names"><div class="ko">제과·베이커리</div><div class="code">bakery</div></div></div>
+        <div class="kakao"><b>카카오</b> 음식점 &gt; 간식 &gt; 제과,베이커리</div></div>
+    </div>
+  </section>
+
+  <!-- ============ RESTAURANT ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">음식점</span><span class="enum">RESTAURANT</span><span class="count">1</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M4 3v5a3 3 0 0 0 6 0V3M7 3v18"/><path d="M19 21V3c-4 3-5 6-5 10h5"/></svg></div>
+        <div class="names"><div class="ko">음식점</div><div class="code">restaurant</div></div></div>
+        <div class="kakao"><b>카카오</b> 음식점</div></div>
+    </div>
+  </section>
+
+  <!-- ============ BAR ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">술집·바</span><span class="enum">BAR</span><span class="count">1</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M5 8v11a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V8M16 10h2a3 3 0 0 1 0 6h-2M8 13v5M12 15v3"/><path d="M5 8a2 2 0 0 1 0-4h1a2.5 2.5 0 0 1 5-1 2.5 2.5 0 0 1 3 1 2 2 0 0 1 2 4h-2v3a1.5 1.5 0 0 1-3 0V8Z"/></svg></div>
+        <div class="names"><div class="ko">술집</div><div class="code">pub</div></div></div>
+        <div class="kakao"><b>카카오</b> 음식점 &gt; 술집</div></div>
+    </div>
+  </section>
+
+  <!-- ============ SHOPPING ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">쇼핑·상점</span><span class="enum">SHOPPING</span><span class="count">10</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M5 8h14l1 11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg></div>
+        <div class="names"><div class="ko">백화점</div><div class="code">department_store</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 백화점</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M5 8h14l1 11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg></div>
+        <div class="names"><div class="ko">복합쇼핑몰</div><div class="code">shopping_mall</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 복합쇼핑몰</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 4v6a2 2 0 0 0 .6 1.4l9 9a2 2 0 0 0 2.8 0l5-5a2 2 0 0 0 0-2.8l-9-9A2 2 0 0 0 10 3H4a1 1 0 0 0-1 1Z"/><circle cx="7" cy="7" r="0.8"/></svg></div>
+        <div class="names"><div class="ko">상설할인매장</div><div class="code">outlet_store</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 상설할인매장</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="m8 3-6 4 3 5 2-1-1 9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l-1-9 2 1 3-5-6-4a4 4 0 0 1-8 0Z"/></svg></div>
+        <div class="names"><div class="ko">패션</div><div class="code">fashion</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 패션</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9 5 3h14l2 6"/><path d="M3 9v1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9"/><path d="M5 13v7h14v-7M5 17h14"/></svg></div>
+        <div class="names"><div class="ko">시장</div><div class="code">market</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 시장</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6V3h8M13 3v3M9 6h6v4l2 3v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-7l2-3ZM7 15h10"/></svg></div>
+        <div class="names"><div class="ko">생활용품점</div><div class="code">household_goods</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 생활용품점</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9 5 3h14l2 6"/><path d="M3 9v1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9"/><path d="M5 13v7h14v-7M5 17h14"/></svg></div>
+        <div class="names"><div class="ko">편의점</div><div class="code">convenience_store</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 편의점</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M2 3h3l3 13h10l3-10H6"/><path d="M8 12h11"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg></div>
+        <div class="names"><div class="ko">슈퍼마켓</div><div class="code">supermarket</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 슈퍼마켓</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8M12 8v13"/><path d="M12 8H8a2.5 2.5 0 1 1 2.4-3.2ZM12 8h4a2.5 2.5 0 1 0-2.4-3.2Z"/></svg></div>
+        <div class="names"><div class="ko">기념품판매</div><div class="code">souvenir</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 기념품판매</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9 5 3h14l2 6"/><path d="M3 9v1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9"/><path d="M5 13v7h14v-7M5 17h14"/></svg></div>
+        <div class="names"><div class="ko">팝업스토어</div><div class="code">popup_store</div></div></div>
+        <div class="kakao"><b>카카오</b> 이슈 &gt; 이벤트 &gt; 팝업스토어</div></div>
+    </div>
+  </section>
+
+  <!-- ============ CULTURE ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">문화·전시</span><span class="enum">CULTURE</span><span class="count">6</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="m3 8 9-5 9 5ZM5 11v7M10 11v7M14 11v7M19 11v7M3 21h18"/></svg></div>
+        <div class="names"><div class="ko">문화시설</div><div class="code">culture_facility</div></div></div>
+        <div class="kakao"><b>카카오</b> 문화,예술 &gt; 문화시설</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M12 6c-3-2-6-2-9-1v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1ZM12 6v14"/></svg></div>
+        <div class="names"><div class="ko">도서</div><div class="code">bookstore</div></div></div>
+        <div class="kakao"><b>카카오</b> 문화,예술 &gt; 도서</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></div>
+        <div class="names"><div class="ko">화랑</div><div class="code">gallery</div></div></div>
+        <div class="kakao"><b>카카오</b> 문화,예술 &gt; 미술,공예 &gt; 화랑</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M4 3h16v7c0 5-4 9-8 11-4-2-8-6-8-11Z"/><path d="M7 9h2M15 9h2M8 14a5 5 0 0 0 8 0"/></svg></div>
+        <div class="names"><div class="ko">공연</div><div class="code">performance</div></div></div>
+        <div class="kakao"><b>카카오</b> 이슈 &gt; 이벤트 &gt; 공연</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="m3 21 4-13 9 9ZM6 12l6 6M12 3v3M18 3l-2 5M21 9l-4 2M20 15h1"/></svg></div>
+        <div class="names"><div class="ko">페스티벌</div><div class="code">festival</div></div></div>
+        <div class="kakao"><b>카카오</b> 이슈 &gt; 이벤트 &gt; 페스티벌</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="8" y="4" width="5" height="16" rx="1"/><path d="m15 5 4-1 3 15-4 1ZM3 8h5M8 16h5"/></svg></div>
+        <div class="names"><div class="ko">도서관</div><div class="code">library</div></div></div>
+        <div class="kakao"><b>카카오</b> 교육,학문 &gt; 학습시설 &gt; 도서관</div></div>
+    </div>
+  </section>
+
+  <!-- ============ EXPERIENCE ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">체험·클래스</span><span class="enum">EXPERIENCE</span><span class="count">6</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M9 4V3h6v1"/><path d="M6 7v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7"/><path d="M6 5h12v3a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4ZM12 10v4"/><path d="M9 17h6M3 12v6M21 12v6"/></svg></div>
+        <div class="names"><div class="ko">체험여행</div><div class="code">experience_trip</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 체험여행</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M10 3C5 4 3 8 3 11c0 3 2 2 4 2 3 1 7 1 10 0 2 0 4 1 4-2 0-5-4-8-8-8"/><path d="M6 10c0-3 2-5 5-5"/><path d="M7 14c-2 3 2 4 0 7M12 14c-2 3 2 4 0 7M17 14c-2 3 2 4 0 7"/></svg></div>
+        <div class="names"><div class="ko">아쿠아리움</div><div class="code">aquarium</div></div></div>
+        <div class="kakao"><b>카카오</b> 문화,예술 &gt; 문화시설 &gt; 아쿠아리움</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M8 3h8M9 3v4c0 3-4 4-4 8a6 6 0 0 0 3 6h8a6 6 0 0 0 3-6c0-4-4-5-4-8V3"/><path d="M9 7h6"/></svg></div>
+        <div class="names"><div class="ko">도자기</div><div class="code">pottery</div></div></div>
+        <div class="kakao"><b>카카오</b> 문화,예술 &gt; 미술,공예 &gt; 도자기</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><circle cx="4.5" cy="14" r="2.7"/><circle cx="7.5" cy="20" r="2.7"/><path d="M7 13c2.5 0 5-1.5 7-3L22 3l-9 10-3.5 5M6.5 11.8c3 .4 5.3-.4 7.5-1.8M9.5 18c1-3 2.5-5 5-7M9 17.7l5-6.7"/></svg></div>
+        <div class="names"><div class="ko">수예·자수</div><div class="code">needlework</div></div></div>
+        <div class="kakao"><b>카카오</b> 문화,예술 &gt; 미술,공예 &gt; 수예,자수</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="10" r="7"/><path d="M12 3v7M5 10h14M7 5l10 10M17 5 7 15M8 21l4-11 4 11M6 21h12"/></svg></div>
+        <div class="names"><div class="ko">테마파크</div><div class="code">theme_park</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 테마파크</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M12 12c-2 0-3 2-5 4-2 3 0 5 3 4 1-.5 3-.5 4 0 3 1 5-1 3-4-2-2-3-4-5-4Z"/><ellipse cx="4.5" cy="10" rx="1.5" ry="2" transform="rotate(-25 4.5 10)"/><ellipse cx="9" cy="6" rx="1.5" ry="2" transform="rotate(-10 9 6)"/><ellipse cx="15" cy="6" rx="1.5" ry="2" transform="rotate(10 15 6)"/><ellipse cx="19.5" cy="10" rx="1.5" ry="2" transform="rotate(25 19.5 10)"/></svg></div>
+        <div class="names"><div class="ko">동물원</div><div class="code">zoo</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 동물원</div></div>
+    </div>
+  </section>
+
+  <!-- ============ NATURE ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">자연·아웃도어</span><span class="enum">NATURE</span><span class="count">13</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M8 16a5 5 0 0 1-3-9 4 4 0 0 1 3-5 4 4 0 0 1 3 5 5 5 0 0 1-3 9ZM8 13v8M15 14h6M15 18h6M16 18v3M20 18v3"/></svg></div>
+        <div class="names"><div class="ko">공원</div><div class="code">park</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 공원</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M2 20 9 6a1.1 1.1 0 0 1 2 0l7 14ZM15 14l2-4a1.1 1.1 0 0 1 2 0l3 10h-4"/><path d="m7 12 3 2 3-2"/></svg></div>
+        <div class="names"><div class="ko">산</div><div class="code">mountain</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 산</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M2 7c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M2 12c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M2 17c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/></svg></div>
+        <div class="names"><div class="ko">계곡</div><div class="code">valley</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 계곡</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M2 20 9 6a1.1 1.1 0 0 1 2 0l7 14ZM15 14l2-4a1.1 1.1 0 0 1 2 0l3 10h-4"/><path d="m7 12 3 2 3-2"/></svg></div>
+        <div class="names"><div class="ko">등산로</div><div class="code">hiking_trail</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 등산로</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="m8 3-6 9h3l-3 5h12l-3-5h3ZM8 17v4M16 5l6 9h-3l3 5h-6M18 19v2"/></svg></div>
+        <div class="names"><div class="ko">숲</div><div class="code">forest</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 숲</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M2 21c3-4 6-4 9-2 4-5 8-4 11 2Z"/><path d="M13 17c1-4 1-7 0-10M13 7C8 1 5 4 4 7c4-2 6-1 9 0ZM13 7c4-5 7-3 9 0-4-1-6-1-9 0ZM13 7c-5 0-6 3-6 6 2-3 4-4 6-6Z"/></svg></div>
+        <div class="names"><div class="ko">섬</div><div class="code">island</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 섬</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M2 7c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M2 12c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M2 17c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/></svg></div>
+        <div class="names"><div class="ko">호수</div><div class="code">lake</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 호수</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M2 7c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M2 12c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M2 17c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/></svg></div>
+        <div class="names"><div class="ko">하천</div><div class="code">stream</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 하천</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M2 7h5V3h10v4h5M7 3v12c0 3-2 4-4 4M17 3v12c0 3 2 4 4 4"/><path d="M11 6v10M14 5v8M3 22c3-2 5 2 9 0s6 2 9 0"/></svg></div>
+        <div class="names"><div class="ko">폭포</div><div class="code">waterfall</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 폭포</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M5 20C2 8 9 3 21 3c0 12-7 17-16 17ZM5 20l10-10M11 14l-1-5"/></svg></div>
+        <div class="names"><div class="ko">수목원·식물원</div><div class="code">botanical_garden</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 수목원,식물원</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M7 5C2 5 2 11 4 16h6c2-6 2-11-3-11ZM4 19h6v1a3 3 0 0 1-6 0ZM17 2c-5 0-5 6-3 11h6c2-6 2-11-3-11ZM14 16h6v1a3 3 0 0 1-6 0Z"/></svg></div>
+        <div class="names"><div class="ko">도보여행</div><div class="code">walking_trail</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 도보여행</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M5 20C2 8 9 3 21 3c0 12-7 17-16 17ZM5 20l10-10M11 14l-1-5"/></svg></div>
+        <div class="names"><div class="ko">생태보존·서식지</div><div class="code">ecology_reserve</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 생태보존,서식지</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="m3 21 9-17 9 17ZM8 21l4-8 4 8M10 2l4 5M14 2l-4 5"/></svg></div>
+        <div class="names"><div class="ko">야영·캠핑장</div><div class="code">camping</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 숙박 &gt; 야영,캠핑장</div></div>
+    </div>
+  </section>
+
+  <!-- ============ LANDMARK ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">역사·명소</span><span class="enum">LANDMARK</span><span class="count">4</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="m3 9 14-5 3 7-14 5ZM7 7.6l3 6.9M14 5l3 7M19 7l2-.7 1 2-2 1M12 15v3M8 22l4-4 4 4"/></svg></div>
+        <div class="names"><div class="ko">관광·명소</div><div class="code">tourist_attraction</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="1"/><path d="M3 21h18M10 7h4M10 11h4M10 15h4M12 18v3"/></svg></div>
+        <div class="names"><div class="ko">빌딩</div><div class="code">building</div></div></div>
+        <div class="kakao"><b>카카오</b> 부동산 &gt; 빌딩</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20C5 16 7 8 12 3c5 5 7 13 0 17Z"/><path d="M12 20C5 20 3 14 4 7c1.8 0 3.2.6 4.5 1.6M12 20c7 0 9-6 8-13-1.8 0-3.2.6-4.5 1.6"/><path d="M4.4 14H2c0 5 5 8 10 6 5 2 10-1 10-6h-2.4"/></svg></div>
+        <div class="names"><div class="ko">불교</div><div class="code">buddhist_temple</div></div></div>
+        <div class="kakao"><b>카카오</b> 문화,예술 &gt; 종교 &gt; 불교</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M2 20v-7c6-3 14-3 20 0v7h-5a5 5 0 0 0-10 0ZM2 10c6-3 14-3 20 0M2 10v3M6 8.6v2.8M10 7.8v3M14 7.8v3M18 8.6v2.8M22 10v3"/></svg></div>
+        <div class="names"><div class="ko">교량·다리</div><div class="code">bridge</div></div></div>
+        <div class="kakao"><b>카카오</b> 교통,수송 &gt; 도로시설 &gt; 교량,다리</div></div>
+    </div>
+  </section>
+
+  <!-- ============ ENTERTAINMENT ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">여가·놀거리</span><span class="enum">ENTERTAINMENT</span><span class="count">2</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5.75h8c3 0 4 3 5 8 1 5-2 6-5 2H8c-3 4-6 3-5-2 1-5 2-8 5-8ZM7 8.75v4M5 10.75h4"/><circle cx="16" cy="9.75" r="0.6"/><circle cx="18" cy="12.75" r="0.6"/></svg></div>
+        <div class="names"><div class="ko">여가시설</div><div class="code">leisure_facility</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 여가시설</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><circle cx="14" cy="3.5" r="2"/><path d="m5 10 3-3 4 1 3 4 5-2M12 8l-3 7 5 3 1 4M9 15l-3 4-4-1"/></svg></div>
+        <div class="names"><div class="ko">스포츠·레저</div><div class="code">sports_leisure</div></div></div>
+        <div class="kakao"><b>카카오</b> 스포츠,레저</div></div>
+    </div>
+  </section>
+
+  <!-- ============ WELLNESS ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">웰니스·힐링</span><span class="enum">WELLNESS</span><span class="count">3</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 13h18l-2 7H5ZM7 10c-3-3 3-4 0-7M12 10c-3-3 3-4 0-7M17 10c-3-3 3-4 0-7"/></svg></div>
+        <div class="names"><div class="ko">목욕탕·사우나</div><div class="code">bathhouse_sauna</div></div></div>
+        <div class="kakao"><b>카카오</b> 가정,생활 &gt; 목욕탕,사우나</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M8 9c2-2 6-2 8 0l2 5h3M8 9l-2 5H3M9 13v3l-5 3a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2l-5-3v-3M9 18l6 3"/></svg></div>
+        <div class="names"><div class="ko">요가·필라테스</div><div class="code">yoga_pilates</div></div></div>
+        <div class="kakao"><b>카카오</b> 스포츠,레저 &gt; 요가,필라테스</div></div>
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M6 13c-2 1-3 2-3 4 0 3 4 4 9 4s9-1 9-4c0-2-1-3-3-4M7 17h10"/><path d="M8 10c-3-3 3-4 0-7M12 10c-3-3 3-4 0-7M16 10c-3-3 3-4 0-7"/></svg></div>
+        <div class="names"><div class="ko">온천</div><div class="code">hot_spring</div></div></div>
+        <div class="kakao"><b>카카오</b> 여행 &gt; 관광,명소 &gt; 온천</div></div>
+    </div>
+  </section>
+
+  <!-- ============ ETC / fallback ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="label">기타 · 폴백</span><span class="enum">ETC</span><span class="count">1</span></div>
+    <div class="grid">
+      <div class="card"><div class="top">
+        <div class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <div class="names"><div class="ko">상세값 없음</div><div class="code">default_pin</div></div></div>
+        <div class="kakao">매칭 없음(ETC) 또는 <b>detailCategory 미수신</b> 시. 상위 카테고리 아이콘으로 폴백, 그마저 없으면 이 핀.</div></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div>총 48개 상세값 · 10개 상위 카테고리 유지 · 폴백 핀 1개. 각 상세값은 <code>PlaceDetailCategoryVO(code, label, parent)</code> 1:1 매핑.</div>
+    <div>아이콘 스타일: 24×24 뷰박스 · 스트로크 1.65 · 둥근 끝단/모서리 · 단색(틴트 적용). 확정된 디자인을 바탕으로 <code>ic_place_detail_*_24.xml</code> 벡터 드로어블 제작.</div>
+    <div>상세값 코드는 소문자 스네이크, 서버 전송은 enum 이름 대문자로 가정(<code>detailCategory</code>). 미수신 시 기존 <code>placeCategoryIcon</code> 폴백.</div>
+  </footer>
+
+</div>
+</div>
+
+</body></html>

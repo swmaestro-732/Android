@@ -1,5 +1,7 @@
 package com.chillsam.courmy.course.entity
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
+
 data class PlanDetailVO(
     val planId: Long,
     val title: String,
@@ -23,4 +25,5 @@ data class PlanDetailPlaceVO(
     val address: String = "",
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val detailCategory: PlaceDetailCategoryVO? = null,
 )

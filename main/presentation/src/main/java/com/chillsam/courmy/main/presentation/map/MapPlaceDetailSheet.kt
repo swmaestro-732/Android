@@ -37,6 +37,7 @@ internal fun MapPlaceDetailSheet(
                 order = 1,
                 name = detail?.name?.takeIf { it.isNotBlank() } ?: place.name,
                 category = detail?.category?.takeIf { it.isNotBlank() } ?: place.category,
+                detailCategory = detail?.detailCategory ?: place.detailCategory,
                 photoCountText = "",
                 tip = "",
                 latitude = detail?.latitude ?: place.latitude,

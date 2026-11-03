@@ -59,6 +59,7 @@ internal fun SearchPlaceRow(
         PlaceThumbnail(
             url = place.thumbnailUrl,
             category = place.category,
+            detailCategory = place.detailCategory,
             modifier = Modifier.size(58.dp),
             shape = ThumbShape,
         )

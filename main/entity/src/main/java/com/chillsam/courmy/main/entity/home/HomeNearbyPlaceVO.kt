@@ -1,5 +1,7 @@
 package com.chillsam.courmy.main.entity.home
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
+
 /**
  * 홈(FS-09) "근처 저장 장소" 카드 1건. `GET /service/v2/home` 의 `nearbySavedPlaces` 를 변환한 결과다.
  *
@@ -18,4 +20,5 @@ data class HomeNearbyPlaceVO(
     /** 현재 위치 기준 도보 소요 시간(분). 계산할 수 없으면 null. */
     val walkingMinutes: Int? = null,
     val visited: Boolean = false,
+    val detailCategory: PlaceDetailCategoryVO? = null,
 )

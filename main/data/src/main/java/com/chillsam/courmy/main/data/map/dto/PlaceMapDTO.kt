@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.map.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
@@ -34,6 +35,8 @@ data class PlaceMapMarkerDTO(
     val category: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    /** 선택 필드 선연동: 서버 지원 전에는 누락될 수 있다. */
+    val detailCategory: String? = null,
 )
 
 @Serializable
@@ -57,6 +60,7 @@ internal fun PlaceMapDTO.toVO(): MapPlacesVO =
                     MapPlaceVO(
                         id = requireNotNull(marker.id),
                         name = marker.name.orEmpty(),
+                        detailCategory = PlaceDetailCategoryVO.fromCode(marker.detailCategory),
                         category = marker.category.toPlaceCategoryLabel(),
                         latitude = marker.latitude,
                         longitude = marker.longitude,

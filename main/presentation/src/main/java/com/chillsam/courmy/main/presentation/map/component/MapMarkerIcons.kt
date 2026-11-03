@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.map.component
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -16,7 +17,7 @@ import com.naver.maps.map.overlay.OverlayImage
  * + 아래쪽 꼬리)과 선택 시 뜨는 말풍선을 여기서 직접 그린다. 말풍선은 별도 오버레이로 띄우면 지도를
  * 움직일 때 핀과 따로 놀아서, 핀과 **한 장의 비트맵**으로 합쳐 그린다.
  *
- * 지도 핀은 카테고리 아이콘으로 장소 종류를 표시한다. 원격 사진은 카드에서 표시한다.
+ * 지도 핀은 상세 분류 아이콘을 우선하고 미수신 시 상위 카테고리로 폴백한다. 원격 사진은 카드에서 표시한다.
  */
 
 /** 일반 핀의 원 지름(dp). */
@@ -52,7 +53,14 @@ internal fun placePinIcon(
     density: Float,
     style: PlacePinStyle,
     selected: Boolean,
-): OverlayImage {
+): OverlayImage = OverlayImage.fromBitmap(placePinBitmap(density, style, selected))
+
+/** 실제 핀과 디버그 검증 화면에서 동일한 비트맵을 사용한다. */
+internal fun placePinBitmap(
+    density: Float,
+    style: PlacePinStyle,
+    selected: Boolean,
+): Bitmap {
     val diameter = (if (selected) SELECTED_PIN_DIAMETER_DP else PIN_DIAMETER_DP) * density
     val tail = PIN_TAIL_HEIGHT_DP * density
     val shadowPad = SHADOW_PAD_DP * density
@@ -87,7 +95,7 @@ internal fun placePinIcon(
         (centerY + halfIcon).toInt(),
     )
     style.categoryIcon.draw(canvas)
-    return OverlayImage.fromBitmap(bitmap)
+    return bitmap
 }
 
 /** 카드와 같은 카테고리 아이콘 및 테마 색상. */

@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.place.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -38,6 +39,7 @@ data class PlaceDTO(
     val walkingMinutes: Int? = null,
     val location: PlaceLocationDTO? = null,
     val hasSaved: Boolean = false,
+    val detailCategory: String? = null,
 )
 
 /** 장소 좌표. 코스 생성에서 장소 사이 도보 시간을 구하는 데 쓴다. */
@@ -67,6 +69,7 @@ fun PlaceDTO.toVO(): CoursePlaceVO =
         name = name.orEmpty(),
         category = categories.toPlaceCategoryLabel(),
         address = address.orEmpty(),
+        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
         thumbnailUrl = imageUrl.orEmpty(),
         // 좌표는 한쪽만 있으면 쓸 수 없어 둘 다 있을 때만 채운다.
         latitude = location?.latitude?.takeIf { location.longitude != null },

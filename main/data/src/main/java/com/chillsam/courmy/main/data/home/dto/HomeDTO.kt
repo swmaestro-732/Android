@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.home.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.format.formatCount
@@ -50,6 +51,7 @@ data class HomeNearbyPlaceDTO(
     val ratingCount: Int? = null,
     val walkingMinutes: Int? = null,
     val visited: Boolean = false,
+    val detailCategory: String? = null,
 )
 
 fun HomeDTO.toVO(): HomeVO =
@@ -92,4 +94,5 @@ internal fun HomeNearbyPlaceDTO.toVO(): HomeNearbyPlaceVO =
                 .orEmpty(),
         walkingMinutes = walkingMinutes,
         visited = visited,
+        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
     )

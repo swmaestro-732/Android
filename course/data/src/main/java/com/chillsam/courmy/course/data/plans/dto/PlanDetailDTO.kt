@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.plans.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.entity.PlanDetailPlaceVO
 import com.chillsam.courmy.course.entity.PlanDetailVO
@@ -39,6 +40,7 @@ data class PlanDetailPlaceDTO(
     val categories: List<String>? = null,
     val address: String? = null,
     val location: PlanPlaceLocationDTO? = null,
+    val detailCategory: String? = null,
 )
 
 @Serializable
@@ -62,6 +64,7 @@ fun PlanDetailDTO.toVO(): PlanDetailVO =
                     walkingMinutesToNext = place.walkingMinutesToNext,
                     name = place.name.orEmpty(),
                     categoryLabel = place.categories.toPlaceCategoryLabel(),
+                    detailCategory = PlaceDetailCategoryVO.fromCode(place.detailCategory),
                     address = place.address.orEmpty(),
                     latitude = place.location?.latitude,
                     longitude = place.location?.longitude,

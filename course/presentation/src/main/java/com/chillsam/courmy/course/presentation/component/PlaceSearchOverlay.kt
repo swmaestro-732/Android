@@ -358,6 +358,7 @@ private fun SearchResultRow(
         PlaceThumbnail(
             url = candidate.thumbnailUrl.ifBlank { null },
             category = candidate.category,
+            detailCategory = candidate.detailCategory,
             modifier = Modifier.size(44.dp),
             shape = RoundedCornerShape(10.dp),
         )

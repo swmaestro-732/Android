@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.map.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
@@ -29,6 +30,8 @@ data class MapPlaceSearchItemDTO(
     val walkingMinutes: Int? = null,
     val location: MapPlaceSearchLocationDTO? = null,
     val hasSaved: Boolean = false,
+    /** 선택 필드 선연동: 서버 지원 전에는 누락될 수 있다. */
+    val detailCategory: String? = null,
 )
 
 @Serializable
@@ -47,6 +50,7 @@ internal fun MapPlaceSearchDTO.toPageVO(): CursorPageVO<MapPlaceVO> =
                     MapPlaceVO(
                         id = requireNotNull(place.id),
                         name = place.name.orEmpty(),
+                        detailCategory = PlaceDetailCategoryVO.fromCode(place.detailCategory),
                         category = place.categories?.firstOrNull().toPlaceCategoryLabel(),
                         subCategory =
                             place.categories

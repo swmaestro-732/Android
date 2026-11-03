@@ -601,6 +601,7 @@ private fun NearbyPlaceCard(
         PlaceThumbnail(
             url = place.thumbnailUrl,
             category = place.categoryLabel,
+            detailCategory = place.detailCategory,
             modifier = Modifier.size(56.dp),
             shape = RoundedCornerShape(12.dp),
         )

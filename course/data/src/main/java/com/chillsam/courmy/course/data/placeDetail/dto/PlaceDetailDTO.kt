@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.data.placeDetail.dto
 
 import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.entity.PlaceDetailVO
 import kotlinx.serialization.Serializable
@@ -37,6 +38,7 @@ data class PlaceScreenDTO(
     val location: PlaceLocationDTO? = null,
     /** 조회자 정보. 저장 토글의 초기값(`hasSaved`)이 여기 실려 온다. */
     val viewer: PlaceViewerDTO? = null,
+    val detailCategory: String? = null,
 )
 
 @Serializable
@@ -59,6 +61,7 @@ fun PlaceDetailScreenDTO.toVO(): PlaceDetailVO {
     return PlaceDetailVO(
         name = place?.name.orEmpty(),
         category = place?.categories.toPlaceCategoryLabel(),
+        detailCategory = PlaceDetailCategoryVO.fromCode(place?.detailCategory),
         categories =
             place
                 ?.categories

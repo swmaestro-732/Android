@@ -268,7 +268,11 @@ fun CourseDetailScreen(
         // 응답을 기다렸다 띄우면 다른 장소로 옮길 때마다 시트가 닫혔다 다시 열린다.
         // 어느 장소로 옮길지(이동 바·핀 탭·장소 이동 줄)는 시트가 정하고, 여기서는 받아서 다시 조회한다.
         PlaceDetailSheet(
-            coursePlace = currentPlace,
+            coursePlace =
+                currentPlace.copy(
+                    detailCategory =
+                        placeDetailState.place?.detailCategory ?: currentPlace.detailCategory,
+                ),
             course =
                 PlaceSheetCourse(
                     title = detail.title,

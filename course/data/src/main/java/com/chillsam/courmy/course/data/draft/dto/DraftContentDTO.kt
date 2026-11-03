@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.draft.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.data.courseDetail.dto.CoursePlaceDTO
 import com.chillsam.courmy.course.data.courseDetail.dto.CourseScreenData
@@ -47,6 +48,7 @@ private fun CoursePlaceDTO.toDraftPlaceVO(): CoursePlaceVO =
         id = (placeId ?: 0L).toString(),
         name = name.orEmpty(),
         category = categories.toPlaceCategoryLabel(),
+        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
         note = caption.orEmpty(),
         photoUrls =
             images

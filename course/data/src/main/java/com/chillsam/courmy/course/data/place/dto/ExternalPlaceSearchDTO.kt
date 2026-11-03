@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.place.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import kotlinx.serialization.Serializable
@@ -31,6 +32,7 @@ data class ExternalPlaceDTO(
     val category: String? = null,
     val roadAddress: String? = null,
     val address: String? = null,
+    val detailCategory: String? = null,
 )
 
 fun ExternalPlaceSearchDataDTO.toVOList(): List<CoursePlaceVO> =
@@ -45,6 +47,7 @@ fun ExternalPlaceSearchDataDTO.toVOList(): List<CoursePlaceVO> =
                 // 지도 검색 결과에는 썸네일이 없다. 카테고리 대신 주소를 보여 줘야 어떤 장소인지 구분된다.
                 category = place.category.toPlaceCategoryLabel().ifBlank { place.displayAddress() },
                 address = place.displayAddress(),
+                detailCategory = PlaceDetailCategoryVO.fromCode(place.detailCategory),
             )
         }
 

@@ -1,5 +1,7 @@
 package com.chillsam.courmy.main.entity.map
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
+
 /**
  * 지도에 찍히는 장소 한 곳(FS-10).
  *
@@ -25,4 +27,6 @@ data class MapPlaceVO(
     /** 영업 종료 시각 표기(예: "22:00"). 영업 정보가 없으면 null. */
     val closingTime: String? = null,
     val address: String = "",
+    /** 상세 핀 분류. subCategory 표시 문구나 주소로 추론하지 않는다. */
+    val detailCategory: PlaceDetailCategoryVO? = null,
 )
