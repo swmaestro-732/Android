@@ -4,8 +4,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
@@ -16,6 +22,7 @@ import androidx.core.content.ContextCompat
 import com.chillsam.courmy.common.presentation.component.placeCategoryIcon
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.entity.map.MapCameraMove
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.naver.maps.geometry.LatLng
@@ -23,6 +30,7 @@ import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.LocationSource
+import com.naver.maps.map.compose.CameraPositionState
 import com.naver.maps.map.compose.CameraUpdateReason
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
@@ -33,6 +41,10 @@ import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.NaverMapComposable
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberUpdatedMarkerState
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /** 지도 탐색 화면의 기본 확대 수준. 성수동 같은 동네 하나가 화면에 들어오는 정도. */
@@ -68,58 +80,55 @@ internal fun MapCanvas(
     onLocationChange: ((android.location.Location) -> Unit)? = null,
     onCameraGesture: (() -> Unit)? = null,
     showAllPlaces: Boolean = false,
+    cameraMove: MapCameraMove? = null,
+    initialBounds: MapBounds? = null,
+    hidePins: Boolean = false,
+    onCameraMoving: (() -> Unit)? = null,
+    onDestinationReached: ((Long, MapBounds) -> Unit)? = null,
 ) {
     val cameraPositionState =
         rememberCameraPositionState {
             position = CameraPosition(initialPosition, EXPLORE_ZOOM)
         }
+    var initialBoundsApplied by rememberSaveable { mutableStateOf(false) }
+    var mapLoaded by remember { mutableStateOf(false) }
     val selectedPosition = places.firstOrNull { it.id == selectedPlaceId }?.latLngOrNull()
     val overviewPositions = if (showAllPlaces) places.mapNotNull { it.latLngOrNull() }.distinct() else emptyList()
     val fitPadding = with(LocalDensity.current) { 48.dp.roundToPx() }
-    LaunchedEffect(selectedPlaceId, selectedPosition) {
-        selectedPosition?.let {
-            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(it, FOCUS_ZOOM))
-        }
-    }
-    LaunchedEffect(overviewPositions) {
-        if (selectedPosition != null) return@LaunchedEffect
-        when {
-            overviewPositions.size == 1 -> {
-                cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(overviewPositions.single(), EXPLORE_ZOOM))
-            }
-
-            overviewPositions.size > 1 -> {
-                val bounds = LatLngBounds.Builder().apply { overviewPositions.forEach { include(it) } }.build()
-                cameraPositionState.animate(CameraUpdate.fitBounds(bounds, fitPadding))
-            }
-        }
-    }
+    MapCameraFocus(cameraPositionState, selectedPlaceId, selectedPosition, overviewPositions, fitPadding)
     val scope = rememberCoroutineScope()
 
-    fun reportBounds() {
-        val bounds = cameraPositionState.contentBounds ?: return
-        onBoundsChanged?.invoke(
-            MapBounds(
-                bounds.southWest.latitude,
-                bounds.southWest.longitude,
-                bounds.northEast.latitude,
-                bounds.northEast.longitude,
-            ),
+    val moveInFlight =
+        MapDestinationMotion(
+            cameraPositionState,
+            mapLoaded,
+            cameraMove,
+            fitPadding,
+            onCameraMoving,
+            onDestinationReached,
         )
-    }
-    LaunchedEffect(cameraPositionState.isMoving) {
-        if (cameraPositionState.isMoving) {
-            // 사용자가 지도를 끌면 추적(Follow)을 해제할 수 있도록 상위에 알린다(SCRUM-634).
-            if (cameraPositionState.cameraUpdateReason == CameraUpdateReason.GESTURE) onCameraGesture?.invoke()
-        } else {
-            reportBounds()
-        }
-    }
+
+    val canReportBounds = mapLoaded && !moveInFlight && cameraMove == null
+    ObserveMapCamera(cameraPositionState, canReportBounds, onBoundsChanged, onCameraMoving, onCameraGesture)
 
     NaverMap(
         modifier = modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
-        onMapLoaded = { reportBounds() },
+        onMapLoaded = {
+            if (!initialBoundsApplied) {
+                initialBoundsApplied = true
+                initialBounds?.let {
+                    cameraPositionState.move(
+                        CameraUpdate.fitBounds(
+                            LatLngBounds(LatLng(it.swLat, it.swLng), LatLng(it.neLat, it.neLng)),
+                            0,
+                        ),
+                    )
+                }
+            }
+            mapLoaded = true
+            cameraPositionState.reportBounds(cameraMove == null, onBoundsChanged)
+        },
         contentPadding = contentPadding,
         // 현위치 추적(SCRUM-634). 권한 요청은 FusedLocationSource 가 활성화 시점에 처리한다.
         locationSource = locationSource,
@@ -140,9 +149,10 @@ internal fun MapCanvas(
         // 빈 지도를 누르면 말풍선을 접는다.
         onMapClick = { _, _ -> onMapClick() },
     ) {
+        val pinsHidden = hidePins || moveInFlight || (onCameraMoving != null && cameraPositionState.isMoving)
         MapOverlays(
-            places = places,
-            clusters = clusters,
+            places = if (pinsHidden) emptyList() else places,
+            clusters = if (pinsHidden) emptyList() else clusters,
             selectedPlaceId = selectedPlaceId,
             onPlaceClick = onPlaceClick,
             onClusterClick = { position ->
@@ -277,3 +287,106 @@ internal fun MapPlaceVO.latLngOrNull(): LatLng? {
 
 private val VALID_LATITUDE = -90.0..90.0
 private val VALID_LONGITUDE = -180.0..180.0
+
+@OptIn(ExperimentalNaverMapApi::class)
+@Composable
+private fun MapCameraFocus(
+    cameraPositionState: CameraPositionState,
+    selectedPlaceId: Long?,
+    selectedPosition: LatLng?,
+    overviewPositions: List<LatLng>,
+    fitPadding: Int,
+) {
+    LaunchedEffect(selectedPlaceId, selectedPosition) {
+        selectedPosition?.let {
+            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(it, FOCUS_ZOOM))
+        }
+    }
+    LaunchedEffect(overviewPositions) {
+        if (selectedPosition != null) return@LaunchedEffect
+        when {
+            overviewPositions.size == 1 -> {
+                cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(overviewPositions.single(), EXPLORE_ZOOM))
+            }
+
+            overviewPositions.size > 1 -> {
+                val bounds = LatLngBounds.Builder().apply { overviewPositions.forEach { include(it) } }.build()
+                cameraPositionState.animate(CameraUpdate.fitBounds(bounds, fitPadding))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalNaverMapApi::class)
+@Composable
+private fun MapDestinationMotion(
+    cameraPositionState: CameraPositionState,
+    mapLoaded: Boolean,
+    cameraMove: MapCameraMove?,
+    fitPadding: Int,
+    onCameraMoving: (() -> Unit)?,
+    onDestinationReached: ((Long, MapBounds) -> Unit)?,
+): Boolean {
+    var moveInFlight by remember { mutableStateOf(false) }
+    val cameraMoving by rememberUpdatedState(onCameraMoving)
+    val destinationReached by rememberUpdatedState(onDestinationReached)
+    LaunchedEffect(mapLoaded, cameraMove?.id) {
+        val move = cameraMove ?: return@LaunchedEffect
+        if (!mapLoaded) return@LaunchedEffect
+        moveInFlight = true
+        cameraMoving?.invoke()
+        try {
+            val destination = LatLng(move.latitude, move.longitude)
+            if (cameraPositionState.contentBounds?.contains(destination) == false) {
+                val travelBounds =
+                    LatLngBounds
+                        .Builder()
+                        .include(cameraPositionState.position.target)
+                        .include(destination)
+                        .build()
+                cameraPositionState.animate(CameraUpdate.fitBounds(travelBounds, fitPadding), durationMs = 400)
+            }
+            cameraPositionState.animate(CameraUpdate.scrollAndZoomTo(destination, EXPLORE_ZOOM), durationMs = 700)
+        } catch (cancelled: CancellationException) {
+            if (!currentCoroutineContext().isActive) throw cancelled
+            // 사용자가 애니메이션을 끊으면 실제 멈춘 영역을 조회한다.
+        } finally {
+            moveInFlight = false
+        }
+        snapshotFlow { cameraPositionState.isMoving }.first { !it }
+        cameraPositionState.mapBounds()?.let { destinationReached?.invoke(move.id, it) }
+    }
+
+    return moveInFlight
+}
+
+private fun CameraPositionState.mapBounds(): MapBounds? =
+    contentBounds?.let {
+        MapBounds(it.southWest.latitude, it.southWest.longitude, it.northEast.latitude, it.northEast.longitude)
+    }
+
+@Composable
+private fun ObserveMapCamera(
+    camera: CameraPositionState,
+    ready: Boolean,
+    onBoundsChanged: ((MapBounds) -> Unit)?,
+    onCameraMoving: (() -> Unit)?,
+    onCameraGesture: (() -> Unit)?,
+) {
+    LaunchedEffect(camera.isMoving, ready) {
+        if (camera.isMoving) {
+            onCameraMoving?.invoke()
+            if (camera.cameraUpdateReason == CameraUpdateReason.GESTURE) onCameraGesture?.invoke()
+        } else {
+            camera.reportBounds(ready, onBoundsChanged)
+        }
+    }
+}
+
+private fun CameraPositionState.reportBounds(
+    ready: Boolean,
+    onBoundsChanged: ((MapBounds) -> Unit)?,
+) {
+    if (!ready || isMoving) return
+    mapBounds()?.let { onBoundsChanged?.invoke(it) }
+}

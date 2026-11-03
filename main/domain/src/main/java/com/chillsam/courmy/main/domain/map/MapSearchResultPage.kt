@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.domain.map
 
 import com.chillsam.courmy.common.domain.navigation.NavRoute
 import com.chillsam.courmy.common.domain.navigation.Page
+import com.chillsam.courmy.main.domain.map.toSearchArgument
+import com.chillsam.courmy.main.entity.map.MapBounds
 
 /**
  * 지도 검색 결과 화면(FS-10-ResultMap / FS-10-List).
@@ -10,7 +12,10 @@ import com.chillsam.courmy.common.domain.navigation.Page
  * 그래서 라우트도 하나만 두고 시트 형태는 화면 안의 상태로 다룬다.
  */
 object MapSearchResultPage : Page {
+    const val ARG_BOUNDS = "bounds"
     const val PATH = "/map/search"
+    const val ARG_TARGET_LATITUDE = "targetLat"
+    const val ARG_TARGET_LONGITUDE = "targetLng"
     const val ARG_QUERY = "query"
     const val ARG_LATITUDE = "lat"
     const val ARG_LONGITUDE = "lng"
@@ -25,12 +30,18 @@ object MapSearchResultPage : Page {
         listMode: Boolean = false,
         latitude: Double? = null,
         longitude: Double? = null,
+        bounds: MapBounds? = null,
+        targetLatitude: Double? = null,
+        targetLongitude: Double? = null,
     ): NavRoute =
         NavRoute(
             path = PATH,
             args =
                 buildMap {
+                    targetLatitude?.let { put(ARG_TARGET_LATITUDE, it.toString()) }
+                    targetLongitude?.let { put(ARG_TARGET_LONGITUDE, it.toString()) }
                     put(ARG_QUERY, query)
+                    bounds?.let { put(ARG_BOUNDS, it.toSearchArgument()) }
                     put(ARG_LIST_MODE, listMode.toString())
                     latitude?.let { put(ARG_LATITUDE, it.toString()) }
                     longitude?.let { put(ARG_LONGITUDE, it.toString()) }

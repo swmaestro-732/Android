@@ -63,6 +63,9 @@ fun SearchScreen(
                     .verticalScroll(rememberScrollState())
                     .imePadding(),
         ) {
+            if (uiState.placeSearch && uiState.query.isNotBlank()) {
+                PlaceSuggestions(uiState, actions)
+            }
             if (uiState.recentKeywords.isNotEmpty()) {
                 SectionHeader(
                     title = "최근 검색",
@@ -205,5 +208,47 @@ private fun SectionHeader(
                     onClick = onActionClick,
                 ),
         )
+    }
+}
+
+@Composable
+private fun PlaceSuggestions(
+    state: SearchUIState,
+    actions: SearchActions,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val message =
+        when {
+            state.suggestionsLoading -> "장소를 찾고 있어요"
+            state.suggestionsError != null -> state.suggestionsError
+            state.suggestions.isEmpty() -> "일치하는 장소가 없어요"
+            else -> null
+        }
+    message?.let {
+        DsText(
+            text = it,
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = color.contentDefaultLevel2,
+            modifier = Modifier.padding(ScreenHorizontalPadding),
+        )
+    }
+    state.suggestions.forEach { place ->
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clickable { actions.onSuggestionClick(place) }
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
+        ) {
+            DsText(
+                text = place.name,
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = color.contentDefaultLevel0,
+            )
+            DsText(
+                text = place.category,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+        }
     }
 }
