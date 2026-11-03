@@ -9,7 +9,7 @@
 
 2026-11-03 확인한 BackEnd develop `5db688bc4ee7a38c75af6a3e2e9d120ac3282a76`의 댓글 응답은 `authorNickname`·`authorProfileImageUrl`을 제공하지만 **authorHandle은 제공하지 않는다**. 공개 프로필은 `/service/v1/mypage/{handle}`이며 `GET /api/v1/users/{userId}`는 제거됐다. 따라서 타인 프로필 이동은 Android 수신·화면 배선 준비 상태이고 운영 완료가 아니다.
 
-필요한 서버 변경은 기존 작성자 배치 조회에서 handle을 댓글 응답까지 전달하는 것이다. 삭제·미존재 작성자는 null로 유지한다. 서버 변경 범위에 대한 사용자 확인은 대기 중이며 이 커밋에는 백엔드 변경·배포가 없다.
+필요한 서버 변경은 기존 작성자 배치 조회에서 handle을 댓글 응답까지 전달하는 것이다. 삭제·미존재 작성자는 null로 유지한다. 사용자 요청에 따라 현재 API 응답만 사용한다. 백엔드 변경·배포는 작업 범위에서 제외한다.
 
 - [댓글 응답 근거](https://github.com/swmaestro-732/BackEnd/blob/5db688bc4ee7a38c75af6a3e2e9d120ac3282a76/src/main/kotlin/com/example/backend/course/adapter/inbound/web/response/CourseCommentResponse.kt)
 - [ID 조회 제거 근거](https://github.com/swmaestro-732/BackEnd/blob/5db688bc4ee7a38c75af6a3e2e9d120ac3282a76/src/main/kotlin/com/example/backend/user/adapter/inbound/web/UserController.kt)
@@ -20,4 +20,11 @@
 - `:course:presentation:testDebugUnitTest`: 21건 통과.
 - `:app:assembleDebug`, `:app:lintDebug`, `:course:presentation:detekt`, `:course:data:detekt`, `:course:entity:detekt`: 통과.
 - 독립 리뷰에서 발견한 긴 닉네임 overflow를 Ellipsis로 보완했다.
-- 댓글 실데이터 이미지·본인/타인 클릭 왕복은 미검증이다. 검증 기기의 마이 프로필 조회 실패 및 서버 handle 미제공 때문에 Courmy UI Flow의 해당 정상 이미지들을 유지한다. 이번 작업에서 댓글 정상 화면 캡처를 갱신하지 않았다.
+- 2026-11-03 코스 511의 실제 댓글 3개에서 `호지차`, `고양이` 닉네임과 서버 프로필 이미지 표시를 에뮬레이터에서 확인했다. 임시 데이터 주입 없이 실제 API 응답을 사용했다. 개발 APK versionCode=999999.
+- 본인/타인 프로필 클릭 왕복은 미검증이다. 현재 댓글 응답에는 authorHandle이 없어 타인 프로필 이동은 비활성이다. 해당 이동 화면의 기존 UI Flow 이미지는 유지한다.
+
+## 실제 화면 — 2026-11-03
+
+| 코스 511 · 실제 댓글 목록 |
+| --- |
+| <img src="course-511-comments.png" width="240" alt="코스 511 실제 댓글 닉네임과 프로필 이미지" /> |
