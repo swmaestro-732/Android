@@ -130,20 +130,17 @@ internal fun MapPlaceDetailCard(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            DsText(
-                text = place.name,
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            PlaceSummaryLine(place = place)
-            // 영업 정보가 없으면(openNow == null) 상태 텍스트를 숨긴다.
-            if (place.openNow != null) {
+            // 접힘(선택 장소 카드) 요약을 펼침(결과 리스트 행)과 동일하게 맞춘다:
+            // 이름+카테고리 / 평점·영업상태 / 주소.
+            PlaceNameAndCategoryLine(place = place)
+            RankedPlaceMetaLine(place = place)
+            if (place.address.isNotBlank()) {
                 DsText(
-                    text = place.openStatusText(),
+                    text = place.address,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = if (place.openNow == true) color.contentSuccess else color.contentDefaultLevel3,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -283,38 +280,6 @@ private fun RankedPlaceMetaLine(
     }
 }
 
-/** `★ 4.8 · 카페 · 베이커리` 한 줄. 별만 강조색이라 평점 숫자와 나머지를 나눠 그린다. */
-@Composable
-private fun PlaceSummaryLine(
-    place: MapPlaceVO,
-    modifier: Modifier = Modifier,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val style = DesignSystemThemeImpl.typeScale.textRegularXS
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-    ) {
-        if (place.rating > 0) {
-            Icon(
-                painter = painterResource(R.drawable.ic_star_24),
-                contentDescription = null,
-                tint = color.contentRating,
-                modifier = Modifier.size(13.dp),
-            )
-            DsText(text = place.rating.toString(), style = style, color = color.contentDefaultLevel1)
-        }
-        DsText(
-            text = place.categoryMeta(prefixSeparator = place.rating > 0),
-            style = style,
-            color = color.contentDefaultLevel2,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
 /** 사진 위에 얹는 어두운 평점 배지(FS-10 캐러셀). */
 @Composable
 private fun RatingBadge(
@@ -376,12 +341,6 @@ private fun MapPlaceVO.categoryMeta(prefixSeparator: Boolean = false): String {
     val parts = listOfNotNull(category, subCategory)
     val joined = parts.joinToString(" · ")
     return if (prefixSeparator && joined.isNotEmpty()) "· $joined" else joined
-}
-
-/** `영업 중 · 22:00 종료`. */
-private fun MapPlaceVO.openStatusText(): String {
-    val status = if (openNow == true) "영업 중" else "영업 종료"
-    return if (closingTime != null) "$status · $closingTime 종료" else status
 }
 
 /** 첫 줄에 인라인으로 붙는 카테고리 라벨. 세부 카테고리가 있으면 `카페 · 베이커리`처럼 잇는다. */
