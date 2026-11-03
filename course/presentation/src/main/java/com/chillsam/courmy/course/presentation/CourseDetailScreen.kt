@@ -210,13 +210,9 @@ fun CourseDetailScreen(
                         },
                     )
                     // 장소를 다 훑은 뒤 전체 동선을 확인하는 자리다.
+                    // 미니맵은 핀·지도 어디를 눌러도 전체 화면 지도로 연다. 개별 장소 상세는 그 안에서 핀을 눌러 본다.
                     CourseMapSection(
                         places = detail.places,
-                        onPlaceClick = { place ->
-                            openSheetInOverview = false
-                            selectedPlace = place
-                            placeDetailViewModel.open(placeId = place.placeId)
-                        },
                         onOpenDetail = { place ->
                             openSheetInOverview = true
                             selectedPlace = place
@@ -869,15 +865,14 @@ private val CourseMapHeight = 220.dp
  *
  * 좌표가 있는 장소가 없으면 구역째 그리지 않는다 — 빈 지도는 알려 주는 게 없다.
  * 지도 제스처는 막는다. 세로 스크롤 화면 안이라 지도가 스크롤을 가로채면 화면이 걸린다.
- * 대신 둘러보는 길을 둘 둔다 — 핀을 누르면 그 장소로([onPlaceClick]), 핀 밖 지도를 누르면
- * 코스 전체 보기 상태로([onOpenDetail]) 장소 상세 시트가 열린다. 별도 "자세히" 버튼을 두지
- * 않는 이유 — 제스처가 막힌 미니맵은 그 자체가 "눌러서 크게 보기"로 읽히는 진입점이고,
- * 글자 버튼보다 지도 전체가 훨씬 큰 표적이다.
+ * 미니맵은 개별 핀을 다루지 않고 "눌러서 크게 보기" 진입점으로만 쓴다 — 핀을 누르든 지도를
+ * 누르든 코스 전체 보기(전체 화면 지도)로 연다([onOpenDetail]). 개별 장소 상세(핀 탭 → 바텀시트)는
+ * 전체 화면 지도에서 다룬다. 스크롤에 끼인 미니맵에서 핀을 개별 표적으로 삼으면 탭이 세로 스크롤에
+ * 먹혀 눌리지 않을 수 있어, 지도 전체를 하나의 큰 표적으로 둔다.
  */
 @Composable
 internal fun CourseMapSection(
     places: List<CourseDetailPlaceVO>,
-    onPlaceClick: (CourseDetailPlaceVO) -> Unit,
     onOpenDetail: (CourseDetailPlaceVO) -> Unit,
     title: String = "코스 한눈에 보기",
 ) {
@@ -908,7 +903,8 @@ internal fun CourseMapSection(
                 focusOrder = 0,
                 points = points,
                 overview = true,
-                onMarkerClick = onPlaceClick,
+                // 미니맵은 핀을 개별 표적으로 쓰지 않는다 — 핀을 눌러도 지도를 누른 것과 같이 전체 보기로 연다.
+                onMarkerClick = onOpenDetail,
                 scrollEnabled = false,
                 // 전체 보기로 열 때도 시트는 장소 하나를 기준으로 뜨므로 첫 장소를 넘긴다.
                 onMapClick = { onOpenDetail(first.first) },

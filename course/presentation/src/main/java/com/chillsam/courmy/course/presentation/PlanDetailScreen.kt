@@ -96,7 +96,6 @@ internal fun PlanDetailScreen(
             )
             CourseMapSection(
                 places = places,
-                onPlaceClick = { selectedPlace = it },
                 onOpenDetail = {
                     openSheetInOverview = true
                     selectedPlace = it
