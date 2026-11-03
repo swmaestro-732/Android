@@ -272,7 +272,8 @@ private fun SearchTopBar(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        // 검색바 좌우 여백을 아래 결과·버튼·리스트와 같은 ScreenHorizontalPadding 으로 맞춘다.
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -327,7 +328,8 @@ private fun SearchTopBar(
         }
         DsText(
             text = "취소",
-            modifier = Modifier.clickable(onClick = onCancel).padding(vertical = 14.dp, horizontal = 4.dp),
+            // 끝선이 아래 "새로운 위치 추가" 버튼과 맞도록 좌우 안쪽 여백은 두지 않는다.
+            modifier = Modifier.clickable(onClick = onCancel).padding(vertical = 14.dp),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentAccent,
         )
