@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -44,11 +45,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -81,8 +86,8 @@ private val DRAG_HANDLE_PADDING = 10.dp
 private const val DISMISS_DRAG_FRACTION = 0.2f
 private const val SHEET_ANIM_MS = 220
 
-/** 댓글 작성자 아바타. 서버 계약 전이라 사진이 없어 자리 표시 아이콘으로 그린다. */
-private val COMMENT_AVATAR_SIZE = 36.dp
+/** 댓글 작성자 아바타 크기. */
+private val COMMENT_AVATAR_SIZE = 40.dp
 
 /** 하단 입력줄의 원형 등록 버튼. 입력창 높이와 비슷해야 한 줄로 읽힌다. */
 private val SUBMIT_BUTTON_SIZE = 44.dp
@@ -108,6 +113,7 @@ private val SUBMIT_BUTTON_SIZE = 44.dp
 internal fun CourseCommentSheet(
     courseId: Long,
     onDismiss: () -> Unit,
+    onAuthorClick: (CourseCommentVO) -> Unit,
 ) {
     // 시트가 자기 ViewModel 을 들고 서버 댓글(/api/v1/courses/{id}/comments)을 직접 다룬다 —
     // 상세 ViewModel 에 섞으면 좋아요·저장과 생명주기가 엉킨다(시트 전용 상태라서).
@@ -202,6 +208,10 @@ internal fun CourseCommentSheet(
                     onLoadMore = { viewModel.onIntent(CourseCommentsIntent.LoadMore) },
                     onEdit = { editTarget = it },
                     onDelete = { deleteTargetId = it.id },
+                    onAuthorClick = { comment ->
+                        onDismiss()
+                        onAuthorClick(comment)
+                    },
                     modifier = Modifier.weight(1f),
                 )
                 if (session.isLoggedIn) {
@@ -318,6 +328,7 @@ private fun CommentList(
     onLoadMore: () -> Unit,
     onEdit: (CourseCommentVO) -> Unit,
     onDelete: (CourseCommentVO) -> Unit,
+    onAuthorClick: (CourseCommentVO) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -371,7 +382,12 @@ private fun CommentList(
                 reverseLayout = true,
             ) {
                 items(state.comments, key = { it.id }) { comment ->
-                    CommentRow(comment = comment, onEdit = { onEdit(comment) }, onDelete = { onDelete(comment) })
+                    CommentRow(
+                        comment = comment,
+                        onEdit = { onEdit(comment) },
+                        onDelete = { onDelete(comment) },
+                        onAuthorClick = onAuthorClick,
+                    )
                 }
                 if (state.isLoadingMore) {
                     item { LoadingMoreFooter() }
@@ -386,31 +402,36 @@ private fun CommentRow(
     comment: CourseCommentVO,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onAuthorClick: (CourseCommentVO) -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row {
-        // 서버 계약 전이라 프로필 사진이 없다. 이미지 자리의 기본 배경 톤(imagePlaceholder)에 사람 아이콘.
-        Box(
+        IconButton(
+            onClick = { onAuthorClick(comment) },
+            enabled = comment.isMine || comment.authorHandle.isNotBlank(),
             modifier =
-                Modifier
-                    .size(COMMENT_AVATAR_SIZE)
-                    .clip(CircleShape)
-                    .background(color.imagePlaceholder),
-            contentAlignment = Alignment.Center,
+                Modifier.size(48.dp).semantics {
+                    contentDescription = "${comment.authorNickname.ifBlank { "작성자" }} 프로필 보기"
+                },
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_tab_person_24),
-                contentDescription = null,
-                tint = color.contentDefaultLevel3,
-                modifier = Modifier.size(20.dp),
+            CourseImage(
+                url = comment.authorProfileImageUrl,
+                modifier =
+                    Modifier
+                        .size(COMMENT_AVATAR_SIZE)
+                        .shadow(2.dp, CircleShape, clip = false)
+                        .border(1.5.dp, color.bgDefaultLevel1, CircleShape),
+                shape = CircleShape,
+                emptyIconRes = R.drawable.ic_tab_person_24,
             )
         }
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 DsText(
-                    // 응답에 작성자 프로필이 없어 임시 표기를 쓴다(CourseCommentVO 주석 참고).
-                    text = if (comment.isMine) "나" else "작성자 ${comment.authorId}",
+                    text = comment.authorNickname.ifBlank { "알 수 없는 사용자" },
+                    modifier = Modifier.weight(1f, fill = false),
+                    overflow = TextOverflow.Ellipsis,
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = color.contentDefaultLevel0,
                 )
@@ -445,13 +466,18 @@ private fun MyCommentMenu(
     val color = DesignSystemThemeImpl.designSystemColor
     var expanded by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { expanded = true }, modifier = Modifier.size(28.dp)) {
-            Icon(
-                painter = painterResource(R.drawable.ic_more_vert_24),
-                contentDescription = "내 댓글 메뉴",
-                tint = color.contentDefaultLevel3,
-                modifier = Modifier.size(18.dp),
-            )
+        IconButton(onClick = { expanded = true }, modifier = Modifier.size(48.dp)) {
+            Box(
+                modifier = Modifier.size(34.dp).background(color.bgDefaultLevel1, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_more_horizontal_24),
+                    contentDescription = "내 댓글 메뉴",
+                    tint = color.contentDefaultLevel0,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
         }
         DropdownMenu(
             expanded = expanded,

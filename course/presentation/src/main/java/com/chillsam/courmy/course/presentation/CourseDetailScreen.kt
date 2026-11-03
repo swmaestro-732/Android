@@ -255,6 +255,7 @@ fun CourseDetailScreen(
         CourseCommentSheet(
             courseId = courseId,
             onDismiss = { showComments = false },
+            onAuthorClick = actions.onCommentAuthorClick,
         )
     }
     val currentPlace = selectedPlace
