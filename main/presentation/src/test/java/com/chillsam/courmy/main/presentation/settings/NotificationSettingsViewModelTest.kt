@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -32,6 +33,13 @@ class NotificationSettingsViewModelTest {
         override var isDecided: Boolean = true
         override var marketingAgreed: Boolean = false
         override var nightAgreed: Boolean = false
+        override var marketingAgreedAt: String? = null
+        override var nightAgreedAt: String? = null
+
+        // refreshFromServer 가 반영할 서버 측 값과 호출 횟수.
+        var serverMarketingAt: String? = null
+        var serverNightAt: String? = null
+        var refreshCount = 0
 
         override suspend fun save(
             marketingAgreed: Boolean,
@@ -40,6 +48,14 @@ class NotificationSettingsViewModelTest {
             isDecided = true
             this.marketingAgreed = marketingAgreed
             this.nightAgreed = nightAgreed && marketingAgreed
+            if (!this.marketingAgreed) marketingAgreedAt = null
+            if (!this.nightAgreed) nightAgreedAt = null
+        }
+
+        override suspend fun refreshFromServer() {
+            refreshCount++
+            marketingAgreedAt = serverMarketingAt
+            nightAgreedAt = serverNightAt
         }
     }
 
@@ -112,6 +128,20 @@ class NotificationSettingsViewModelTest {
 
             assertTrue(consent.marketingAgreed)
             assertFalse(consent.nightAgreed)
+        }
+
+    @Test
+    fun `refresh pulls server consent timestamps for the notice`() =
+        runTest {
+            consent.marketingAgreed = true
+            consent.serverMarketingAt = "2026-11-03T05:00:00Z"
+            val model = NotificationSettingsViewModel(settings, consent)
+
+            model.onIntent(NotificationSettingsIntent.Refresh)
+            advanceUntilIdle()
+
+            assertEquals(1, consent.refreshCount)
+            assertEquals("2026-11-03T05:00:00Z", model.uiState.value.marketingAgreedAt)
         }
 
     @Test

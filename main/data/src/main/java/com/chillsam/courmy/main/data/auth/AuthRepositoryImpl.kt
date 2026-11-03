@@ -93,7 +93,9 @@ class AuthRepositoryImpl(
 
     override suspend fun logout() {
         try {
-            devices.unregister()
+            // 로그아웃은 계정 연결만 끊고 FCM 토큰·광고성 동의는 남긴다(비로그인 기기, SCRUM-756).
+            // 서버는 POST /auth/logout(X-Device-Id) 과 DELETE /my/devices 에서 연결만 끊는다.
+            devices.unregister(keepToken = true)
             // 서버 세션 무효화는 best-effort. 로컬 세션 정리는 취소에도 보장한다.
             tokenStore.refreshToken?.takeIf { it.isNotBlank() }?.let { refresh ->
                 runCatching { dataSource.logout(LogoutRequest(refresh)) }

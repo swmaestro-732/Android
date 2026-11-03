@@ -24,6 +24,7 @@ import org.junit.Test
 import retrofit2.Response
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 class DeviceRegistrationTest {
     private val api = mockk<DeviceApi>()
@@ -36,6 +37,12 @@ class DeviceRegistrationTest {
     private val notifications = mockk<NotificationManager>(relaxed = true)
     private val loaded = AtomicBoolean(true)
     private val user = AtomicLong(1L)
+    private val consentDecidedState = AtomicBoolean(false)
+    private val consentSyncedState = AtomicBoolean(true)
+    private val marketingState = AtomicBoolean(false)
+    private val nightState = AtomicBoolean(false)
+    private val marketingAt = AtomicReference<String?>(null)
+    private val nightAt = AtomicReference<String?>(null)
     private lateinit var devices: DeviceRegistration
 
     @Before
@@ -54,6 +61,18 @@ class DeviceRegistrationTest {
         coEvery { api.remove(any()) } returns Response.success(DeviceResponse(2000))
         every { preferences.enabled } answers { preferenceEnabled.get() }
         every { preferences.enabled = any() } answers { preferenceEnabled.set(firstArg()) }
+        every { preferences.consentDecided } answers { consentDecidedState.get() }
+        every { preferences.consentDecided = any() } answers { consentDecidedState.set(firstArg()) }
+        every { preferences.consentSynced } answers { consentSyncedState.get() }
+        every { preferences.consentSynced = any() } answers { consentSyncedState.set(firstArg()) }
+        every { preferences.marketingAgreed } answers { marketingState.get() }
+        every { preferences.marketingAgreed = any() } answers { marketingState.set(firstArg()) }
+        every { preferences.nightAgreed } answers { nightState.get() }
+        every { preferences.nightAgreed = any() } answers { nightState.set(firstArg()) }
+        every { preferences.marketingAgreedAt } answers { marketingAt.get() }
+        every { preferences.marketingAgreedAt = any() } answers { marketingAt.set(firstArg()) }
+        every { preferences.nightAgreedAt } answers { nightAt.get() }
+        every { preferences.nightAgreedAt = any() } answers { nightAt.set(firstArg()) }
         devices = DeviceRegistration(api, tokens, fcm, telemetry, preferences, context)
     }
 
@@ -235,5 +254,78 @@ class DeviceRegistrationTest {
             org.junit.Assert.assertTrue(failure is java.io.IOException)
             assertEquals(false, preferenceEnabled.get())
             verify { notifications.cancelAll() }
+        }
+
+    @Test
+    fun `logout keeps the fcm token and auto init so the device stays a guest`() =
+        runBlocking {
+            // 로그아웃: 서버 연결 해제는 요청하되 토큰·auto-init 은 남겨 비로그인 기기로 둔다(SCRUM-756).
+            devices.unregister(keepToken = true)
+
+            coVerify(exactly = 1) { api.remove(RemoveDeviceRequest("test-token")) }
+            coVerify(exactly = 0) { fcm.delete() }
+            verify(exactly = 0) { fcm.disableAutoInit() }
+            verify(exactly = 1) { notifications.cancelAll() }
+        }
+
+    @Test
+    fun `consent sync stores the server processed timestamps`() =
+        runBlocking {
+            val stored = CompletableDeferred<String?>()
+            every { preferences.marketingAgreedAt = any() } answers {
+                val value = firstArg<String?>()
+                marketingAt.set(value)
+                if (value != null && !stored.isCompleted) stored.complete(value)
+                Unit
+            }
+            coEvery { api.updateDevice(any()) } returns
+                Response.success(
+                    DeviceConsentResponse(
+                        code = 2000,
+                        data = DeviceConsentDTO(marketingAgreedAt = "2026-11-03T05:00:00Z", nightAgreedAt = null),
+                    ),
+                )
+
+            devices.save(marketingAgreed = true, nightAgreed = false)
+
+            assertEquals("2026-11-03T05:00:00Z", withTimeout(3_000) { stored.await() })
+            assertEquals(true, consentSyncedState.get())
+            assertEquals("2026-11-03T05:00:00Z", devices.marketingAgreedAt)
+        }
+
+    @Test
+    fun `refreshFromServer pulls the current consent into the local cache`() =
+        runBlocking {
+            consentDecidedState.set(true)
+            consentSyncedState.set(true)
+            coEvery { api.consent() } returns
+                Response.success(
+                    DeviceConsentResponse(
+                        code = 2000,
+                        data =
+                            DeviceConsentDTO(
+                                marketingAgreedAt = "2026-11-03T05:00:00Z",
+                                nightAgreedAt = "2026-11-03T06:00:00Z",
+                            ),
+                    ),
+                )
+
+            devices.refreshFromServer()
+
+            assertEquals(true, marketingState.get())
+            assertEquals(true, nightState.get())
+            assertEquals("2026-11-03T05:00:00Z", marketingAt.get())
+            assertEquals("2026-11-03T06:00:00Z", nightAt.get())
+        }
+
+    @Test
+    fun `refreshFromServer skips the fetch while a local change is pending`() =
+        runBlocking {
+            consentDecidedState.set(true)
+            consentSyncedState.set(false)
+
+            devices.refreshFromServer()
+
+            coVerify(exactly = 0) { api.consent() }
         }
 }

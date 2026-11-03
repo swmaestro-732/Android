@@ -44,4 +44,18 @@ class PushPreferences
             set(value) {
                 check(preferences.edit().putBoolean("consent_synced", value).commit())
             }
+
+        /** 서버가 확인한 광고성 동의 처리 시각(ISO-8601). null 이면 미동의/미확인. */
+        var marketingAgreedAt: String?
+            get() = preferences.getString("marketing_agreed_at", null)
+            set(value) {
+                check(preferences.edit().putString("marketing_agreed_at", value).commit())
+            }
+
+        /** 서버가 확인한 야간 동의 처리 시각(ISO-8601). null 이면 미동의/미확인. */
+        var nightAgreedAt: String?
+            get() = preferences.getString("night_agreed_at", null)
+            set(value) {
+                check(preferences.edit().putString("night_agreed_at", value).commit())
+            }
     }

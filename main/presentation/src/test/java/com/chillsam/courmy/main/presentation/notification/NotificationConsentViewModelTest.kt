@@ -23,6 +23,8 @@ class NotificationConsentViewModelTest {
         override var isDecided: Boolean = decided
         override var marketingAgreed: Boolean = false
         override var nightAgreed: Boolean = false
+        override var marketingAgreedAt: String? = null
+        override var nightAgreedAt: String? = null
         var saveCount = 0
 
         override suspend fun save(
@@ -34,6 +36,8 @@ class NotificationConsentViewModelTest {
             this.marketingAgreed = marketingAgreed
             this.nightAgreed = nightAgreed && marketingAgreed
         }
+
+        override suspend fun refreshFromServer() = Unit
     }
 
     @Before

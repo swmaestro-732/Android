@@ -19,6 +19,9 @@ data class NotificationSettingsUIState(
     val night: Boolean = false,
     val saving: Boolean = false,
     val error: Boolean = false,
+    // 서버가 확인한 동의 처리 시각(ISO-8601). null 이면 미표시. 동의 중인 항목에만 안내한다.
+    val marketingAgreedAt: String? = null,
+    val nightAgreedAt: String? = null,
 ) : UiState
 
 sealed interface NotificationSettingsIntent : MviIntent {
@@ -47,6 +50,8 @@ sealed interface NotificationSettingsEvent : ReducerEvent {
         val marketing: Boolean,
         val night: Boolean,
         val error: Boolean = false,
+        val marketingAgreedAt: String? = null,
+        val nightAgreedAt: String? = null,
     ) : NotificationSettingsEvent
 }
 
@@ -61,12 +66,21 @@ class NotificationSettingsViewModel
                 enabled = settings.notificationsEnabled,
                 marketing = consent.marketingAgreed,
                 night = consent.nightAgreed,
+                marketingAgreedAt = consent.marketingAgreedAt,
+                nightAgreedAt = consent.nightAgreedAt,
             ),
         ) {
         override fun onIntent(intent: NotificationSettingsIntent) {
             when (intent) {
                 NotificationSettingsIntent.Refresh -> {
-                    if (!currentState.saving) refresh()
+                    if (!currentState.saving) {
+                        refresh()
+                        // 서버의 현재 동의 상태·처리 시각을 조회해 안내를 최신으로 맞춘다(저장 중이면 건너뜀).
+                        viewModelScope.launch {
+                            runCatching { consent.refreshFromServer() }
+                            if (!currentState.saving) refresh()
+                        }
+                    }
                 }
 
                 NotificationSettingsIntent.DismissError -> {
@@ -135,6 +149,8 @@ class NotificationSettingsViewModel
                 marketing = consent.marketingAgreed,
                 night = consent.nightAgreed,
                 error = error,
+                marketingAgreedAt = consent.marketingAgreedAt,
+                nightAgreedAt = consent.nightAgreedAt,
             )
 
         override fun reduce(
@@ -152,6 +168,8 @@ class NotificationSettingsViewModel
                         marketing = event.marketing,
                         night = event.night,
                         error = event.error,
+                        marketingAgreedAt = event.marketingAgreedAt,
+                        nightAgreedAt = event.nightAgreedAt,
                     )
                 }
             }

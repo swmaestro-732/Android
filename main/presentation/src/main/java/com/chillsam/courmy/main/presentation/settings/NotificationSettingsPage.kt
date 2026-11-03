@@ -30,6 +30,10 @@ import com.chillsam.courmy.main.presentation.notification.NotificationToggleRow
 import com.chillsam.courmy.main.presentation.notification.canRequestNotificationPermission
 import com.chillsam.courmy.main.presentation.notification.canShowActivityNotifications
 import com.chillsam.courmy.main.presentation.notification.openNotificationSettings
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltViewModel()) {
@@ -85,11 +89,14 @@ fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltView
             NotificationToggleState(
                 checked = state.marketing,
                 onToggle = { viewModel.onIntent(NotificationSettingsIntent.SetMarketing(it)) },
+                // 동의 중인 항목에만 서버가 확인한 처리 시각을 안내한다.
+                caption = consentCaption(state.marketing, state.marketingAgreedAt),
             ),
         night =
             NotificationToggleState(
                 checked = state.night,
                 onToggle = { viewModel.onIntent(NotificationSettingsIntent.SetNight(it)) },
+                caption = consentCaption(state.night, state.nightAgreedAt),
             ),
         saving = state.saving,
         onBack = navigation::navigateToBack,
@@ -132,11 +139,31 @@ private fun NotificationPermissionDialog(
     )
 }
 
-/** 설정 > 알림의 토글 한 행의 상태. (checked + 토글 콜백을 한 묶음으로 전달해 파라미터 수를 줄인다.) */
+/**
+ * 설정 > 알림의 토글 한 행의 상태. (checked + 토글 콜백을 한 묶음으로 전달해 파라미터 수를 줄인다.)
+ * [caption] 은 설명 아래 보조 줄로, 서버가 확인한 동의 처리 시각 안내 등에 쓴다(없으면 표시 안 함).
+ */
 internal data class NotificationToggleState(
     val checked: Boolean,
     val onToggle: (Boolean) -> Unit,
+    val caption: String? = null,
 )
+
+private val consentDateFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy.MM.dd", Locale.KOREA).withZone(ZoneId.systemDefault())
+
+/**
+ * 서버가 확인한 처리 시각을 "YYYY.MM.DD 동의" 안내 문구로 바꾼다(SCRUM-756).
+ * 해당 항목이 꺼져 있거나([agreed] false) 시각이 없으면 안내하지 않는다.
+ */
+private fun consentCaption(
+    agreed: Boolean,
+    agreedAt: String?,
+): String? {
+    if (!agreed || agreedAt == null) return null
+    val instant = runCatching { Instant.parse(agreedAt) }.getOrNull() ?: return null
+    return "${consentDateFormatter.format(instant)} 동의"
+}
 
 @Composable
 internal fun NotificationSettingsContent(
@@ -164,6 +191,7 @@ internal fun NotificationSettingsContent(
             description = "추천 코스와 이벤트 소식을 받아요",
             checked = marketing.checked,
             onToggle = { marketing.onToggle(!marketing.checked) },
+            caption = marketing.caption,
             enabled = !saving,
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
         )
@@ -174,6 +202,7 @@ internal fun NotificationSettingsContent(
             description = "밤 9시부터 오전 8시까지도 받아요",
             checked = night.checked,
             onToggle = { night.onToggle(!night.checked) },
+            caption = night.caption,
             enabled = !saving,
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
         )

@@ -21,7 +21,8 @@ class AuthRepositoryCancellationTest {
     @Test
     fun `logout cancellation still clears the local session`() =
         runBlocking {
-            coEvery { devices.unregister() } throws CancellationException("test cancellation")
+            // 로그아웃은 토큰을 남기는 경로를 쓴다(keepToken = true, SCRUM-756).
+            coEvery { devices.unregister(keepToken = true) } throws CancellationException("test cancellation")
 
             val failure = runCatching { repository.logout() }.exceptionOrNull()
 

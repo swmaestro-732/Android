@@ -3,6 +3,7 @@ package com.chillsam.courmy.common.data.push
 import kotlinx.serialization.Serializable
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.HTTP
 import retrofit2.http.PUT
 
@@ -60,4 +61,8 @@ interface DeviceApi {
     suspend fun updateDevice(
         @Body request: UpdateDeviceRequest,
     ): Response<DeviceConsentResponse>
+
+    /** 기기의 현재 동의 상태 조회. 로그인 불필요, X-Device-Id 로 식별한다. */
+    @GET("api/v1/devices")
+    suspend fun consent(): Response<DeviceConsentResponse>
 }
