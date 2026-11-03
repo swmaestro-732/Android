@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -231,9 +231,8 @@ private fun ResultListSheet(
                     ),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                itemsIndexed(uiState.places, key = { _, place -> place.id }) { index, place ->
+                items(uiState.places, key = { place -> place.id }) { place ->
                     MapRankedPlaceRow(
-                        rank = index + 1,
                         place = place,
                         isSelected = place.id == uiState.selectedPlaceId,
                         onClick = { actions.onPlaceDetail(place.id) },

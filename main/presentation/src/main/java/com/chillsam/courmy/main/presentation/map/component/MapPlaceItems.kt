@@ -96,7 +96,7 @@ internal fun MapPlaceCarouselCard(
                 overflow = TextOverflow.Ellipsis,
             )
             DsText(
-                text = place.categoryAndWalk(),
+                text = place.categoryMeta(),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
                 maxLines = 1,
@@ -150,10 +150,9 @@ internal fun MapPlaceDetailCard(
     }
 }
 
-/** 결과 리스트의 한 줄(FS-10-List). 왼쪽에 순위 숫자가 붙는다. */
+/** 결과 리스트의 한 줄(FS-10-List). */
 @Composable
 internal fun MapRankedPlaceRow(
-    rank: Int,
     place: MapPlaceVO,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -175,13 +174,6 @@ internal fun MapRankedPlaceRow(
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        DsText(
-            text = rank.toString(),
-            style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = color.contentDefaultLevel2,
-            // 썸네일·첫 줄 텍스트 윗선에 숫자 baseline을 얼추 맞춘다.
-            modifier = Modifier.padding(top = RowTopAlignPadding),
-        )
         PlaceThumbnail(
             url = place.thumbnailUrl,
             category = place.category,
@@ -247,8 +239,8 @@ private fun PlaceNameAndCategoryLine(
 }
 
 /**
- * 결과 행 둘째 줄: `★ 4.8 · 도보 6분 · 영업 중 · 22:00 종료`.
- * 지도엔 위치가 이미 있어 영업 상태가 핵심이라 색을 달리 주려고 평점·도보와 따로 그린다.
+ * 결과 행 둘째 줄: `★ 4.8 · 영업 중 · 22:00 종료`.
+ * 지도엔 위치가 이미 있어 영업 상태가 핵심이라 색을 달리 주려고 평점과 따로 그린다.
  * (카테고리는 첫 줄로 올라가 여기선 뺀다.)
  */
 @Composable
@@ -258,9 +250,8 @@ private fun RankedPlaceMetaLine(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val style = DesignSystemThemeImpl.typeScale.textRegularXS
-    // 평점 → 도보 → 영업 상태 순서로, 앞 항목이 있으면 가운뎃점을 붙여 잇는다.
+    // 평점 → 영업 상태 순서로, 앞 항목이 있으면 가운뎃점을 붙여 잇는다.
     val hasRating = place.rating > 0
-    val walk = place.walkingMinutes?.let { "도보 ${it}분" }
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -275,16 +266,7 @@ private fun RankedPlaceMetaLine(
             )
             DsText(text = place.rating.toString(), style = style, color = color.contentDefaultLevel1)
         }
-        if (walk != null) {
-            DsText(
-                text = if (hasRating) "· $walk" else walk,
-                style = style,
-                color = color.contentDefaultLevel2,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        val statusPrefix = hasRating || walk != null
+        val statusPrefix = hasRating
         val status = place.rankedOpenStatusText()
         DsText(
             text = if (statusPrefix) "· $status" else status,
@@ -297,7 +279,7 @@ private fun RankedPlaceMetaLine(
     }
 }
 
-/** `★ 4.8 · 카페 · 베이커리 · 도보 6분` 한 줄. 별만 강조색이라 평점 숫자와 나머지를 나눠 그린다. */
+/** `★ 4.8 · 카페 · 베이커리` 한 줄. 별만 강조색이라 평점 숫자와 나머지를 나눠 그린다. */
 @Composable
 private fun PlaceSummaryLine(
     place: MapPlaceVO,
@@ -320,7 +302,7 @@ private fun PlaceSummaryLine(
             DsText(text = place.rating.toString(), style = style, color = color.contentDefaultLevel1)
         }
         DsText(
-            text = place.categoryAndWalk(prefixSeparator = place.rating > 0),
+            text = place.categoryMeta(prefixSeparator = place.rating > 0),
             style = style,
             color = color.contentDefaultLevel2,
             maxLines = 1,
@@ -385,9 +367,9 @@ private fun SaveToggleIcon(
     )
 }
 
-/** `카페 · 베이커리 · 도보 6분`. [prefixSeparator] 면 앞에 붙는 평점과 잇도록 구분점으로 시작한다. */
-private fun MapPlaceVO.categoryAndWalk(prefixSeparator: Boolean = false): String {
-    val parts = listOfNotNull(category, subCategory, walkingMinutes?.let { "도보 ${it}분" })
+/** `카페 · 베이커리`. [prefixSeparator] 면 앞에 붙는 평점과 잇도록 구분점으로 시작한다. */
+private fun MapPlaceVO.categoryMeta(prefixSeparator: Boolean = false): String {
+    val parts = listOfNotNull(category, subCategory)
     val joined = parts.joinToString(" · ")
     return if (prefixSeparator && joined.isNotEmpty()) "· $joined" else joined
 }

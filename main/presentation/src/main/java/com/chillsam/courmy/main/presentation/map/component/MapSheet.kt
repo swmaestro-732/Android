@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.map.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -10,13 +11,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 private val SheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
@@ -91,13 +96,28 @@ private fun SheetHandle(
                 ).padding(vertical = 18.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(width = HandleWidth, height = HandleHeight)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(color.borderDefaultLevel1),
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(width = HandleWidth, height = HandleHeight)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(color.borderDefaultLevel1),
+            )
+            // 끌 수 있는 시트에서만 방향 화살표를 보여 위·아래로 움직일 수 있음을 알린다.
+            // 접힘이면 위(펼치기), 펼침이면 아래(접기)를 가리킨다.
+            if (onExpandedChange != null) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_down_24),
+                    contentDescription = null,
+                    tint = color.contentDefaultLevel3,
+                    modifier = Modifier.size(16.dp).rotate(if (expanded) 0f else 180f),
+                )
+            }
+        }
     }
 }
 

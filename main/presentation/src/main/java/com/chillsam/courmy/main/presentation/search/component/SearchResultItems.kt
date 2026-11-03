@@ -37,9 +37,9 @@ private val CardShape = RoundedCornerShape(14.dp)
 private val ThumbShape = RoundedCornerShape(10.dp)
 
 /**
- * 검색 결과의 장소 한 줄(FS-18). 썸네일 · (이름+카테고리 / 평점·도보 / 상세 주소) · 저장 토글.
+ * 검색 결과의 장소 한 줄(FS-18). 썸네일 · (이름+카테고리 / 평점 / 상세 주소) · 저장 토글.
  *
- * 1줄: 이름 옆에 카테고리를 인라인으로, 2줄: ★평점·도보 시간, 3줄: 상세 주소.
+ * 1줄: 이름 옆에 카테고리를 인라인으로, 2줄: ★평점, 3줄: 상세 주소.
  * 주소가 비었거나 1줄 카테고리와 같으면(외부 검색 폴백 중복) 3줄은 생략해 2줄로 줄어든다.
  */
 @Composable
@@ -97,23 +97,26 @@ internal fun SearchPlaceRow(
                     )
                 }
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_star_24),
-                    contentDescription = null,
-                    tint = color.contentRating,
-                    modifier = Modifier.size(13.dp),
-                )
-                DsText(
-                    text = place.metaLine(),
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = color.contentDefaultLevel2,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            // 평점만 보여 준다(평가 없는 장소는 별 아이콘째 숨긴다). 도보 시간은 표시하지 않는다.
+            if (place.rating > 0) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_star_24),
+                        contentDescription = null,
+                        tint = color.contentRating,
+                        modifier = Modifier.size(13.dp),
+                    )
+                    DsText(
+                        text = place.rating.toString(),
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             if (showAddress) {
                 DsText(
@@ -134,13 +137,6 @@ private fun MapPlaceVO.categoryLine(): String =
     listOfNotNull(
         category.takeIf { it.isNotBlank() },
         subCategory,
-    ).joinToString(" · ")
-
-/** `4.8 · 도보 6분` — 앞의 별 아이콘은 호출부가 따로 그린다. 카테고리는 1줄로 올라갔다. */
-private fun MapPlaceVO.metaLine(): String =
-    listOfNotNull(
-        rating.takeIf { it > 0 }?.toString(),
-        walkingMinutes?.let { "도보 ${it}분" },
     ).joinToString(" · ")
 
 /** 검색 결과의 코스 카드(FS-18 코스 탭). 커버 위 카테고리 배지 + 제목 + 요약. */

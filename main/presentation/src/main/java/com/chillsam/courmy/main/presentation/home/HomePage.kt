@@ -579,9 +579,9 @@ private fun NearbySavedSection(
 }
 
 /**
- * 근처 저장 장소 카드: 썸네일 + [이름·카테고리 / 도보 시간·평점] + 방문 여부 칩. 탭하면 지도에서 그 장소를 보여준다.
+ * 근처 저장 장소 카드: 썸네일 + [이름·카테고리 / 평점] + 방문 여부 칩. 탭하면 지도에서 그 장소를 보여준다.
  *
- * "지금 들를까" 판단을 돕게 도보 시간을 메타 맨 앞에 accent 색으로 강조하고, 카테고리는 이름 줄로 올렸다.
+ * 카테고리는 이름 줄에 인라인으로 올리고, 둘째 줄엔 평점만 둔다(도보 시간은 표시하지 않는다).
  */
 @Composable
 private fun NearbyPlaceCard(
@@ -630,34 +630,13 @@ private fun NearbyPlaceCard(
                     )
                 }
             }
-            // 2줄: "지금 들를까" 판단을 돕게 도보 시간을 맨 앞에 accent 로 강조하고, 뒤에 평점을 붙인다.
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                val hasWalking = place.walkingMinutes != null
-                val hasRating = place.ratingText.isNotBlank()
-                // 도보 소요 시간: 거리 1순위 정보라 accent 색으로 강조한다. 계산 불가(null)면 생략.
-                place.walkingMinutes?.let { minutes ->
-                    DsText(
-                        text = "도보 ${minutes}분",
-                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                        color = color.contentAccent,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                // 도보와 평점이 모두 있을 때만 가운뎃점 구분자를 끼운다.
-                if (hasWalking && hasRating) {
-                    DsText(
-                        text = "·",
-                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                        color = color.borderDefaultLevel1,
-                    )
-                }
-                // 평가가 없는 장소는 별 아이콘째 숨긴다("0.0"이 뜨지 않게).
-                if (hasRating) {
+            // 2줄: 평점. 평가 없는 장소는 별 아이콘째 숨긴다("0.0"이 뜨지 않게). 도보 시간은 표시하지 않는다.
+            if (place.ratingText.isNotBlank()) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
                     DsRatingStar(starSize = 13.dp)
                     DsText(
                         text = place.ratingText,

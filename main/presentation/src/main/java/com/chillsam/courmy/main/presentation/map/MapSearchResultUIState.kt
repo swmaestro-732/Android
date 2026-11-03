@@ -16,7 +16,8 @@ data class MapSearchResultUIState(
     val places: ImmutableList<MapPlaceVO> = persistentListOf(),
     val nextCursor: String? = null,
     val hasNext: Boolean = false,
-    val sheetMode: MapSheetMode = MapSheetMode.MARKER,
+    // 검색하면 결과 리스트가 바로 펼쳐진 상태로 보이도록 기본을 LIST 로 둔다(손잡이로 접으면 MARKER).
+    val sheetMode: MapSheetMode = MapSheetMode.LIST,
     val sheetExpanded: Boolean = false,
     val selectedPlaceId: Long? = null,
     val errorMessage: String? = null,
