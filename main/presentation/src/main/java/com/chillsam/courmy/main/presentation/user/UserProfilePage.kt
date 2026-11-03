@@ -177,15 +177,19 @@ private fun UserProfileContent(
                         null
                     },
             ) {
-                if (FeatureFlags.SHARE_ENABLED) {
+                // 공유는 더보기(…) 메뉴 안으로 접는다. 내 프로필은 … 메뉴(신고)가 없어 아이콘으로 남긴다.
+                if (!profile.isMe) {
+                    ReportAction(
+                        targetType = ReportTargetType.USER,
+                        targetId = profile.id,
+                        onShare = if (FeatureFlags.SHARE_ENABLED) shareProfile else null,
+                    )
+                } else if (FeatureFlags.SHARE_ENABLED) {
                     ProfileHeaderIconButton(
                         iconRes = R.drawable.ic_share_24,
                         contentDescription = "공유",
                         onClick = shareProfile,
                     )
-                }
-                if (!profile.isMe) {
-                    ReportAction(ReportTargetType.USER, profile.id)
                 }
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
