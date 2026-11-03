@@ -85,7 +85,7 @@ class NotificationConsentViewModelTest {
         }
 
     @Test
-    fun `confirm with only the required consent records the decision`() =
+    fun `confirm with only the required consent records the decision and waits for permission`() =
         runTest {
             val store = FakeConsentStore()
             val model = NotificationConsentViewModel(store)
@@ -97,11 +97,34 @@ class NotificationConsentViewModelTest {
             assertTrue(store.isDecided)
             assertFalse(store.marketingAgreed)
             assertFalse(store.nightAgreed)
+            // OS 알림 설정 획득 단계까지는 시트가 남아 있고, Finish 가 닫는다.
+            assertTrue(model.uiState.value.consentDone)
+            assertTrue(model.uiState.value.visible)
+            model.onIntent(NotificationConsentIntent.Finish)
             assertFalse(model.uiState.value.visible)
         }
 
     @Test
-    fun `confirm saves the selection once and hides the sheet`() =
+    fun `blocked permission shows the device settings guide until finish`() =
+        runTest {
+            val model = NotificationConsentViewModel(FakeConsentStore())
+            model.onIntent(NotificationConsentIntent.Confirm)
+            advanceUntilIdle()
+
+            model.onIntent(NotificationConsentIntent.PermissionBlocked)
+            assertTrue(model.uiState.value.permissionGuideVisible)
+
+            // 권한 단계에서는 토글·중복 확인이 무시된다.
+            model.onIntent(NotificationConsentIntent.ToggleMarketing)
+            assertFalse(model.uiState.value.marketingAgreed)
+
+            model.onIntent(NotificationConsentIntent.Finish)
+            assertFalse(model.uiState.value.permissionGuideVisible)
+            assertFalse(model.uiState.value.visible)
+        }
+
+    @Test
+    fun `confirm saves the selection once`() =
         runTest {
             val store = FakeConsentStore()
             val model = NotificationConsentViewModel(store)
@@ -111,11 +134,13 @@ class NotificationConsentViewModelTest {
             // 저장이 끝나기 전의 중복 확인은 무시된다.
             model.onIntent(NotificationConsentIntent.Confirm)
             advanceUntilIdle()
+            // 저장이 끝난 뒤의 확인도 무시된다.
+            model.onIntent(NotificationConsentIntent.Confirm)
+            advanceUntilIdle()
 
             assertEquals(1, store.saveCount)
             assertTrue(store.isDecided)
             assertTrue(store.marketingAgreed)
             assertFalse(store.nightAgreed)
-            assertFalse(model.uiState.value.visible)
         }
 }

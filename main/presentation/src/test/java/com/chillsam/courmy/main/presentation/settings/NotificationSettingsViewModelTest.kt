@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.settings
 
+import com.chillsam.courmy.common.domain.push.NotificationConsentStore
 import com.chillsam.courmy.common.domain.push.NotificationSettings
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -27,6 +28,23 @@ class NotificationSettingsViewModelTest {
     private val settings = mockk<NotificationSettings>()
     private var enabled = true
 
+    private class FakeConsentStore : NotificationConsentStore {
+        override var isDecided: Boolean = true
+        override var marketingAgreed: Boolean = false
+        override var nightAgreed: Boolean = false
+
+        override suspend fun save(
+            marketingAgreed: Boolean,
+            nightAgreed: Boolean,
+        ) {
+            isDecided = true
+            this.marketingAgreed = marketingAgreed
+            this.nightAgreed = nightAgreed && marketingAgreed
+        }
+    }
+
+    private val consent = FakeConsentStore()
+
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
@@ -46,7 +64,7 @@ class NotificationSettingsViewModelTest {
                 finish.await()
                 enabled = false
             }
-            val model = NotificationSettingsViewModel(settings)
+            val model = NotificationSettingsViewModel(settings, consent)
             model.onIntent(NotificationSettingsIntent.SetEnabled(false))
             runCurrent()
             model.onIntent(NotificationSettingsIntent.SetEnabled(true))
@@ -60,13 +78,49 @@ class NotificationSettingsViewModelTest {
         }
 
     @Test
+    fun `marketing withdrawal also withdraws night consent`() =
+        runTest {
+            consent.marketingAgreed = true
+            consent.nightAgreed = true
+            val model = NotificationSettingsViewModel(settings, consent)
+
+            model.onIntent(NotificationSettingsIntent.SetMarketing(false))
+            advanceUntilIdle()
+
+            assertFalse(consent.marketingAgreed)
+            assertFalse(consent.nightAgreed)
+            assertFalse(model.uiState.value.marketing)
+            assertFalse(model.uiState.value.night)
+        }
+
+    @Test
+    fun `night consent is ignored without marketing consent`() =
+        runTest {
+            val model = NotificationSettingsViewModel(settings, consent)
+
+            model.onIntent(NotificationSettingsIntent.SetNight(true))
+            advanceUntilIdle()
+
+            assertFalse(consent.nightAgreed)
+            assertFalse(model.uiState.value.night)
+
+            model.onIntent(NotificationSettingsIntent.SetMarketing(true))
+            advanceUntilIdle()
+            model.onIntent(NotificationSettingsIntent.SetNight(true))
+            advanceUntilIdle()
+
+            assertTrue(consent.nightAgreed)
+            assertTrue(model.uiState.value.night)
+        }
+
+    @Test
     fun `FCM timeout restores interaction and shows failure with persisted opt out`() =
         runTest {
             coEvery { settings.setNotificationsEnabled(false) } coAnswers {
                 enabled = false
                 withTimeout(10) { awaitCancellation() }
             }
-            val model = NotificationSettingsViewModel(settings)
+            val model = NotificationSettingsViewModel(settings, consent)
             model.onIntent(NotificationSettingsIntent.SetEnabled(false))
             advanceUntilIdle()
             assertFalse(model.uiState.value.enabled)

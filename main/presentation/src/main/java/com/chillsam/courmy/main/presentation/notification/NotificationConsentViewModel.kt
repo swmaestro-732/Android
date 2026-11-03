@@ -16,11 +16,18 @@ class NotificationConsentViewModel
             NotificationConsentUIState(),
         ) {
         init {
-            // 홈 최초 진입에서 한 번만 받는다. 확인 전에 앱을 껐다 켜면 다시 띄운다.
+            // 최초 접속에서 한 번만 받는다. 확인하면 다시 띄우지 않고, 이후 변경은 설정 > 알림이 맡는다.
             if (!consent.isDecided) dispatch(NotificationConsentReducerEvent.Shown)
         }
 
         override fun onIntent(intent: NotificationConsentIntent) {
+            // 저장이 끝난 뒤에는 권한 획득 단계라 토글·확인을 받지 않는다.
+            if (currentState.consentDone &&
+                intent != NotificationConsentIntent.PermissionBlocked &&
+                intent != NotificationConsentIntent.Finish
+            ) {
+                return
+            }
             when (intent) {
                 NotificationConsentIntent.ToggleService -> {
                     dispatch(NotificationConsentReducerEvent.ServiceToggled)
@@ -36,6 +43,14 @@ class NotificationConsentViewModel
 
                 NotificationConsentIntent.Confirm -> {
                     confirm()
+                }
+
+                NotificationConsentIntent.PermissionBlocked -> {
+                    dispatch(NotificationConsentReducerEvent.PermissionGuideShown)
+                }
+
+                NotificationConsentIntent.Finish -> {
+                    dispatch(NotificationConsentReducerEvent.Finished)
                 }
             }
         }
@@ -84,7 +99,16 @@ class NotificationConsentViewModel
                 }
 
                 NotificationConsentReducerEvent.Confirmed -> {
-                    state.copy(visible = false, saving = false)
+                    // 시트는 닫지 않는다 — OS 권한 획득까지 마친 Finished 가 닫는다.
+                    state.copy(saving = false, consentDone = true)
+                }
+
+                NotificationConsentReducerEvent.PermissionGuideShown -> {
+                    state.copy(permissionGuideVisible = true)
+                }
+
+                NotificationConsentReducerEvent.Finished -> {
+                    state.copy(visible = false, permissionGuideVisible = false)
                 }
             }
     }

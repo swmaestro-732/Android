@@ -1,47 +1,35 @@
 package com.chillsam.courmy.main.presentation.settings
 
 import android.Manifest
-import android.app.NotificationManager
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
-import com.chillsam.courmy.common.presentation.component.DsSwitch
-import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.notification.NotificationToggleRow
+import com.chillsam.courmy.main.presentation.notification.canRequestNotificationPermission
+import com.chillsam.courmy.main.presentation.notification.canShowActivityNotifications
+import com.chillsam.courmy.main.presentation.notification.openNotificationSettings
 
 @Composable
 fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltViewModel()) {
@@ -72,6 +60,8 @@ fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltView
     }
     NotificationSettingsContent(
         enabled = state.enabled && permissionGranted,
+        marketing = state.marketing,
+        night = state.night,
         saving = state.saving,
         onBack = navigation::navigateToBack,
         onCheckedChange = { enabled ->
@@ -80,7 +70,9 @@ fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltView
                     viewModel.onIntent(NotificationSettingsIntent.SetEnabled(enabled))
                 }
 
-                notifications.canRequestPermission(permissionPreferences.getBoolean("requested", false)) -> {
+                notifications.canRequestNotificationPermission(
+                    permissionPreferences.getBoolean("requested", false),
+                ) -> {
                     permissionPreferences.edit().putBoolean("requested", true).apply()
                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
@@ -90,6 +82,8 @@ fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltView
                 }
             }
         },
+        onMarketingChange = { viewModel.onIntent(NotificationSettingsIntent.SetMarketing(it)) },
+        onNightChange = { viewModel.onIntent(NotificationSettingsIntent.SetNight(it)) },
     )
     if (showPermissionDialog || state.error) {
         NotificationPermissionDialog(
@@ -108,29 +102,6 @@ fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltView
     }
 }
 
-private fun Context.openNotificationSettings(): Boolean {
-    val intent =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-        } else {
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))
-        }
-    return runCatching { startActivity(intent) }
-        .onFailure {
-            Toast.makeText(this, "기기 알림 설정을 열 수 없어요.", Toast.LENGTH_SHORT).show()
-        }.isSuccess
-}
-
-private fun NotificationManagerCompat.canRequestPermission(requested: Boolean): Boolean =
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !areNotificationsEnabled() && !requested
-
-private fun NotificationManagerCompat.canShowActivityNotifications(): Boolean =
-    areNotificationsEnabled() &&
-        (
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
-                getNotificationChannel("courmy_activity")?.importance != NotificationManager.IMPORTANCE_NONE
-        )
-
 @Composable
 private fun NotificationPermissionDialog(
     error: Boolean,
@@ -143,7 +114,7 @@ private fun NotificationPermissionDialog(
             if (error) {
                 "네트워크 연결을 확인하고 다시 시도해 주세요. 알림을 바로 차단하려면 기기 설정에서 꺼 주세요."
             } else {
-                "전체 알림을 받으려면 기기 설정에서 Courmy 알림을 허용해 주세요."
+                "활동 알림을 받으려면 기기 설정에서 Courmy 알림을 허용해 주세요."
             },
         confirmText = "기기 설정",
         dismissText = "닫기",
@@ -155,33 +126,45 @@ private fun NotificationPermissionDialog(
 @Composable
 internal fun NotificationSettingsContent(
     enabled: Boolean,
+    marketing: Boolean,
+    night: Boolean,
     saving: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    onMarketingChange: (Boolean) -> Unit,
+    onNightChange: (Boolean) -> Unit,
     onBack: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(Modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         BackTopBar(title = "알림", onBack = onBack, boxed = true)
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .toggleable(value = enabled, enabled = !saving, role = Role.Switch, onValueChange = onCheckedChange)
-                .padding(horizontal = ScreenHorizontalPadding, vertical = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DsText(
-                text = "전체 알림",
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = color.contentDefaultLevel0,
-                modifier = Modifier.weight(1f),
-            )
-            DsSwitch(
-                checked = enabled,
-                onCheckedChange = onCheckedChange,
-                enabled = !saving,
-                modifier = Modifier.clearAndSetSemantics {},
-            )
-        }
+        // 홈 최초 진입 동의 팝업과 같은 항목·문구를 쓴다. 여기서는 모두 켜고 끌 수 있다.
+        NotificationToggleRow(
+            title = "활동 알림",
+            description = "내 코스의 좋아요와 댓글 소식을 받아요",
+            checked = enabled,
+            onToggle = { onCheckedChange(!enabled) },
+            enabled = !saving,
+            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+        )
+        SettingsDivider()
+        NotificationToggleRow(
+            title = "광고 알림",
+            description = "추천 코스와 이벤트 소식을 받아요",
+            checked = marketing,
+            onToggle = { onMarketingChange(!marketing) },
+            enabled = !saving,
+            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+        )
+        SettingsDivider()
+        NotificationToggleRow(
+            title = "야간에도 받기",
+            description = "밤 9시부터 오전 8시까지도 받아요",
+            checked = night,
+            onToggle = { onNightChange(!night) },
+            // 야간 수신 동의는 광고성 동의가 선행돼야 한다(서버 규칙과 동일).
+            enabled = !saving && marketing,
+            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+        )
         SettingsDivider()
     }
 }
@@ -189,5 +172,16 @@ internal fun NotificationSettingsContent(
 @Preview
 @Composable
 private fun NotificationSettingsPreview() {
-    DesignSystemTheme { NotificationSettingsContent(true, false, {}, {}) }
+    DesignSystemTheme {
+        NotificationSettingsContent(
+            enabled = true,
+            marketing = true,
+            night = false,
+            saving = false,
+            onCheckedChange = {},
+            onMarketingChange = {},
+            onNightChange = {},
+            onBack = {},
+        )
+    }
 }
