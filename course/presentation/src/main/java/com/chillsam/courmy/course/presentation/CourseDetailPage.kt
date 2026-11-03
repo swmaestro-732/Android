@@ -99,6 +99,13 @@ fun CourseDetailPage(
                         onDeleteCourse = { showDeleteConfirm = true },
                         onToggleLike = { viewModel.onIntent(CourseDetailIntent.ToggleLike) },
                         onSeeAllReviews = actions.onSeeAllReviews,
+                        onCommentAuthorClick = { comment ->
+                            if (comment.isMine) {
+                                actions.onMyProfileClick()
+                            } else if (comment.authorHandle.isNotBlank()) {
+                                actions.onAuthorClick(comment.authorHandle)
+                            }
+                        },
                     ),
                 modifier = modifier,
             )
