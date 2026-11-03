@@ -138,11 +138,12 @@ internal fun MapPlaceDetailCard(
                 overflow = TextOverflow.Ellipsis,
             )
             PlaceSummaryLine(place = place)
-            if (place.closingTime != null) {
+            // 영업 정보가 없으면(openNow == null) 상태 텍스트를 숨긴다.
+            if (place.openNow != null) {
                 DsText(
                     text = place.openStatusText(),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = if (place.openNow) color.contentSuccess else color.contentDefaultLevel3,
+                    color = if (place.openNow == true) color.contentSuccess else color.contentDefaultLevel3,
                 )
             }
         }
@@ -266,16 +267,18 @@ private fun RankedPlaceMetaLine(
             )
             DsText(text = place.rating.toString(), style = style, color = color.contentDefaultLevel1)
         }
-        val statusPrefix = hasRating
-        val status = place.rankedOpenStatusText()
-        DsText(
-            text = if (statusPrefix) "· $status" else status,
-            style = style,
-            // 영업 중은 강조색, 영업 종료는 흐린 색으로 상태를 색으로 구분한다.
-            color = if (place.openNow) color.contentAccent else color.contentDefaultLevel3,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        // 서버가 영업 정보를 주지 않으면(openNow == null) 상태 텍스트를 숨긴다.
+        if (place.openNow != null) {
+            val status = place.rankedOpenStatusText()
+            DsText(
+                text = if (hasRating) "· $status" else status,
+                style = style,
+                // 영업 중은 강조색, 영업 종료는 흐린 색으로 상태를 색으로 구분한다.
+                color = if (place.openNow == true) color.contentAccent else color.contentDefaultLevel3,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -376,7 +379,7 @@ private fun MapPlaceVO.categoryMeta(prefixSeparator: Boolean = false): String {
 
 /** `영업 중 · 22:00 종료`. */
 private fun MapPlaceVO.openStatusText(): String {
-    val status = if (openNow) "영업 중" else "영업 종료"
+    val status = if (openNow == true) "영업 중" else "영업 종료"
     return if (closingTime != null) "$status · $closingTime 종료" else status
 }
 
@@ -389,8 +392,8 @@ private fun MapPlaceVO.categoryLabel(): String = listOfNotNull(category, subCate
  */
 private fun MapPlaceVO.rankedOpenStatusText(): String =
     when {
-        openNow && closingTime != null -> "영업 중 · $closingTime 종료"
-        openNow -> "영업 중"
+        openNow == true && closingTime != null -> "영업 중 · $closingTime 종료"
+        openNow == true -> "영업 중"
         else -> "영업 종료"
     }
 
