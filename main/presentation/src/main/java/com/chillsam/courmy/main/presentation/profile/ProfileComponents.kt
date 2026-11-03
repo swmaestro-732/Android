@@ -149,7 +149,8 @@ fun ProfileHeader(
             }
             identityAction?.let { action ->
                 Spacer(Modifier.width(12.dp))
-                Box(modifier = Modifier.align(Alignment.Top)) { action() }
+                // 신원 줄 우측에서 세로 중앙(닉네임~팔로우 수 가운데)에 둔다.
+                Box(modifier = Modifier.align(Alignment.CenterVertically)) { action() }
             }
         }
 
