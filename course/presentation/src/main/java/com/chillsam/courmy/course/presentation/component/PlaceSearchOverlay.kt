@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -316,7 +315,13 @@ private fun SearchTopBar(
                 },
             )
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }, modifier = Modifier.size(48.dp)) {
+                // 돋보기(왼쪽 안쪽 14dp)와 대칭이 되도록 x 아이콘을 필드 오른쪽 안쪽 끝에 붙인다.
+                // IconButton 의 48dp 기본 크기가 아이콘 오른쪽에 공백을 만들던 것을 없애고,
+                // 터치 영역은 왼쪽으로 넓혀(CenterEnd) 유지한다.
+                Box(
+                    modifier = Modifier.size(40.dp).clickable(onClick = { onQueryChange("") }),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.close_small_24),
                         contentDescription = "검색어 지우기",
