@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.search
 import com.chillsam.courmy.main.domain.map.MapPlaceSearchRepository
 import com.chillsam.courmy.main.domain.map.SuggestMapPlacesUseCase
 import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapPlacesVO
 import kotlinx.coroutines.CompletableDeferred
@@ -161,6 +162,7 @@ class SearchViewModelTest {
         override suspend fun search(
             query: String,
             bounds: MapBounds,
+            category: MapCategory,
             latitude: Double?,
             longitude: Double?,
         ): MapPlacesVO = error("제안 조회에서 지도 영역 API를 호출하면 안 됩니다.")
