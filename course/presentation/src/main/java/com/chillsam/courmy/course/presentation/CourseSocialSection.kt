@@ -408,7 +408,7 @@ private fun CommentRow(
     Row {
         IconButton(
             onClick = { onAuthorClick(comment) },
-            enabled = comment.isMine || comment.authorHandle.isNotBlank(),
+            enabled = comment.isMine || comment.authorId > 0,
             modifier =
                 Modifier.size(48.dp).semantics {
                     contentDescription = "${comment.authorNickname.ifBlank { "작성자" }} 프로필 보기"
