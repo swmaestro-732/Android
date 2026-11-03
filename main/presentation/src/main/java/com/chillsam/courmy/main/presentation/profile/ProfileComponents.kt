@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -355,6 +356,7 @@ private fun ProfileCourseCard(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val showPlanPlaceholder = course.id.startsWith("plan-") && course.thumbnailUrl.isBlank()
     Column(
         modifier =
             modifier
@@ -366,8 +368,24 @@ private fun ProfileCourseCard(
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(1.5f)
-                    .background(color.imagePlaceholder),
+                    .then(
+                        if (showPlanPlaceholder) {
+                            Modifier.background(
+                                Brush.linearGradient(listOf(color.bgAccentSubtle, color.bgDefaultLevel1)),
+                            )
+                        } else {
+                            Modifier.background(color.imagePlaceholder)
+                        },
+                    ),
         ) {
+            if (showPlanPlaceholder) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_map_folded_24),
+                    contentDescription = null,
+                    tint = color.contentAccent,
+                    modifier = Modifier.align(Alignment.Center).size(36.dp),
+                )
+            }
             if (course.thumbnailUrl.isNotBlank()) {
                 AsyncImage(
                     model = course.thumbnailUrl,
