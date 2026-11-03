@@ -60,6 +60,7 @@ import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
@@ -67,6 +68,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.course.domain.CourseFollowPage
 import com.chillsam.courmy.course.domain.DraftListPage
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.domain.map.MapPage
@@ -75,6 +77,7 @@ import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.search.SearchPage
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.entity.home.HomeInProgressCourseVO
 import com.chillsam.courmy.main.entity.home.HomeNearbyPlaceVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.BottomBarHeight
@@ -172,6 +175,16 @@ fun HomePage(modifier: Modifier = Modifier) {
                 )
             }
 
+            // 진행 중이던 코스가 있으면 추천보다 위에 띄워 이어가기를 먼저 유도한다. 없으면(null) 숨긴다.
+            homeState.inProgressCourse?.let { inProgress ->
+                item {
+                    InProgressCourseSection(
+                        course = inProgress,
+                        onResume = { navigationHelper.navigateByRoute(CourseFollowPage.route(it)) },
+                        modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                    )
+                }
+            }
             item {
                 RecommendedCoursesSection(
                     homeState = homeState,
@@ -823,3 +836,91 @@ private fun NearbyLocationPrompt(
 }
 
 private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else GuestMyPage
+
+/**
+ * 홈 "진행 중인 코스" 섹션. 따라가는 중 세션이 있을 때만(=[course] 가 있을 때만) 노출한다.
+ * 카드를 누르거나 "이어가기"를 누르면 그 코스 따라가기를 다시 연다.
+ */
+@Composable
+private fun InProgressCourseSection(
+    course: HomeInProgressCourseVO,
+    onResume: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        DsText(
+            text = "진행 중인 코스",
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+        )
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(color.bgDefaultLevel1)
+                    .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(16.dp))
+                    .clickable { onResume(course.courseId) }
+                    .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AsyncImage(
+                model = course.coverImageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier =
+                    Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(color.imagePlaceholder),
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                DsText(
+                    text = course.title,
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val progressLine =
+                    listOfNotNull(
+                        course.progressText.takeIf { it.isNotBlank() }?.let { "$it 완료" },
+                        course.nextPlaceName.takeIf { it.isNotBlank() }?.let { "다음 · $it" },
+                    ).joinToString(" · ")
+                if (progressLine.isNotBlank()) {
+                    DsText(
+                        text = progressLine,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel3,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (course.totalCount > 0) {
+                    StepProgressBar(
+                        step = course.visitedCount.coerceIn(0, course.totalCount),
+                        total = course.totalCount,
+                    )
+                }
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .clip(CircleShape)
+                        .background(color.bgAccentSubtle)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+            ) {
+                DsText(
+                    text = "이어가기",
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentAccent,
+                )
+            }
+        }
+    }
+}

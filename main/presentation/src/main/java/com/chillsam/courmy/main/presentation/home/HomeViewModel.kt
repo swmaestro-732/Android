@@ -68,6 +68,7 @@ class HomeViewModel
                         isLoading = false,
                         courses = event.courses.toImmutableList(),
                         nearbyPlaces = event.nearbyPlaces.toImmutableList(),
+                        inProgressCourse = event.inProgressCourse,
                         errorMessage = null,
                     )
                 }
@@ -93,6 +94,7 @@ class HomeViewModel
                             HomeReducerEvent.Loaded(
                                 courses = home.recommendedCourses,
                                 nearbyPlaces = home.nearbySavedPlaces,
+                                inProgressCourse = home.inProgressCourse,
                             ),
                         )
                     }.onFailure { e ->

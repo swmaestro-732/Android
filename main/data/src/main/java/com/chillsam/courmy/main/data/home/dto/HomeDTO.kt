@@ -4,6 +4,7 @@ import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.entity.home.HomeInProgressCourseVO
 import com.chillsam.courmy.main.entity.home.HomeNearbyPlaceVO
 import com.chillsam.courmy.main.entity.home.HomeVO
 import kotlinx.serialization.Serializable
@@ -25,6 +26,19 @@ data class HomeEnvelope(
 data class HomeDTO(
     val recommendedCourses: List<HomeRecommendedCourseDTO>? = null,
     val nearbySavedPlaces: List<HomeNearbyPlaceDTO>? = null,
+    /** 진행 중이던 코스. 따라가는 중 세션이 없으면 서버가 null 로 준다. */
+    val inProgressCourse: HomeInProgressCourseDTO? = null,
+)
+
+/** 홈의 "진행 중이던 코스" 카드 DTO. 진행도(visited/total)와 이어가기용 courseId 를 싣는다. */
+@Serializable
+data class HomeInProgressCourseDTO(
+    val courseId: Long? = null,
+    val title: String? = null,
+    val coverImageUrl: String? = null,
+    val visitedCount: Int? = null,
+    val totalCount: Int? = null,
+    val nextPlaceName: String? = null,
 )
 
 /** v1 피드의 [CourseFeedItemDTO] 와 같은 카드 필드 구성이지만, v2 는 랭킹이 아니라 추천 결과다. */
@@ -66,7 +80,21 @@ fun HomeDTO.toVO(): HomeVO =
                 .orEmpty()
                 .filter { it.placeId != null }
                 .map { it.toVO() },
+        inProgressCourse = inProgressCourse?.toVO(),
     )
+
+/** courseId 가 없으면 이어갈 수 없어 카드로 쓰지 못한다 — null 로 걸러 홈에서 숨긴다. */
+internal fun HomeInProgressCourseDTO.toVO(): HomeInProgressCourseVO? {
+    val id = courseId ?: return null
+    return HomeInProgressCourseVO(
+        courseId = id,
+        title = title.orEmpty(),
+        coverImageUrl = coverImageUrl.orEmpty(),
+        visitedCount = (visitedCount ?: 0).coerceAtLeast(0),
+        totalCount = (totalCount ?: 0).coerceAtLeast(0),
+        nextPlaceName = nextPlaceName.orEmpty(),
+    )
+}
 
 internal fun HomeRecommendedCourseDTO.toVO(): HomeCourseVO =
     HomeCourseVO(
