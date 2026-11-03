@@ -609,7 +609,11 @@ private fun NearbyPlaceCard(
             shape = RoundedCornerShape(12.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
-            // 1줄: 장소명 + 카테고리 라벨 인라인. 카테고리는 이름 뒤에 베이스라인을 맞춰 붙는다.
+            val hasAddress = place.address.isNotBlank()
+            val hasCategory = place.categoryLabel.isNotBlank()
+            val hasRating = place.ratingText.isNotBlank()
+            // 1줄: 장소명. 주소가 있으면 카테고리를 이름 옆에 인라인으로 붙여 아래에 주소 줄을 둔다.
+            // 주소가 없으면 카테고리를 1줄에 붙이지 않고 아랫줄로 내려 2줄(이름 / 카테고리)로 보여 준다.
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DsText(
                     text = place.name,
@@ -619,7 +623,7 @@ private fun NearbyPlaceCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.alignByBaseline().weight(1f, fill = false),
                 )
-                if (place.categoryLabel.isNotBlank()) {
+                if (hasAddress && hasCategory) {
                     DsText(
                         text = place.categoryLabel,
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -630,22 +634,52 @@ private fun NearbyPlaceCard(
                     )
                 }
             }
-            // 2줄: 평점. 평가 없는 장소는 별 아이콘째 숨긴다("0.0"이 뜨지 않게). 도보 시간은 표시하지 않는다.
-            if (place.ratingText.isNotBlank()) {
+            // 2줄: 주소가 없으면 카테고리를 여기에, 그리고 평점(있으면). 평가 없는 장소는 별 아이콘째 숨긴다.
+            val showCategoryBelow = !hasAddress && hasCategory
+            if (showCategoryBelow || hasRating) {
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
-                    DsRatingStar(starSize = 13.dp)
-                    DsText(
-                        text = place.ratingText,
-                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                        color = color.contentDefaultLevel3,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    if (showCategoryBelow) {
+                        DsText(
+                            text = place.categoryLabel,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel2,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (showCategoryBelow && hasRating) {
+                        DsText(
+                            text = "·",
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.borderDefaultLevel1,
+                        )
+                    }
+                    if (hasRating) {
+                        DsRatingStar(starSize = 13.dp)
+                        DsText(
+                            text = place.ratingText,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel3,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
+            }
+            // 3줄: 상세 주소(있으면). 서버가 주지 않으면 숨겨져 위의 2줄 구성으로 줄어든다.
+            if (hasAddress) {
+                DsText(
+                    text = place.address,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
             }
         }
         Box(
