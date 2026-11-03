@@ -18,4 +18,7 @@ sealed interface HomeReducerEvent : ReducerEvent {
     data class Failed(
         val message: String,
     ) : HomeReducerEvent
+
+    /** 진행 중인 코스 카드를 내린다(스톱). */
+    data object InProgressDismissed : HomeReducerEvent
 }

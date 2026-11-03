@@ -51,6 +51,10 @@ class HomeViewModel
                     myLng = intent.lng
                     if (moved) load()
                 }
+
+                HomeIntent.DismissInProgressCourse -> {
+                    dispatch(HomeReducerEvent.InProgressDismissed)
+                }
             }
         }
 
@@ -75,6 +79,10 @@ class HomeViewModel
 
                 is HomeReducerEvent.Failed -> {
                     state.copy(isLoading = false, errorMessage = event.message)
+                }
+
+                HomeReducerEvent.InProgressDismissed -> {
+                    state.copy(inProgressCourse = null)
                 }
             }
 

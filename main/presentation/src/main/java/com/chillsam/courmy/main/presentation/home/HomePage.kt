@@ -180,6 +180,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                     InProgressCourseSection(
                         course = inProgress,
                         onResume = { navigationHelper.navigateByRoute(CourseFollowPage.route(it)) },
+                        onStop = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
                         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                     )
                 }
@@ -847,6 +848,7 @@ private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else Gue
 private fun InProgressCourseSection(
     course: HomeInProgressCourseVO,
     onResume: (Long) -> Unit,
+    onStop: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -875,7 +877,7 @@ private fun InProgressCourseSection(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            // 라벨은 왼쪽, 진행도는 우측 상단으로 보낸다.
+            // 라벨은 왼쪽, 우측 상단에는 따라가기를 멈추는 스톱 버튼을 둔다.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -886,6 +888,21 @@ private fun InProgressCourseSection(
                     color = color.contentDefaultLevel3,
                     modifier = Modifier.weight(1f),
                 )
+                StopButton(onClick = { onStop(course.courseId) })
+            }
+            // 제목 옆(원위치)에 진행도를 둔다.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DsText(
+                    text = course.title,
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentOnAccent,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
                 if (course.progressText.isNotBlank()) {
                     DsText(
                         text = course.progressText,
@@ -894,17 +911,33 @@ private fun InProgressCourseSection(
                     )
                 }
             }
-            DsText(
-                text = course.title,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentOnAccent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
             InProgressBar(
                 fraction = if (course.totalCount > 0) course.visitedCount.toFloat() / course.totalCount else 0f,
             )
         }
+    }
+}
+
+/** 진행 중 코스를 멈추는 스톱 버튼. 스톱 모양(둥근 사각형)을 Compose 로 직접 그린다. 어두운 카드 위라 흐린 회색. */
+@Composable
+private fun StopButton(onClick: () -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            Modifier
+                .clip(CircleShape)
+                .clickable(onClick = onClick)
+                .semantics { contentDescription = "따라가기 멈추기" }
+                .padding(4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(color.contentDefaultLevel3),
+        )
     }
 }
 
