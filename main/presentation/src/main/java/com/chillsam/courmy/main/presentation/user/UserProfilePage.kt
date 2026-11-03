@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -164,15 +163,20 @@ private fun UserProfileContent(
                 onBack = { navigationHelper.navigateToBack() },
                 // 소개가 비어 있으면 줄 자체를 두지 않는다.
                 bio = profile.bio.ifBlank { null },
+                // 팔로우는 신원(아바타·닉네임) 줄 우측에 아이콘으로 붙인다. 마이 화면에는 없다.
+                identityAction =
+                    if (!profile.isMe) {
+                        {
+                            FollowButton(
+                                relation = profile.relation,
+                                onClick = onToggleFollow,
+                                inFlight = isFollowInFlight,
+                            )
+                        }
+                    } else {
+                        null
+                    },
             ) {
-                if (!profile.isMe) {
-                    FollowButton(
-                        relation = profile.relation,
-                        onClick = onToggleFollow,
-                        inFlight = isFollowInFlight,
-                        modifier = Modifier.width(116.dp).height(40.dp),
-                    )
-                }
                 if (FeatureFlags.SHARE_ENABLED) {
                     ProfileHeaderIconButton(
                         iconRes = R.drawable.ic_share_24,
