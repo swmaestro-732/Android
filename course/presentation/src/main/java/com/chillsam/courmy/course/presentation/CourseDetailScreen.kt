@@ -95,7 +95,8 @@ import com.chillsam.courmy.course.presentation.component.toRoutePoints
  * 동작은 두 층으로 나눈다.
  * - 하단 액션바: 댓글·복제 + 주버튼 "따라가기" — 이 화면에서 하려는 일.
  *   댓글은 본문에 깔지 않고 하단 시트([CourseCommentSheet])로 띄운다
- * - 히어로 우측: 좋아요·저장·공유 아이콘 + 내 코스일 때만 ⋮ ([CourseSettingsMenu]) 로 편집·삭제
+ * - 히어로 우측: 좋아요·저장 아이콘 + 더보기 메뉴 — 내 코스 ⋮([CourseSettingsMenu]) 공유·편집·삭제,
+ *   다른 코스 …([ReportAction]) 공유·신고
  *
  * 지도는 본문에 이미 들어 있어 "지도 보기" 버튼을 따로 두지 않는다.
  *
@@ -376,12 +377,13 @@ private fun DetailPinnedBar(
 }
 
 /**
- * 상단 히어로: 어두운 배경 위 뒤로가기 · 좋아요·저장·공유 · 설정(⋮), 카테고리 칩, 코스 제목.
+ * 상단 히어로: 어두운 배경 위 뒤로가기 · 좋아요·저장 · 더보기(⋮/…), 카테고리 칩, 코스 제목.
  *
  * 좋아요와 저장은 **누른 상태가 보여야 하는 토글**이라 메뉴에 접지 않고 아이콘으로 내놓는다.
  * 메뉴 안에 있으면 열기 전에는 지금 눌렀는지 알 수 없고, 토글 한 번에 두 탭이 든다.
  *
- * ⋮ 는 내 코스의 편집·삭제와 다른 사람 코스의 신고를 제공한다.
+ * 공유는 자주 누르지 않고 상태 표시도 필요 없어 더보기 메뉴로 접었다.
+ * 더보기는 내 코스의 공유·편집·삭제와 다른 사람 코스의 공유·신고를 제공한다.
  */
 @Composable
 private fun DetailHero(
@@ -453,17 +455,14 @@ private fun DetailHero(
                     onClick = actions.onSaveCourse,
                 )
             }
-            if (FeatureFlags.SHARE_ENABLED) {
-                HeroCircleButton(
-                    iconRes = R.drawable.ic_share_24,
-                    contentDescription = "공유",
-                    onClick = actions.onShare,
-                )
-            }
             if (detail.isMine) {
                 CourseSettingsMenu(isDeleting = isDeleting, actions = actions)
             } else {
-                ReportAction(ReportTargetType.COURSE, courseId)
+                ReportAction(
+                    targetType = ReportTargetType.COURSE,
+                    targetId = courseId,
+                    onShare = if (FeatureFlags.SHARE_ENABLED) actions.onShare else null,
+                )
             }
         }
         Column(
@@ -506,9 +505,9 @@ private fun DetailHero(
 }
 
 /**
- * 히어로 우측 설정(⋮) 메뉴 — 편집·삭제.
+ * 히어로 우측 설정(⋮) 메뉴 — 공유·편집·삭제.
  *
- * 되돌리기 어렵고 드물게 쓰는 관리 동작만 담는다. 좋아요·저장·공유처럼 자주 누르거나
+ * 공유와 되돌리기 어렵고 드물게 쓰는 관리 동작을 담는다. 좋아요·저장처럼 자주 누르거나
  * 상태가 보여야 하는 것은 밖에 아이콘으로 둔다. 호출부가 내 코스일 때만 그린다.
  */
 @Composable
@@ -529,6 +528,18 @@ private fun CourseSettingsMenu(
             onDismissRequest = { expanded = false },
             containerColor = color.bgDefaultLevel1,
         ) {
+            if (FeatureFlags.SHARE_ENABLED) {
+                CourseSettingsMenuItem(
+                    text = "공유",
+                    iconRes = R.drawable.ic_share_24,
+                    contentColor = color.contentDefaultLevel0,
+                    enabled = true,
+                    onClick = {
+                        expanded = false
+                        actions.onShare()
+                    },
+                )
+            }
             CourseSettingsMenuItem(
                 text = "코스 편집",
                 iconRes = R.drawable.ic_notes_24,
