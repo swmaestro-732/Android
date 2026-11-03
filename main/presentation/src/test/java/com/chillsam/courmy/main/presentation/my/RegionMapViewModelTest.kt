@@ -242,13 +242,22 @@ class RegionMapViewModelTest {
     }
 
     @Test
-    fun `프로필 조회 실패는 편집과 저장을 막고 재시도에서 기존 지역을 복원한다`() =
+    fun `프로필 조회 중과 실패에도 지도 자료를 유지하고 재시도에서 기존 지역을 복원한다`() =
         runTest(dispatcher) {
-            coEvery { getMyProfile(any(), any()) } throws IOException("offline")
+            val response = CompletableDeferred<MyProfileVO>()
+            coEvery { getMyProfile(any(), any()) } coAnswers { response.await() }
             val viewModel = viewModel()
             viewModel.onIntent(RegionMapIntent.Initialize(true, emptyList()))
+            runCurrent()
+
+            assertEquals(catalogue, viewModel.uiState.value.regions)
+            assertTrue(viewModel.uiState.value.isLoading)
+            assertFalse(viewModel.uiState.value.canContinue)
+
+            response.completeExceptionally(IOException("offline"))
             advanceUntilIdle()
 
+            assertEquals(catalogue, viewModel.uiState.value.regions)
             assertTrue(viewModel.uiState.value.loadError)
             assertFalse(viewModel.uiState.value.canContinue)
             viewModel.onIntent(RegionMapIntent.Toggle(seoul.code))
@@ -264,6 +273,7 @@ class RegionMapViewModelTest {
             viewModel.onIntent(RegionMapIntent.Retry)
             advanceUntilIdle()
             assertFalse(viewModel.uiState.value.loadError)
+            assertEquals(catalogue, viewModel.uiState.value.regions)
             assertEquals(listOf(mapo), viewModel.uiState.value.selected)
         }
 

@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -118,48 +117,22 @@ internal fun InterestRegionScreen(
                 modifier = Modifier.padding(top = 6.dp),
             )
         }
-        when {
-            state.isLoading -> {
-                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = color.contentAccent)
-                }
-            }
-
-            state.loadError -> {
-                Column(
-                    Modifier.weight(1f).padding(ScreenHorizontalPadding),
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    DsText("지역을 불러오지 못했어요.", style = type.textRegularS)
-                    DsButton(
-                        "다시 시도",
-                        onClick = { onIntent(RegionMapIntent.Retry) },
-                        modifier = Modifier.padding(top = 12.dp),
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            if (state.regions.isNotEmpty()) {
+                RegionMapCanvas(state, onIntent)
+                RegionMapInsets(state, onIntent)
+                if (state.provinceCode != null) {
+                    DsChip(
+                        text = "‹ 전국 보기",
+                        selected = false,
+                        onClick = { onIntent(RegionMapIntent.Browse(null)) },
+                        modifier = Modifier.align(Alignment.TopStart).padding(12.dp).minimumInteractiveComponentSize(),
                     )
                 }
             }
-
-            else -> {
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    RegionMapCanvas(state, onIntent)
-                    RegionMapInsets(state, onIntent)
-                    if (state.provinceCode != null) {
-                        DsChip(
-                            text = "‹ 전국 보기",
-                            selected = false,
-                            onClick = { onIntent(RegionMapIntent.Browse(null)) },
-                            modifier =
-                                Modifier
-                                    .align(
-                                        Alignment.TopStart,
-                                    ).padding(12.dp)
-                                    .minimumInteractiveComponentSize(),
-                        )
-                    }
-                }
-                RegionChoices(state, onIntent)
-            }
         }
+        if (state.regions.isNotEmpty()) RegionChoices(state, onIntent)
+        InterestLoadFeedback(state.isLoading, state.loadError) { onIntent(RegionMapIntent.Retry) }
         RegionSelectionFooter(state, progressStep, onIntent, onContinue)
     }
 }
@@ -259,7 +232,7 @@ private fun RegionChoices(
                     label = "${province.area.shortName} 전체",
                     description = "${province.area.fullName} 전체 선택, 하위 지역 모두 포함",
                     selected = state.selected.any { it.code == province.area.code },
-                    enabled = !state.isSaving,
+                    enabled = !state.isSaving && !state.isLoading && !state.loadError,
                     onClick = { onIntent(RegionMapIntent.Toggle(province.area.code)) },
                 )
             }
@@ -274,7 +247,7 @@ private fun RegionChoices(
                             label = region.area.shortName,
                             description = if (province == null) "${region.area.fullName} 확대" else region.area.fullName,
                             selected = state.selected.any { region.area.code.startsWith(it.code) },
-                            enabled = !state.isSaving,
+                            enabled = !state.isSaving && (province == null || (!state.isLoading && !state.loadError)),
                             onClick = {
                                 onIntent(
                                     if (province == null) {

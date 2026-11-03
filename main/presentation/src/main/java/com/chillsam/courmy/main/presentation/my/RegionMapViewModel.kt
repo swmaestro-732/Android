@@ -73,6 +73,10 @@ sealed interface RegionMapEvent : ReducerEvent {
         val selected: List<AreaVO>,
     ) : RegionMapEvent
 
+    data class MapLoaded(
+        val regions: List<AreaMapVO>,
+    ) : RegionMapEvent
+
     data object LoadFailed : RegionMapEvent
 
     data class Browsed(
@@ -166,6 +170,10 @@ class RegionMapViewModel
                     )
                 }
 
+                is RegionMapEvent.MapLoaded -> {
+                    state.copy(regions = event.regions.toImmutableList())
+                }
+
                 RegionMapEvent.LoadFailed -> {
                     state.copy(isLoading = false, loadError = true)
                 }
@@ -209,6 +217,7 @@ class RegionMapViewModel
                 try {
                     val regions = getAreaMap()
                     require(regions.isNotEmpty())
+                    dispatch(RegionMapEvent.MapLoaded(regions))
                     val selected = if (initial.editing) getMyProfile().interestRegions else initial.regions
                     dispatch(RegionMapEvent.Loaded(regions, normalizeRegions(selected)))
                 } catch (e: CancellationException) {

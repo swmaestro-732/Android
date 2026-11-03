@@ -147,7 +147,6 @@ fun ProfileEditPage(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
-            ProfileLoadStatus(myState) { myViewModel.onIntent(MyProfileIntent.Retry) }
             AvatarEditor(
                 // 새로 고른 게 없으면 현재 프로필 사진을 그대로 보여준다.
                 imageUri = profileImageUri?.toString() ?: profile?.profileImageUrl.orEmpty(),
@@ -199,6 +198,16 @@ fun ProfileEditPage(
             Spacer(Modifier.height(12.dp))
         }
 
+        // 조회 상태는 편집 화면을 가리지 않는다. 관심 테마/지역 편집과 같은 하단 안내로 통일해
+        // (전체 오류 화면 대신) 입력칸을 유지한 채 최초 로딩/실패만 작은 바로 알리고 새로고침을 준다.
+        // 이미 프로필을 받은 뒤 복귀 새로고침은 기존 값을 유지하므로 로딩 바를 띄우지 않는다.
+        InterestLoadFeedback(
+            isLoading = myState.isLoading && myState.profile == null,
+            loadError = myState.errorMessage != null,
+        ) {
+            myViewModel.onIntent(MyProfileIntent.Retry)
+        }
+
         // 하단 저장 버튼 영역도 흰색(Figma FS-26).
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
@@ -223,28 +232,6 @@ fun ProfileEditPage(
                         .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             )
         }
-    }
-}
-
-@Composable
-private fun ProfileLoadStatus(
-    state: MyProfileUIState,
-    onRetry: () -> Unit,
-) {
-    if (state.errorMessage != null) {
-        DsText(
-            text = state.errorMessage,
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            maxLines = 3,
-            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-        )
-        DsButton(text = "다시 시도", onClick = onRetry)
-    } else if (state.isLoading && state.profile == null) {
-        DsText(
-            text = "프로필을 불러오는 중이에요.",
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            modifier = Modifier.padding(top = 16.dp),
-        )
     }
 }
 
