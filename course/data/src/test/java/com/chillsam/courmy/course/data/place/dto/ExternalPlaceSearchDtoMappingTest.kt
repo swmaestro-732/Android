@@ -41,6 +41,26 @@ class ExternalPlaceSearchDtoMappingTest {
             ).toVOList().single()
 
         assertEquals("서울 성동구 아차산로 100", vo.category)
+        assertEquals("서울 성동구 아차산로 100", vo.address)
+    }
+
+    @Test
+    fun `카테고리가 있어도 상세 주소는 별도 필드로 담는다`() {
+        val vo =
+            ExternalPlaceSearchDataDTO(
+                places =
+                    listOf(
+                        ExternalPlaceDTO(
+                            id = 1L,
+                            name = "어니언",
+                            category = "카페",
+                            roadAddress = "서울 성동구 아차산로 100",
+                        ),
+                    ),
+            ).toVOList().single()
+
+        assertEquals("카페", vo.category)
+        assertEquals("서울 성동구 아차산로 100", vo.address)
     }
 
     @Test

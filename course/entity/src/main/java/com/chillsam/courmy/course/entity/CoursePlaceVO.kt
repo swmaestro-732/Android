@@ -8,6 +8,8 @@ import kotlinx.serialization.Serializable
  * - [id]           장소 고유 식별자
  * - [name]         장소명 (예: "어니언 성수")
  * - [category]     카테고리 (예: "카페 · 베이커리")
+ * - [address]      상세 주소 (예: "서울 성동구 아차산로9길 8"). 같은 이름의 지점을 구분하는 용도라
+ *                  없으면 빈 문자열로 두고 UI 에서 그 줄을 생략한다
  * - [thumbnailUrl] 썸네일 이미지 URL (비어있으면 플레이스홀더)
  * - [note]         이곳에 한마디 (사용자 메모). 비어있으면 입력 유도 placeholder 표시
  * - [photoUrls]    사용자가 담은 사진 URL 목록
@@ -25,6 +27,7 @@ data class CoursePlaceVO(
     val id: String,
     val name: String,
     val category: String = "",
+    val address: String = "",
     val thumbnailUrl: String = "",
     val note: String = "",
     val photoUrls: List<String> = emptyList(),
