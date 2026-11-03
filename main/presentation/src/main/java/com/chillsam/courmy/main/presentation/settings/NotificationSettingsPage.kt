@@ -26,6 +26,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.notification.NotificationPermissionPrimingDialog
 import com.chillsam.courmy.main.presentation.notification.NotificationToggleRow
 import com.chillsam.courmy.main.presentation.notification.canRequestNotificationPermission
 import com.chillsam.courmy.main.presentation.notification.canShowActivityNotifications
@@ -45,6 +46,8 @@ fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltView
     var permissionGranted by remember { mutableStateOf(notifications.canShowActivityNotifications()) }
     var enableOnReturn by rememberSaveable { mutableStateOf(false) }
     var showPermissionDialog by rememberSaveable { mutableStateOf(false) }
+    // OS 권한 프롬프트 직전에 띄우는 Courmy 사전 안내. "허용"을 눌러야 실제 시스템 프롬프트로 넘어간다.
+    var showPermissionPriming by rememberSaveable { mutableStateOf(false) }
     val permissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             permissionGranted = notifications.canShowActivityNotifications()
@@ -75,8 +78,8 @@ fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltView
                         notifications.canRequestNotificationPermission(
                             permissionPreferences.getBoolean("requested", false),
                         ) -> {
-                            permissionPreferences.edit().putBoolean("requested", true).apply()
-                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            // 시스템 프롬프트 전에 Courmy 사전 안내부터. "허용" 에서만 프롬프트로 넘어간다.
+                            showPermissionPriming = true
                         }
 
                         else -> {
@@ -114,6 +117,17 @@ fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltView
                 showPermissionDialog = false
                 viewModel.onIntent(NotificationSettingsIntent.DismissError)
             },
+        )
+    }
+    if (showPermissionPriming) {
+        NotificationPermissionPrimingDialog(
+            onAllow = {
+                showPermissionPriming = false
+                // 시스템 프롬프트는 설치당 1회뿐이라 실제로 띄우는 이 시점에만 "요청함"으로 기록한다.
+                permissionPreferences.edit().putBoolean("requested", true).apply()
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            },
+            onDismiss = { showPermissionPriming = false },
         )
     }
 }
