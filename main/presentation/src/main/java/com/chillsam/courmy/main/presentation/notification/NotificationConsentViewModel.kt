@@ -22,6 +22,10 @@ class NotificationConsentViewModel
 
         override fun onIntent(intent: NotificationConsentIntent) {
             when (intent) {
+                NotificationConsentIntent.ToggleService -> {
+                    dispatch(NotificationConsentReducerEvent.ServiceToggled)
+                }
+
                 NotificationConsentIntent.ToggleMarketing -> {
                     dispatch(NotificationConsentReducerEvent.MarketingToggled)
                 }
@@ -38,7 +42,7 @@ class NotificationConsentViewModel
 
         private fun confirm() {
             val state = currentState
-            if (state.saving) return
+            if (!state.confirmEnabled) return
             dispatch(NotificationConsentReducerEvent.SaveStarted)
             viewModelScope.launch {
                 consent.save(
@@ -56,6 +60,10 @@ class NotificationConsentViewModel
             when (event) {
                 NotificationConsentReducerEvent.Shown -> {
                     state.copy(visible = true)
+                }
+
+                NotificationConsentReducerEvent.ServiceToggled -> {
+                    state.copy(serviceAgreed = !state.serviceAgreed)
                 }
 
                 NotificationConsentReducerEvent.MarketingToggled -> {
