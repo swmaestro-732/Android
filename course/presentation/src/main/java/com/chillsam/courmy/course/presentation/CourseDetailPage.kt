@@ -102,8 +102,8 @@ fun CourseDetailPage(
                         onCommentAuthorClick = { comment ->
                             if (comment.isMine) {
                                 actions.onMyProfileClick()
-                            } else if (comment.authorId > 0) {
-                                actions.onAuthorClick(comment.authorId.toString())
+                            } else if (comment.authorHandle.isNotBlank()) {
+                                actions.onAuthorClick(comment.authorHandle)
                             }
                         },
                     ),

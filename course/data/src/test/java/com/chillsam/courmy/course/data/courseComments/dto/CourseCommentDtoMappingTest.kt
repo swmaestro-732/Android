@@ -23,6 +23,7 @@ class CourseCommentDtoMappingTest {
                         "id": 12,
                         "authorId": 7,
                         "authorNickname": "내 닉네임",
+                        "authorHandle": "my_handle",
                         "authorProfileImageUrl": "https://example.com/me.png",
                         "content": "내 댓글",
                         "createdAt": "2026-11-02T04:01:52.940Z",
@@ -33,6 +34,7 @@ class CourseCommentDtoMappingTest {
                         "id": 11,
                         "authorId": 8,
                         "authorNickname": "다른 작성자",
+                        "authorHandle": "other_handle",
                         "authorProfileImageUrl": "https://example.com/other.png",
                         "content": "다른 댓글",
                         "isMine": false
@@ -51,6 +53,7 @@ class CourseCommentDtoMappingTest {
             listOf("https://example.com/me.png", "https://example.com/other.png"),
             page.items.map { it.authorProfileImageUrl },
         )
+        assertEquals(listOf("my_handle", "other_handle"), page.items.map { it.authorHandle })
         assertEquals(listOf(7L, 8L), page.items.map { it.authorId })
         assertTrue(page.items[0].isMine)
         assertFalse(page.items[1].isMine)
@@ -66,7 +69,7 @@ class CourseCommentDtoMappingTest {
                 {
                   "items": [
                     {"id": 2, "authorId": 7, "content": "이전 응답", "isMine": true},
-                    {"id": 1, "authorNickname": null, "authorProfileImageUrl": null, "content": "빈 프로필"}
+                    {"id": 1, "authorNickname": null, "authorHandle": null, "authorProfileImageUrl": null, "content": "빈 프로필"}
                   ],
                   "hasNext": false
                 }
@@ -75,7 +78,7 @@ class CourseCommentDtoMappingTest {
         val page = response.toVO()
 
         assertEquals(2, page.items.size)
-        assertEquals(listOf(7L, 0L), page.items.map { it.authorId })
+        assertEquals(listOf("", ""), page.items.map { it.authorHandle })
         assertEquals(listOf("", ""), page.items.map { it.authorNickname })
         assertEquals(listOf("", ""), page.items.map { it.authorProfileImageUrl })
         assertEquals(listOf("이전 응답", "빈 프로필"), page.items.map { it.content })

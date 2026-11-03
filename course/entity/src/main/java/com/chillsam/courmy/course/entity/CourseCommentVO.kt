@@ -12,6 +12,8 @@ data class CourseCommentVO(
     /** 내 댓글 여부. 수정·삭제 메뉴 노출 기준. */
     val isMine: Boolean = false,
     val authorNickname: String = "",
+    /** 타인 프로필 조회 키. 누락된 작성자는 프로필 이동을 제공하지 않는다. */
+    val authorHandle: String = "",
     val authorProfileImageUrl: String = "",
 )
 
