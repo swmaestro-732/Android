@@ -449,7 +449,8 @@ private fun ColumnScope.FullMapLayout(
                 address = address,
                 course = course,
                 onSelectPlace = onSelectPlace,
-                modifier = Modifier.align(Alignment.TopStart).statusBarsPadding(),
+                // 우상단 닫기(×) 버튼과 제목 카드가 겹치지 않게 오른쪽을 비운다(비-overview 요약과 동일 처리).
+                modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(end = 48.dp),
             )
             PlaceBottomOverlay(
                 // 전체 보기에서는 특정 장소의 팁이 위 코스 정보와 어긋나므로 감춘다.
