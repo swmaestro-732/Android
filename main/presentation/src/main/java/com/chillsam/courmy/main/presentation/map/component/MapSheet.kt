@@ -25,7 +25,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 private val SheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
 private val SheetElevation = 12.dp
 private val HandleWidth = 40.dp
-private val HandleHeight = 5.dp
+private val HandleHeight = 3.dp
 
 /** 손잡이를 살짝 꺾어 방향을 드러낼 때의 꺾임 깊이. */
 private val HandleBend = 4.dp

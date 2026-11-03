@@ -170,7 +170,8 @@ internal fun MapRankedPlaceRow(
                 .border(1.dp, if (isSelected) color.borderAccent else color.bgDefaultLevel1, CardShape)
                 .semantics { selected = isSelected }
                 .clickable(onClick = onClick)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                // 썸네일·주소가 "검색 결과" 헤더와 같은 x에서 시작하도록 좌우 안쪽 여백은 두지 않는다.
+                .padding(vertical = 12.dp),
         // 3줄까지 늘어나므로 순위·썸네일·북마크를 세로 가운데가 아닌 상단에 맞춘다.
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
