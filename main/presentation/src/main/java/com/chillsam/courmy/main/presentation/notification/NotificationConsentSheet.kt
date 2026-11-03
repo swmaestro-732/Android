@@ -46,8 +46,9 @@ private val HandleHeight = 4.dp
  *
  * 활동 알림(필수)에 동의해야 확인할 수 있어 바깥 탭·뒤로가기로는 닫히지 않고
  * 확인 버튼으로만 끝난다. 확인하면 동의 저장에 이어 **OS 알림 설정 획득까지** 진행한다:
- * 권한이 없으면 요청(Android 13+)하고, 요청할 수 없거나 거절되면 기기 설정 안내를 띄운 뒤 닫는다.
- * (시작 시 자동 요청은 동의 전에는 건너뛴다 — MainActivity)
+ * 권한이 없으면 요청(Android 13+)하고 답을 받으면 결과와 상관없이 닫는다(거절 직후에
+ * 기기 설정 안내를 겹쳐 띄우지 않는다). 요청 자체가 불가능한 상태(이전 거절·차단)면
+ * 기기 설정 안내를 한 번 띄운 뒤 닫는다. (시작 시 자동 요청은 동의 전에는 건너뛴다 — MainActivity)
  */
 @Composable
 fun NotificationConsentSheet(
@@ -58,13 +59,10 @@ fun NotificationConsentSheet(
     val permissionPreferences =
         remember(context) { context.getSharedPreferences("notification_permission", Context.MODE_PRIVATE) }
     val permissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            // 권한을 받아도 채널이 꺼져 있을 수 있어 표시 가능 여부로 다시 판정한다.
-            if (granted && NotificationManagerCompat.from(context).canShowActivityNotifications()) {
-                onIntent(NotificationConsentIntent.Finish)
-            } else {
-                onIntent(NotificationConsentIntent.PermissionBlocked)
-            }
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            // 방금 묻고 답을 받았으므로 결과와 상관없이 조용히 닫는다. 거절한 사용자에게
+            // 곧바로 기기 설정 안내를 또 띄우지 않는다 — 이후 변경은 설정 > 알림이 맡는다.
+            onIntent(NotificationConsentIntent.Finish)
         }
     // 동의 저장이 끝나면 OS 알림 설정 획득 단계로 넘어간다. 시트는 이 단계가 끝나야 닫힌다.
     LaunchedEffect(state.consentDone) {
@@ -84,7 +82,8 @@ fun NotificationConsentSheet(
             }
 
             else -> {
-                // 이전에 거절했거나 OS 에서 차단된 상태 — 기기 설정으로 안내한다.
+                // 프롬프트를 띄울 수 없는 상태(이전 거절·차단·12 이하에서 OS 꺼짐)에서 방금
+                // 알림을 받겠다고 동의했으므로, 유일한 수단인 기기 설정으로 안내한다.
                 onIntent(NotificationConsentIntent.PermissionBlocked)
             }
         }
