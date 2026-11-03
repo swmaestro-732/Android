@@ -1,0 +1,22 @@
+# 계획 생성 진입점과 카드 placeholder
+
+- 브랜치: `feat/SCRUM-735-plan-create-placeholder`
+- 변경: 계획 목록이 비면 `계획 생성하기` 카드(140dp 높이, 점선 테두리, 28dp 추가 아이콘)를 표시한다. 설명은 `가 보고 싶은 곳을 모아 계획을 세워 보세요`다. 카드 전체를 누르면 기존 `/courseCreate`에 `isPlan=true`로 진입한다.
+- 이미지가 없는 계획 카드(`plan-` 목록 ID)에 36dp 접은 지도 아이콘(`contentAccent`)과 연한 초록색 배경(`bgAccentSubtle`)을 표시한다. 기존 회색 빈칸을 대체하며 코스 카드의 이미지 정책은 바꾸지 않는다.
+- 서버 요청·계획 저장 조건·목록 오류 재시도는 기존 계약을 사용한다.
+
+## 화면 확인 — 2026-11-03
+
+실제 에뮬레이터에서 최신 Compose 구현을 촬영했다. 마이 프로필 실조회가 실패하여 임시 debug 진입점으로 예시 프로필·계획 상태를 주입했다. 임시 진입점은 커밋에서 제외했다. 로컬 촬영 APK의 appVersionCode는 기존 검증 기기와 같은 99999이며 출시 버전 변경이 아니다.
+
+1. [빈 계획 목록](empty.png): 예시 프로필·계획 0개, 생성 카드 표시.
+2. [계획 카드](filled.png): 예시 계획 2개, 최종 연한 초록색 배경·지도 아이콘.
+3. [생성 버튼 클릭 결과](create.png): 실제 버튼에서 `/courseCreate`·`isPlan=true` 전달을 확인하고 MainActivity의 기존 `계획하기` 화면 진입을 확인했다. 장소 추가·저장 요청은 제출하지 않았다.
+
+실데이터 계획 조회·생성 저장 왕복은 미검증이다. Courmy UI Flow의 기존 실데이터 이미지는 유지하고 예시임을 명시한 최신 캡처를 함께 기록한다.
+
+## 검증
+
+- `:main:presentation:testDebugUnitTest`: 63건 통과.
+- `:app:assembleDebug`, `:app:lintDebug`, `:main:presentation:detekt`: 통과(최종 배경색 변경 후 재확인).
+- 독립 읽기 전용 리뷰: 계획 라우트·아이콘 적용 범위·토큰 확인.

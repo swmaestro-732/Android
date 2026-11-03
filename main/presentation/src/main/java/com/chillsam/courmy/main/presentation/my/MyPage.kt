@@ -1,6 +1,5 @@
 package com.chillsam.courmy.main.presentation.my
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -157,29 +156,39 @@ private fun CreateFirstCourseCard(onClick: () -> Unit) {
     }
 }
 
-/** 계획이 없을 때의 안내. 계획을 세우는 자리가 아직 없어 여기서 진입점을 주지 않는다. */
+/** 계획이 없을 때 기존 계획 작성 흐름으로 연결한다. */
 @Composable
-private fun EmptyPlanCourses() {
+private fun CreateFirstPlanCard(onClick: () -> Unit) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp)
-                .height(EmptyCourseCardHeight),
+                .height(EmptyCourseCardHeight)
+                .clip(RoundedCornerShape(16.dp))
+                .dashedBorder(color = color.borderDefaultLevel1, cornerRadius = 16.dp)
+                .clickable(onClick = onClick),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_add_24),
+            contentDescription = null,
+            tint = color.contentAccent,
+            modifier = Modifier.size(28.dp),
+        )
+        Spacer(Modifier.height(8.dp))
         DsText(
-            text = "아직 세운 계획이 없어요",
+            text = "계획 생성하기",
             style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = color.contentDefaultLevel2,
+            color = color.contentAccent,
         )
         Spacer(Modifier.height(4.dp))
         DsText(
             text = "가 보고 싶은 곳을 모아 계획을 세워 보세요",
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = color.contentDefaultLevel3,
+            color = color.contentDefaultLevel2,
         )
     }
 }
@@ -288,9 +297,11 @@ fun MyContent(
                     )
                 }
 
-                // 계획은 세우는 자리가 아직 없어 만들기로 유도하지 않는다.
+                // 빈 계획 탭에서도 홈과 같은 계획 작성 화면으로 진입한다.
                 else -> {
-                    EmptyPlanCourses()
+                    CreateFirstPlanCard(
+                        onClick = { navigationHelper.navigateByRoute(CourseCreatePage.planRoute()) },
+                    )
                 }
             }
             Spacer(Modifier.height(20.dp))
