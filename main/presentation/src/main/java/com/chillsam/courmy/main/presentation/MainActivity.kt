@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -29,6 +30,7 @@ import com.chillsam.courmy.common.presentation.jank.JankReporter
 import com.chillsam.courmy.common.presentation.jank.LocalJankReporter
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.main.presentation.deeplink.resolveNewIntentRoute
+import com.chillsam.courmy.main.presentation.deeplink.resolveRoute
 import com.chillsam.courmy.main.presentation.deeplink.resolveStartStack
 import com.chillsam.courmy.main.presentation.navigation.RootComposable
 import com.chillsam.courmy.tti.TTIHelper
@@ -67,9 +69,22 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // App Link 진입 시 Intent.data 에서 시작 백스택을 구성한다.
+        // App Link 는 Intent.data, 알림 탭은 extras(활동=pendingPush / 일회성=link)에서 시작 스택을 만든다.
         pendingPush = readPush(savedInstanceState?.getBundle("pendingPush") ?: intent?.extras)
-        val startStack = resolveStartStack(if (pendingPush != null) null else intent?.data)
+        val pushLink = if (pendingPush == null) intent?.extras?.pushLinkUri() else null
+        val startStack =
+            resolveStartStack(
+                when {
+                    pendingPush != null -> null
+                    pushLink != null -> pushLink
+                    else -> intent?.data
+                },
+            )
+        // courmy 딥링크가 아닌 외부 link 는 브라우저로 연다. 회전 재실행을 막으려 소비 표시한다.
+        if (pushLink != null && pushLink.resolveRoute() == null) {
+            openExternalLink(pushLink)
+            intent?.removeExtra("link")
+        }
 
         // JankStats 는 DecorView 가 생성된 이후에만 만들 수 있다. setContent 가 DecorView 를
         // 보장하므로 lifecycle observer 안에서 lazy 하게 생성하고, tracking on/off 와 백그라운드
@@ -167,16 +182,30 @@ class MainActivity : FragmentActivity() {
             )
         }
 
+    /** 일회성(마케팅) 알림의 탭 대상. data 의 "link" 를 Uri 로 읽는다(없으면 null). */
+    private fun Bundle.pushLinkUri(): Uri? = getString("link")?.takeIf { it.isNotBlank() }?.let(Uri::parse)
+
+    /** courmy 라우트가 아닌 외부 링크를 외부 앱(브라우저 등)으로 연다. */
+    private fun openExternalLink(uri: Uri) {
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
 
-        readPush(intent.extras)?.let {
-            pendingPush = it
-            return
+        val push = readPush(intent.extras)
+        val link = if (push == null) intent.extras?.pushLinkUri() else null
+        when {
+            // 활동 알림 탭 → 대상 화면으로 이동(RootComposable 이 소비).
+            push != null -> pendingPush = push
+
+            // 일회성(마케팅) 알림 탭 → courmy 라우트면 인앱, 외부면 브라우저.
+            link != null -> link.resolveRoute()?.let(navigationHelper::navigateDeepLink) ?: openExternalLink(link)
+
+            // App Link 웜 스타트.
+            else -> intent.data?.let(::resolveNewIntentRoute)?.let(navigationHelper::navigateDeepLink)
         }
-        val route = intent.data?.let(::resolveNewIntentRoute) ?: return
-        navigationHelper.navigateDeepLink(route)
     }
 }
 
