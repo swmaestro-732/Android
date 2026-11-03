@@ -6,9 +6,13 @@ import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CheckInTracePlaceUseCase
 import com.chillsam.courmy.course.domain.EndCourseTraceUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
+import com.chillsam.courmy.course.domain.GetTraceRouteUseCase
 import com.chillsam.courmy.course.domain.StartCourseTraceUseCase
+import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.TraceVisitVO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -34,11 +38,13 @@ class CourseFollowViewModel
         private val startCourseTrace: StartCourseTraceUseCase,
         private val checkInTracePlace: CheckInTracePlaceUseCase,
         private val endCourseTrace: EndCourseTraceUseCase,
+        private val getTraceRoute: GetTraceRouteUseCase,
     ) : MviViewModel<CourseFollowIntent, CourseFollowUIState, CourseFollowReducerEvent>(
             CourseFollowUIState.empty,
         ) {
         private var loadJob: Job? = null
         private var startJob: Job? = null
+        private var routeJob: Job? = null
         private var courseId: Long? = null
 
         /** 서버가 발급한 따라가기 기록 id. 시작 기록이 실패하면 null 로 남아 이후 기록을 건너뛴다. */
@@ -154,11 +160,43 @@ class CourseFollowViewModel
                     runCatching { getCourseDetailUseCase(id) }
                         .onSuccess { detail ->
                             dispatch(CourseFollowReducerEvent.Loaded(detail))
+                            loadRoutes(detail)
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "따라가기 코스 로드 실패: courseId=$id", e)
                             dispatch(CourseFollowReducerEvent.LoadFailed("코스를 불러오지 못했어요."))
                         }
+                }
+        }
+
+        /**
+         * 코스를 받으면 좌표가 있는 연속 장소쌍마다 도보 경로를 **병렬로** 조회해 지도에 실제 경로를 채운다.
+         *
+         * 지도는 부가 정보라 한 구간이 실패해도 다른 구간·진행을 막지 않는다 — 실패는 구간별로 [RouteFailed]
+         * 로만 남기고(지도는 직선 폴백, 화면은 외부 지도 안내), 예외를 위로 던지지 않는다.
+         */
+        private fun loadRoutes(detail: CourseDetailVO) {
+            val segments =
+                detail.places
+                    .filter { it.latitude != null && it.longitude != null && it.placeId > 0 }
+                    .zipWithNext()
+                    .filter { (from, to) -> from.placeId != to.placeId }
+            if (segments.isEmpty()) return
+            routeJob?.cancel()
+            dispatch(CourseFollowReducerEvent.RoutesRequested(segments.map { it.first.placeId }))
+            routeJob =
+                viewModelScope.launch {
+                    segments.forEach { (from, to) ->
+                        launch {
+                            runCatching { getTraceRoute(from.placeId, to.placeId) }
+                                .onSuccess { dispatch(CourseFollowReducerEvent.RouteLoaded(from.placeId, it)) }
+                                .onFailure { e ->
+                                    if (e is CancellationException) throw e
+                                    Log.w(TAG, "도보 경로 조회 실패(직선 폴백): ${from.placeId}→${to.placeId}", e)
+                                    dispatch(CourseFollowReducerEvent.RouteFailed(from.placeId))
+                                }
+                        }
+                    }
                 }
         }
 
@@ -168,7 +206,21 @@ class CourseFollowViewModel
         ): CourseFollowUIState =
             when (event) {
                 CourseFollowReducerEvent.LoadStarted -> {
-                    state.copy(isLoading = true, errorMessage = null)
+                    state.copy(isLoading = true, errorMessage = null, routes = persistentMapOf())
+                }
+
+                is CourseFollowReducerEvent.RoutesRequested -> {
+                    state.copy(
+                        routes = event.fromPlaceIds.associateWith { FollowRouteStatus.Loading }.toPersistentMap(),
+                    )
+                }
+
+                is CourseFollowReducerEvent.RouteLoaded -> {
+                    state.copy(routes = state.routes.put(event.fromPlaceId, FollowRouteStatus.Ready(event.route)))
+                }
+
+                is CourseFollowReducerEvent.RouteFailed -> {
+                    state.copy(routes = state.routes.put(event.fromPlaceId, FollowRouteStatus.Failed))
                 }
 
                 is CourseFollowReducerEvent.Loaded -> {

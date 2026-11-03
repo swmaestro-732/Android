@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
+import com.chillsam.courmy.course.entity.RoutePointVO
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
@@ -73,6 +74,9 @@ data class RouteFitPadding(
  *
  * [onMapClick] 은 핀 밖 지도 영역을 눌렀을 때다. 미니맵처럼 지도 자체가 "눌러서 크게 보기"
  * 진입점인 자리에서 쓴다(핀 탭은 [onMarkerClick] 으로 따로 받는다).
+ *
+ * [routePaths] 는 **출발 장소 placeId** 로 색인한 실제 도보 경로 좌표다. 한 구간에 경로가 있으면 그 선을
+ * 실선으로 긋고, 없으면(미로드·도보 불가·조회 실패) 두 핀을 점선 직선으로 잇는다(폴백).
  */
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable
@@ -86,6 +90,7 @@ fun CourseRouteMap(
     fitPadding: RouteFitPadding = RouteFitPadding(),
     scrollEnabled: Boolean = true,
     onMapClick: (() -> Unit)? = null,
+    routePaths: Map<Long, List<LatLng>> = emptyMap(),
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val density = LocalDensity.current
@@ -144,6 +149,7 @@ fun CourseRouteMap(
             points = points,
             focusOrder = focusOrder,
             allFocused = overview,
+            routePaths = routePaths,
             colors =
                 RouteMarkerColors(
                     // 지도 배경과 겹쳐도 또렷하도록 경로선은 검정으로 둔다.
@@ -177,6 +183,12 @@ fun CourseDetailPlaceVO.latLngOrNull(): LatLng? {
     return LatLng(latitude, longitude)
 }
 
+/** 경로 폴리라인 좌표. 범위를 벗어난 값은 지도 SDK 네이티브 레이어를 죽일 수 있어 [latLngOrNull] 과 같은 기준으로 거른다. */
+fun RoutePointVO.latLngOrNull(): LatLng? {
+    if (latitude !in VALID_LATITUDE || longitude !in VALID_LONGITUDE) return null
+    return LatLng(latitude, longitude)
+}
+
 private val VALID_LATITUDE = -90.0..90.0
 private val VALID_LONGITUDE = -180.0..180.0
 
@@ -197,17 +209,28 @@ private fun RouteOverlays(
     points: List<Pair<CourseDetailPlaceVO, LatLng>>,
     focusOrder: Int,
     allFocused: Boolean,
+    routePaths: Map<Long, List<LatLng>>,
     colors: RouteMarkerColors,
     onMarkerClick: (CourseDetailPlaceVO) -> Unit,
 ) {
     val density = LocalDensity.current.density
-    if (points.size >= 2) {
-        PolylineOverlay(
-            coords = points.map { it.second },
-            width = 3.dp,
-            color = colors.line,
-            pattern = ROUTE_DASH_PATTERN,
-        )
+    // 구간마다: 실제 도보 경로가 있으면 실선으로, 없으면 두 핀을 점선 직선으로 잇는다(폴백).
+    points.zipWithNext().forEach { (from, to) ->
+        val path = routePaths[from.first.placeId]
+        if (path != null && path.size >= 2) {
+            PolylineOverlay(
+                coords = path,
+                width = 4.dp,
+                color = colors.line,
+            )
+        } else {
+            PolylineOverlay(
+                coords = listOf(from.second, to.second),
+                width = 3.dp,
+                color = colors.line,
+                pattern = ROUTE_DASH_PATTERN,
+            )
+        }
     }
     points.forEach { (place, position) ->
         // 지금 보고 있는 장소는 크고 진한 핀, 나머지는 작고 흐린 핀으로 찍어 어디를 보는지 알 수 있게 한다.

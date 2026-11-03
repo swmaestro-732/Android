@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,7 +41,9 @@ import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.presentation.component.CourseRouteMap
 import com.chillsam.courmy.course.presentation.component.latLngOrNull
+import com.chillsam.courmy.course.presentation.component.openExternalWalkingRoute
 import com.chillsam.courmy.course.presentation.component.toRoutePoints
+import com.naver.maps.geometry.LatLng
 import java.util.Locale
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -53,6 +56,9 @@ private val FOLLOW_PANEL_SHAPE = RoundedCornerShape(topStart = 20.dp, topEnd = 2
 
 /** 동선 목록이 지도를 다 밀어내지 않게 제한하는 높이. */
 private val ROUTE_LIST_MAX_HEIGHT = 230.dp
+
+/** 진행 중 하단 패널의 턴바이턴 안내 목록 최대 높이. 안내가 길어도 패널이 화면을 덮지 않게 한다. */
+private val ROUTE_GUIDE_MAX_HEIGHT = 140.dp
 
 /**
  * 따라가기 화면(FS-21). [CourseFollowPhase] 에 따라 세 모습을 오간다.
@@ -81,7 +87,7 @@ internal fun CourseFollowScreen(
     ) {
         when (state.phase) {
             CourseFollowPhase.PREVIEW -> {
-                PreviewPhase(detail = detail, onIntent = onIntent, onBack = onBack)
+                PreviewPhase(detail = detail, routes = state.routes, onIntent = onIntent, onBack = onBack)
             }
 
             CourseFollowPhase.TRACKING -> {
@@ -109,6 +115,7 @@ internal fun CourseFollowScreen(
 @Composable
 private fun ColumnScope.PreviewPhase(
     detail: CourseDetailVO,
+    routes: Map<Long, FollowRouteStatus>,
     onIntent: (CourseFollowIntent) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -121,7 +128,7 @@ private fun ColumnScope.PreviewPhase(
                 .joinToString(" · "),
         onBack = onBack,
     )
-    FollowMap(detail = detail, focusIndex = null, modifier = Modifier.weight(1f))
+    FollowMap(detail = detail, focusIndex = null, routes = routes, modifier = Modifier.weight(1f))
     Column(
         modifier =
             Modifier
@@ -169,7 +176,12 @@ private fun ColumnScope.TrackingPhase(
         subtitle = "",
         onBack = onBack,
     )
-    FollowMap(detail = detail, focusIndex = state.currentIndex, modifier = Modifier.weight(1f))
+    FollowMap(
+        detail = detail,
+        focusIndex = state.currentIndex,
+        routes = state.routes,
+        modifier = Modifier.weight(1f),
+    )
     Column(
         modifier =
             Modifier
@@ -191,6 +203,11 @@ private fun ColumnScope.TrackingPhase(
                 place = current,
                 stateText = current.walkToNextText?.let { "다음까지 $it" } ?: "마지막 스팟",
                 highlighted = true,
+            )
+            WalkingRouteSection(
+                status = state.currentRouteStatus,
+                current = current,
+                next = state.nextPlace,
             )
         }
         FollowPrimaryButton(
@@ -357,14 +374,16 @@ private fun FollowTopBar(
     }
 }
 
-/** 동선 지도. [focusIndex] 가 null 이면 전체 보기, 아니면 그 장소에 집중한다. */
+/** 동선 지도. [focusIndex] 가 null 이면 전체 보기, 아니면 그 장소에 집중한다. [routes] 로 실제 도보 경로를 실선으로 긋는다. */
 @Composable
 private fun FollowMap(
     detail: CourseDetailVO,
     focusIndex: Int?,
+    routes: Map<Long, FollowRouteStatus>,
     modifier: Modifier = Modifier,
 ) {
     val points = remember(detail.places) { detail.places.toRoutePoints() }
+    val routePaths = remember(routes) { routes.toRoutePaths() }
     val focusPlace = focusIndex?.let { detail.places.getOrNull(it) }
     val focus = focusPlace?.latLngOrNull() ?: points.firstOrNull()?.second
     Box(modifier = modifier.fillMaxWidth()) {
@@ -375,9 +394,173 @@ private fun FollowMap(
                 points = points,
                 overview = focusIndex == null,
                 onMarkerClick = {},
+                routePaths = routePaths,
             )
         }
     }
+}
+
+/** 경로 상태 맵을 지도용 폴리라인 좌표로 바꾼다 — 걸을 수 있고 좌표가 2개 이상인 구간만 실선으로 그린다. */
+private fun Map<Long, FollowRouteStatus>.toRoutePaths(): Map<Long, List<LatLng>> =
+    mapNotNull { (fromPlaceId, status) ->
+        val route = (status as? FollowRouteStatus.Ready)?.route?.takeIf { it.walkable } ?: return@mapNotNull null
+        val coords = route.path.mapNotNull { it.latLngOrNull() }
+        if (coords.size < 2) null else fromPlaceId to coords
+    }.toMap()
+
+/**
+ * 진행 중 "현재 → 다음" 구간의 상세 도보 경로.
+ * - 걸을 수 있으면 거리·시간과 Tmap 턴바이턴 안내를 보여 준다.
+ * - 도보 불가·조회 실패면 외부 지도(네이버 지도) 길안내로 넘기는 버튼을 보여 준다.
+ * - 조회 중·마지막 장소면 아무것도 그리지 않는다.
+ */
+@Composable
+private fun WalkingRouteSection(
+    status: FollowRouteStatus?,
+    current: CourseDetailPlaceVO,
+    next: CourseDetailPlaceVO?,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    when (status) {
+        null, FollowRouteStatus.Loading -> {
+            Unit
+        }
+
+        is FollowRouteStatus.Ready -> {
+            if (status.route.walkable && status.route.guides.isNotEmpty()) {
+                WalkingRouteGuides(route = status.route, nextName = next?.name.orEmpty())
+            } else {
+                ExternalRouteFallback(
+                    message = "이 구간은 앱에서 도보 경로를 그릴 수 없어요.",
+                    current = current,
+                    next = next,
+                )
+            }
+        }
+
+        FollowRouteStatus.Failed -> {
+            ExternalRouteFallback(
+                message = "도보 경로를 불러오지 못했어요.",
+                current = current,
+                next = next,
+            )
+        }
+    }
+    if (status == FollowRouteStatus.Loading) {
+        DsText(
+            text = "도보 경로 불러오는 중…",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel3,
+        )
+    }
+}
+
+/** 걸을 수 있는 구간: 거리·시간 헤더 + 턴바이턴 안내 목록(길면 스크롤). */
+@Composable
+private fun WalkingRouteGuides(
+    route: com.chillsam.courmy.course.entity.TraceRouteVO,
+    nextName: String,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val summary =
+            listOfNotNull(
+                nextName.takeIf { it.isNotBlank() }?.let { "$it 까지" },
+                routeDistanceText(route.distanceMeters),
+                route.durationMinutes?.let { "도보 ${it}분" },
+            ).joinToString(" · ")
+        DsText(
+            text = summary.ifBlank { "상세 도보 경로" },
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel0,
+        )
+        Column(
+            modifier =
+                Modifier
+                    .heightIn(max = ROUTE_GUIDE_MAX_HEIGHT)
+                    .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            route.guides.forEach { guide ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(color.contentAccent),
+                    )
+                    DsText(
+                        text = guide.description,
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 도보 경로를 앱에서 못 그릴 때: 안내 문구 + 네이버 지도 길안내 버튼. 좌표가 없으면 버튼은 숨긴다. */
+@Composable
+private fun ExternalRouteFallback(
+    message: String,
+    current: CourseDetailPlaceVO,
+    next: CourseDetailPlaceVO?,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val context = LocalContext.current
+    val fromLat = current.latitude
+    val fromLng = current.longitude
+    val toLat = next?.latitude
+    val toLng = next?.longitude
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        DsText(
+            text = message,
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = color.contentDefaultLevel3,
+        )
+        if (fromLat != null && fromLng != null && toLat != null && toLng != null) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .clip(FOLLOW_BUTTON_SHAPE)
+                        .border(1.dp, color.borderDefaultLevel1, FOLLOW_BUTTON_SHAPE)
+                        .clickable {
+                            context.openExternalWalkingRoute(
+                                fromLatitude = fromLat,
+                                fromLongitude = fromLng,
+                                fromName = current.name,
+                                toLatitude = toLat,
+                                toLongitude = toLng,
+                                toName = next.name,
+                            )
+                        },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                DsText(
+                    text = "네이버 지도로 길안내",
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentDefaultLevel0,
+                )
+            }
+        }
+    }
+}
+
+/** 도보 거리 표기: 1km 미만은 "320m", 이상은 "1.2km". null 이면 표기하지 않는다. */
+private fun routeDistanceText(meters: Int?): String? {
+    if (meters == null) return null
+    return if (meters < 1_000) "${meters}m" else String.format(Locale.US, "%.1fkm", meters / 1000.0)
 }
 
 /** 동선 목록 한 줄: 순번 배지 + 썸네일 + 이름·카테고리 + 상태. 진행 중 현재 장소는 테두리로 강조. */
