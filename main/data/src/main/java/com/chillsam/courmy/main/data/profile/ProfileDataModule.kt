@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.data.profile
 
 import android.content.Context
 import com.chillsam.courmy.common.data.auth.TokenStore
+import com.chillsam.courmy.main.data.area.LegalAreaCodeMapper
 import com.chillsam.courmy.main.domain.profile.ProfileRepository
 import dagger.Module
 import dagger.Provides
@@ -35,6 +36,7 @@ object ProfileDataModule {
     fun provideProfileRepository(
         dataSource: ProfileDataSource,
         tokenStore: TokenStore,
+        areaCodeMapper: LegalAreaCodeMapper,
         interestStore: InterestPreferencesDataStore,
-    ): ProfileRepository = ProfileRepositoryImpl(dataSource, tokenStore, interestStore)
+    ): ProfileRepository = ProfileRepositoryImpl(dataSource, tokenStore, areaCodeMapper, interestStore)
 }

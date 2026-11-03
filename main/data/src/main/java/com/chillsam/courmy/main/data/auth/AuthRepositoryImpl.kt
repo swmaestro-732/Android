@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.data.auth
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.common.data.push.DeviceRegistration
 import com.chillsam.courmy.common.entity.category.CourseTagVO
+import com.chillsam.courmy.main.data.area.LegalAreaCodeMapper
 import com.chillsam.courmy.main.data.auth.dto.LogoutRequest
 import com.chillsam.courmy.main.data.auth.dto.SignupRequest
 import com.chillsam.courmy.main.data.auth.dto.SocialLoginRequest
@@ -19,6 +20,7 @@ class AuthRepositoryImpl(
     private val dataSource: AuthDataSource,
     private val tokenStore: TokenStore,
     private val devices: DeviceRegistration,
+    private val areaCodeMapper: LegalAreaCodeMapper,
 ) : AuthRepository {
     override suspend fun socialLogin(
         provider: SocialProvider,
@@ -65,7 +67,7 @@ class AuthRepositoryImpl(
                             nickname = profile.nickname,
                             handle = profile.handle,
                             profileImageUrl = profile.profileImageUrl,
-                            areaCodes = profile.areaCodes.ifEmpty { null },
+                            areaCodes = areaCodeMapper.expand(profile.areaCodes).ifEmpty { null },
                             // 서버는 likeThemes 를 CourseCategory enum 이름(대문자)으로 검증한다 — 소문자 코드는 400.
                             likeThemes =
                                 profile.likeThemes

@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.data.profile
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.format.formatCount
+import com.chillsam.courmy.main.data.area.LegalAreaCodeMapper
 import com.chillsam.courmy.main.data.profile.dto.MyPageEnvelope
 import com.chillsam.courmy.main.data.profile.dto.MyPageScreenDTO
 import com.chillsam.courmy.main.data.profile.dto.UpdateProfileRequest
@@ -21,6 +22,7 @@ import com.chillsam.courmy.main.entity.user.UserProfileVO
 class ProfileRepositoryImpl(
     private val dataSource: ProfileDataSource,
     private val tokenStore: TokenStore,
+    private val areaCodeMapper: LegalAreaCodeMapper,
     private val interestStore: InterestPreferencesDataStore,
 ) : ProfileRepository {
     /**
@@ -54,9 +56,9 @@ class ProfileRepositoryImpl(
         interestStore.setThemes(tags.map { it.code })
     }
 
-    /** 서버에는 코드만 보낸다. 지역 이름은 화면 표시용이라 캐시에만 남는다. */
+    /** 서버에는 법정 읍·면·동 코드 배열, 캐시에는 화면의 압축된 선택과 이름을 보관한다. */
     override suspend fun saveInterestRegions(regions: List<AreaVO>) {
-        dataSource.updateProfile(UpdateProfileRequest(areaCodes = regions.map { it.code }))
+        dataSource.updateProfile(UpdateProfileRequest(areaCodes = areaCodeMapper.expand(regions.map { it.code })))
         interestStore.setRegions(regions)
     }
 

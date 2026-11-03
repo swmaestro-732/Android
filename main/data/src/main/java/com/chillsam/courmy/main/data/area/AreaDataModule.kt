@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.area
 
+import com.chillsam.courmy.main.domain.area.AreaMapRepository
 import com.chillsam.courmy.main.domain.area.AreaRepository
 import dagger.Module
 import dagger.Provides
@@ -12,6 +13,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AreaDataModule {
+    @Provides
+    @Singleton
+    fun provideAreaMapRepository(repository: AreaMapRepositoryImpl): AreaMapRepository = repository
+
     @Provides
     @Singleton
     fun provideAreaApiService(retrofit: Retrofit): AreaApiService = retrofit.create()

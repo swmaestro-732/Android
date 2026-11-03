@@ -16,7 +16,7 @@ class AuthRepositoryCancellationTest {
     private val source = mockk<AuthDataSource>()
     private val tokens = mockk<TokenStore>(relaxed = true)
     private val devices = mockk<DeviceRegistration>()
-    private val repository = AuthRepositoryImpl(source, tokens, devices)
+    private val repository = AuthRepositoryImpl(source, tokens, devices, mockk())
 
     @Test
     fun `logout cancellation still clears the local session`() =
