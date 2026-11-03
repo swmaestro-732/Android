@@ -59,31 +59,40 @@ fun NotificationSettingsPage(viewModel: NotificationSettingsViewModel = hiltView
         viewModel.onIntent(NotificationSettingsIntent.Refresh)
     }
     NotificationSettingsContent(
-        enabled = state.enabled && permissionGranted,
-        marketing = state.marketing,
-        night = state.night,
+        activity =
+            NotificationToggleState(
+                checked = state.enabled && permissionGranted,
+                onToggle = { enabled ->
+                    when {
+                        !enabled || permissionGranted -> {
+                            viewModel.onIntent(NotificationSettingsIntent.SetEnabled(enabled))
+                        }
+
+                        notifications.canRequestNotificationPermission(
+                            permissionPreferences.getBoolean("requested", false),
+                        ) -> {
+                            permissionPreferences.edit().putBoolean("requested", true).apply()
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+
+                        else -> {
+                            showPermissionDialog = true
+                        }
+                    }
+                },
+            ),
+        marketing =
+            NotificationToggleState(
+                checked = state.marketing,
+                onToggle = { viewModel.onIntent(NotificationSettingsIntent.SetMarketing(it)) },
+            ),
+        night =
+            NotificationToggleState(
+                checked = state.night,
+                onToggle = { viewModel.onIntent(NotificationSettingsIntent.SetNight(it)) },
+            ),
         saving = state.saving,
         onBack = navigation::navigateToBack,
-        onCheckedChange = { enabled ->
-            when {
-                !enabled || permissionGranted -> {
-                    viewModel.onIntent(NotificationSettingsIntent.SetEnabled(enabled))
-                }
-
-                notifications.canRequestNotificationPermission(
-                    permissionPreferences.getBoolean("requested", false),
-                ) -> {
-                    permissionPreferences.edit().putBoolean("requested", true).apply()
-                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-
-                else -> {
-                    showPermissionDialog = true
-                }
-            }
-        },
-        onMarketingChange = { viewModel.onIntent(NotificationSettingsIntent.SetMarketing(it)) },
-        onNightChange = { viewModel.onIntent(NotificationSettingsIntent.SetNight(it)) },
     )
     if (showPermissionDialog || state.error) {
         NotificationPermissionDialog(
@@ -123,15 +132,18 @@ private fun NotificationPermissionDialog(
     )
 }
 
+/** 설정 > 알림의 토글 한 행의 상태. (checked + 토글 콜백을 한 묶음으로 전달해 파라미터 수를 줄인다.) */
+internal data class NotificationToggleState(
+    val checked: Boolean,
+    val onToggle: (Boolean) -> Unit,
+)
+
 @Composable
 internal fun NotificationSettingsContent(
-    enabled: Boolean,
-    marketing: Boolean,
-    night: Boolean,
+    activity: NotificationToggleState,
+    marketing: NotificationToggleState,
+    night: NotificationToggleState,
     saving: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    onMarketingChange: (Boolean) -> Unit,
-    onNightChange: (Boolean) -> Unit,
     onBack: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -141,8 +153,8 @@ internal fun NotificationSettingsContent(
         NotificationToggleRow(
             title = "활동 알림",
             description = "내 코스의 좋아요와 댓글 소식을 받아요",
-            checked = enabled,
-            onToggle = { onCheckedChange(!enabled) },
+            checked = activity.checked,
+            onToggle = { activity.onToggle(!activity.checked) },
             enabled = !saving,
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
         )
@@ -150,8 +162,8 @@ internal fun NotificationSettingsContent(
         NotificationToggleRow(
             title = "광고 알림",
             description = "추천 코스와 이벤트 소식을 받아요",
-            checked = marketing,
-            onToggle = { onMarketingChange(!marketing) },
+            checked = marketing.checked,
+            onToggle = { marketing.onToggle(!marketing.checked) },
             enabled = !saving,
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
         )
@@ -160,8 +172,8 @@ internal fun NotificationSettingsContent(
         NotificationToggleRow(
             title = "야간에도 받기",
             description = "밤 9시부터 오전 8시까지도 받아요",
-            checked = night,
-            onToggle = { onNightChange(!night) },
+            checked = night.checked,
+            onToggle = { night.onToggle(!night.checked) },
             enabled = !saving,
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
         )
@@ -174,13 +186,10 @@ internal fun NotificationSettingsContent(
 private fun NotificationSettingsPreview() {
     DesignSystemTheme {
         NotificationSettingsContent(
-            enabled = true,
-            marketing = true,
-            night = false,
+            activity = NotificationToggleState(checked = true, onToggle = {}),
+            marketing = NotificationToggleState(checked = true, onToggle = {}),
+            night = NotificationToggleState(checked = false, onToggle = {}),
             saving = false,
-            onCheckedChange = {},
-            onMarketingChange = {},
-            onNightChange = {},
             onBack = {},
         )
     }

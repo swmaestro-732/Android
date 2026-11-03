@@ -146,11 +146,7 @@ fun HomePage(modifier: Modifier = Modifier) {
     }
 
     // 홈 최초 진입 시 알림 수신 동의를 받는다(SCRUM-725). 기기 단위라 게스트에게도 띄운다.
-    val consentViewModel: NotificationConsentViewModel = hiltViewModel()
-    val consentState by consentViewModel.uiState.collectAsStateWithLifecycle()
-    if (consentState.visible) {
-        NotificationConsentSheet(state = consentState, onIntent = consentViewModel::onIntent)
-    }
+    HomeNotificationConsent()
 
     Box(
         modifier =
@@ -274,6 +270,19 @@ fun HomePage(modifier: Modifier = Modifier) {
                 },
             )
         }
+    }
+}
+
+/**
+ * 홈 최초 진입 시 알림 수신 동의 시트(SCRUM-725). 기기 단위 1회 노출이라 게스트에게도 띄운다.
+ * 동의 상태·노출 여부는 [NotificationConsentViewModel] 이 가지므로 홈 본문과 분리해 둔다.
+ */
+@Composable
+private fun HomeNotificationConsent() {
+    val consentViewModel: NotificationConsentViewModel = hiltViewModel()
+    val consentState by consentViewModel.uiState.collectAsStateWithLifecycle()
+    if (consentState.visible) {
+        NotificationConsentSheet(state = consentState, onIntent = consentViewModel::onIntent)
     }
 }
 
