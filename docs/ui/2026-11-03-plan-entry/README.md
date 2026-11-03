@@ -2,7 +2,7 @@
 
 - 브랜치: `feat/SCRUM-735-plan-create-placeholder`
 - 변경: 계획 목록이 비면 `계획 생성하기` 카드(140dp 높이, 점선 테두리, 28dp 추가 아이콘)를 표시한다. 설명은 `가 보고 싶은 곳을 모아 계획을 세워 보세요`다. 카드 전체를 누르면 기존 `/courseCreate`에 `isPlan=true`로 진입한다.
-- 이미지가 없는 계획 카드(`plan-` 목록 ID)에 36dp 접은 지도 아이콘(`contentAccent`)과 장소 썸네일과 같은 선형 그라데이션 배경(`bgAccentSubtle` → `bgDefaultLevel1`, 좌상단 → 우하단)을 표시한다. 이미지 영역과 제목 사이는 1dp borderDefaultLevel1 구분선으로 나눈다. 기존 회색 빈칸을 대체하며 코스 카드의 이미지 정책은 바꾸지 않는다.
+- 이미지가 없는 계획 카드(`plan-` 목록 ID)에 36dp 접은 지도 아이콘(`contentAccent`)과 장소 썸네일과 같은 선형 그라데이션 배경(`bgAccentSubtle` → `bgDefaultLevel1`, 좌상단 → 우하단)을 표시한다. 이미지 영역과 제목 사이는 1dp 연한 초록색 구분선(borderAccent, alpha=0.3)으로 나눈다. 기존 회색 빈칸을 대체하며 코스 카드의 이미지 정책은 바꾸지 않는다.
 - 서버 요청·계획 저장 조건·목록 오류 재시도는 기존 계약을 사용한다.
 
 ## 화면 확인 — 2026-11-03

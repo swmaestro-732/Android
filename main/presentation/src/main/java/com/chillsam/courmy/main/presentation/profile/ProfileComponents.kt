@@ -397,7 +397,7 @@ private fun ProfileCourseCard(
             }
         }
         if (showPlanPlaceholder) {
-            HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel1)
+            HorizontalDivider(thickness = 1.dp, color = color.borderAccent.copy(alpha = 0.3f))
         }
         DsText(
             text = course.title,
