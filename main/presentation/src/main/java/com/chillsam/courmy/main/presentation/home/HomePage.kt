@@ -78,6 +78,7 @@ import com.chillsam.courmy.main.domain.search.SearchPage
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.entity.home.HomeNearbyPlaceVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
+import com.chillsam.courmy.main.presentation.FeatureFlags
 import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
@@ -95,12 +96,6 @@ import com.google.android.gms.location.LocationServices
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
-
-/**
- * 홈 "지역별 둘러보기" 섹션 노출 플래그. 지역별 코스 필터는 백엔드 선행이라, 서버가 준비되기 전까지
- * 숨기고 싶으면 false 로 둔다(true 면 타일 지도를 노출). 한 곳에서 false/true 로 켜고 끈다.
- */
-private const val REGION_BROWSE_ENABLED = true
 
 /** 위치 권한·GPS 가 모두 켜져 있으면 마지막 위치를 받아 [onLocation] 으로 넘긴다(근처 저장 장소 기준점). */
 @Composable
@@ -273,7 +268,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
-            if (REGION_BROWSE_ENABLED) {
+            if (FeatureFlags.REGION_BROWSE_ENABLED) {
                 item {
                     RegionBrowseSection(
                         // 지역을 누르면 그 시·도의 "{지역} 코스" 목록으로 가서 세부 지역(구·군) 칩으로 더 좁힌다.
