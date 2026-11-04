@@ -245,7 +245,7 @@ private fun RecommendedTopBar(
     val color = DesignSystemThemeImpl.designSystemColor
     Column(Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -265,7 +265,8 @@ private fun RecommendedTopBar(
             modifier =
                 Modifier
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+                    .padding(horizontal = ScreenHorizontalPadding)
+                    .padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (regionFilter != null) {
