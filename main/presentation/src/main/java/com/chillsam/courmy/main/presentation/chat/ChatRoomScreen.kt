@@ -37,6 +37,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 /** 채팅방 UI: 뒤로가기 상단바(제목·부제) + 말풍선 목록 + 하단 입력창. 네비게이션/ViewModel 을 모르는 순수 표시 레이어. */
@@ -48,6 +49,8 @@ internal fun ChatRoomScreen(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    // 채팅방은 메시지 영역과 상단바를 같은 회색으로 통일했으므로 상태바도 bgDefaultLevel0로 맞춘다.
+    StatusBarColor(color.bgDefaultLevel0)
     val listState = rememberLazyListState()
 
     // 메시지가 늘면 항상 마지막 말풍선이 보이도록 끝으로 스크롤한다(전송 직후·최초 로딩 포함).

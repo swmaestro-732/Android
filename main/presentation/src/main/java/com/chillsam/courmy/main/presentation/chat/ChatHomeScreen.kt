@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 /** 채팅홈 UI: 상단바(채팅·동네) + 세그먼트 탭(참여 중 / 동네 채팅방) + 목록. 행을 누르면 [onRoomEnter]. */
@@ -45,6 +46,8 @@ internal fun ChatHomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    // 채팅홈은 흰 배경이라 상태바도 흰색으로 맞춘다(미지정 시 기본값 bgDefaultLevel0 회색).
+    StatusBarColor(color.bgDefaultLevel1)
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1)) {
         ChatHomeTopBar(region = uiState.region)
         ChatHomeTabRow(
