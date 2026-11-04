@@ -49,8 +49,8 @@ internal fun ChatRoomScreen(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    // 채팅방은 메시지 영역과 상단바를 같은 회색으로 통일했으므로 상태바도 bgDefaultLevel0로 맞춘다.
-    StatusBarColor(color.bgDefaultLevel0)
+    // 채팅방 배경을 흰색으로 통일했으므로 상태바도 bgDefaultLevel1(흰색)로 맞춘다.
+    StatusBarColor(color.bgDefaultLevel1)
     val listState = rememberLazyListState()
 
     // 메시지가 늘면 항상 마지막 말풍선이 보이도록 끝으로 스크롤한다(전송 직후·최초 로딩 포함).
@@ -60,12 +60,12 @@ internal fun ChatRoomScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
+    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1)) {
         ChatRoomTopBar(title = uiState.roomTitle, subtitle = uiState.subtitle, onBack = onBack)
         HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
         LazyColumn(
             state = listState,
-            modifier = Modifier.weight(1f).fillMaxWidth().background(color.bgDefaultLevel0),
+            modifier = Modifier.weight(1f).fillMaxWidth().background(color.bgDefaultLevel1),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -92,7 +92,7 @@ private fun ChatRoomTopBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(color.bgDefaultLevel0)
+                .background(color.bgDefaultLevel1)
                 .statusBarsPadding()
                 .height(56.dp)
                 .padding(horizontal = 4.dp),
@@ -163,7 +163,7 @@ private fun ChatBubble(message: ChatMessageUi) {
                     Modifier
                         .widthIn(max = 264.dp)
                         .clip(bubbleShape)
-                        .background(if (message.fromMe) color.bgAccent else color.bgDefaultLevel1)
+                        .background(if (message.fromMe) color.bgAccent else color.bgDefaultLevel0)
                         .padding(horizontal = 14.dp, vertical = 10.dp),
             ) {
                 DsText(
