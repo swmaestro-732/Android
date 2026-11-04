@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.data.courseDetail.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.time.toRelativeTimeText
@@ -95,6 +96,7 @@ data class CoursePlaceDTO(
     val categories: List<String>? = null,
     val location: CoursePlaceLocationDTO? = null,
     val images: List<CoursePlaceImageDTO>? = null,
+    val detailCategory: String? = null,
 )
 
 @Serializable
@@ -230,6 +232,7 @@ private fun CoursePlaceDTO.toVO(): CourseDetailPlaceVO {
         order = (orderNo ?: 0) + 1,
         name = name.orEmpty(),
         category = categories.toPlaceCategoryLabel(SEPARATOR),
+        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
         photoCountText = "1/${urls.size.coerceAtLeast(1)}",
         tip = caption.orEmpty(),
         imageUrls = urls,

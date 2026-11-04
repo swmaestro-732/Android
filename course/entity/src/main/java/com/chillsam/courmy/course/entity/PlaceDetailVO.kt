@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.entity
 
 import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import kotlinx.serialization.Serializable
 
 /**
@@ -31,6 +32,7 @@ data class PlaceDetailVO(
     val isSaved: Boolean = false,
     val categories: List<PlaceCategoryVO> = emptyList(),
     val openingHours: List<String> = emptyList(),
+    val detailCategory: PlaceDetailCategoryVO? = null,
 ) {
     /** 지도·길찾기를 그릴 수 있는지. 위경도가 모두 있어야 한다. */
     val hasLocation: Boolean

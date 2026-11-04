@@ -69,6 +69,7 @@ internal fun MapPlaceCarouselCard(
             PlaceThumbnail(
                 url = place.thumbnailUrl,
                 category = place.category,
+                detailCategory = place.detailCategory,
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -123,6 +124,7 @@ internal fun MapPlaceDetailCard(
         PlaceThumbnail(
             url = place.thumbnailUrl,
             category = place.category,
+            detailCategory = place.detailCategory,
             modifier = Modifier.size(72.dp),
             shape = ThumbShape,
         )
@@ -176,6 +178,7 @@ internal fun MapRankedPlaceRow(
         PlaceThumbnail(
             url = place.thumbnailUrl,
             category = place.category,
+            detailCategory = place.detailCategory,
             modifier = Modifier.size(54.dp),
             shape = ThumbShape,
         )

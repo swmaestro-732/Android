@@ -52,6 +52,7 @@ fun SavedPlaceCard(
         PlaceThumbnail(
             url = place.imageUrl,
             category = place.categoryLabel,
+            detailCategory = place.detailCategory,
             modifier = Modifier.size(64.dp),
             shape = RoundedCornerShape(12.dp),
         )

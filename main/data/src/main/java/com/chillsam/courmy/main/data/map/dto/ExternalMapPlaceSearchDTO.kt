@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.map.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
@@ -27,6 +28,8 @@ data class ExternalMapPlaceSearchItemDTO(
     val address: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    /** 선택 필드 선연동: 서버 지원 전에는 누락될 수 있다. */
+    val detailCategory: String? = null,
 )
 
 /** 외부 검색은 커서를 제공하지 않는다. 평점·사진·저장 여부는 응답에 없어 기본값을 유지한다. */
@@ -41,6 +44,7 @@ internal fun ExternalMapPlaceSearchDTO.toPageVO(): CursorPageVO<MapPlaceVO> =
                     MapPlaceVO(
                         id = requireNotNull(place.id),
                         name = place.name.orEmpty(),
+                        detailCategory = PlaceDetailCategoryVO.fromCode(place.detailCategory),
                         category = place.category.toPlaceCategoryLabel(),
                         address = address?.takeIf { it.isNotBlank() }.orEmpty(),
                         latitude = place.latitude?.takeIf { place.longitude != null },

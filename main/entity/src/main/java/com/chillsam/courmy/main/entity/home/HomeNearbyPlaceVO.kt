@@ -1,5 +1,7 @@
 package com.chillsam.courmy.main.entity.home
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
+
 /**
  * 홈(FS-09) "근처 저장 장소" 카드 1건. `GET /service/v2/home` 의 `nearbySavedPlaces` 를 변환한 결과다.
  *
@@ -20,4 +22,5 @@ data class HomeNearbyPlaceVO(
     /** 상세 주소(예: "서울 성동구 성수이로7길 ..."). 서버가 주지 않으면 빈 문자열이며 주소 줄을 숨긴다. */
     val address: String = "",
     val visited: Boolean = false,
+    val detailCategory: PlaceDetailCategoryVO? = null,
 )

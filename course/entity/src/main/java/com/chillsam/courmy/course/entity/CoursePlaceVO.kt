@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.entity
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import kotlinx.serialization.Serializable
 
 /**
@@ -36,6 +37,7 @@ data class CoursePlaceVO(
     val walkingMinutes: Int? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val detailCategory: PlaceDetailCategoryVO? = null,
 ) {
     /** 도보 시간 계산에 넣을 수 있는지. 좌표가 한쪽만 있으면 쓸 수 없다. */
     val hasLocation: Boolean

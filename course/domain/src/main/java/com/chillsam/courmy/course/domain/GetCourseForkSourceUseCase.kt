@@ -43,6 +43,7 @@ private fun CourseDetailPlaceVO.toForkPlace(): CoursePlaceVO =
         id = placeId.toString(),
         name = name,
         category = category,
+        detailCategory = detailCategory,
         walkingMinutes = walkingMinutesToNext,
         walkText = walkToNextText.orEmpty(),
         latitude = latitude,

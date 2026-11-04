@@ -400,6 +400,7 @@ private fun PlanPlaceDetail(
             place.copy(
                 name = state.place?.name?.takeIf { it.isNotBlank() } ?: place.name,
                 category = state.place?.category?.takeIf { it.isNotBlank() } ?: place.category,
+                detailCategory = state.place?.detailCategory ?: place.detailCategory,
                 latitude = state.place?.latitude ?: place.latitude,
                 longitude = state.place?.longitude ?: place.longitude,
             ),
@@ -423,6 +424,7 @@ private fun PlanDetailVO.toDisplayPlaces(): List<CourseDetailPlaceVO> =
             order = index + 1,
             name = place.name.ifBlank { "장소 정보를 불러오지 못했어요" },
             category = place.categoryLabel,
+            detailCategory = place.detailCategory,
             photoCountText = "",
             tip = place.memo,
             latitude = place.latitude,
