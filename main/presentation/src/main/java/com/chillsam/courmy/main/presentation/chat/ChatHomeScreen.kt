@@ -206,7 +206,7 @@ private fun ConversationRow(
         Column(horizontalAlignment = Alignment.End) {
             DsText(
                 text = conversation.time,
-                style = DesignSystemThemeImpl.typeScale.textExtraXS,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
             if (conversation.unreadCount > 0) {
@@ -305,7 +305,7 @@ private fun RegionChip(text: String) {
     ) {
         DsText(
             text = text,
-            style = DesignSystemThemeImpl.typeScale.textExtraXS,
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentAccent,
         )
     }
@@ -324,7 +324,7 @@ private fun UnreadBadge(count: Int) {
     ) {
         DsText(
             text = if (count > 99) "99+" else count.toString(),
-            style = DesignSystemThemeImpl.typeScale.textExtraXS,
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentOnAccent,
         )
     }

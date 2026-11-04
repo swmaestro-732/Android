@@ -57,7 +57,7 @@ internal fun ChatRoomScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1)) {
+    Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         ChatRoomTopBar(title = uiState.roomTitle, subtitle = uiState.subtitle, onBack = onBack)
         HorizontalDivider(thickness = 1.dp, color = color.borderDefaultLevel0)
         LazyColumn(
@@ -89,7 +89,7 @@ private fun ChatRoomTopBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(color.bgDefaultLevel1)
+                .background(color.bgDefaultLevel0)
                 .statusBarsPadding()
                 .height(56.dp)
                 .padding(horizontal = 4.dp),
@@ -174,7 +174,7 @@ private fun ChatBubble(message: ChatMessageUi) {
             Spacer(Modifier.height(4.dp))
             DsText(
                 text = message.time,
-                style = DesignSystemThemeImpl.typeScale.textExtraXS,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
         }
