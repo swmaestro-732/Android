@@ -21,9 +21,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.domain.helper.NavigationHelper
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.domain.chat.ChatPage
+import com.chillsam.courmy.main.domain.home.HomePage
+import com.chillsam.courmy.main.domain.map.MapPage
+import com.chillsam.courmy.main.domain.my.MyPage
+import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.presentation.FeatureFlags
 
 internal val BottomBarHeight = 60.dp
@@ -47,6 +53,26 @@ enum class MainTab(
     CHAT(R.drawable.ic_tab_chat_24, R.string.home_nav_chat),
     SAVED(R.drawable.ic_tab_bookmark_24, R.string.home_nav_saved),
     MY(R.drawable.ic_tab_person_24, R.string.home_nav_my),
+}
+
+/**
+ * 하단 탭을 누르면 그 메인 화면으로 이동한다. 현재 탭([from])을 다시 누르면 아무것도 하지 않는다.
+ * 각 메인 화면의 [CourmyBottomBar] `onTabSelected` 에서 공유해, 화면마다 반복되던 when 분기를 없앤다.
+ */
+internal fun NavigationHelper.navigateToMainTab(
+    from: MainTab,
+    to: MainTab,
+) {
+    if (to == from) return
+    navigateTo(
+        when (to) {
+            MainTab.HOME -> HomePage
+            MainTab.MAP -> MapPage
+            MainTab.CHAT -> ChatPage
+            MainTab.SAVED -> SavedPage
+            MainTab.MY -> MyPage
+        },
+    )
 }
 
 /**
