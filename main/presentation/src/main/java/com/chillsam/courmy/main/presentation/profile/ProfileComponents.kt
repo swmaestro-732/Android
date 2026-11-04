@@ -67,6 +67,8 @@ private val AVATAR_SHADOW_ELEVATION = 14.dp
  * @param bio null 이면 소개 줄 자체를 두지 않고(서버가 소개를 주지 않는 타유저 프로필),
  *   빈 문자열이면 "아직 소개가 없어요" 안내를 옅게 표시한다.
  * @param actions 우상단 버튼 슬롯([ProfileHeaderIconButton] 을 넣는다).
+ * @param primaryAction 신원 줄·소개 아래 전체 폭 슬롯. 타유저 프로필의 팔로우 버튼 등 화면의
+ *   주 동작을 넣는다. null 이면 그리지 않는다(마이 화면).
  */
 @Composable
 fun ProfileHeader(
@@ -80,6 +82,7 @@ fun ProfileHeader(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     bio: String? = null,
+    primaryAction: @Composable (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -147,9 +150,7 @@ fun ProfileHeader(
             }
         }
 
-        if (bio == null) {
-            Spacer(Modifier.height(20.dp))
-        } else {
+        if (bio != null) {
             // 소개가 없으면 빈 줄 대신 안내 문구를 옅게 표시해, 편집으로 채울 수 있음을 알린다.
             val hasBio = bio.isNotBlank()
             DsText(
@@ -157,9 +158,17 @@ fun ProfileHeader(
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = if (hasBio) color.contentDefaultLevel1 else color.contentDefaultLevel3,
                 maxLines = 2,
-                modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 20.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
             )
         }
+
+        // 주 동작(타유저 프로필 팔로우 버튼)은 신원 줄·소개 아래 전체 폭으로 둔다.
+        primaryAction?.let { action ->
+            Spacer(Modifier.height(if (bio != null) 16.dp else 20.dp))
+            action()
+        }
+
+        Spacer(Modifier.height(20.dp))
     }
 }
 
