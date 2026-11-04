@@ -295,12 +295,6 @@ fun PlaceDetailSheet(
                         onDismiss = animatedDismiss,
                         onDeleteReview = onDeleteReview,
                         onWriteReview = { isWriting = true },
-                        onOverview =
-                            if (course != null) {
-                                { overview = true }
-                            } else {
-                                null
-                            },
                     )
                 }
             }
@@ -456,7 +450,8 @@ private fun ColumnScope.FullMapLayout(
                 address = address,
                 course = course,
                 onSelectPlace = onSelectPlace,
-                modifier = Modifier.align(Alignment.TopStart).statusBarsPadding(),
+                // 우상단 닫기(×) 버튼과 제목 카드가 겹치지 않게 오른쪽을 비운다(비-overview 요약과 동일 처리).
+                modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(end = 48.dp),
             )
             PlaceBottomOverlay(
                 // 전체 보기에서는 특정 장소의 팁이 위 코스 정보와 어긋나므로 감춘다.
@@ -554,7 +549,6 @@ private fun ColumnScope.PlaceInfoLayout(
     onDismiss: () -> Unit,
     onDeleteReview: (Long) -> Unit = {},
     onWriteReview: () -> Unit,
-    onOverview: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val reviewItems = reviews?.reviews.orEmpty()
@@ -591,14 +585,7 @@ private fun ColumnScope.PlaceInfoLayout(
         }
         Spacer(Modifier.height(16.dp))
         PlaceInfoActions(coursePlace = coursePlace, isSaved = isSaved, onToggleSave = onToggleSave)
-        if (onOverview != null) {
-            DsText(
-                text = "코스 한눈에 보기",
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentAccent,
-                modifier = Modifier.clickable(onClick = onOverview).padding(vertical = 12.dp),
-            )
-        }
+        // SCRUM-775: 장소 바텀시트의 '코스 한눈에 보기' 링크 제거. 주소·영업정보는 PlaceInfoCards 로 보여준다.
         PlaceInfoCards(address = address, openingHours = openingHours)
         Spacer(Modifier.height(22.dp))
         HorizontalDivider(color = color.borderDefaultLevel0)
