@@ -29,6 +29,8 @@ import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.course.presentation.PlanDetailPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.map.searchBounds
+import com.chillsam.courmy.main.presentation.chat.ChatPage
+import com.chillsam.courmy.main.presentation.chat.ChatRoomPage
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.home.RecommendedCoursesPage
@@ -64,6 +66,8 @@ import com.chillsam.courmy.course.domain.CourseFollowPage as CourseFollowRoute
 import com.chillsam.courmy.course.domain.CourseReviewListPage as CourseReviewListRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.course.domain.PlanDetailPage as PlanDetailRoute
+import com.chillsam.courmy.main.domain.chat.ChatPage as ChatRoute
+import com.chillsam.courmy.main.domain.chat.ChatRoomPage as ChatRoomRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage as RecommendedCoursesRoute
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
@@ -221,6 +225,26 @@ val appRoutes: List<AppRoute> =
             path = MapRoute.PATH,
             isBottomTab = true,
             render = { MapPage() },
+        ),
+        // 채팅 탭. 하단 네비게이션 가운데 탭으로 진입하는 채팅홈(대화 목록).
+        AppRoute(
+            path = ChatRoute.PATH,
+            isBottomTab = true,
+            render = { ChatPage() },
+        ),
+        // 채팅방. 채팅홈 목록에서 대화를 눌러 진입한다(서버 연동 전 UI).
+        AppRoute(
+            path = ChatRoomRoute.PATH,
+            syntheticStack = { args ->
+                listOf(GenericNavKey(ChatRoute.PATH), GenericNavKey(ChatRoomRoute.PATH, args))
+            },
+            render = { args ->
+                val navigationHelper = LocalNavigationHelper.current
+                ChatRoomPage(
+                    roomId = args[ChatRoomRoute.ARG_ROOM_ID]?.toLongOrNull() ?: 0L,
+                    onBack = { navigationHelper.navigateToBack() },
+                )
+            },
         ),
         AppRoute(
             path = MapSearchResultRoute.PATH,

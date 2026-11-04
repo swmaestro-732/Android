@@ -68,6 +68,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.domain.DraftListPage
+import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
@@ -322,6 +323,8 @@ private fun HomeBottomBar(
                 MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
 
                 MainTab.MAP -> navigationHelper.navigateTo(MapPage)
+
+                MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
 
                 MainTab.HOME -> Unit
             }

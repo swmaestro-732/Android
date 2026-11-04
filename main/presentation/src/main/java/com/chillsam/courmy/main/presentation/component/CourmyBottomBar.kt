@@ -29,7 +29,7 @@ internal val BottomBarHeight = 60.dp
 private val TabIconSize = 24.dp
 
 /**
- * 앱 공용 하단 탭바. 홈·지도·저장·마이 하단 네비게이션 목적지에서 공유한다.
+ * 앱 공용 하단 탭바. 홈·지도·채팅·저장·마이 하단 네비게이션 목적지에서 공유한다.
  * 지도는 목적지 화면이 붙기 전까지 탭만 노출하고, route가 생기면 호출부에서 연결한다.
  */
 enum class MainTab(
@@ -39,7 +39,8 @@ enum class MainTab(
 ) {
     HOME(R.drawable.ic_tab_home_24, R.string.home_nav_home),
     MAP(R.drawable.ic_tab_map_24, R.string.home_nav_map),
-    SAVED(R.drawable.ic_tab_bookmark_24, R.string.home_nav_saved, R.drawable.ic_bookmark_filled_24),
+    CHAT(R.drawable.ic_tab_chat_24, R.string.home_nav_chat),
+    SAVED(R.drawable.ic_tab_bookmark_24, R.string.home_nav_saved),
     MY(R.drawable.ic_tab_person_24, R.string.home_nav_my),
 }
 

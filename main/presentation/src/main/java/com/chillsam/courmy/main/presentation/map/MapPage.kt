@@ -14,6 +14,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
+import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
@@ -93,6 +94,10 @@ fun MapPage(
                     // 그 화면에는 탭바가 없어 뒤로가기 말고는 빠져나갈 길도 없다.
                     MainTab.MY -> {
                         navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
+                    }
+
+                    MainTab.CHAT -> {
+                        navigationHelper.navigateTo(ChatPage)
                     }
 
                     MainTab.MAP -> {
