@@ -9,10 +9,9 @@ import kotlinx.serialization.Serializable
  * 마이·프로필(FS-15) 표시 데이터(VO). `GET /service/v1/mypage` 응답을 data 레이어의
  * `toVO()`에서 변환한 결과이며, presentation 은 이 타입만 사용한다(DTO 미노출).
  *
- * TODO-API-SPEC: [interestThemes]·[interestRegions] 는 서버가 저장은 하지만
- * (`SignupRequest`·`UpdateProfileRequest` 의 `likeThemes`·`areaCodes`) 마이페이지 응답에는
- * 내려오지 않아, 조회는 기기 캐시(InterestPreferencesDataStore)로 대신한다.
- * 응답에 실리면 병합과 로컬 캐시를 함께 지운다. [wiki-needed]
+ * 편집 필드와 [interestThemes]·[interestRegions]는 `GET /api/v1/users`에서 읽는다.
+ * data 레이어에서 테마 코드를 정규화하고 법정동 목록의 완전한 상위 범위를 묶는다.
+ * 코스·카운트는 마이페이지 BFF 값을 유지한다.
  *
  * [interestThemes] 는 코스 태그 **코드**(`date` …)다 — 표시할 때
  * `CourseTagVO.labelOf` 로 라벨을 얻는다.

@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,10 +32,13 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.presentation.component.PlaceRowsSkeleton
 import com.chillsam.courmy.main.presentation.home.FeedMessage
 import com.chillsam.courmy.main.presentation.map.component.MapBottomSheet
 import com.chillsam.courmy.main.presentation.map.component.MapCanvas
+import com.chillsam.courmy.main.presentation.map.component.MapChipRow
 import com.chillsam.courmy.main.presentation.map.component.MapCircleIconButton
 import com.chillsam.courmy.main.presentation.map.component.MapPlaceDetailCard
 import com.chillsam.courmy.main.presentation.map.component.MapRankedPlaceRow
@@ -46,6 +49,8 @@ import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.rememberFusedLocationSource
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 
 private val ScreenHorizontalPadding = 16.dp
 private val ControlBottomGap = 12.dp
@@ -65,11 +70,15 @@ fun MapSearchResultScreen(
     uiState: MapSearchResultUIState,
     actions: MapSearchResultActions,
     modifier: Modifier = Modifier,
+    initialLatitude: Double? = null,
+    initialLongitude: Double? = null,
+    initialBounds: MapBounds? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val isList = uiState.sheetMode == MapSheetMode.LIST
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val listSheetHeight = screenHeight * LIST_SHEET_EXPANDED_RATIO
+    val categoryLabels = remember { MapCategory.entries.map { it.label() }.toImmutableList() }
 
     // 내 위치 버튼은 지도 탭과 같은 기기 위치 추적(SCRUM-634). 초기 카메라는 검색 결과가
     // 주인공이라 결과 쪽에 두고, 추적은 버튼을 눌렀을 때만 켠다.
@@ -80,10 +89,18 @@ fun MapSearchResultScreen(
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         MapCanvas(
             places = uiState.places,
-            clusters = emptyList(),
-            showAllPlaces = true,
+            cameraMove = uiState.cameraMove,
+            initialBounds = initialBounds,
+            hidePins = uiState.isCameraMoving || uiState.isLoading,
+            onCameraMoving = actions.onCameraMoving,
+            onDestinationReached = actions.onDestinationReached,
+            clusters = uiState.clusters,
+            onBoundsChanged = actions.onBoundsChanged,
             selectedPlaceId = uiState.selectedPlaceId,
-            initialPosition = remember { LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE) },
+            initialPosition =
+                remember(initialLatitude, initialLongitude) {
+                    searchInitialPosition(initialLatitude, initialLongitude)
+                },
             onPlaceClick = actions.onPlaceSelect,
             onMapClick = { actions.onPlaceSelect(null) },
             contentPadding = PaddingValues(top = 100.dp, bottom = if (isList) listSheetHeight else MarkerSheetInset),
@@ -110,6 +127,7 @@ fun MapSearchResultScreen(
                         .fillMaxWidth()
                         .padding(horizontal = ScreenHorizontalPadding, vertical = 8.dp),
             )
+            SearchCategoryChips(uiState = uiState, actions = actions, labels = categoryLabels)
         }
 
         MapControlsRow(
@@ -122,15 +140,19 @@ fun MapSearchResultScreen(
                     .padding(horizontal = ScreenHorizontalPadding, vertical = ControlBottomGap),
         )
 
-        if (uiState.places.isEmpty()) {
+        if (uiState.isCameraMoving || uiState.isLoading || uiState.places.isEmpty()) {
             MapBottomSheet(modifier = Modifier.align(Alignment.BottomCenter)) {
-                if (uiState.isLoading) {
+                if (uiState.isCameraMoving || uiState.isLoading) {
                     PlaceRowsSkeleton(
                         Modifier.padding(horizontal = SheetHorizontalPadding, vertical = 12.dp),
                         count = 1,
                     )
                 } else {
-                    FeedMessage(uiState.errorMessage ?: "검색 결과가 없어요", uiState.errorMessage?.let { actions.onRetry })
+                    FeedMessage(
+                        uiState.errorMessage
+                            ?: if (uiState.clusters.isNotEmpty()) "지도를 확대해 장소를 확인해 주세요" else "검색 결과가 없어요",
+                        uiState.errorMessage?.let { actions.onRetry },
+                    )
                 }
             }
         } else if (isList) {
@@ -147,6 +169,25 @@ fun MapSearchResultScreen(
             )
         }
     }
+}
+
+/**
+ * 지도 탭과 같은 장소 카테고리 칩(10종 + 전체). 고르면 현재 영역을 그 카테고리로 다시 조회한다.
+ * 리스트를 펼치면 지도가 거의 안 보이므로 칩도 접어 시트에 자리를 내준다.
+ */
+@Composable
+private fun SearchCategoryChips(
+    uiState: MapSearchResultUIState,
+    actions: MapSearchResultActions,
+    labels: ImmutableList<String>,
+) {
+    if (uiState.sheetExpanded) return
+    MapChipRow(
+        labels = labels,
+        selectedIndex = MapCategory.entries.indexOf(uiState.category),
+        onSelect = { index -> actions.onCategorySelect(MapCategory.entries[index]) },
+        horizontalPadding = ScreenHorizontalPadding,
+    )
 }
 
 /** 선택 장소 카드 시트가 가리는 대략적인 높이. 지도·컨트롤을 그만큼 위로 밀어 준다. */
@@ -217,7 +258,7 @@ private fun ResultListSheet(
         ) {
             ResultCountLabel(count = "${uiState.places.size}${if (uiState.hasNext) "+" else ""}")
         }
-        if (uiState.places.isEmpty()) {
+        if (uiState.isCameraMoving || uiState.isLoading || uiState.places.isEmpty()) {
             EmptyResults(loading = uiState.isLoading)
         } else {
             LazyColumn(
@@ -231,9 +272,8 @@ private fun ResultListSheet(
                     ),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                itemsIndexed(uiState.places, key = { _, place -> place.id }) { index, place ->
+                items(uiState.places, key = { place -> place.id }) { place ->
                     MapRankedPlaceRow(
-                        rank = index + 1,
                         place = place,
                         isSelected = place.id == uiState.selectedPlaceId,
                         onClick = { actions.onPlaceDetail(place.id) },
@@ -287,5 +327,18 @@ private fun ColumnScope.EmptyResults(
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel3,
         )
+    }
+}
+
+private fun searchInitialPosition(
+    initialLatitude: Double?,
+    initialLongitude: Double?,
+): LatLng {
+    val validLatitude = initialLatitude?.takeIf { it in -90.0..90.0 }
+    val validLongitude = initialLongitude?.takeIf { it in -180.0..180.0 }
+    return if (validLatitude != null && validLongitude != null) {
+        LatLng(validLatitude, validLongitude)
+    } else {
+        LatLng(MapMockData.DEFAULT_LATITUDE, MapMockData.DEFAULT_LONGITUDE)
     }
 }

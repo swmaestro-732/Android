@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.map.component
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -15,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -22,7 +25,10 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 private val SheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
 private val SheetElevation = 12.dp
 private val HandleWidth = 40.dp
-private val HandleHeight = 5.dp
+private val HandleHeight = 3.dp
+
+/** 손잡이를 살짝 꺾어 방향을 드러낼 때의 꺾임 깊이. */
+private val HandleBend = 4.dp
 
 /** 손잡이 드래그를 단계 전환으로 볼 최소 이동량(px). 손 떨림을 단계 전환으로 오해하지 않을 정도. */
 private const val DRAG_THRESHOLD_PX = 24f
@@ -91,13 +97,26 @@ private fun SheetHandle(
                 ).padding(vertical = 18.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(width = HandleWidth, height = HandleHeight)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(color.borderDefaultLevel1),
-        )
+        // 손잡이 자체를 살짝 꺾어 끌 수 있음을 알린다. 접힘이면 위로(∧, 끌어 올리기),
+        // 펼침이면 아래로(∨, 끌어 내리기) 꺾는다. 끌 수 없는 시트는 꺾지 않고 곧은 바로 둔다.
+        val draggable = onExpandedChange != null
+        Canvas(modifier = Modifier.size(width = HandleWidth, height = HandleHeight + HandleBend)) {
+            val stroke = HandleHeight.toPx()
+            val inset = stroke / 2f
+            val top = inset
+            val bottom = size.height - inset
+            val mid = size.height / 2f
+            // (양 끝 y, 가운데 꼭짓점 y)
+            val (endY, peakY) =
+                when {
+                    !draggable -> mid to mid
+                    expanded -> top to bottom
+                    else -> bottom to top
+                }
+            val bar = color.borderDefaultLevel1
+            drawLine(bar, Offset(inset, endY), Offset(size.width / 2f, peakY), stroke, StrokeCap.Round)
+            drawLine(bar, Offset(size.width / 2f, peakY), Offset(size.width - inset, endY), stroke, StrokeCap.Round)
+        }
     }
 }
 

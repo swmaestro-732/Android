@@ -1,10 +1,23 @@
 package com.chillsam.courmy.main.presentation.search
 
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
+import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.search.TrendingKeywordVO
 
 /** 검색어 입력 화면(FS-17)의 내부 상태 변경 이벤트. */
 sealed interface SearchReducerEvent : ReducerEvent {
+    data class Configured(
+        val placeSearch: Boolean,
+    ) : SearchReducerEvent
+
+    data class SuggestionsLoaded(
+        val places: List<MapPlaceVO>,
+    ) : SearchReducerEvent
+
+    data class SuggestionsFailed(
+        val message: String,
+    ) : SearchReducerEvent
+
     data class Loaded(
         val recentKeywords: List<String>,
         val trendingKeywords: List<TrendingKeywordVO>,

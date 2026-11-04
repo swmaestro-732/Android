@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.data.auth
 
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.common.data.push.DeviceRegistration
+import com.chillsam.courmy.main.data.area.LegalAreaCodeMapper
 import com.chillsam.courmy.main.domain.auth.AuthRepository
 import dagger.Module
 import dagger.Provides
@@ -28,5 +29,6 @@ object AuthDataModule {
         dataSource: AuthDataSource,
         tokenStore: TokenStore,
         devices: DeviceRegistration,
-    ): AuthRepository = AuthRepositoryImpl(dataSource, tokenStore, devices)
+        areaCodeMapper: LegalAreaCodeMapper,
+    ): AuthRepository = AuthRepositoryImpl(dataSource, tokenStore, devices, areaCodeMapper)
 }

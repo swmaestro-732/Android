@@ -1,11 +1,8 @@
 package com.chillsam.courmy.main.presentation.my
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +23,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.component.DsButton
-import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
@@ -38,13 +34,12 @@ import com.chillsam.courmy.main.presentation.component.BackTopBar
 /**
  * 선택지는 코스 태그 12종이다([CourseTagVO]). 장소 카테고리 10종과 별개 체계다.
  *
- * 선택 상태·저장은 소문자 코드(`date` …)로 하고 칩에는 라벨을 보여준다. 서버 `likeThemes` 는
+ * 선택 상태·저장은 소문자 코드(`date` …)로 하고 카드에는 라벨을 보여준다. 서버 `likeThemes` 는
  * CourseCategory enum 이름(대문자)으로 검증하므로, 대문자 변환은 data 레이어가 요청 직전에 한다.
  */
-private val THEME_OPTIONS = CourseTagVO.entries
 private const val MIN_THEME_COUNT = 3
 
-/** 관심 테마 편집 화면(FS-06). 최소 [MIN_THEME_COUNT]개 이상 칩을 선택한다. */
+/** 관심 테마 편집 화면(FS-06). 최소 [MIN_THEME_COUNT]개 이상 카드를 선택한다. */
 @Composable
 fun InterestThemePage(
     modifier: Modifier = Modifier,
@@ -64,6 +59,7 @@ fun InterestThemePage(
     var selected by remember(editState.loaded) {
         mutableStateOf(editState.themes.mapNotNull { CourseTagVO.fromCode(it)?.code }.toSet())
     }
+    val canEdit = !editing || (editState.loaded && !editState.isSaving)
     LaunchedEffect(editState.saved) { if (editState.saved) navigationHelper.navigateToBack() }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
@@ -117,54 +113,58 @@ fun InterestThemePage(
                     color = color.contentAccent,
                 )
             }
-            ThemeChips(
+            InterestThemeCards(
                 selected = selected,
+                enabled = canEdit,
                 onToggle = { theme ->
                     selected = if (theme in selected) selected - theme else selected + theme
                 },
             )
         }
 
-        DsButton(
-            // 최소 개수를 못 채우면 버튼에 왜 못 넘어가는지 직접 보여 준다(지역 화면과 통일).
-            text =
-                when {
-                    selected.size < MIN_THEME_COUNT -> "최소 ${MIN_THEME_COUNT}개 이상 선택"
-                    onNext != null -> "다음"
-                    else -> "저장"
-                },
-            enabled = selected.size >= MIN_THEME_COUNT,
-            onClick = {
-                val themes = selected.toList()
-                // 편집은 기기에 저장한 뒤 저장 완료 신호를 받아 닫는다(위 LaunchedEffect).
-                onNext?.invoke(themes) ?: viewModel.onIntent(InterestEditIntent.SaveThemes(themes))
-            },
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
-        )
+        if (editing) {
+            InterestLoadFeedback(editState.isLoading, editState.loadError) {
+                viewModel.onIntent(InterestEditIntent.Load)
+            }
+        }
+        ThemeSaveButton(editState, editing, selected.size, canEdit) {
+            val themes = selected.toList()
+            // 서버 저장이 성공한 경우에만 완료 신호를 받아 닫는다.
+            onNext?.invoke(themes) ?: viewModel.onIntent(InterestEditIntent.SaveThemes(themes))
+        }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ThemeChips(
-    selected: Set<String>,
-    onToggle: (String) -> Unit,
+private fun ThemeSaveButton(
+    state: InterestEditUiState,
+    editing: Boolean,
+    selectedCount: Int,
+    canEdit: Boolean,
+    onContinue: () -> Unit,
 ) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        THEME_OPTIONS.forEach { theme ->
-            // 선택 상태는 서버 코드로 관리하고 화면에는 라벨만 보여준다.
-            DsChip(
-                text = theme.label,
-                selected = theme.code in selected,
-                onClick = { onToggle(theme.code) },
-            )
-        }
+    if (editing && state.saveError) {
+        DsText(
+            text = "저장하지 못했어요. 선택한 테마를 유지했으니 다시 시도해 주세요.",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            maxLines = 2,
+            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+        )
     }
+    DsButton(
+        text =
+            when {
+                selectedCount < MIN_THEME_COUNT -> "최소 ${MIN_THEME_COUNT}개 이상 선택"
+                editing -> "저장"
+                else -> "다음"
+            },
+        enabled = canEdit && selectedCount >= MIN_THEME_COUNT,
+        loading = editing && state.isSaving,
+        onClick = onContinue,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+    )
 }

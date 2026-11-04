@@ -28,6 +28,7 @@ import com.chillsam.courmy.course.presentation.DraftListPage
 import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.course.presentation.PlanDetailPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
+import com.chillsam.courmy.main.domain.map.searchBounds
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.home.RecommendedCoursesPage
@@ -131,7 +132,9 @@ val appRoutes: List<AppRoute> =
                     // 로그인 하기 → 온보딩 완료 처리 후 로그인 플로우(FS-03)로 진입.
                     onLogin = { viewModel.complete { navigationHelper.navigateTo(LoginRoute) } },
                     onBrowse = { viewModel.complete { navigationHelper.navigateReplace(HomeRoute) } },
-                    onSkip = { viewModel.complete { navigationHelper.navigateReplace(HomeRoute) } },
+                    // 건너뛰기 → 홈(게스트) 대신 로그인 플로우로 보낸다. 로그인 하기와 같은 navigateTo 라
+                    // 로그인에서 뒤로가기하면 온보딩으로 돌아온다.
+                    onSkip = { viewModel.complete { navigationHelper.navigateTo(LoginRoute) } },
                 )
             },
         ),
@@ -201,6 +204,7 @@ val appRoutes: List<AppRoute> =
                     query = args[SearchRoute.ARG_QUERY].orEmpty(),
                     latitude = args[SearchRoute.ARG_LATITUDE]?.toDoubleOrNull(),
                     longitude = args[SearchRoute.ARG_LONGITUDE]?.toDoubleOrNull(),
+                    bounds = searchBounds(args[SearchRoute.ARG_BOUNDS]),
                 )
             },
         ),
@@ -229,6 +233,9 @@ val appRoutes: List<AppRoute> =
                     listMode = args[MapSearchResultRoute.ARG_LIST_MODE].toBoolean(),
                     latitude = args[MapSearchResultRoute.ARG_LATITUDE]?.toDoubleOrNull(),
                     longitude = args[MapSearchResultRoute.ARG_LONGITUDE]?.toDoubleOrNull(),
+                    bounds = searchBounds(args[MapSearchResultRoute.ARG_BOUNDS]),
+                    targetLatitude = args[MapSearchResultRoute.ARG_TARGET_LATITUDE]?.toDoubleOrNull(),
+                    targetLongitude = args[MapSearchResultRoute.ARG_TARGET_LONGITUDE]?.toDoubleOrNull(),
                 )
             },
         ),

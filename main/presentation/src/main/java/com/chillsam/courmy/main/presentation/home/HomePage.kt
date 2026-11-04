@@ -83,12 +83,12 @@ import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.RecommendedCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.hasLocationPermission
+import com.chillsam.courmy.main.presentation.component.themeImageRes
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.google.android.gms.location.LocationServices
-import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
@@ -578,7 +578,11 @@ private fun NearbySavedSection(
     }
 }
 
-/** 근처 저장 장소 카드: 썸네일 + 이름·평점·카테고리·도보 시간 + 방문 여부 칩. 탭하면 지도에서 그 장소를 보여준다. */
+/**
+ * 근처 저장 장소 카드: 썸네일 + [이름·카테고리 / 평점] + 방문 여부 칩. 탭하면 지도에서 그 장소를 보여준다.
+ *
+ * 카테고리는 이름 줄에 인라인으로 올리고, 둘째 줄엔 평점만 둔다(도보 시간은 표시하지 않는다).
+ */
 @Composable
 private fun NearbyPlaceCard(
     place: HomeNearbyPlaceVO,
@@ -605,28 +609,76 @@ private fun NearbyPlaceCard(
             shape = RoundedCornerShape(12.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
-            DsText(
-                text = place.name,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentDefaultLevel0,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                // 평가가 없는 장소는 별 아이콘째 숨긴다("0.0"이 뜨지 않게).
-                if (place.ratingText.isNotBlank()) {
-                    DsRatingStar(starSize = 12.dp)
-                }
+            val hasAddress = place.address.isNotBlank()
+            val hasCategory = place.categoryLabel.isNotBlank()
+            val hasRating = place.ratingText.isNotBlank()
+            // 1줄: 장소명. 주소가 있으면 카테고리를 이름 옆에 인라인으로 붙여 아래에 주소 줄을 둔다.
+            // 주소가 없으면 카테고리를 1줄에 붙이지 않고 아랫줄로 내려 2줄(이름 / 카테고리)로 보여 준다.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DsText(
-                    text = nearbyPlaceMeta(place),
+                    text = place.name,
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.alignByBaseline().weight(1f, fill = false),
+                )
+                if (hasAddress && hasCategory) {
+                    DsText(
+                        text = place.categoryLabel,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                }
+            }
+            // 2줄: 주소가 없으면 카테고리를 여기에, 그리고 평점(있으면). 평가 없는 장소는 별 아이콘째 숨긴다.
+            val showCategoryBelow = !hasAddress && hasCategory
+            if (showCategoryBelow || hasRating) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    if (showCategoryBelow) {
+                        DsText(
+                            text = place.categoryLabel,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel2,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (showCategoryBelow && hasRating) {
+                        DsText(
+                            text = "·",
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.borderDefaultLevel1,
+                        )
+                    }
+                    if (hasRating) {
+                        DsRatingStar(starSize = 13.dp)
+                        DsText(
+                            text = place.ratingText,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel3,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            // 3줄: 상세 주소(있으면). 서버가 주지 않으면 숨겨져 위의 2줄 구성으로 줄어든다.
+            if (hasAddress) {
+                DsText(
+                    text = place.address,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
@@ -645,14 +697,6 @@ private fun NearbyPlaceCard(
         }
     }
 }
-
-/** 평점·카테고리·도보 시간을 " · "로 이은 메타 한 줄(예: "4.8 · 카페·디저트 · 도보 6분"). */
-private fun nearbyPlaceMeta(place: HomeNearbyPlaceVO): String =
-    buildList {
-        if (place.ratingText.isNotBlank()) add(place.ratingText)
-        if (place.categoryLabel.isNotBlank()) add(place.categoryLabel)
-        place.walkingMinutes?.let { add("도보 ${it}분") }
-    }.joinToString(" · ")
 
 /** "테마별 둘러보기" 섹션: 3열 그리드 타일 10개. 탭하면 추천 코스의 해당 카테고리 필터를 연다. */
 @Composable
@@ -693,22 +737,6 @@ private fun ThemeTile(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    // 일러스트는 기존 장소 테마 세트를 가장 가까운 코스 태그에 재사용한다(family·solo 만 신규).
-    val imageRes =
-        when (category) {
-            CourseTagVO.DATE -> MainR.drawable.img_theme_date
-            CourseTagVO.HEALING -> MainR.drawable.img_theme_wellness
-            CourseTagVO.FOOD -> MainR.drawable.img_theme_restaurant
-            CourseTagVO.CAFETOUR -> MainR.drawable.img_theme_cafe
-            CourseTagVO.CULTURE -> MainR.drawable.img_theme_culture
-            CourseTagVO.NATURE -> MainR.drawable.img_theme_nature
-            CourseTagVO.NIGHTVIEW -> MainR.drawable.img_theme_drinks
-            CourseTagVO.SHOPPING -> MainR.drawable.img_theme_shopping
-            CourseTagVO.TRADITION -> MainR.drawable.img_theme_landmark
-            CourseTagVO.ACTIVITY -> MainR.drawable.img_theme_experience
-            CourseTagVO.FAMILY -> MainR.drawable.img_theme_family
-            CourseTagVO.SOLO -> MainR.drawable.img_theme_solo
-        }
     Box(
         modifier =
             modifier
@@ -719,7 +747,7 @@ private fun ThemeTile(
                 .clickable(onClick = onClick),
     ) {
         Image(
-            painter = painterResource(imageRes),
+            painter = painterResource(category.themeImageRes),
             contentDescription = null,
             contentScale = ContentScale.Fit,
             alignment = Alignment.BottomEnd,

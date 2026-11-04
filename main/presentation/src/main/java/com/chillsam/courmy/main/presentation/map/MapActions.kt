@@ -29,6 +29,11 @@ data class MapActions(
 /** 검색 결과 화면이 상위로 올려 보내는 동작 묶음(FS-10-ResultMap / FS-10-List). */
 @Immutable
 data class MapSearchResultActions(
+    val onBoundsChanged: (MapBounds) -> Unit = {},
+    /** 지도 위 카테고리 칩 선택(지도 탭과 같은 10종 + 전체). */
+    val onCategorySelect: (MapCategory) -> Unit = {},
+    val onCameraMoving: () -> Unit = {},
+    val onDestinationReached: (Long, MapBounds) -> Unit = { _, _ -> },
     val onBackClick: () -> Unit,
     val onQueryClick: () -> Unit,
     val onClearQuery: () -> Unit,

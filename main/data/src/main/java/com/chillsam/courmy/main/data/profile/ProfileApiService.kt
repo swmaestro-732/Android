@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.profile
 
+import com.chillsam.courmy.main.data.profile.dto.AccountProfileEnvelope
 import com.chillsam.courmy.main.data.profile.dto.FollowEnvelope
 import com.chillsam.courmy.main.data.profile.dto.MyPageEnvelope
 import com.chillsam.courmy.main.data.profile.dto.UpdateProfileEnvelope
@@ -19,6 +20,10 @@ import retrofit2.http.Query
  * baseUrl 은 common:data 의 NetworkModule 이 제공한다.
  */
 interface ProfileApiService {
+    /** 편집 대상 필드와 서버에 저장된 관심 테마·지역을 조회한다. */
+    @GET("api/v1/users")
+    suspend fun getAccountProfile(): Response<AccountProfileEnvelope>
+
     /** 내 마이페이지 — 내 프로필 + 내가 발행한 코스(커서 페이징). */
     @GET("service/v1/mypage")
     suspend fun getMyPage(

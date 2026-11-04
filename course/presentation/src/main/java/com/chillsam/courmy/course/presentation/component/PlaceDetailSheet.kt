@@ -58,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -96,6 +97,8 @@ import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberUpdatedMarkerState
 import com.naver.maps.map.overlay.OverlayImage
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.LocalDate
 import kotlin.math.roundToInt
 
 private val SHEET_TOP_SHAPE = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
@@ -166,15 +169,16 @@ data class PlaceSheetCourse(
  *   모든 핀을 담은 지도로 시작한다. 핀·장소 칩을 누르면 그 장소의 정보 모드로 내려간다.
  *
  * 순번·이름·카테고리·좌표·작성자 팁은 코스 상세가 이미 들고 있는 [coursePlace] 를 그대로 쓴다.
- * 코스 응답에 없는 [address] 와 후기([reviews])만 장소 API 에서 받아 넘긴다.
- * 덕분에 다른 장소로 옮길 때 API 응답을 기다리지 않고 즉시 다시 그릴 수 있고, 주소·후기만 잠시 뒤
- * 채워진다(아직 못 받았으면 빈 값). [wiki-needed]
+ * 코스 응답에 없는 [address]·운영시간([openingHours])·후기([reviews])만 장소 API 에서 받아 넘긴다.
+ * 덕분에 다른 장소로 옮길 때 API 응답을 기다리지 않고 즉시 다시 그릴 수 있고, 주소·운영시간·후기만
+ * 잠시 뒤 채워진다(아직 못 받았으면 빈 값). [wiki-needed]
  */
 @Composable
 fun PlaceDetailSheet(
     coursePlace: CourseDetailPlaceVO,
     course: PlaceSheetCourse? = null,
     address: String,
+    openingHours: List<String> = emptyList(),
     reviews: CourseReviewListVO?,
     isSaved: Boolean,
     onToggleSave: () -> Unit,
@@ -195,7 +199,7 @@ fun PlaceDetailSheet(
     if (overview && course != null) {
         FullCourseMapDialog(
             course = course,
-            details = PlaceSheetDetails(coursePlace, address, reviews, isSaved, reviewCategories),
+            details = PlaceSheetDetails(coursePlace, address, openingHours, reviews, isSaved, reviewCategories),
             onToggleSave = onToggleSave,
             onDismiss = onDismiss,
             onSelectPlace = onSelectPlace,
@@ -284,6 +288,7 @@ fun PlaceDetailSheet(
                     PlaceInfoLayout(
                         coursePlace = coursePlace,
                         address = address,
+                        openingHours = openingHours,
                         reviews = reviews,
                         isSaved = isSaved,
                         onToggleSave = onToggleSave,
@@ -311,6 +316,7 @@ fun PlaceDetailSheet(
 private data class PlaceSheetDetails(
     val coursePlace: CourseDetailPlaceVO,
     val address: String,
+    val openingHours: List<String>,
     val reviews: CourseReviewListVO?,
     val isSaved: Boolean,
     val categories: List<PlaceCategoryVO>,
@@ -382,6 +388,7 @@ private fun FullCourseMapDialog(
                             PlaceInfoLayout(
                                 coursePlace = coursePlace,
                                 address = details.address,
+                                openingHours = details.openingHours,
                                 reviews = details.reviews,
                                 isSaved = details.isSaved,
                                 onToggleSave = onToggleSave,
@@ -535,6 +542,7 @@ private fun CoursePlaceStepBar(
 private fun ColumnScope.PlaceInfoLayout(
     coursePlace: CourseDetailPlaceVO,
     address: String,
+    openingHours: List<String> = emptyList(),
     reviews: CourseReviewListVO?,
     isSaved: Boolean,
     onToggleSave: () -> Unit,
@@ -577,10 +585,8 @@ private fun ColumnScope.PlaceInfoLayout(
         }
         Spacer(Modifier.height(16.dp))
         PlaceInfoActions(coursePlace = coursePlace, isSaved = isSaved, onToggleSave = onToggleSave)
-        if (address.isNotBlank()) {
-            Spacer(Modifier.height(14.dp))
-            HeroAddressCard(address = address)
-        }
+        // SCRUM-775: 장소 바텀시트의 '코스 한눈에 보기' 링크 제거. 주소·영업정보는 PlaceInfoCards 로 보여준다.
+        PlaceInfoCards(address = address, openingHours = openingHours)
         Spacer(Modifier.height(22.dp))
         HorizontalDivider(color = color.borderDefaultLevel0)
         Spacer(Modifier.height(20.dp))
@@ -742,6 +748,22 @@ private fun RowScope.InfoActionButton(
     }
 }
 
+/** 주소·운영시간 카드 묶음. 값이 있는 카드만 그리고, 둘 다 없으면 아무것도 그리지 않는다. */
+@Composable
+private fun PlaceInfoCards(
+    address: String,
+    openingHours: List<String>,
+) {
+    if (address.isNotBlank()) {
+        Spacer(Modifier.height(14.dp))
+        HeroAddressCard(address = address)
+    }
+    if (openingHours.isNotEmpty()) {
+        Spacer(Modifier.height(if (address.isNotBlank()) 10.dp else 14.dp))
+        OpeningHoursCard(lines = openingHours)
+    }
+}
+
 /** 주소 카드(테두리 있는 박스). 정보 레이아웃 본문에 들어간다. */
 @Composable
 private fun HeroAddressCard(address: String) {
@@ -771,6 +793,102 @@ private fun HeroAddressCard(address: String) {
             maxLines = Int.MAX_VALUE,
         )
     }
+}
+
+/**
+ * 운영시간 카드(주소 카드와 같은 테두리 박스). 서버 `openingHoursText` 를 줄 단위로 받는다.
+ *
+ * 접힌 상태에서는 오늘 요일 줄 하나만 보여 주고, 탭하면 전체 줄(요일별)을 펼친다.
+ * 줄이 하나뿐이면("매일 10:00 - 22:00" 등) 펼칠 것이 없어 화살표 없이 그 줄만 둔다.
+ */
+@Composable
+private fun OpeningHoursCard(lines: List<String>) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val shape = RoundedCornerShape(14.dp)
+    var expanded by remember(lines) { mutableStateOf(false) }
+    val todayIndex = remember(lines) { todayOpeningHoursIndex(lines) }
+    val expandable = lines.size > 1
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .border(1.dp, color.borderDefaultLevel0, shape)
+                .background(color.bgDefaultLevel1)
+                .then(if (expandable) Modifier.clickable { expanded = !expanded } else Modifier)
+                .padding(14.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_clock_24),
+            contentDescription = "운영시간",
+            tint = color.contentDefaultLevel2,
+            modifier = Modifier.size(20.dp),
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (expanded) {
+                lines.forEachIndexed { index, line ->
+                    DsText(
+                        text = line,
+                        // 펼친 목록에서도 오늘 줄은 굵게 남겨 바로 찾게 한다.
+                        style =
+                            if (index == todayIndex) {
+                                DesignSystemThemeImpl.typeScale.textStrongS
+                            } else {
+                                DesignSystemThemeImpl.typeScale.textRegularS
+                            },
+                        color =
+                            if (index == todayIndex) {
+                                color.contentDefaultLevel0
+                            } else {
+                                color.contentDefaultLevel1
+                            },
+                        maxLines = Int.MAX_VALUE,
+                    )
+                }
+            } else {
+                DsText(
+                    text = lines[todayIndex],
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = color.contentDefaultLevel1,
+                    maxLines = Int.MAX_VALUE,
+                )
+            }
+        }
+        if (expandable) {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_down_24),
+                contentDescription = if (expanded) "운영시간 접기" else "요일별 운영시간 펼치기",
+                tint = color.contentDefaultLevel2,
+                modifier = Modifier.size(20.dp).rotate(if (expanded) 180f else 0f),
+            )
+        }
+    }
+}
+
+/**
+ * 오늘 요일("월"·"화"…)로 시작하는 줄의 위치. "월요일 10:00" 표기도 접두사가 같아 함께 잡힌다.
+ * 요일 표기가 없으면("매일 …", "연중무휴" 등) 첫 줄을 오늘 줄로 쓴다.
+ *
+ * 요일 글자는 로케일 데이터에 기대지 않고 직접 매핑한다 — desugared java.time 의
+ * `getDisplayName` 축약형은 빌드에 포함된 로케일 데이터에 따라 달라질 수 있다.
+ */
+private fun todayOpeningHoursIndex(lines: List<String>): Int {
+    val today =
+        when (LocalDate.now().dayOfWeek) {
+            DayOfWeek.MONDAY -> "월"
+            DayOfWeek.TUESDAY -> "화"
+            DayOfWeek.WEDNESDAY -> "수"
+            DayOfWeek.THURSDAY -> "목"
+            DayOfWeek.FRIDAY -> "금"
+            DayOfWeek.SATURDAY -> "토"
+            DayOfWeek.SUNDAY -> "일"
+        }
+    return lines.indexOfFirst { it.startsWith(today) }.coerceAtLeast(0)
 }
 
 /**

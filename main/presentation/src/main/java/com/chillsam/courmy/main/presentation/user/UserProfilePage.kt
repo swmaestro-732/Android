@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -164,15 +163,21 @@ private fun UserProfileContent(
                 onBack = { navigationHelper.navigateToBack() },
                 // 소개가 비어 있으면 줄 자체를 두지 않는다.
                 bio = profile.bio.ifBlank { null },
+                // 팔로우는 신원·소개 아래 전체 폭 버튼으로 둔다. 마이 화면에는 없다.
+                primaryAction =
+                    if (!profile.isMe) {
+                        {
+                            FollowButton(
+                                relation = profile.relation,
+                                onClick = onToggleFollow,
+                                inFlight = isFollowInFlight,
+                            )
+                        }
+                    } else {
+                        null
+                    },
             ) {
-                if (!profile.isMe) {
-                    FollowButton(
-                        relation = profile.relation,
-                        onClick = onToggleFollow,
-                        inFlight = isFollowInFlight,
-                        modifier = Modifier.width(116.dp).height(40.dp),
-                    )
-                }
+                // 공유는 상단 단독 아이콘으로 둔다. 타유저 프로필은 그 옆에 더보기(…) 신고 메뉴가 붙는다.
                 if (FeatureFlags.SHARE_ENABLED) {
                     ProfileHeaderIconButton(
                         iconRes = R.drawable.ic_share_24,

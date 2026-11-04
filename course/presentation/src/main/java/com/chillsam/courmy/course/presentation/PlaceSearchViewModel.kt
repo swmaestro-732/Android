@@ -190,7 +190,7 @@ class PlaceSearchViewModel
             searchJob = viewModelScope.launch { searchExternal(query) }
         }
 
-        /** 자동 보완과 수동 지도 검색이 같은 요청 안에서 완료되도록 job 을 새로 만들지 않는다. */
+        /** 새로운 위치 추가에서 명시적으로 요청한 외부 검색만 수행한다. */
         private suspend fun searchExternal(query: String) {
             runCatching {
                 val results = searchExternalPlacesUseCase(query)
@@ -222,19 +222,13 @@ class PlaceSearchViewModel
                     runCatching {
                         val page = searchPlacesUseCase(query)
                         currentCoroutineContext().ensureActive()
-                        if (page.items.isEmpty()) {
-                            // 등록 결과가 없을 때만 기존 "새로운 위치 추가" 검색으로 이어간다.
-                            // 두 검색이 끝날 때까지 로딩을 유지해 결과 없음이 먼저 보이지 않게 한다.
-                            searchExternal(query.trim())
-                        } else {
-                            dispatch(
-                                PlaceSearchReducerEvent.Loaded(
-                                    results = page.items,
-                                    nextCursor = page.nextCursor,
-                                    hasNext = page.hasNext,
-                                ),
-                            )
-                        }
+                        dispatch(
+                            PlaceSearchReducerEvent.Loaded(
+                                results = page.items,
+                                nextCursor = page.nextCursor,
+                                hasNext = page.hasNext,
+                            ),
+                        )
                     }.onFailure { e ->
                         if (e is CancellationException) throw e
                         currentCoroutineContext().ensureActive()

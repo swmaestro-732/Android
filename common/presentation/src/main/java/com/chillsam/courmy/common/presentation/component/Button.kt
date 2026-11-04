@@ -1,17 +1,23 @@
 package com.chillsam.courmy.common.presentation.component
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -20,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,6 +38,8 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 private val ButtonHeight = 52.dp
 private val ButtonCornerRadius = 16.dp
 private val ButtonSpinnerSize = 18.dp
+private val ButtonIconSize = 18.dp
+private val ButtonIconGap = 6.dp
 private const val DISABLED_ALPHA = 0.4f
 
 enum class DsButtonVariant {
@@ -55,6 +64,7 @@ fun DsButton(
     variant: DsButtonVariant = DsButtonVariant.Primary,
     enabled: Boolean = true,
     loading: Boolean = false,
+    @DrawableRes leadingIconRes: Int? = null,
     onClick: () -> Unit = {},
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -113,14 +123,29 @@ fun DsButton(
                 color = contentColor,
             )
         } else {
-            DsText(
-                text = text,
-                style = DesignSystemThemeImpl.typeScale.textRegularS,
-                color = contentColor,
+            Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                textAlign = TextAlign.Center,
-                overflow = TextOverflow.Ellipsis,
-            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                if (leadingIconRes != null) {
+                    Icon(
+                        painter = painterResource(leadingIconRes),
+                        // 텍스트가 동작을 설명하므로 아이콘은 장식으로 둔다.
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(ButtonIconSize),
+                    )
+                    Spacer(Modifier.width(ButtonIconGap))
+                }
+                DsText(
+                    text = text,
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = contentColor,
+                    textAlign = TextAlign.Center,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
