@@ -12,5 +12,5 @@ object FeatureFlags {
      * - true: 하단 네비게이션 가운데에 채팅 탭이 보이고 `/chat`·`/chat/room` 라우트가 등록된다.
      * - false: 하단 탭에서 채팅이 사라지고 채팅 라우트도 등록되지 않는다(딥링크로도 진입 불가).
      */
-    const val CHAT_ENABLED = true
+    const val CHAT_ENABLED = false
 }
