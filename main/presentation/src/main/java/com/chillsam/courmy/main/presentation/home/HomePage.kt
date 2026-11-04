@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.chillsam.courmy.common.domain.navigation.NavRoute
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -90,13 +88,22 @@ import com.chillsam.courmy.main.presentation.component.themeImageRes
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
-import com.chillsam.courmy.main.presentation.my.RegionMapIntent
-import com.chillsam.courmy.main.presentation.my.RegionMapViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.google.android.gms.location.LocationServices
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
+
+/**
+ * 타일 지도 코드 → area_map 시·도 코드. area_map 은 광주·전남을 코드 "12"로, 울릉을 경북("47") 안에 두므로
+ * 전체 화면 지도로 들어갈 때 그 상위 시·도 코드로 매핑한다.
+ */
+private fun areaMapProvinceCode(tileCode: String): String =
+    when (tileCode) {
+        "29" -> "12"
+        "47U" -> "47"
+        else -> tileCode
+    }
 
 /** 테마별 둘러보기 타일. 탭하면 추천 코스의 해당 코스 태그 필터를 연다(코스 문맥이라 12종). */
 private val themeTiles = CourseTagVO.entries
@@ -246,7 +253,12 @@ fun HomePage(modifier: Modifier = Modifier) {
             }
             item {
                 RegionBrowseSection(
-                    onRegionClick = { route -> navigationHelper.navigateByRoute(route) },
+                    // 지역을 누르면 그 시·도로 확대된 전체 화면 지도로 들어가 동·구(와 전체)를 고른다.
+                    onRegionClick = { code, name ->
+                        navigationHelper.navigateByRoute(
+                            RegionBrowsePage.focusRoute(code = areaMapProvinceCode(code), name = name),
+                        )
+                    },
                     onOpen = { navigationHelper.navigateTo(RegionBrowsePage) },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
@@ -438,53 +450,36 @@ private fun SectionHeader(
 /**
  * 지역별 둘러보기 섹션. 테마별 둘러보기와 짝을 이루는 또 하나의 둘러보기 축으로, 그 바로 아래에 둔다.
  *
- * 앱에 포함된 실제 행정구역(시·도)을 권역 색으로 채운 **부드러운 실루엣 지도**([RegionSilhouetteMap])를
- * 띄운다. 지역을 누르면 그 지역 코스 목록([RecommendedCoursesPage])으로, 헤더 "전체보기"는 전체 화면
- * 전국 지도([RegionBrowsePage])로 들어가 시·군·구까지 고른다. 지도 데이터는 관심 지역 편집과 같은
- * [RegionMapViewModel] 을 재사용하되, 프로필 의존 없이 바로 불러온다.
+ * 디자인 목업과 동일한 **그리드 타일 지도**([RegionTileMap])를 흰 카드 위에 띄운다. 지역을 누르면
+ * 그 지역으로 들어가 동·구를 고르고([onRegionClick]), 헤더 "전체보기"는 전체 화면 전국 지도
+ * ([RegionBrowsePage])로 들어간다.
  */
 @Composable
 private fun RegionBrowseSection(
-    onRegionClick: (NavRoute) -> Unit,
+    onRegionClick: (code: String, name: String) -> Unit,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: RegionMapViewModel = hiltViewModel(),
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) {
-        viewModel.onIntent(RegionMapIntent.Initialize(editing = false, regions = emptyList()))
-    }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionHeader(
             title = "지역별 둘러보기",
             actionLabel = "전체보기",
             onAction = onOpen,
         )
-        Box(modifier = Modifier.fillMaxWidth().height(320.dp), contentAlignment = Alignment.Center) {
-            when {
-                state.loadError -> {
-                    DsText(
-                        text = "지도를 불러오지 못했어요",
-                        style = DesignSystemThemeImpl.typeScale.textRegularS,
-                        color = color.contentDefaultLevel2,
-                    )
-                }
-
-                state.isLoading -> {
-                    CircularProgressIndicator(color = color.contentAccent, modifier = Modifier.size(28.dp))
-                }
-
-                else -> {
-                    RegionSilhouetteMap(
-                        regions = state.regions,
-                        onRegionClick = { code, name ->
-                            onRegionClick(RecommendedCoursesPage.regionRoute(sigungu = code, regionName = name))
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            }
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(color.bgDefaultLevel1)
+                    .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(20.dp))
+                    .padding(8.dp),
+        ) {
+            RegionTileMap(
+                onRegionClick = onRegionClick,
+                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 25f),
+            )
         }
     }
 }

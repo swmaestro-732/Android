@@ -44,15 +44,6 @@ internal enum class CourmyPaletteColors(
     Forest600(Color(0xFF30623C)),
     Forest700(Color(0xFF1C4E2A)),
     ForestTint(Color(0xFFEBF3ED)),
-
-    // 지역별 둘러보기 6권역 블롭용 범주형 파스텔. 테마 일러스트(img_theme_*)에 쓰인 파스텔에서 뽑아 토큰화했다.
-    // 역할 기반 시맨틱 슬롯이 아니라 범주 구분용이라 RegionColor 로 노출한다(semantic-colors 아님).
-    RegionCapital(Color(0xFFF6D1B5)),
-    RegionGangwon(Color(0xFFABC7AE)),
-    RegionChungcheong(Color(0xFFDEDCEE)),
-    RegionJeolla(Color(0xFFF0DEA0)),
-    RegionGyeongsang(Color(0xFFEBBFC3)),
-    RegionJeju(Color(0xFFC2D9B4)),
 }
 
 // FIGMA-TOKEN-INJECTION-POINT: semantic-colors

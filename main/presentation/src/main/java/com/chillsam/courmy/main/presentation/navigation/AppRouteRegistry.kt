@@ -201,10 +201,15 @@ val appRoutes: List<AppRoute> =
                 )
             },
         ),
-        // 지역별 둘러보기 — 전체 화면 전국 지도. 시·군·구를 누르면 그 지역 코스 목록으로 이동한다.
+        // 지역별 둘러보기 — 전체 화면 전국 지도. 홈 타일 지도에서 시·도로 포커스해 들어올 수 있다.
         AppRoute(
             path = RegionBrowseRoute.PATH,
-            render = { RegionBrowsePage() },
+            render = { args ->
+                RegionBrowsePage(
+                    initialProvince = args[RegionBrowseRoute.ARG_PROVINCE],
+                    provinceName = args[RegionBrowseRoute.ARG_PROVINCE_NAME],
+                )
+            },
         ),
         // 입력 화면은 공유하며 홈은 코스 결과, 지도는 장소 결과로 이동한다.
         AppRoute(
