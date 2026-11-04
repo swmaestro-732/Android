@@ -8,13 +8,12 @@ data class PushTarget(
     val notificationId: Long,
 ) {
     companion object {
+        // 서버 알림 타입(SCRUM-570 NotificationType)과 일치시킨다. 따라가기 완료·저장은 알림에서 제외됐다.
         private val courseTypes =
             setOf(
                 "COURSE_LIKED",
                 "COURSE_COMMENTED",
-                "COURSE_TRACE_COMPLETED",
                 "COURSE_REVIEWED",
-                "COURSE_BOOKMARKED",
             )
 
         fun parse(data: Map<String, String>): PushTarget? {
