@@ -54,8 +54,11 @@ import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.main.entity.area.AreaLevel
 import com.chillsam.courmy.main.presentation.component.CourseCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
+import com.chillsam.courmy.main.presentation.my.RegionMapIntent
+import com.chillsam.courmy.main.presentation.my.RegionMapViewModel
 
 /**
  * 진입·복귀 시 1회성 효과 모음. 복귀 재컴포지션에서 다시 실행돼 무한 스크롤 위치·칩 선택을
@@ -114,7 +117,7 @@ private fun FeedEntryEffects(
 fun RecommendedCoursesPage(
     modifier: Modifier = Modifier,
     initialCategory: String? = null,
-    initialSigungu: String? = null,
+    sidoCode: String? = null,
     regionName: String? = null,
 ) {
     StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
@@ -123,13 +126,17 @@ fun RecommendedCoursesPage(
     val feedViewModel: HomeFeedViewModel = hiltViewModel()
     val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
 
+    // 지역 진입이면 그 시·도의 세부 지역(구·군) 칩을 지도 데이터에서 뽑는다. "전체"는 시·도 전체.
+    val subRegions = rememberSubRegions(sidoCode)
+    var selectedSub by rememberSaveable { mutableStateOf<String?>(null) }
+
     val listState = rememberLazyListState()
     FeedEntryEffects(
         feedState = feedState,
         listState = listState,
         // 홈 테마 타일은 코드("date")를 싣지만, 과거 라우트가 라벨("데이트")을 싣던 시기가 있어 둘 다 받는다.
         initialCategory = CourseTagVO.fromCodeOrLabel(initialCategory),
-        initialSigungu = initialSigungu,
+        initialSigungu = sidoCode,
         onIntent = feedViewModel::onIntent,
     )
     LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
@@ -155,6 +162,20 @@ fun RecommendedCoursesPage(
             selectedCategory = feedState.selectedCategory,
             onSelectCategory = { feedViewModel.onIntent(HomeFeedIntent.SelectCategory(it)) },
             onBack = { navigationHelper.navigateToBack() },
+            // 지역 진입이면 세부 지역 필터를, 아니면 null(= 테마 칩)을 넘긴다.
+            regionFilter =
+                sidoCode?.let {
+                    RegionFilter(
+                        subRegions = subRegions,
+                        selected = selectedSub,
+                        onSelect = { code ->
+                            selectedSub = code
+                            // 선택한 세부 지역(없으면 시·도 전체)으로 피드를 좁힌다. [wiki-needed] 백엔드 선행:
+                            // 서버가 아직 지역 필터를 안 받아 지금은 목록이 바뀌지 않는다(선택만 반영).
+                            feedViewModel.onIntent(HomeFeedIntent.SetRegion(code ?: sidoCode))
+                        },
+                    )
+                },
         )
         LazyColumn(
             state = listState,
@@ -219,6 +240,7 @@ private fun RecommendedTopBar(
     selectedCategory: CourseTagVO?,
     onSelectCategory: (CourseTagVO?) -> Unit,
     onBack: () -> Unit,
+    regionFilter: RegionFilter?,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
@@ -242,21 +264,66 @@ private fun RecommendedTopBar(
         Row(
             modifier =
                 Modifier
-                    .horizontalScroll(
-                        rememberScrollState(),
-                    ).padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            recommendedCategories.forEach { (category, label) ->
+            if (regionFilter != null) {
+                // 지역 진입: 세부 지역(구·군) 칩만. 첫 칩 "추천순"이 그 시·도 전체다(카테고리 칩은 두지 않는다).
                 DsChip(
-                    text = label,
-                    selected = selectedCategory == category,
-                    modifier = Modifier.semantics { selected = selectedCategory == category },
-                    onClick = { onSelectCategory(category) },
+                    text = "추천순",
+                    selected = regionFilter.selected == null,
+                    onClick = { regionFilter.onSelect(null) },
                 )
+                regionFilter.subRegions.forEach { sub ->
+                    DsChip(
+                        text = sub.name,
+                        selected = regionFilter.selected == sub.code,
+                        onClick = { regionFilter.onSelect(sub.code) },
+                    )
+                }
+            } else {
+                // 일반 "오늘의 추천 코스": 코스 태그(테마) 칩.
+                recommendedCategories.forEach { (category, label) ->
+                    DsChip(
+                        text = label,
+                        selected = selectedCategory == category,
+                        modifier = Modifier.semantics { selected = selectedCategory == category },
+                        onClick = { onSelectCategory(category) },
+                    )
+                }
             }
         }
         HorizontalDivider(color = color.borderDefaultLevel0)
+    }
+}
+
+/** 지역 진입 화면의 세부 지역 칩 하나(구·군). [code] 는 법정동 5자리, [name] 은 짧은 이름. */
+internal data class SubRegion(
+    val code: String,
+    val name: String,
+)
+
+/** 지역 진입 시 상단 바에 넘기는 세부 지역 필터 묶음. [selected] 가 null 이면 "추천순"(시·도 전체)이다. */
+private class RegionFilter(
+    val subRegions: List<SubRegion>,
+    val selected: String?,
+    val onSelect: (String?) -> Unit,
+)
+
+/** [sidoCode] 시·도의 세부 지역(구·군) 목록을 지도 데이터에서 뽑는다. 지역 진입이 아니면 빈 목록. */
+@Composable
+private fun rememberSubRegions(sidoCode: String?): List<SubRegion> {
+    if (sidoCode == null) return emptyList()
+    val viewModel: RegionMapViewModel = hiltViewModel()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) {
+        viewModel.onIntent(RegionMapIntent.Initialize(editing = false, regions = emptyList()))
+    }
+    return remember(state.regions, sidoCode) {
+        state.regions
+            .filter { it.area.level == AreaLevel.SIGUNGU && it.area.code.startsWith(sidoCode) }
+            .map { SubRegion(it.area.code, it.area.shortName) }
     }
 }
 

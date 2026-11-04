@@ -69,7 +69,6 @@ import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.domain.DraftListPage
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
-import com.chillsam.courmy.main.domain.home.RegionBrowsePage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
@@ -253,14 +252,13 @@ fun HomePage(modifier: Modifier = Modifier) {
             }
             item {
                 RegionBrowseSection(
-                    // 지역을 누르면 그 시·도로 확대된 전체 화면 지도로 들어가 동·구(와 전체)를 고른다.
+                    // 지역을 누르면 그 시·도의 "{지역} 코스" 목록으로 가서 세부 지역(구·군) 칩으로 더 좁힌다.
                     onRegionClick = { code, name ->
                         navigationHelper.navigateByRoute(
-                            RegionBrowsePage.focusRoute(code = areaMapProvinceCode(code), name = name),
+                            RecommendedCoursesPage.regionRoute(sido = areaMapProvinceCode(code), regionName = name),
                         )
                     },
-                    onOpen = { navigationHelper.navigateTo(RegionBrowsePage) },
-                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                    modifier = Modifier.padding(top = 8.dp).padding(horizontal = ScreenHorizontalPadding),
                 )
             }
         }
@@ -451,22 +449,16 @@ private fun SectionHeader(
  * 지역별 둘러보기 섹션. 테마별 둘러보기와 짝을 이루는 또 하나의 둘러보기 축으로, 그 바로 아래에 둔다.
  *
  * 디자인 목업과 동일한 **그리드 타일 지도**([RegionTileMap])를 흰 카드 위에 띄운다. 지역을 누르면
- * 그 지역으로 들어가 동·구를 고르고([onRegionClick]), 헤더 "전체보기"는 전체 화면 전국 지도
- * ([RegionBrowsePage])로 들어간다.
+ * 그 지역의 "{지역} 코스" 목록으로 가서 세부 지역(구·군)을 칩으로 더 좁힌다([onRegionClick]).
  */
 @Composable
 private fun RegionBrowseSection(
     onRegionClick: (code: String, name: String) -> Unit,
-    onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionHeader(
-            title = "지역별 둘러보기",
-            actionLabel = "전체보기",
-            onAction = onOpen,
-        )
+        SectionHeader(title = "지역별 둘러보기")
         Box(
             modifier =
                 Modifier

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.chillsam.courmy.common.presentation.ui.color.RegionTileColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlin.math.hypot
@@ -40,7 +41,9 @@ internal fun RegionTileMap(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val labelStyle = DesignSystemThemeImpl.typeScale.textStrongS.copy(color = color.contentDefaultLevel0)
-    val pillStyle = DesignSystemThemeImpl.typeScale.textExtraXS.copy(color = color.contentDefaultLevel0)
+    // textExtraXS 토큰의 넓은 자간(0.22em)은 한글 두 글자 알약에서 "서 울"처럼 벌어져 보이므로 자간만 0 으로 덮는다.
+    val pillStyle =
+        DesignSystemThemeImpl.typeScale.textExtraXS.copy(color = color.contentDefaultLevel0, letterSpacing = 0.sp)
     val measurer = rememberTextMeasurer()
     val cardColor = color.bgDefaultLevel1
     // 외곽선 둥글림·분리선은 remember 로 셀→외곽선 계산을 캐시한다.

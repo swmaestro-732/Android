@@ -32,7 +32,6 @@ import com.chillsam.courmy.main.domain.map.searchBounds
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.home.HomePage
 import com.chillsam.courmy.main.presentation.home.RecommendedCoursesPage
-import com.chillsam.courmy.main.presentation.home.RegionBrowsePage
 import com.chillsam.courmy.main.presentation.login.LoginPage
 import com.chillsam.courmy.main.presentation.login.OnboardingCompletePage
 import com.chillsam.courmy.main.presentation.login.ProfileSetupPage
@@ -67,7 +66,6 @@ import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.course.domain.PlanDetailPage as PlanDetailRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage as RecommendedCoursesRoute
-import com.chillsam.courmy.main.domain.home.RegionBrowsePage as RegionBrowseRoute
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
 import com.chillsam.courmy.main.domain.login.OnboardingCompletePage as CompleteRoute
 import com.chillsam.courmy.main.domain.login.ProfileSetupPage as ProfileSetupRoute
@@ -196,18 +194,8 @@ val appRoutes: List<AppRoute> =
             render = { args ->
                 RecommendedCoursesPage(
                     initialCategory = args[RecommendedCoursesRoute.ARG_CATEGORY],
-                    initialSigungu = args[RecommendedCoursesRoute.ARG_SIGUNGU],
+                    sidoCode = args[RecommendedCoursesRoute.ARG_SIDO],
                     regionName = args[RecommendedCoursesRoute.ARG_REGION_NAME],
-                )
-            },
-        ),
-        // 지역별 둘러보기 — 전체 화면 전국 지도. 홈 타일 지도에서 시·도로 포커스해 들어올 수 있다.
-        AppRoute(
-            path = RegionBrowseRoute.PATH,
-            render = { args ->
-                RegionBrowsePage(
-                    initialProvince = args[RegionBrowseRoute.ARG_PROVINCE],
-                    provinceName = args[RegionBrowseRoute.ARG_PROVINCE_NAME],
                 )
             },
         ),

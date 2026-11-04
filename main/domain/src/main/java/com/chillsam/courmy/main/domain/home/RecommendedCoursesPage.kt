@@ -16,8 +16,8 @@ object RecommendedCoursesPage : Page {
     /** 진입 시 선택해 둘 코스 태그 코드(예: "date"). 없으면 전체. 과거 라벨("데이트")도 수신 측이 허용한다. */
     const val ARG_CATEGORY = "category"
 
-    /** 지역별 둘러보기에서 진입할 때 좁힐 시·군·구 법정동코드. 없으면 지역 제한 없음. */
-    const val ARG_SIGUNGU = "sigungu"
+    /** 지역별 둘러보기에서 진입할 때의 시·도 법정동 2자리 코드. 이 시·도의 세부 지역(구·군) 칩을 보여준다. */
+    const val ARG_SIDO = "sido"
 
     /** 지역 이름(상단 제목 표시용). 코드만으로는 이름을 복원할 수 없어 함께 싣는다. */
     const val ARG_REGION_NAME = "regionName"
@@ -31,13 +31,16 @@ object RecommendedCoursesPage : Page {
             args = mapOf(ARG_CATEGORY to category),
         )
 
-    /** 지역별 둘러보기에서 특정 시·군·구로 진입할 때 쓴다. [sigungu] 는 법정동코드, [regionName] 은 표시용 이름. */
+    /**
+     * 홈 지역별 둘러보기 타일에서 특정 시·도로 진입할 때 쓴다. [sido] 는 시·도 2자리 코드, [regionName] 은
+     * 표시용 이름. 이 화면에서 세부 지역(구·군) 칩으로 더 좁힐 수 있다.
+     */
     fun regionRoute(
-        sigungu: String,
+        sido: String,
         regionName: String,
     ): NavRoute =
         NavRoute(
             path = PATH,
-            args = mapOf(ARG_SIGUNGU to sigungu, ARG_REGION_NAME to regionName),
+            args = mapOf(ARG_SIDO to sido, ARG_REGION_NAME to regionName),
         )
 }
