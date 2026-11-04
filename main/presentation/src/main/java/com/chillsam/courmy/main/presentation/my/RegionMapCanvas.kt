@@ -45,6 +45,7 @@ internal fun RegionMapCanvas(
     state: RegionMapUiState,
     onIntent: (RegionMapIntent) -> Unit,
     modifier: Modifier = Modifier,
+    interactive: Boolean = true,
 ) {
     val colors = DesignSystemThemeImpl.designSystemColor
     val shapes = remember(state.regions) { state.regions.mapNotNull { it.mainMapRegion() }.map(::RegionShape) }
@@ -102,22 +103,36 @@ internal fun RegionMapCanvas(
                 )
             }
         }
-        Canvas(
+        val canvasModifier =
             Modifier
                 .fillMaxSize()
                 .semantics {
                     contentDescription =
                         "${focused?.region?.area?.shortName ?: "대한민국"} 행정구역 지도. 아래 지역 목록에서도 선택할 수 있습니다."
-                }.pointerInput(Unit) { detectTapGestures { tap(it) } }
-                .pointerInput(state.provinceCode, width, height) {
-                    detectTransformGestures { _, delta, zoomChange, _ ->
-                        hasGesture = true
-                        zoom = (zoom * zoomChange).coerceIn(1f, 6f)
-                        val maxX = ((bounds.width * baseScale * zoom - width) / 2 + padding).coerceAtLeast(0f)
-                        val maxY = ((bounds.height * baseScale * zoom - height) / 2 + padding).coerceAtLeast(0f)
-                        pan = Offset((pan.x + delta.x).coerceIn(-maxX, maxX), (pan.y + delta.y).coerceIn(-maxY, maxY))
+                }
+        // 홈 임베드처럼 미리보기로 쓸 때는 지도 자체 탭·팬·줌을 끄고, 바깥 컨테이너가 탭/스크롤을 받게 둔다.
+        Canvas(
+            if (interactive) {
+                canvasModifier
+                    .pointerInput(Unit) { detectTapGestures { tap(it) } }
+                    .pointerInput(state.provinceCode, width, height) {
+                        detectTransformGestures { _, delta, zoomChange, _ ->
+                            hasGesture = true
+                            zoom = (zoom * zoomChange).coerceIn(1f, 6f)
+                            val maxX =
+                                ((bounds.width * baseScale * zoom - width) / 2 + padding).coerceAtLeast(0f)
+                            val maxY =
+                                ((bounds.height * baseScale * zoom - height) / 2 + padding).coerceAtLeast(0f)
+                            pan =
+                                Offset(
+                                    (pan.x + delta.x).coerceIn(-maxX, maxX),
+                                    (pan.y + delta.y).coerceIn(-maxY, maxY),
+                                )
+                        }
                     }
-                },
+            } else {
+                canvasModifier
+            },
         ) {
             withTransform({
                 translate(x, y)

@@ -16,6 +16,12 @@ object RecommendedCoursesPage : Page {
     /** 진입 시 선택해 둘 코스 태그 코드(예: "date"). 없으면 전체. 과거 라벨("데이트")도 수신 측이 허용한다. */
     const val ARG_CATEGORY = "category"
 
+    /** 지역별 둘러보기에서 진입할 때 좁힐 시·군·구 법정동코드. 없으면 지역 제한 없음. */
+    const val ARG_SIGUNGU = "sigungu"
+
+    /** 지역 이름(상단 제목 표시용). 코드만으로는 이름을 복원할 수 없어 함께 싣는다. */
+    const val ARG_REGION_NAME = "regionName"
+
     override fun toRoute(): NavRoute = NavRoute(PATH)
 
     /** 홈 테마 타일에서 특정 카테고리가 선택된 상태로 진입할 때 쓴다. [category] 는 코스 태그 코드. */
@@ -23,5 +29,15 @@ object RecommendedCoursesPage : Page {
         NavRoute(
             path = PATH,
             args = mapOf(ARG_CATEGORY to category),
+        )
+
+    /** 지역별 둘러보기에서 특정 시·군·구로 진입할 때 쓴다. [sigungu] 는 법정동코드, [regionName] 은 표시용 이름. */
+    fun regionRoute(
+        sigungu: String,
+        regionName: String,
+    ): NavRoute =
+        NavRoute(
+            path = PATH,
+            args = mapOf(ARG_SIGUNGU to sigungu, ARG_REGION_NAME to regionName),
         )
 }

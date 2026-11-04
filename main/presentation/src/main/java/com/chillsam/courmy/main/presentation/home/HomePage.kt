@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,6 +70,7 @@ import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.domain.DraftListPage
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
+import com.chillsam.courmy.main.domain.home.RegionBrowsePage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
 import com.chillsam.courmy.main.domain.my.MyPage
@@ -87,6 +89,9 @@ import com.chillsam.courmy.main.presentation.component.themeImageRes
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
+import com.chillsam.courmy.main.presentation.my.RegionMapCanvas
+import com.chillsam.courmy.main.presentation.my.RegionMapIntent
+import com.chillsam.courmy.main.presentation.my.RegionMapViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.google.android.gms.location.LocationServices
 
@@ -236,6 +241,12 @@ fun HomePage(modifier: Modifier = Modifier) {
                     onThemeClick = { theme ->
                         navigationHelper.navigateByRoute(RecommendedCoursesPage.route(theme))
                     },
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                )
+            }
+            item {
+                RegionBrowseSection(
+                    onOpen = { navigationHelper.navigateTo(RegionBrowsePage) },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
@@ -419,6 +430,68 @@ private fun SectionHeader(
                         .clickable(onClick = onAction)
                         .padding(horizontal = 4.dp, vertical = 4.dp),
             )
+        }
+    }
+}
+
+/**
+ * 지역별 둘러보기 섹션. 테마별 둘러보기와 짝을 이루는 또 하나의 둘러보기 축으로, 그 바로 아래에 둔다.
+ *
+ * 단순화된 전국 지도([RegionMapCanvas])를 **정적 미리보기**로 그대로 띄운다(지도 자체는 탭·팬·줌을 끔).
+ * 미리보기를 누르면 전체 화면 전국 지도([RegionBrowsePage])로 들어가 시·도 확대와 시·군·구 선택을 한다.
+ * 지도 데이터는 관심 지역 편집과 같은 [RegionMapViewModel] 을 재사용하되, 프로필 의존 없이 바로 불러온다.
+ */
+@Composable
+private fun RegionBrowseSection(
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: RegionMapViewModel = hiltViewModel(),
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) {
+        viewModel.onIntent(RegionMapIntent.Initialize(editing = false, regions = emptyList()))
+    }
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(
+            title = "지역별 둘러보기",
+            actionLabel = "전체보기",
+            onAction = onOpen,
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(color.bgDefaultLevel0)
+                    .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(18.dp))
+                    // 정적 지도라 탭·스크롤은 이 컨테이너가 받는다. 탭하면 전체 화면 지도로.
+                    .clickable(onClick = onOpen),
+            contentAlignment = Alignment.Center,
+        ) {
+            when {
+                state.loadError -> {
+                    DsText(
+                        text = "지도를 불러오지 못했어요",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel2,
+                    )
+                }
+
+                state.isLoading -> {
+                    CircularProgressIndicator(color = color.contentAccent, modifier = Modifier.size(28.dp))
+                }
+
+                else -> {
+                    RegionMapCanvas(
+                        state = state,
+                        onIntent = {},
+                        interactive = false,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
         }
     }
 }

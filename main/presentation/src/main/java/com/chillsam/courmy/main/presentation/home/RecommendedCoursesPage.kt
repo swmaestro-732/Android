@@ -72,14 +72,19 @@ private fun FeedEntryEffects(
     feedState: HomeFeedUIState,
     listState: LazyListState,
     initialCategory: CourseTagVO?,
+    initialSigungu: String?,
     onIntent: (HomeFeedIntent) -> Unit,
 ) {
-    var initialCategoryApplied by rememberSaveable { mutableStateOf(false) }
+    var initialFilterApplied by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        // SelectCategory 가 서버 재조회까지 겸하므로, 초기 카테고리를 적용한 진입에서는
-        // 아래 Load 를 또 보내지 않는다(같은 요청 두 번 방지).
-        if (!initialCategoryApplied) {
-            initialCategoryApplied = true
+        // SelectCategory·SetRegion 이 서버 재조회까지 겸하므로, 초기 필터를 적용한 진입에서는
+        // 아래 Load 를 또 보내지 않는다(같은 요청 두 번 방지). 지역·테마는 진입 방식이 달라 동시 진입은 없다.
+        if (!initialFilterApplied) {
+            initialFilterApplied = true
+            if (initialSigungu != null) {
+                onIntent(HomeFeedIntent.SetRegion(initialSigungu))
+                return@LaunchedEffect
+            }
             if (initialCategory != null) {
                 onIntent(HomeFeedIntent.SelectCategory(initialCategory))
                 return@LaunchedEffect
@@ -109,6 +114,8 @@ private fun FeedEntryEffects(
 fun RecommendedCoursesPage(
     modifier: Modifier = Modifier,
     initialCategory: String? = null,
+    initialSigungu: String? = null,
+    regionName: String? = null,
 ) {
     StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
@@ -122,6 +129,7 @@ fun RecommendedCoursesPage(
         listState = listState,
         // 홈 테마 타일은 코드("date")를 싣지만, 과거 라우트가 라벨("데이트")을 싣던 시기가 있어 둘 다 받는다.
         initialCategory = CourseTagVO.fromCodeOrLabel(initialCategory),
+        initialSigungu = initialSigungu,
         onIntent = feedViewModel::onIntent,
     )
     LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
@@ -143,6 +151,7 @@ fun RecommendedCoursesPage(
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
         RecommendedTopBar(
+            title = regionName?.let { "$it 코스" } ?: "오늘의 추천 코스",
             selectedCategory = feedState.selectedCategory,
             onSelectCategory = { feedViewModel.onIntent(HomeFeedIntent.SelectCategory(it)) },
             onBack = { navigationHelper.navigateToBack() },
@@ -206,6 +215,7 @@ private val recommendedCategories: List<Pair<CourseTagVO?, String>> =
 
 @Composable
 private fun RecommendedTopBar(
+    title: String,
     selectedCategory: CourseTagVO?,
     onSelectCategory: (CourseTagVO?) -> Unit,
     onBack: () -> Unit,
@@ -224,7 +234,7 @@ private fun RecommendedTopBar(
                 )
             }
             DsText(
-                text = "오늘의 추천 코스",
+                text = title,
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
             )

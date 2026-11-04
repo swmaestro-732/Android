@@ -20,14 +20,19 @@ class GetHomeFeedUseCaseTest {
         var requestedCategory: CourseTagVO? = null
             private set
 
+        var requestedSigungu: String? = null
+            private set
+
         override suspend fun getCourseFeed(
             size: Int,
             cursor: String?,
             category: CourseTagVO?,
+            sigungu: String?,
         ): CursorPageVO<HomeCourseVO> {
             requestedSize = size
             requestedCursor = cursor
             requestedCategory = category
+            requestedSigungu = sigungu
             return CursorPageVO()
         }
 
@@ -86,5 +91,19 @@ class GetHomeFeedUseCaseTest {
             // 전체 조회는 category 없이 나가야 한다(서버가 null 이면 전체를 준다).
             assertEquals(null, all.requestedCategory)
             assertEquals(CourseTagVO.DATE, filtered.requestedCategory)
+        }
+
+    @Test
+    fun `시군구는 손대지 않고 그대로 넘긴다`() =
+        runTest {
+            val all = FakeRepository()
+            val filtered = FakeRepository()
+
+            GetHomeFeedUseCase(all)()
+            GetHomeFeedUseCase(filtered)(sigungu = "11680")
+
+            // 지역 제한 없는 조회는 sigungu 없이 나가야 한다(서버가 null 이면 전국을 준다).
+            assertEquals(null, all.requestedSigungu)
+            assertEquals("11680", filtered.requestedSigungu)
         }
 }
