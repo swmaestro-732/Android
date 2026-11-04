@@ -4,6 +4,7 @@ import android.content.Context
 import com.chillsam.courmy.common.data.BaseRemoteDataSource
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.common.data.network.appBuildNumber
+import com.chillsam.courmy.common.domain.push.NotificationConsentStore
 import com.chillsam.courmy.common.domain.push.NotificationSettings
 import com.chillsam.courmy.common.domain.telemetry.AppFailure
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
@@ -33,7 +34,8 @@ class DeviceRegistration
         private val preferences: PushPreferences,
         @ApplicationContext private val context: Context,
     ) : BaseRemoteDataSource(),
-        NotificationSettings {
+        NotificationSettings,
+        NotificationConsentStore {
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val mutex = Mutex()
         private val settingsMutex = Mutex()
@@ -54,6 +56,87 @@ class DeviceRegistration
                     }
                 }
             }
+
+        override val isDecided: Boolean
+            get() = preferences.consentDecided
+
+        override val marketingAgreed: Boolean
+            get() = preferences.marketingAgreed
+
+        override val nightAgreed: Boolean
+            get() = preferences.nightAgreed
+
+        override val marketingAgreedAt: String?
+            get() = preferences.marketingAgreedAt
+
+        override val nightAgreedAt: String?
+            get() = preferences.nightAgreedAt
+
+        override suspend fun save(
+            marketingAgreed: Boolean,
+            nightAgreed: Boolean,
+        ) = withContext(Dispatchers.IO) {
+            // 서버와 같은 규칙: 야간 동의는 광고성 동의가 선행돼야 한다(DeviceService).
+            val night = nightAgreed && marketingAgreed
+            preferences.marketingAgreed = marketingAgreed
+            preferences.nightAgreed = night
+            // 철회한 항목의 지난 처리 시각은 바로 지워 안내에 남지 않게 한다. 동의한 항목의 시각은 서버 응답으로 채운다.
+            if (!marketingAgreed) preferences.marketingAgreedAt = null
+            if (!night) preferences.nightAgreedAt = null
+            preferences.consentDecided = true
+            preferences.consentSynced = false
+            syncConsent()
+        }
+
+        override suspend fun refreshFromServer() =
+            withContext(Dispatchers.IO) {
+                mutex.withLock {
+                    // 결정 전엔 맞출 것이 없고, 아직 못 보낸 로컬 변경이 있으면 서버 값으로 덮지 않는다.
+                    if (!preferences.consentDecided || !preferences.consentSynced) return@withLock
+                    safely("consent_fetch") {
+                        val consent = checkResponse(api.consent())
+                        require(consent.code == 2000)
+                        preferences.marketingAgreed = consent.data?.marketingAgreedAt != null
+                        preferences.nightAgreed = consent.data?.nightAgreedAt != null
+                        preferences.marketingAgreedAt = consent.data?.marketingAgreedAt
+                        preferences.nightAgreedAt = consent.data?.nightAgreedAt
+                    }
+                }
+            }
+
+        /** 저장된 동의가 서버에 아직 반영되지 않았으면 전송한다. 앱 시작마다 불러 재시도한다. */
+        fun syncConsent() {
+            scope.launch {
+                mutex.withLock {
+                    if (!preferences.consentDecided || preferences.consentSynced) return@withLock
+                    val marketing = preferences.marketingAgreed
+                    val night = preferences.nightAgreed
+                    safely("consent") {
+                        // 토큰이 이미 등록된 기기는 현재 토큰을 함께 보내야 동의를 바꿀 수 있다.
+                        // 토큰 발급이 안 되는 상태(Firebase 미구성 등)에서도 전송은 시도한다.
+                        val token = runCatching { fcm.token() }.getOrNull()
+                        val consent =
+                            checkResponse(
+                                api.updateDevice(
+                                    UpdateDeviceRequest(fcmToken = token, marketing = marketing, night = night),
+                                ),
+                            )
+                        require(consent.code == 2000)
+                        // 응답의 처리 시각으로 실제 반영을 확인한다. 기기 행이 없으면 서버가 동의를
+                        // 버릴 수 있어(응답은 2000) 시각이 비면 미반영으로 두고 다음에 재시도한다.
+                        require((consent.data?.marketingAgreedAt != null) == marketing)
+                        require((consent.data?.nightAgreedAt != null) == night)
+                        // 전송 중 동의가 또 바뀌었으면 이번 결과로 synced·시각을 세우지 않는다.
+                        if (preferences.marketingAgreed == marketing && preferences.nightAgreed == night) {
+                            // 처리 결과 안내에 쓰도록 서버가 확인한 시각을 저장한다.
+                            preferences.marketingAgreedAt = consent.data?.marketingAgreedAt
+                            preferences.nightAgreedAt = consent.data?.nightAgreedAt
+                            preferences.consentSynced = true
+                        }
+                    }
+                }
+            }
+        }
 
         @Volatile private var enabled = true
 
@@ -85,7 +168,7 @@ class DeviceRegistration
                         require(
                             checkResponse(
                                 api.register(
-                                    RegisterDeviceRequest(token = token, platform = "ANDROID", appBuild = build),
+                                    RegisterDeviceRequest(fcmToken = token, platform = "ANDROID", appBuild = build),
                                 ),
                             ).code ==
                                 2000,
@@ -95,14 +178,22 @@ class DeviceRegistration
             }
         }
 
-        /** 인증을 지우기 전에 호출한다. 실패해도 로컬 FCM 토큰을 폐기하고 로그아웃은 진행한다. */
+        /**
+         * 인증을 지우기 전에 호출한다. 실패해도 로그아웃은 진행한다.
+         *
+         * [keepToken] 이면(로그아웃) FCM 토큰과 광고성 동의를 남겨 "비로그인 기기"로 둔다(SCRUM-756 기기 모델) —
+         * 토큰 삭제·auto-init 해제를 건너뛴다. 서버는 `PUT /my/devices`(DELETE) 와 `POST /auth/logout` 에서
+         * 계정 연결만 끊고 토큰·동의는 기기에 남긴다. 전환기(구버전 서버) 대비로 [removeRemote] 요청은 유지한다.
+         * [keepToken] 이 아니면(활동 알림 OFF·탈퇴) 기존대로 토큰까지 폐기한다.
+         */
         suspend fun unregister(
             removeRemote: Boolean = true,
             requireTokenDeletion: Boolean = false,
+            keepToken: Boolean = false,
         ) = withContext(NonCancellable) {
             enabled = false
             generation++
-            safely("disable_auto_init") { fcm.disableAutoInit() }
+            if (!keepToken) safely("disable_auto_init") { fcm.disableAutoInit() }
             mutex.withLock {
                 try {
                     if (removeRemote) {
@@ -113,10 +204,13 @@ class DeviceRegistration
                     }
                 } finally {
                     try {
-                        if (requireTokenDeletion) {
-                            withTimeout(OPERATION_TIMEOUT_MS) { fcm.delete() }
-                        } else {
-                            safely("delete_token") { fcm.delete() }
+                        when {
+                            keepToken -> Unit
+
+                            // 토큰·광고 동의 유지(게스트 기기)
+                            requireTokenDeletion -> withTimeout(OPERATION_TIMEOUT_MS) { fcm.delete() }
+
+                            else -> safely("delete_token") { fcm.delete() }
                         }
                     } finally {
                         context.getSystemService(android.app.NotificationManager::class.java).cancelAll()
