@@ -67,6 +67,7 @@ import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.PlaceRowsSkeleton
 import com.chillsam.courmy.main.presentation.component.SavedCourseCard
 import com.chillsam.courmy.main.presentation.component.SavedPlaceCard
+import com.chillsam.courmy.main.presentation.component.navigateToMainTab
 import com.chillsam.courmy.main.presentation.map.MapPlaceDetailSheet
 
 /** 저장함의 콘텐츠 탭 인덱스. 화면 이탈 후 복귀에도 유지되도록 rememberSaveable 로 든다. */
@@ -164,15 +165,7 @@ private fun SavedCourseList(
 
         CourmyBottomBar(
             selectedTab = MainTab.SAVED,
-            onTabSelected = { tab ->
-                when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
-                    MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
-                    MainTab.MY -> navigationHelper.navigateTo(MyPage)
-                    else -> Unit
-                }
-            },
+            onTabSelected = { tab -> navigationHelper.navigateToMainTab(MainTab.SAVED, tab) },
         )
     }
 
@@ -266,15 +259,7 @@ private fun SavedPlaceList(
 
         CourmyBottomBar(
             selectedTab = MainTab.SAVED,
-            onTabSelected = { tab ->
-                when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
-                    MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
-                    MainTab.MY -> navigationHelper.navigateTo(MyPage)
-                    else -> Unit
-                }
-            },
+            onTabSelected = { tab -> navigationHelper.navigateToMainTab(MainTab.SAVED, tab) },
         )
     }
 

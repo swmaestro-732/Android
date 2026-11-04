@@ -47,6 +47,7 @@ import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.component.navigateToMainTab
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.notification.NotificationBellButton
 import com.chillsam.courmy.main.presentation.notification.NotificationInboxIntent
@@ -310,15 +311,7 @@ fun MyContent(
 
         CourmyBottomBar(
             selectedTab = MainTab.MY,
-            onTabSelected = { tab ->
-                when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
-                    MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
-                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
-                    else -> Unit
-                }
-            },
+            onTabSelected = { tab -> navigationHelper.navigateToMainTab(MainTab.MY, tab) },
         )
     }
 }

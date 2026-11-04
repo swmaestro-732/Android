@@ -271,11 +271,13 @@ class DeviceRegistrationTest {
     @Test
     fun `consent sync stores the server processed timestamps`() =
         runBlocking {
-            val stored = CompletableDeferred<String?>()
-            every { preferences.marketingAgreedAt = any() } answers {
-                val value = firstArg<String?>()
-                marketingAt.set(value)
-                if (value != null && !stored.isCompleted) stored.complete(value)
+            // syncConsent 은 marketingAgreedAt 기록 → nightAgreedAt → consentSynced=true 순서로 쓴다.
+            // 마지막 단계(consentSynced=true)를 기다려야 앞 시각 기록이 모두 끝난 걸 보장한다(기록 직후 깨어나 검증하면 경쟁).
+            val synced = CompletableDeferred<Unit>()
+            every { preferences.consentSynced = any() } answers {
+                val value = firstArg<Boolean>()
+                consentSyncedState.set(value)
+                if (value && !synced.isCompleted) synced.complete(Unit)
                 Unit
             }
             coEvery { api.updateDevice(any()) } returns
@@ -288,7 +290,7 @@ class DeviceRegistrationTest {
 
             devices.save(marketingAgreed = true, nightAgreed = false)
 
-            assertEquals("2026-11-03T05:00:00Z", withTimeout(3_000) { stored.await() })
+            withTimeout(3_000) { synced.await() }
             assertEquals(true, consentSyncedState.get())
             assertEquals("2026-11-03T05:00:00Z", devices.marketingAgreedAt)
         }
