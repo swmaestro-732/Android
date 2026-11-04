@@ -38,6 +38,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
@@ -120,6 +121,7 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
             onTabSelected = { tab ->
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
+                    MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
                     MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
                     else -> Unit
                 }

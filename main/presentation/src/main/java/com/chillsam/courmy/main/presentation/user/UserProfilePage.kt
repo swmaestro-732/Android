@@ -29,6 +29,7 @@ import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.report.ReportAction
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.map.MapPage
@@ -216,6 +217,10 @@ private fun UserProfileContent(
 
                     MainTab.SAVED -> {
                         navigationHelper.navigateTo(SavedPage)
+                    }
+
+                    MainTab.CHAT -> {
+                        navigationHelper.navigateTo(ChatPage)
                     }
 
                     // 비로그인으로 MyPage 에 들어가면 프로필 조회가 401 로 떨어져 오류 화면만 남는다.

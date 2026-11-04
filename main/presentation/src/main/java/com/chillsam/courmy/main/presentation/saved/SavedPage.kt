@@ -51,6 +51,7 @@ import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.map.MapPage
@@ -167,6 +168,7 @@ private fun SavedCourseList(
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
                     MainTab.MAP -> navigationHelper.navigateTo(MapPage)
+                    MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
                     MainTab.MY -> navigationHelper.navigateTo(MyPage)
                     else -> Unit
                 }
@@ -268,6 +270,7 @@ private fun SavedPlaceList(
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
                     MainTab.MAP -> navigationHelper.navigateTo(MapPage)
+                    MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
                     MainTab.MY -> navigationHelper.navigateTo(MyPage)
                     else -> Unit
                 }
@@ -415,6 +418,7 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                 when (tab) {
                     MainTab.HOME -> navigationHelper.navigateTo(HomePage)
                     MainTab.MAP -> navigationHelper.navigateTo(MapPage)
+                    MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
                     MainTab.MY -> navigationHelper.navigateTo(GuestMyPage)
                     else -> Unit
                 }
