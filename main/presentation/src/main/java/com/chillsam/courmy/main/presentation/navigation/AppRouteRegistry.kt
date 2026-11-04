@@ -193,11 +193,15 @@ val appRoutes: List<AppRoute> =
             path = HomeRoute.PATH,
             render = { HomePage() },
         ),
-        // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다.
+        // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다. 지역별 둘러보기 진입 시 지역 인자가 실린다.
         AppRoute(
             path = RecommendedCoursesRoute.PATH,
             render = { args ->
-                RecommendedCoursesPage(initialCategory = args[RecommendedCoursesRoute.ARG_CATEGORY])
+                RecommendedCoursesPage(
+                    initialCategory = args[RecommendedCoursesRoute.ARG_CATEGORY],
+                    sidoCode = args[RecommendedCoursesRoute.ARG_SIDO],
+                    regionName = args[RecommendedCoursesRoute.ARG_REGION_NAME],
+                )
             },
         ),
         // 입력 화면은 공유하며 홈은 코스 결과, 지도는 장소 결과로 이동한다.

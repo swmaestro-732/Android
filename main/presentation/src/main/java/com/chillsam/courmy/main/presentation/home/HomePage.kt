@@ -96,6 +96,38 @@ import com.google.android.gms.location.LocationServices
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
 
+/**
+ * 홈 "지역별 둘러보기" 섹션 노출 플래그. 지역별 코스 필터는 백엔드 선행이라, 서버가 준비되기 전까지
+ * 숨기고 싶으면 false 로 둔다(true 면 타일 지도를 노출). 한 곳에서 false/true 로 켜고 끈다.
+ */
+private const val REGION_BROWSE_ENABLED = true
+
+/** 위치 권한·GPS 가 모두 켜져 있으면 마지막 위치를 받아 [onLocation] 으로 넘긴다(근처 저장 장소 기준점). */
+@Composable
+private fun NearbyLocationEffect(
+    hasPermission: Boolean,
+    gpsEnabled: Boolean,
+    context: Context,
+    onLocation: (Double, Double) -> Unit,
+) {
+    LaunchedEffect(hasPermission, gpsEnabled) {
+        if (hasPermission && gpsEnabled) {
+            fetchLastLocation(context) { lat, lng -> onLocation(lat, lng) }
+        }
+    }
+}
+
+/**
+ * 타일 지도 코드 → area_map 시·도 코드. area_map 은 광주·전남을 코드 "12"로, 울릉을 경북("47") 안에 두므로
+ * 전체 화면 지도로 들어갈 때 그 상위 시·도 코드로 매핑한다.
+ */
+private fun areaMapProvinceCode(tileCode: String): String =
+    when (tileCode) {
+        "29" -> "12"
+        "47U" -> "47"
+        else -> tileCode
+    }
+
 /** 테마별 둘러보기 타일. 탭하면 추천 코스의 해당 코스 태그 필터를 연다(코스 문맥이라 12종). */
 private val themeTiles = CourseTagVO.entries
 
@@ -132,12 +164,8 @@ fun HomePage(modifier: Modifier = Modifier) {
         rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             locationTick++
         }
-    LaunchedEffect(hasLocationPermission, gpsEnabled) {
-        if (hasLocationPermission && gpsEnabled) {
-            fetchLastLocation(context) { lat, lng ->
-                homeViewModel.onIntent(HomeIntent.UpdateLocation(lat, lng))
-            }
-        }
+    NearbyLocationEffect(hasLocationPermission, gpsEnabled, context) { lat, lng ->
+        homeViewModel.onIntent(HomeIntent.UpdateLocation(lat, lng))
     }
 
     // 코스를 만들거나 장소를 저장하고 돌아오면 섹션이 바뀌어 있을 수 있어 다시 불러온다.
@@ -244,6 +272,19 @@ fun HomePage(modifier: Modifier = Modifier) {
                     },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
+            }
+            if (REGION_BROWSE_ENABLED) {
+                item {
+                    RegionBrowseSection(
+                        // 지역을 누르면 그 시·도의 "{지역} 코스" 목록으로 가서 세부 지역(구·군) 칩으로 더 좁힌다.
+                        onRegionClick = { code, name ->
+                            navigationHelper.navigateByRoute(
+                                RecommendedCoursesPage.regionRoute(sido = areaMapProvinceCode(code), regionName = name),
+                            )
+                        },
+                        modifier = Modifier.padding(top = 8.dp).padding(horizontal = ScreenHorizontalPadding),
+                    )
+                }
             }
         }
 
@@ -439,6 +480,37 @@ private fun SectionHeader(
                         .clip(RoundedCornerShape(percent = 50))
                         .clickable(onClick = onAction)
                         .padding(horizontal = 4.dp, vertical = 4.dp),
+            )
+        }
+    }
+}
+
+/**
+ * 지역별 둘러보기 섹션. 테마별 둘러보기와 짝을 이루는 또 하나의 둘러보기 축으로, 그 바로 아래에 둔다.
+ *
+ * 디자인 목업과 동일한 **그리드 타일 지도**([RegionTileMap])를 흰 카드 위에 띄운다. 지역을 누르면
+ * 그 지역의 "{지역} 코스" 목록으로 가서 세부 지역(구·군)을 칩으로 더 좁힌다([onRegionClick]).
+ */
+@Composable
+private fun RegionBrowseSection(
+    onRegionClick: (code: String, name: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(title = "지역별 둘러보기")
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(color.bgDefaultLevel1)
+                    .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(20.dp))
+                    .padding(8.dp),
+        ) {
+            RegionTileMap(
+                onRegionClick = onRegionClick,
+                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 25f),
             )
         }
     }
