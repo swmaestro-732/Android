@@ -24,9 +24,14 @@ import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.FeatureFlags
 
 internal val BottomBarHeight = 60.dp
 private val TabIconSize = 24.dp
+
+// 기능 토글로 꺼진 탭(예: 채팅)은 하단바에서 제외한다. 값이 const 라 한 번만 계산한다.
+private val visibleMainTabs: List<MainTab> =
+    MainTab.entries.filter { it != MainTab.CHAT || FeatureFlags.CHAT_ENABLED }
 
 /**
  * 앱 공용 하단 탭바. 홈·지도·채팅·저장·마이 하단 네비게이션 목적지에서 공유한다.
@@ -71,7 +76,7 @@ fun CourmyBottomBar(
                     .height(BottomBarHeight),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            MainTab.entries.forEach { tab ->
+            visibleMainTabs.forEach { tab ->
                 BottomBarTabItem(
                     tab = tab,
                     selected = tab == selectedTab,

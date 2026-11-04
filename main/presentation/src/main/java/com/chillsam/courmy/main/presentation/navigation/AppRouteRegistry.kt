@@ -29,6 +29,7 @@ import com.chillsam.courmy.course.presentation.DraftListViewModel
 import com.chillsam.courmy.course.presentation.PlanDetailPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.map.searchBounds
+import com.chillsam.courmy.main.presentation.FeatureFlags
 import com.chillsam.courmy.main.presentation.chat.ChatPage
 import com.chillsam.courmy.main.presentation.chat.ChatRoomPage
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
@@ -500,7 +501,10 @@ val appRoutes: List<AppRoute> =
                 )
             },
         ),
-    )
+    ).filter { route ->
+        // 채팅 기능 토글이 꺼져 있으면 채팅 라우트(/chat, /chat/room)를 등록하지 않는다.
+        FeatureFlags.CHAT_ENABLED || (route.path != ChatRoute.PATH && route.path != ChatRoomRoute.PATH)
+    }
 
 val appRouteByPath: Map<String, AppRoute> = appRoutes.associateBy { it.path }
 
