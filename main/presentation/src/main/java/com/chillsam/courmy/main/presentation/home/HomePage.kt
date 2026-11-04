@@ -8,14 +8,12 @@ import android.location.LocationManager
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -33,6 +31,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,12 +41,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -70,7 +65,6 @@ import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
-import com.chillsam.courmy.common.presentation.ui.color.RegionColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
@@ -96,11 +90,10 @@ import com.chillsam.courmy.main.presentation.component.themeImageRes
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
+import com.chillsam.courmy.main.presentation.my.RegionMapIntent
+import com.chillsam.courmy.main.presentation.my.RegionMapViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.google.android.gms.location.LocationServices
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
@@ -442,139 +435,57 @@ private fun SectionHeader(
     }
 }
 
-/** 홈 지역별 둘러보기의 6권역. 블롭 지도 위치(정규화 0..1 좌표)·색·모양 seed 를 들고 있다. */
-private data class RegionBlob(
-    val label: String,
-    val regionColor: RegionColor,
-    val cx: Float,
-    val cy: Float,
-    val rx: Float,
-    val ry: Float,
-    val seed: Float,
-)
-
-/** 한반도 윤곽을 닮도록 배치한 6권역. 좌표는 세로형 드로잉 영역(0..1) 기준이며 블롭·라벨이 공유한다. */
-private val regionBlobs =
-    listOf(
-        RegionBlob("수도권", RegionColor.CAPITAL, cx = 0.34f, cy = 0.25f, rx = 0.160f, ry = 0.150f, seed = 0.6f),
-        RegionBlob("강원", RegionColor.GANGWON, cx = 0.69f, cy = 0.23f, rx = 0.175f, ry = 0.150f, seed = 1.7f),
-        RegionBlob("충청", RegionColor.CHUNGCHEONG, cx = 0.42f, cy = 0.47f, rx = 0.180f, ry = 0.140f, seed = 2.9f),
-        RegionBlob("경상", RegionColor.GYEONGSANG, cx = 0.68f, cy = 0.58f, rx = 0.170f, ry = 0.185f, seed = 3.5f),
-        RegionBlob("전라", RegionColor.JEOLLA, cx = 0.34f, cy = 0.68f, rx = 0.165f, ry = 0.148f, seed = 4.2f),
-        RegionBlob("제주", RegionColor.JEJU, cx = 0.42f, cy = 0.93f, rx = 0.085f, ry = 0.058f, seed = 5.1f),
-    )
-
-/** 드로잉 영역 가로 비율(박스 높이 기준). 한반도가 세로로 길어 가로를 0.9배로 좁힌다. */
-private const val REGION_MAP_ASPECT = 0.9f
-
 /**
  * 지역별 둘러보기 섹션. 테마별 둘러보기와 짝을 이루는 또 하나의 둘러보기 축으로, 그 바로 아래에 둔다.
  *
- * 실제 행정구역 폴리곤 대신 **단순화된 6권역 블롭 지도**를 그린다. 각 권역(수도권·강원·충청·전라·경상·제주)은
- * 파스텔 블롭 + 흰 알약 라벨이고, 라벨을 누르면 그 권역 코스 목록([RecommendedCoursesPage])으로 간다.
- * 섹션 헤더의 "전체보기"는 전체 화면 전국 지도([RegionBrowsePage])로 들어가 시·군·구까지 고른다.
+ * 앱에 포함된 실제 행정구역(시·도)을 권역 색으로 채운 **부드러운 실루엣 지도**([RegionSilhouetteMap])를
+ * 띄운다. 지역을 누르면 그 지역 코스 목록([RecommendedCoursesPage])으로, 헤더 "전체보기"는 전체 화면
+ * 전국 지도([RegionBrowsePage])로 들어가 시·군·구까지 고른다. 지도 데이터는 관심 지역 편집과 같은
+ * [RegionMapViewModel] 을 재사용하되, 프로필 의존 없이 바로 불러온다.
  */
 @Composable
 private fun RegionBrowseSection(
     onRegionClick: (NavRoute) -> Unit,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: RegionMapViewModel = hiltViewModel(),
 ) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) {
+        viewModel.onIntent(RegionMapIntent.Initialize(editing = false, regions = emptyList()))
+    }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionHeader(
             title = "지역별 둘러보기",
             actionLabel = "전체보기",
             onAction = onOpen,
         )
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(230.dp)) {
-            // bias(=정렬 비율, 무차원) 계산이라 Dp 의 raw 값으로 비율만 맞춘다.
-            val fullW = maxWidth.value
-            val mapW = maxHeight.value * REGION_MAP_ASPECT
-            val originX = (fullW - mapW) / 2f
-
-            // 블롭(파스텔 채움)을 먼저 그린다. 라벨 좌표와 같은 세로형 영역 계산을 쓴다.
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val mapWpx = size.height * REGION_MAP_ASPECT
-                val originXpx = (size.width - mapWpx) / 2
-                regionBlobs.forEach { blob ->
-                    drawPath(
-                        path =
-                            organicBlobPath(
-                                center = Offset(originXpx + blob.cx * mapWpx, blob.cy * size.height),
-                                rx = blob.rx * mapWpx,
-                                ry = blob.ry * size.height,
-                                seed = blob.seed,
-                            ),
-                        color = blob.regionColor.color,
+        Box(modifier = Modifier.fillMaxWidth().height(320.dp), contentAlignment = Alignment.Center) {
+            when {
+                state.loadError -> {
+                    DsText(
+                        text = "지도를 불러오지 못했어요",
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel2,
                     )
                 }
-            }
 
-            // 권역별 흰 알약 라벨을 블롭 중심에 올리고, 누르면 그 권역 코스 목록으로 보낸다.
-            regionBlobs.forEach { blob ->
-                val biasX = (((originX + blob.cx * mapW) / fullW) * 2 - 1).coerceIn(-1f, 1f)
-                val biasY = (blob.cy * 2 - 1).coerceIn(-1f, 1f)
-                Box(modifier = Modifier.align(BiasAlignment(biasX, biasY))) {
-                    RegionPill(
-                        label = blob.label,
-                        onClick = { onRegionClick(RecommendedCoursesPage.regionNameRoute(blob.label)) },
+                state.isLoading -> {
+                    CircularProgressIndicator(color = color.contentAccent, modifier = Modifier.size(28.dp))
+                }
+
+                else -> {
+                    RegionSilhouetteMap(
+                        regions = state.regions,
+                        onRegionClick = { code, name ->
+                            onRegionClick(RecommendedCoursesPage.regionRoute(sigungu = code, regionName = name))
+                        },
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
         }
-    }
-}
-
-/** 블롭 위에 올리는 흰 알약 라벨. 지역 이름을 읽히게 하고 탭 타깃이 된다. */
-@Composable
-private fun RegionPill(
-    label: String,
-    onClick: () -> Unit,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    DsText(
-        text = label,
-        style = DesignSystemThemeImpl.typeScale.textStrongS,
-        color = color.contentDefaultLevel0,
-        modifier =
-            Modifier
-                .shadow(3.dp, RoundedCornerShape(percent = 50), clip = false)
-                .clip(RoundedCornerShape(percent = 50))
-                .background(color.bgDefaultLevel1)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 11.dp, vertical = 6.dp),
-    )
-}
-
-/**
- * 부드러운 유기체(블롭) 닫힌 경로. 타원 둘레를 두 사인 하모닉으로 흔든 점들을 Catmull-Rom → 베지어로
- * 이어 손그림 같은 둥근 덩어리를 만든다. [seed] 로 권역마다 모양을 다르게 한다.
- */
-private fun organicBlobPath(
-    center: Offset,
-    rx: Float,
-    ry: Float,
-    seed: Float,
-): Path {
-    val count = 14
-    val pts =
-        (0 until count).map { i ->
-            val t = (2.0 * PI * i / count).toFloat()
-            val wobble = 1f + 0.12f * sin(3 * t + seed) + 0.07f * cos(5 * t + seed * 1.3f)
-            Offset(center.x + rx * wobble * cos(t), center.y + ry * wobble * sin(t))
-        }
-    return Path().apply {
-        moveTo(pts[0].x, pts[0].y)
-        for (i in 0 until count) {
-            val p0 = pts[(i - 1 + count) % count]
-            val p1 = pts[i]
-            val p2 = pts[(i + 1) % count]
-            val p3 = pts[(i + 2) % count]
-            val c1 = Offset(p1.x + (p2.x - p0.x) / 6f, p1.y + (p2.y - p0.y) / 6f)
-            val c2 = Offset(p2.x - (p3.x - p1.x) / 6f, p2.y - (p3.y - p1.y) / 6f)
-            cubicTo(c1.x, c1.y, c2.x, c2.y, p2.x, p2.y)
-        }
-        close()
     }
 }
 
