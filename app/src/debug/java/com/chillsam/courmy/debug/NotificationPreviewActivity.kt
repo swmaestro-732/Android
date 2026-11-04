@@ -181,9 +181,7 @@ private fun previewState(): NotificationInboxUIState {
             "COURSE_COMMENTED",
             "USER_FOLLOWED",
             "COURSE_LIKED",
-            "COURSE_BOOKMARKED",
             "COURSE_REVIEWED",
-            "COURSE_TRACE_COMPLETED",
         )
     val names = listOf("지민", "서연", "민수", "하늘", "유진", "도윤")
     val titles = listOf("성수에서 보내는 느긋한 오후", null, "주말엔 연남동 골목 산책", "성수에서 보내는 느긋한 오후", "한강 따라 노을 산책", "주말엔 연남동 골목 산책")
