@@ -41,15 +41,11 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
-/**
- * 더보기(…) 메뉴. 신고는 항상, 공유는 [onShare] 를 넘긴 호출부에서만 메뉴 위에 노출한다.
- * 실제 지원되는 대상 ID를 명시하여 연다. 장소·후기를 다른 대상으로 대체하지 않는다.
- */
+/** 실제 지원되는 대상 ID를 명시하여 연다. 장소·후기를 다른 대상으로 대체하지 않는다. */
 @Composable
 fun ReportAction(
     targetType: ReportTargetType,
     targetId: Long,
-    onShare: (() -> Unit)? = null,
 ) {
     var expanded by remember(targetType, targetId) { mutableStateOf(false) }
     var reporting by remember(targetType, targetId) { mutableStateOf(false) }
@@ -76,18 +72,6 @@ fun ReportAction(
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            onShare?.let { share ->
-                DropdownMenuItem(text = {
-                    DsText(
-                        text = "공유",
-                        style = DesignSystemThemeImpl.typeScale.textRegularS,
-                        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
-                    )
-                }, onClick = {
-                    expanded = false
-                    share()
-                })
-            }
             DropdownMenuItem(text = {
                 DsText(
                     text = "신고하기",

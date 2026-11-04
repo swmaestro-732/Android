@@ -163,8 +163,8 @@ private fun UserProfileContent(
                 onBack = { navigationHelper.navigateToBack() },
                 // 소개가 비어 있으면 줄 자체를 두지 않는다.
                 bio = profile.bio.ifBlank { null },
-                // 팔로우는 신원(아바타·닉네임) 줄 우측에 아이콘으로 붙인다. 마이 화면에는 없다.
-                identityAction =
+                // 팔로우는 신원·소개 아래 전체 폭 버튼으로 둔다. 마이 화면에는 없다.
+                primaryAction =
                     if (!profile.isMe) {
                         {
                             FollowButton(
@@ -177,19 +177,16 @@ private fun UserProfileContent(
                         null
                     },
             ) {
-                // 공유는 더보기(…) 메뉴 안으로 접는다. 내 프로필은 … 메뉴(신고)가 없어 아이콘으로 남긴다.
-                if (!profile.isMe) {
-                    ReportAction(
-                        targetType = ReportTargetType.USER,
-                        targetId = profile.id,
-                        onShare = if (FeatureFlags.SHARE_ENABLED) shareProfile else null,
-                    )
-                } else if (FeatureFlags.SHARE_ENABLED) {
+                // 공유는 상단 단독 아이콘으로 둔다. 타유저 프로필은 그 옆에 더보기(…) 신고 메뉴가 붙는다.
+                if (FeatureFlags.SHARE_ENABLED) {
                     ProfileHeaderIconButton(
                         iconRes = R.drawable.ic_share_24,
                         contentDescription = "공유",
                         onClick = shareProfile,
                     )
+                }
+                if (!profile.isMe) {
+                    ReportAction(ReportTargetType.USER, profile.id)
                 }
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
