@@ -40,4 +40,16 @@ object RecommendedCoursesPage : Page {
             path = PATH,
             args = mapOf(ARG_SIGUNGU to sigungu, ARG_REGION_NAME to regionName),
         )
+
+    /**
+     * 홈 지역별 둘러보기의 권역(수도권·강원 등) 블롭에서 진입할 때 쓴다. [regionName] 은 권역 이름.
+     *
+     * 권역은 여러 시·도를 묶은 것이라 단일 법정동코드가 없다. [wiki-needed] 백엔드 선행: 권역 필터 계약이
+     * 없어 지금은 제목만 "{권역} 코스"로 바꾸고 목록은 전국을 그대로 받는다(sigungu 는 싣지 않는다).
+     */
+    fun regionNameRoute(regionName: String): NavRoute =
+        NavRoute(
+            path = PATH,
+            args = mapOf(ARG_REGION_NAME to regionName),
+        )
 }
