@@ -103,6 +103,24 @@ import com.google.android.gms.location.LocationServices
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
 
+/**
+ * 진행 중인 코스 종료(end)가 서버에 실제로 기록되면 저장함(코스 · 완주)으로 보낸다
+ * — 다이얼로그 안내("저장함에서 볼 수 있어요")와 목적지를 맞춘다. 실패하면 이동하지 않는다.
+ */
+@Composable
+private fun InProgressEndedEffect(
+    ended: Boolean,
+    onConsume: () -> Unit,
+    onNavigate: () -> Unit,
+) {
+    LaunchedEffect(ended) {
+        if (ended) {
+            onConsume()
+            onNavigate()
+        }
+    }
+}
+
 /** 위치 권한·GPS 가 모두 켜져 있으면 마지막 위치를 받아 [onLocation] 으로 넘긴다(근처 저장 장소 기준점). */
 @Composable
 private fun NearbyLocationEffect(
@@ -155,14 +173,11 @@ fun HomePage(modifier: Modifier = Modifier) {
     // 헤더 인사말·아바타는 내 프로필에서 가져온다.
     val profile = if (session.isLoggedIn) myProfileForHeader() else null
 
-    // 진행 중인 코스 종료(end)가 서버에 실제로 기록되면 저장함(코스 · 완주)으로 보낸다
-    // — 다이얼로그 안내("저장함에서 볼 수 있어요")와 목적지를 맞춘다. 실패하면 이동하지 않는다.
-    LaunchedEffect(homeState.inProgressEnded) {
-        if (homeState.inProgressEnded) {
-            homeViewModel.onIntent(HomeIntent.ConsumeInProgressEnded)
-            navigationHelper.navigateByRoute(SavedPage.completedCourses())
-        }
-    }
+    InProgressEndedEffect(
+        ended = homeState.inProgressEnded,
+        onConsume = { homeViewModel.onIntent(HomeIntent.ConsumeInProgressEnded) },
+        onNavigate = { navigationHelper.navigateByRoute(SavedPage.completedCourses()) },
+    )
 
     // 근처 저장 장소의 거리 기준점(SCRUM-634). 권한·GPS 상태는 설정에 다녀오면 바뀔 수 있어
     // 복귀할 때마다 다시 평가한다(locationTick).

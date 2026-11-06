@@ -300,20 +300,7 @@ class CourseFollowViewModel
                 }
 
                 is CourseFollowReducerEvent.Visited -> {
-                    if (event.finishedAtMillis != null) {
-                        state.copy(
-                            isRecording = false,
-                            phase = CourseFollowPhase.DONE,
-                            visitedCount = state.visitedCount + 1,
-                            finishedAtMillis = event.finishedAtMillis,
-                        )
-                    } else {
-                        state.copy(
-                            isRecording = false,
-                            visitedCount = state.visitedCount + 1,
-                            currentIndex = state.currentIndex + 1,
-                        )
-                    }
+                    reduceVisited(state, event)
                 }
 
                 CourseFollowReducerEvent.RecordingStarted -> {
@@ -323,6 +310,26 @@ class CourseFollowViewModel
                 CourseFollowReducerEvent.ErrorConsumed -> {
                     state.copy(errorMessage = null)
                 }
+            }
+
+        /** 방문 체크 반영. 마지막 장소였으면([finishedAtMillis]) 완주(DONE)로, 아니면 다음 장소로 넘긴다. */
+        private fun reduceVisited(
+            state: CourseFollowUIState,
+            event: CourseFollowReducerEvent.Visited,
+        ): CourseFollowUIState =
+            if (event.finishedAtMillis != null) {
+                state.copy(
+                    isRecording = false,
+                    phase = CourseFollowPhase.DONE,
+                    visitedCount = state.visitedCount + 1,
+                    finishedAtMillis = event.finishedAtMillis,
+                )
+            } else {
+                state.copy(
+                    isRecording = false,
+                    visitedCount = state.visitedCount + 1,
+                    currentIndex = state.currentIndex + 1,
+                )
             }
 
         private companion object {
