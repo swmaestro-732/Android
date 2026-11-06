@@ -33,7 +33,9 @@ data class HomeDTO(
 
 /**
  * 홈의 "진행 중인 코스" 카드 DTO. 이어가기용 [courseId]·[traceId] 와 요약(area·placeCount)·시작 시각을 싣는다.
- * 진행도(방문 수/전체 수)는 이 응답에 없다 — 서버가 주면 그때 추가한다.
+ *
+ * [visitedPlaceCount] 로 진행도(방문/전체)를, [isDeleted] 로 코스를 더 볼 수 없는 상태(삭제·비활성·
+ * 타인 비공개 전환)를 나타낸다. 서버가 아직 주지 않으면 null → 기본값으로 안전 처리한다. [wiki-needed]
  */
 @Serializable
 data class TracingCourseDTO(
@@ -43,6 +45,8 @@ data class TracingCourseDTO(
     val coverImageUrl: String? = null,
     val area: String? = null,
     val placeCount: Int? = null,
+    val visitedPlaceCount: Int? = null,
+    val isDeleted: Boolean? = null,
     val startedAt: String? = null,
 )
 
@@ -99,6 +103,8 @@ internal fun TracingCourseDTO.toVO(): HomeInProgressCourseVO? {
         coverImageUrl = coverImageUrl.orEmpty(),
         area = area.orEmpty(),
         placeCount = (placeCount ?: 0).coerceAtLeast(0),
+        visitedPlaceCount = visitedPlaceCount?.coerceAtLeast(0),
+        isDeleted = isDeleted ?: false,
         startedAt = startedAt.orEmpty(),
     )
 }

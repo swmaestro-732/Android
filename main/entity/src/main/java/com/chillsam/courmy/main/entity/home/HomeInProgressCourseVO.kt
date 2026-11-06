@@ -16,9 +16,25 @@ data class HomeInProgressCourseVO(
     val area: String = "",
     /** 코스에 담긴 장소 수. 요약에 "N곳"으로 쓴다. */
     val placeCount: Int = 0,
+    /** 지금까지 방문(완료)한 장소 수. 진행도 "방문/전체" 표시에 쓴다. 서버가 안 주면 null(진행도 숨김). */
+    val visitedPlaceCount: Int? = null,
+    /** 코스를 더 볼 수 없는 상태(삭제·비활성·타인 비공개 전환). true 면 "비공개된 코스"로 표시하되 따라가기는 계속한다. */
+    val isDeleted: Boolean = false,
     /** 시작 시각(ISO-8601 UTC). 서버가 주지 않으면 빈 문자열. */
     val startedAt: String = "",
 ) {
+    /** 진행도를 보여 줄 수 있는지(방문 수가 있고 전체 수가 1 이상). */
+    val hasProgress: Boolean
+        get() = visitedPlaceCount != null && placeCount > 0
+
+    /** 진행도 비율(0f~1f). 전체 수가 0 이면 0. 진행도 막대에 쓴다. */
+    val progress: Float
+        get() = if (hasProgress) ((visitedPlaceCount ?: 0).toFloat() / placeCount).coerceIn(0f, 1f) else 0f
+
+    /** 진행도 텍스트(예: "2 / 5"). 진행도 정보가 없으면 빈 문자열. */
+    val progressText: String
+        get() = if (hasProgress) "${visitedPlaceCount ?: 0} / $placeCount" else ""
+
     /** 카드 요약 줄: 지역 · N곳 (있는 것만 이어 붙인다). */
     val summaryText: String
         get() =

@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.home
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.course.domain.EndCourseTraceUseCase
 import com.chillsam.courmy.main.domain.home.GetHomeUseCase
 import com.chillsam.courmy.main.presentation.location.DefaultLocation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -10,6 +11,8 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 /**
@@ -26,6 +29,7 @@ class HomeViewModel
     @Inject
     constructor(
         private val getHomeUseCase: GetHomeUseCase,
+        private val endCourseTraceUseCase: EndCourseTraceUseCase,
     ) : MviViewModel<HomeIntent, HomeUIState, HomeReducerEvent>(
             HomeUIState.empty,
         ) {
@@ -53,9 +57,48 @@ class HomeViewModel
                 }
 
                 HomeIntent.DismissInProgressCourse -> {
-                    dispatch(HomeReducerEvent.InProgressDismissed)
+                    endInProgressTrace()
                 }
             }
+        }
+
+        /**
+         * 진행 중인 코스 카드의 X(종료). 따라가기 세션을 서버에서 종료(`POST /api/v1/traces/{traceId}/end`)하고
+         * 홈 카드를 숨긴다. 서버는 중간 종료도 완주(COMPLETED)로 기록한다 — 별도 포기 API 는 없다.
+         *
+         * 방문 장소는 체크인 때 이미 올라갔으므로 종료 본문엔 빈 목록을 보낸다(서버가 이미 있는 장소는 무시).
+         * 소요 시간은 startedAt~지금으로 계산하고, 이동 거리는 홈에 값이 없어 0 을 보낸다(서버 최소값 0 허용).
+         *
+         * 카드는 낙관적으로 먼저 숨긴다 — 종료 기록은 네트워크를 기다리지 않으며, 실패하면 다음 새로고침에
+         * 서버가 아직 진행 중인 세션을 다시 내려줘 스스로 보정된다(이미 종료됐으면 409 는 무시).
+         */
+        private fun endInProgressTrace() {
+            val course = currentState.inProgressCourse ?: return
+            dispatch(HomeReducerEvent.InProgressDismissed)
+            val traceId = course.traceId
+            if (traceId <= 0L) return
+            viewModelScope.launch {
+                runCatching {
+                    endCourseTraceUseCase(
+                        traceId = traceId,
+                        visits = emptyList(),
+                        durationMinutes = elapsedMinutesSince(course.startedAt),
+                        distanceMeters = 0,
+                    )
+                }.onFailure { e ->
+                    if (e is CancellationException) throw e
+                    Log.w(TAG, "진행 중인 코스 종료 실패: traceId=$traceId", e)
+                }
+            }
+        }
+
+        /** startedAt(ISO-8601 UTC)부터 지금까지 경과(분). 파싱 실패·미래 시각이면 0. */
+        private fun elapsedMinutesSince(startedAt: String): Int {
+            val started = runCatching { Instant.parse(startedAt) }.getOrNull() ?: return 0
+            return ChronoUnit.MINUTES
+                .between(started, Instant.now())
+                .coerceAtLeast(0L)
+                .toInt()
         }
 
         override fun reduce(
