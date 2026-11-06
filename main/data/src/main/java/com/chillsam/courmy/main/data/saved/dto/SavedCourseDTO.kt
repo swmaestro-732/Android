@@ -49,8 +49,10 @@ data class SavedCourseSummaryDTO(
     val coverImageUrl: String? = null,
     /** 지역(예: "성수"). 코스에 값이 없으면 null 이라 칩에서 생략한다. */
     val area: String? = null,
-    /** 공통 카테고리 소문자 코드. */
+    /** 공통 카테고리 코드(단일). [themes] 의 첫 값 — 구버전 앱 호환용. 없으면 null. */
     val theme: String? = null,
+    /** 코스 테마 목록(카테고리 enum 이름, 선언 순서). 코스는 테마가 여러 개일 수 있다. 없으면 빈 배열/null. */
+    val themes: List<String>? = null,
     val placeCount: Int? = null,
     val durationText: String? = null,
     val author: SavedCourseAuthorDTO? = null,
@@ -79,7 +81,7 @@ internal fun SavedCourseScreenDTO.toVOList(): List<SavedCourseVO> =
             val course = item.course
             SavedCourseVO(
                 id = item.courseId.toString(),
-                tagLabel = tagLabelOf(course?.area, course?.theme),
+                tagLabel = tagLabelOf(course?.area, course?.theme, course?.themes),
                 title = course?.title.orEmpty(),
                 placeLabel = "장소 ${course?.placeCount ?: 0}곳",
                 // 핸들이 없는 작성자는 닉네임으로 대신 표기한다(카드에 빈 줄을 남기지 않게).
@@ -95,15 +97,22 @@ internal fun SavedCourseScreenDTO.toVOList(): List<SavedCourseVO> =
             )
         }
 
-/** "성수 · 데이트" 형태. 한쪽이 비면 남은 하나만, 둘 다 없으면 빈 문자열(칩을 렌더하지 않는다). */
+/**
+ * "성수 · 데이트 · 카페 투어" 형태 — 지역 뒤에 코스 테마 라벨을 모두 이어 붙인다(코스 상세와 같은 톤).
+ *
+ * 테마는 복수 [themes] 를 우선 쓰고, 없으면 구버전 단일 [theme] 로 폴백한다. 서버가 주는 값은
+ * 카테고리 코드(enum 이름)라 라벨로 바꾸며, 알아보지 못한 코드는 칩을 지저분하게 하지 않게 건너뛴다.
+ * 지역·테마가 전부 비면 빈 문자열(칩을 렌더하지 않는다).
+ */
 private fun tagLabelOf(
     area: String?,
     theme: String?,
-): String =
-    listOfNotNull(
-        area?.takeIf { it.isNotBlank() },
-        theme.toCourseTagLabel().takeIf { it.isNotBlank() },
-    ).joinToString(" · ")
+    themes: List<String>?,
+): String {
+    val themeCodes = themes?.takeIf { it.isNotEmpty() } ?: listOfNotNull(theme)
+    val themeLabels = themeCodes.mapNotNull { it.toCourseTagLabel().takeIf { label -> label.isNotBlank() } }
+    return (listOfNotNull(area?.takeIf { it.isNotBlank() }) + themeLabels).joinToString(" · ")
+}
 
 @Serializable
 data class SavedCourseFolderDTO(
