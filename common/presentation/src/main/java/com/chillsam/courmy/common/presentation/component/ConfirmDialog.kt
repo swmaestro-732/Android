@@ -94,6 +94,7 @@ fun DsDialogScaffold(
     title: String,
     description: String,
     onDismiss: () -> Unit,
+    icon: (@Composable () -> Unit)? = null,
     actions: @Composable ColumnScope.() -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -121,6 +122,8 @@ fun DsDialogScaffold(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                // 제목 위 선택적 아이콘(예: 알림 종). 없으면 기존 질문→설명 레이아웃 그대로.
+                icon?.invoke()
                 DsText(
                     text = title,
                     style = DesignSystemThemeImpl.typeScale.textStrongM,

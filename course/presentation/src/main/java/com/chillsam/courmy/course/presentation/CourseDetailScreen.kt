@@ -44,11 +44,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -69,12 +71,14 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.report.ReportAction
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.modifier.cardElevation
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -115,15 +119,19 @@ fun CourseDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val telemetry = LocalTelemetry.current
     val context = LocalContext.current
     // 장소 행 화살표를 누르면 해당 장소 상세 시트를 띄운다(null 이면 시트 닫힘).
-    var selectedPlace by remember { mutableStateOf<CourseDetailPlaceVO?>(null) }
+    var selectedPlaceId by rememberSaveable(courseId) { mutableStateOf<Long?>(null) }
     // 지도의 "자세히" 로 열면 시트를 코스 전체 보기 상태로 시작한다.
-    var openSheetInOverview by remember { mutableStateOf(false) }
+    var openSheetInOverview by rememberSaveable(courseId) { mutableStateOf(false) }
     val placeDetailViewModel: PlaceDetailViewModel = hiltViewModel()
     val placeDetailState by placeDetailViewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(selectedPlaceId) {
+        selectedPlaceId?.let { placeDetailViewModel.open(placeId = it) }
+    }
     // 댓글은 본문에 깔지 않고 하단 시트로 띄운다([CourseCommentSheet]).
-    var showComments by remember { mutableStateOf(false) }
+    var showComments by rememberSaveable(courseId) { mutableStateOf(false) }
     // 히어로(커버·제목)가 스크롤로 가려지면 상단 고정 바가 제목·요약을 대신 보여준다.
     val scrollState = rememberScrollState()
     var heroHeightPx by remember { mutableStateOf(0) }
@@ -205,22 +213,16 @@ fun CourseDetailScreen(
                         authorName = detail.authorName,
                         onPlaceClick = { place ->
                             openSheetInOverview = false
-                            selectedPlace = place
-                            placeDetailViewModel.open(placeId = place.placeId)
+                            selectedPlaceId = place.placeId
                         },
                     )
                     // 장소를 다 훑은 뒤 전체 동선을 확인하는 자리다.
+                    // 미니맵은 핀·지도 어디를 눌러도 전체 화면 지도로 연다. 개별 장소 상세는 그 안에서 핀을 눌러 본다.
                     CourseMapSection(
                         places = detail.places,
-                        onPlaceClick = { place ->
-                            openSheetInOverview = false
-                            selectedPlace = place
-                            placeDetailViewModel.open(placeId = place.placeId)
-                        },
                         onOpenDetail = { place ->
                             openSheetInOverview = true
-                            selectedPlace = place
-                            placeDetailViewModel.open(placeId = place.placeId)
+                            selectedPlaceId = place.placeId
                         },
                     )
                     // Figma FS-11 에서 리뷰는 장소·동선을 다 본 뒤(= 코스 자체 정보의 끝) 오는 남의 평가다.
@@ -239,7 +241,10 @@ fun CourseDetailScreen(
             }
             DetailBottomBar(
                 isMine = detail.isMine,
-                onCommentClick = { showComments = true },
+                onCommentClick = {
+                    telemetry.buttonClick("/course/detail", "comments", mapOf("course_id" to courseId.toString()))
+                    showComments = true
+                },
                 onForkClick = actions.onForkCourse,
                 onFollowClick = actions.onFollowCourse,
             )
@@ -255,12 +260,13 @@ fun CourseDetailScreen(
         CourseCommentSheet(
             courseId = courseId,
             onDismiss = { showComments = false },
+            onAuthorClick = actions.onCommentAuthorClick,
         )
     }
-    val currentPlace = selectedPlace
+    val currentPlace = detail.places.firstOrNull { it.placeId == selectedPlaceId }
     if (currentPlace != null) {
         val dismiss = {
-            selectedPlace = null
+            selectedPlaceId = null
             openSheetInOverview = false
             placeDetailViewModel.clear()
         }
@@ -268,7 +274,11 @@ fun CourseDetailScreen(
         // 응답을 기다렸다 띄우면 다른 장소로 옮길 때마다 시트가 닫혔다 다시 열린다.
         // 어느 장소로 옮길지(이동 바·핀 탭·장소 이동 줄)는 시트가 정하고, 여기서는 받아서 다시 조회한다.
         PlaceDetailSheet(
-            coursePlace = currentPlace,
+            coursePlace =
+                currentPlace.copy(
+                    detailCategory =
+                        placeDetailState.place?.detailCategory ?: currentPlace.detailCategory,
+                ),
             course =
                 PlaceSheetCourse(
                     title = detail.title,
@@ -282,6 +292,7 @@ fun CourseDetailScreen(
                     places = detail.places,
                 ),
             address = placeDetailState.place?.address.orEmpty(),
+            openingHours = placeDetailState.place?.openingHours.orEmpty(),
             reviews = placeDetailState.reviews,
             reviewCategories = placeDetailState.place?.categories.orEmpty(),
             onReviewWritten = placeDetailViewModel::refreshReviews,
@@ -289,8 +300,7 @@ fun CourseDetailScreen(
             onToggleSave = { placeDetailViewModel.toggleSave() },
             onDismiss = dismiss,
             onSelectPlace = { target ->
-                selectedPlace = target
-                placeDetailViewModel.open(placeId = target.placeId)
+                selectedPlaceId = target.placeId
             },
             startInOverview = openSheetInOverview,
             onDeleteReview = { reviewId -> placeDetailViewModel.deleteReview(reviewId) },
@@ -308,7 +318,9 @@ fun CourseDetailScreen(
 private val PinnedBarHeight = 56.dp
 
 /**
- * 스크롤로 히어로가 가려졌을 때 상단에 남는 요약 바 — 뒤로가기 + 제목 + "4곳 · 도보 20분".
+ * 스크롤로 히어로가 가려졌을 때 상단에 남는 요약 바 — 뒤로가기 + 제목 + "4곳 · 데이트 · 카페투어".
+ * 부제는 장소 수와 테마 라벨로 잇는다 — 히어로의 카테고리 칩이 가려져도 코스 성격이 남게.
+ * 도보 시간은 본문 스탯 줄이 이미 말해 주므로 싣지 않는다.
  * 히어로 위에서는 커버 위 버튼들이 그 역할을 하므로 숨긴다.
  */
 @Composable
@@ -355,10 +367,9 @@ private fun DetailPinnedBar(
                         overflow = TextOverflow.Ellipsis,
                     )
                     val meta =
-                        listOf(
-                            detail.placeCountText,
-                            detail.walkText,
-                        ).filter { it.isNotBlank() }.joinToString(" · ")
+                        (listOf(detail.placeCountText) + detail.themeLabels)
+                            .filter { it.isNotBlank() }
+                            .joinToString(" · ")
                     if (meta.isNotBlank()) {
                         DsText(
                             text = meta,
@@ -517,7 +528,7 @@ private fun CourseSettingsMenu(
     actions: CourseDetailActions,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
     Box {
         HeroCircleButton(
             iconRes = R.drawable.ic_more_vert_24,
@@ -772,6 +783,7 @@ private fun RowScope.AuthorContent(
  * 작성자 팔로우 버튼.
  *
  * 팔로우 전에는 채운 강조 버튼("팔로우"), 팔로우 중에는 흐린 버튼("팔로잉")으로 바뀐다.
+ * 흐린 버튼은 밴드 배경과 같은 흰색이라 테두리를 둘러 알약이 묻히지 않게 한다.
  * 예전에는 팔로우하면 버튼이 사라져 이 화면에서 팔로우를 풀 방법이 없었는데,
  * "팔로잉" 상태에서도 누르면 [CourseDetailIntent.ToggleFollowAuthor] 가 언팔로우로 동작한다.
  */
@@ -783,12 +795,19 @@ private fun AuthorFollowButton(
     val color = DesignSystemThemeImpl.designSystemColor
     val background = if (isFollowing) color.bgDefaultLevel1 else color.bgAccent
     val contentColor = if (isFollowing) color.contentDefaultLevel3 else color.contentOnAccent
+    val shape = RoundedCornerShape(9999.dp)
     Box(
         modifier =
             Modifier
-                .clip(RoundedCornerShape(9999.dp))
+                .clip(shape)
                 .background(background)
-                .clickable(onClick = onClick)
+                .then(
+                    if (isFollowing) {
+                        Modifier.border(1.dp, color.borderDefaultLevel1, shape)
+                    } else {
+                        Modifier
+                    },
+                ).clickable(onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         DsText(
@@ -869,15 +888,14 @@ private val CourseMapHeight = 220.dp
  *
  * 좌표가 있는 장소가 없으면 구역째 그리지 않는다 — 빈 지도는 알려 주는 게 없다.
  * 지도 제스처는 막는다. 세로 스크롤 화면 안이라 지도가 스크롤을 가로채면 화면이 걸린다.
- * 대신 둘러보는 길을 둘 둔다 — 핀을 누르면 그 장소로([onPlaceClick]), 핀 밖 지도를 누르면
- * 코스 전체 보기 상태로([onOpenDetail]) 장소 상세 시트가 열린다. 별도 "자세히" 버튼을 두지
- * 않는 이유 — 제스처가 막힌 미니맵은 그 자체가 "눌러서 크게 보기"로 읽히는 진입점이고,
- * 글자 버튼보다 지도 전체가 훨씬 큰 표적이다.
+ * 미니맵은 개별 핀을 다루지 않고 "눌러서 크게 보기" 진입점으로만 쓴다 — 핀을 누르든 지도를
+ * 누르든 코스 전체 보기(전체 화면 지도)로 연다([onOpenDetail]). 개별 장소 상세(핀 탭 → 바텀시트)는
+ * 전체 화면 지도에서 다룬다. 스크롤에 끼인 미니맵에서 핀을 개별 표적으로 삼으면 탭이 세로 스크롤에
+ * 먹혀 눌리지 않을 수 있어, 지도 전체를 하나의 큰 표적으로 둔다.
  */
 @Composable
 internal fun CourseMapSection(
     places: List<CourseDetailPlaceVO>,
-    onPlaceClick: (CourseDetailPlaceVO) -> Unit,
     onOpenDetail: (CourseDetailPlaceVO) -> Unit,
     title: String = "코스 한눈에 보기",
 ) {
@@ -908,7 +926,8 @@ internal fun CourseMapSection(
                 focusOrder = 0,
                 points = points,
                 overview = true,
-                onMarkerClick = onPlaceClick,
+                // 미니맵은 핀을 개별 표적으로 쓰지 않는다 — 핀을 눌러도 지도를 누른 것과 같이 전체 보기로 연다.
+                onMarkerClick = onOpenDetail,
                 scrollEnabled = false,
                 // 전체 보기로 열 때도 시트는 장소 하나를 기준으로 뜨므로 첫 장소를 넘긴다.
                 onMapClick = { onOpenDetail(first.first) },
@@ -932,7 +951,7 @@ internal fun PlacesSection(
     title: String = "코스 속 장소",
     expandedPlaceContent: (@Composable (CourseDetailPlaceVO) -> Unit)? = null,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
     val color = DesignSystemThemeImpl.designSystemColor
     // 위쪽 소개·태그 묶음과 장소 목록 사이를 한 단 더 벌려 섹션이 나뉘어 보이게 한다.
     Column(
@@ -956,12 +975,7 @@ internal fun PlacesSection(
                     color = color.contentAccent,
                 )
             }
-            DsText(
-                text = if (expanded) "접기" else "펼치기",
-                modifier = Modifier.clickable { expanded = !expanded },
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentAccent,
-            )
+            ExpandToggleChip(expanded = expanded, onClick = { expanded = !expanded })
         }
         if (expanded) {
             places.forEach { place ->
@@ -981,6 +995,51 @@ internal fun PlacesSection(
         }
     }
 }
+
+/**
+ * "펼치기/접기" 토글 칩. 글자만 두면 눌리는 컨트롤로 보이지 않아, 가벼운 배경·테두리의
+ * 칩 모양에 셰브론을 붙여 세운다. 셰브론은 펼침 상태에서 180도 돌려 "접기" 방향(위)을 가리킨다.
+ */
+@Composable
+private fun ExpandToggleChip(
+    expanded: Boolean,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val shape = RoundedCornerShape(9999.dp)
+    Row(
+        modifier =
+            Modifier
+                .clip(shape)
+                .background(color.bgDefaultLevel1)
+                .border(1.dp, color.borderDefaultLevel0, shape)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        DsText(
+            text = if (expanded) "접기" else "펼치기",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentAccent,
+        )
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_down_24),
+            contentDescription = null,
+            tint = color.contentAccent,
+            modifier =
+                Modifier
+                    .size(EXPAND_CHIP_CHEVRON_SIZE)
+                    .rotate(if (expanded) CHEVRON_FLIP_DEGREES else 0f),
+        )
+    }
+}
+
+/** 토글 칩 셰브론 크기. 칩 글자(textRegularXS)와 눈높이를 맞춘 값. */
+private val EXPAND_CHIP_CHEVRON_SIZE = 14.dp
+
+/** 펼침 상태에서 셰브론을 위로 뒤집는 회전각. */
+private const val CHEVRON_FLIP_DEGREES = 180f
 
 /**
  * 접힘 목록: 앞 [COLLAPSED_VISIBLE_PLACES]곳만 헤더 행 + "나머지 N곳 더보기".
@@ -1458,8 +1517,8 @@ private fun DetailBottomBar(
         ) {
             val idle =
                 BottomBarIconColors(
-                    tint = color.contentDefaultLevel2,
-                    border = color.borderDefaultLevel0,
+                    tint = color.contentDefaultLevel0,
+                    border = color.contentDefaultLevel2,
                     background = color.bgDefaultLevel1,
                 )
             BottomBarIconButton(
@@ -1476,11 +1535,12 @@ private fun DetailBottomBar(
                     onClick = onForkClick,
                 )
             }
+            // 이 화면의 주행동이라 연한 배경이 아닌 꽉 찬 강조색으로 세운다.
             BottomBarButton(
                 text = "따라가기",
                 shape = BOTTOM_BAR_BUTTON_SHAPE,
-                background = color.bgAccentSubtle,
-                contentColor = color.contentAccent,
+                background = color.bgAccent,
+                contentColor = color.contentOnAccent,
                 enabled = true,
                 iconRes = R.drawable.ic_footprint_24,
                 onClick = onFollowClick,

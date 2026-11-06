@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -42,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -53,21 +56,27 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.course.domain.CourseFollowPage
 import com.chillsam.courmy.course.domain.DraftListPage
+import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.GuestMyPage
@@ -75,23 +84,72 @@ import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.search.SearchPage
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.entity.home.HomeInProgressCourseVO
 import com.chillsam.courmy.main.entity.home.HomeNearbyPlaceVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
+import com.chillsam.courmy.main.presentation.FeatureFlags
 import com.chillsam.courmy.main.presentation.component.BottomBarHeight
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.RecommendedCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.hasLocationPermission
+import com.chillsam.courmy.main.presentation.component.themeImageRes
 import com.chillsam.courmy.main.presentation.map.MapFocusRequestStore
 import com.chillsam.courmy.main.presentation.my.MyProfileIntent
 import com.chillsam.courmy.main.presentation.my.MyViewModel
+import com.chillsam.courmy.main.presentation.notification.NotificationConsentSheet
+import com.chillsam.courmy.main.presentation.notification.NotificationConsentViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.google.android.gms.location.LocationServices
-import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
+
+/**
+ * 진행 중인 코스 종료(end)가 서버에 실제로 기록되면 저장함(코스 · 완주)으로 보낸다
+ * — 다이얼로그 안내("저장함에서 볼 수 있어요")와 목적지를 맞춘다. 실패하면 이동하지 않는다.
+ */
+@Composable
+private fun InProgressEndedEffect(
+    ended: Boolean,
+    onConsume: () -> Unit,
+    onNavigate: () -> Unit,
+) {
+    LaunchedEffect(ended) {
+        if (ended) {
+            onConsume()
+            onNavigate()
+        }
+    }
+}
+
+/** 위치 권한·GPS 가 모두 켜져 있으면 마지막 위치를 받아 [onLocation] 으로 넘긴다(근처 저장 장소 기준점). */
+@Composable
+private fun NearbyLocationEffect(
+    hasPermission: Boolean,
+    gpsEnabled: Boolean,
+    context: Context,
+    onLocation: (Double, Double) -> Unit,
+) {
+    LaunchedEffect(hasPermission, gpsEnabled) {
+        if (hasPermission && gpsEnabled) {
+            fetchLastLocation(context) { lat, lng -> onLocation(lat, lng) }
+        }
+    }
+}
+
+/**
+ * 타일 지도 코드 → 지역 코스 필터 코드. area_map 은 광주·전남을 코드 "12"로 두므로 상위 코드로 매핑한다.
+ * 울릉("47U")은 경북("47")으로 보내면 경북 전체 구·군(포항시 남구 등)이 울릉 밑에 나오므로,
+ * 울릉군 시군구 코드("47940")로 바로 좁힌다 — 칩·피드 필터 모두 prefix 비교라 울릉군만 남는다.
+ */
+private fun areaMapProvinceCode(tileCode: String): String =
+    when (tileCode) {
+        "29" -> "12"
+        "47U" -> "47940"
+        else -> tileCode
+    }
 
 /** 테마별 둘러보기 타일. 탭하면 추천 코스의 해당 코스 태그 필터를 연다(코스 문맥이라 12종). */
 private val themeTiles = CourseTagVO.entries
@@ -109,6 +167,7 @@ private val themeTiles = CourseTagVO.entries
  */
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
+    val telemetry = LocalTelemetry.current
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     var menuExpanded by remember { mutableStateOf(false) }
@@ -118,6 +177,17 @@ fun HomePage(modifier: Modifier = Modifier) {
     val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
     // 헤더 인사말·아바타는 내 프로필에서 가져온다.
     val profile = if (session.isLoggedIn) myProfileForHeader() else null
+
+    InProgressEndedEffect(
+        ended = homeState.inProgressEnded,
+        onConsume = { homeViewModel.onIntent(HomeIntent.ConsumeInProgressEnded) },
+        onNavigate = {
+            navigationHelper.navigateByRoute(
+                SavedPage.completedCourses(),
+                source = NavigationSource("/home", "complete_course_success", trigger = "result"),
+            )
+        },
+    )
 
     // 근처 저장 장소의 거리 기준점(SCRUM-634). 권한·GPS 상태는 설정에 다녀오면 바뀔 수 있어
     // 복귀할 때마다 다시 평가한다(locationTick).
@@ -129,12 +199,8 @@ fun HomePage(modifier: Modifier = Modifier) {
         rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             locationTick++
         }
-    LaunchedEffect(hasLocationPermission, gpsEnabled) {
-        if (hasLocationPermission && gpsEnabled) {
-            fetchLastLocation(context) { lat, lng ->
-                homeViewModel.onIntent(HomeIntent.UpdateLocation(lat, lng))
-            }
-        }
+    NearbyLocationEffect(hasLocationPermission, gpsEnabled, context) { lat, lng ->
+        homeViewModel.onIntent(HomeIntent.UpdateLocation(lat, lng))
     }
 
     // 코스를 만들거나 장소를 저장하고 돌아오면 섹션이 바뀌어 있을 수 있어 다시 불러온다.
@@ -142,6 +208,9 @@ fun HomePage(modifier: Modifier = Modifier) {
         homeViewModel.onIntent(HomeIntent.Retry)
         locationTick++
     }
+
+    // 홈 최초 진입 시 알림 수신 동의를 받는다(SCRUM-725). 기기 단위라 게스트에게도 띄운다.
+    HomeNotificationConsent()
 
     Box(
         modifier =
@@ -161,22 +230,60 @@ fun HomePage(modifier: Modifier = Modifier) {
             item {
                 HomeHeader(
                     profile = profile,
-                    onProfileClick = { navigationHelper.navigateTo(myPageDestination(session.isLoggedIn)) },
+                    onProfileClick = {
+                        telemetry.buttonClick("/home", "profile")
+                        navigationHelper.navigateTo(
+                            myPageDestination(session.isLoggedIn),
+                            source = NavigationSource("/home", "profile"),
+                        )
+                    },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
             item {
                 HomeSearchBar(
-                    onClick = { navigationHelper.navigateTo(SearchPage) },
+                    onClick = {
+                        telemetry.buttonClick("/home", "search")
+                        navigationHelper.navigateTo(SearchPage, source = NavigationSource("/home", "search"))
+                    },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
 
+            // 진행 중이던(따라가는) 코스가 있으면 추천보다 위에 띄워 이어가기를 먼저 유도한다. 없으면(null) 숨긴다.
+            inProgressCourseItem(
+                course = homeState.inProgressCourse,
+                onResume = { course ->
+                    // 현재 진행도(traceId·방문 수·시작 시각)를 실어 미리보기 대신 이어가기로 연다.
+                    navigationHelper.navigateByRoute(
+                        CourseFollowPage.route(
+                            courseId = course.courseId,
+                            traceId = course.traceId,
+                            visitedPlaceCount = course.visitedPlaceCount ?: 0,
+                            startedAt = course.startedAt,
+                        ),
+                        source = NavigationSource("/home", "in_progress_course"),
+                    )
+                },
+                onDismiss = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+            )
             item {
                 RecommendedCoursesSection(
                     homeState = homeState,
-                    onSeeAll = { navigationHelper.navigateTo(RecommendedCoursesPage) },
-                    onCourseClick = { id -> navigationHelper.navigateByRoute(CourseDetailPage.route(id)) },
+                    onSeeAll = {
+                        navigationHelper.navigateTo(
+                            RecommendedCoursesPage,
+                            source = NavigationSource("/home", "recommended_all"),
+                        )
+                    },
+                    onCourseClick = { id ->
+                        telemetry.buttonClick("/home", "course", mapOf("course_id" to id))
+                        navigationHelper.navigateByRoute(
+                            CourseDetailPage.route(id),
+                            source = NavigationSource("/home", "course"),
+                        )
+                    },
                     onRetry = { homeViewModel.onIntent(HomeIntent.Retry) },
                 )
             }
@@ -212,11 +319,16 @@ fun HomePage(modifier: Modifier = Modifier) {
                 item {
                     NearbySavedSection(
                         places = homeState.nearbyPlaces,
-                        onSeeMap = { navigationHelper.navigateTo(MapPage) },
+                        onSeeMap = {
+                            navigationHelper.navigateTo(
+                                MapPage,
+                                source = NavigationSource("/home", "nearby_map"),
+                            )
+                        },
                         onPlaceClick = { placeId ->
                             // 지도 탭이 장소 목록을 받은 뒤 이 장소를 선택해(시트·카메라) 보여준다.
                             MapFocusRequestStore.request(placeId)
-                            navigationHelper.navigateTo(MapPage)
+                            navigationHelper.navigateTo(MapPage, source = NavigationSource("/home", "nearby_place"))
                         },
                         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                     )
@@ -226,7 +338,12 @@ fun HomePage(modifier: Modifier = Modifier) {
                     NearbyLocationPrompt(
                         message = "근처에 저장한 장소가 없어요",
                         actionLabel = "지도에서 장소 찾기",
-                        onAction = { navigationHelper.navigateTo(MapPage) },
+                        onAction = {
+                            navigationHelper.navigateTo(
+                                MapPage,
+                                source = NavigationSource("/home", "empty_nearby_map"),
+                            )
+                        },
                         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                     )
                 }
@@ -234,10 +351,29 @@ fun HomePage(modifier: Modifier = Modifier) {
             item {
                 ThemeBrowseSection(
                     onThemeClick = { theme ->
-                        navigationHelper.navigateByRoute(RecommendedCoursesPage.route(theme))
+                        telemetry.buttonClick("/home", "theme", mapOf("theme" to theme))
+                        navigationHelper.navigateByRoute(
+                            RecommendedCoursesPage.route(theme),
+                            source = NavigationSource("/home", "theme"),
+                        )
                     },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
+            }
+            if (FeatureFlags.REGION_BROWSE_ENABLED) {
+                item {
+                    RegionBrowseSection(
+                        // 지역을 누르면 그 시·도의 "{지역} 코스" 목록으로 가서 세부 지역(구·군) 칩으로 더 좁힌다.
+                        onRegionClick = { code, name ->
+                            telemetry.buttonClick("/home", "region", mapOf("region" to code))
+                            navigationHelper.navigateByRoute(
+                                RecommendedCoursesPage.regionRoute(sido = areaMapProvinceCode(code), regionName = name),
+                                source = NavigationSource("/home", "region"),
+                            )
+                        },
+                        modifier = Modifier.padding(top = 8.dp).padding(horizontal = ScreenHorizontalPadding),
+                    )
+                }
             }
         }
 
@@ -252,19 +388,38 @@ fun HomePage(modifier: Modifier = Modifier) {
                 expanded = menuExpanded,
                 onToggle = { menuExpanded = !menuExpanded },
                 onNewCourse = {
+                    telemetry.buttonClick("/home", "create_course")
                     menuExpanded = false
-                    navigationHelper.navigateTo(CourseCreatePage)
+                    navigationHelper.navigateTo(CourseCreatePage, source = NavigationSource("/home", "create_course"))
                 },
                 onLoadDraft = {
+                    telemetry.buttonClick("/home", "load_draft")
                     menuExpanded = false
-                    navigationHelper.navigateTo(DraftListPage)
+                    navigationHelper.navigateTo(DraftListPage, source = NavigationSource("/home", "load_draft"))
                 },
                 onNewPlan = {
+                    telemetry.buttonClick("/home", "create_plan")
                     menuExpanded = false
-                    navigationHelper.navigateByRoute(CourseCreatePage.planRoute())
+                    navigationHelper.navigateByRoute(
+                        CourseCreatePage.planRoute(),
+                        source = NavigationSource("/home", "create_plan"),
+                    )
                 },
             )
         }
+    }
+}
+
+/**
+ * 홈 최초 진입 시 알림 수신 동의 시트(SCRUM-725). 기기 단위 1회 노출이라 게스트에게도 띄운다.
+ * 동의 상태·노출 여부는 [NotificationConsentViewModel] 이 가지므로 홈 본문과 분리해 둔다.
+ */
+@Composable
+private fun HomeNotificationConsent() {
+    val consentViewModel: NotificationConsentViewModel = hiltViewModel()
+    val consentState by consentViewModel.uiState.collectAsStateWithLifecycle()
+    if (consentState.visible) {
+        NotificationConsentSheet(state = consentState, onIntent = consentViewModel::onIntent)
     }
 }
 
@@ -317,13 +472,37 @@ private fun HomeBottomBar(
         onTabSelected = { tab ->
             when (tab) {
                 // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
-                MainTab.MY -> navigationHelper.navigateTo(myPageDestination(loggedIn))
+                MainTab.MY -> {
+                    navigationHelper.navigateTo(
+                        myPageDestination(loggedIn),
+                        source = NavigationSource("/home", "bottom_tab_my"),
+                    )
+                }
 
-                MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
+                MainTab.SAVED -> {
+                    navigationHelper.navigateTo(
+                        SavedPage,
+                        source = NavigationSource("/home", "bottom_tab_saved"),
+                    )
+                }
 
-                MainTab.MAP -> navigationHelper.navigateTo(MapPage)
+                MainTab.MAP -> {
+                    navigationHelper.navigateTo(
+                        MapPage,
+                        source = NavigationSource("/home", "bottom_tab_map"),
+                    )
+                }
 
-                MainTab.HOME -> Unit
+                MainTab.CHAT -> {
+                    navigationHelper.navigateTo(
+                        ChatPage,
+                        source = NavigationSource("/home", "bottom_tab_chat"),
+                    )
+                }
+
+                MainTab.HOME -> {
+                    Unit
+                }
             }
         },
         modifier = modifier,
@@ -365,6 +544,7 @@ private fun HomeHeader(
         } else {
             "어디로 떠나볼까요?"
         }
+    // 인사말이 2줄(titleExtraL 24sp × 2 ≈ 62dp)이라, 아바타를 그 높이에 맞춰 크게 둔다.
     Row(modifier = modifier, verticalAlignment = Alignment.Top) {
         Column(modifier = Modifier.weight(1f)) {
             DsText(
@@ -374,17 +554,21 @@ private fun HomeHeader(
                 maxLines = 2,
             )
         }
+        // 밝은 홈 배경에 아바타가 묻히지 않도록 흰 바탕·테두리·옅은 그림자로 배경과 분리한다.
         Box(
             modifier =
                 Modifier
                     .padding(start = 12.dp)
-                    .size(48.dp)
+                    .size(62.dp)
+                    .shadow(3.dp, CircleShape)
                     .clip(CircleShape)
+                    .background(color.bgDefaultLevel1)
+                    .border(1.dp, color.borderDefaultLevel0, CircleShape)
                     .clickable(onClickLabel = "마이로 이동", role = Role.Button, onClick = onProfileClick)
                     .semantics { contentDescription = "내 프로필" },
             contentAlignment = Alignment.Center,
         ) {
-            ProfileAvatar(imageUrl = profile?.profileImageUrl.orEmpty(), size = 44.dp)
+            ProfileAvatar(imageUrl = profile?.profileImageUrl.orEmpty(), size = 56.dp)
         }
     }
 }
@@ -418,6 +602,37 @@ private fun SectionHeader(
                         .clip(RoundedCornerShape(percent = 50))
                         .clickable(onClick = onAction)
                         .padding(horizontal = 4.dp, vertical = 4.dp),
+            )
+        }
+    }
+}
+
+/**
+ * 지역별 둘러보기 섹션. 테마별 둘러보기와 짝을 이루는 또 하나의 둘러보기 축으로, 그 바로 아래에 둔다.
+ *
+ * 디자인 목업과 동일한 **그리드 타일 지도**([RegionTileMap])를 흰 카드 위에 띄운다. 지역을 누르면
+ * 그 지역의 "{지역} 코스" 목록으로 가서 세부 지역(구·군)을 칩으로 더 좁힌다([onRegionClick]).
+ */
+@Composable
+private fun RegionBrowseSection(
+    onRegionClick: (code: String, name: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(title = "지역별 둘러보기")
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(color.bgDefaultLevel1)
+                    .border(1.dp, color.borderDefaultLevel0, RoundedCornerShape(20.dp))
+                    .padding(8.dp),
+        ) {
+            RegionTileMap(
+                onRegionClick = onRegionClick,
+                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 25f),
             )
         }
     }
@@ -578,7 +793,11 @@ private fun NearbySavedSection(
     }
 }
 
-/** 근처 저장 장소 카드: 썸네일 + 이름·평점·카테고리·도보 시간 + 방문 여부 칩. 탭하면 지도에서 그 장소를 보여준다. */
+/**
+ * 근처 저장 장소 카드: 썸네일 + [이름·카테고리 / 평점] + 방문 여부 칩. 탭하면 지도에서 그 장소를 보여준다.
+ *
+ * 카테고리는 이름 줄에 인라인으로 올리고, 둘째 줄엔 평점만 둔다(도보 시간은 표시하지 않는다).
+ */
 @Composable
 private fun NearbyPlaceCard(
     place: HomeNearbyPlaceVO,
@@ -601,32 +820,81 @@ private fun NearbyPlaceCard(
         PlaceThumbnail(
             url = place.thumbnailUrl,
             category = place.categoryLabel,
+            detailCategory = place.detailCategory,
             modifier = Modifier.size(56.dp),
             shape = RoundedCornerShape(12.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
-            DsText(
-                text = place.name,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
-                color = color.contentDefaultLevel0,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                // 평가가 없는 장소는 별 아이콘째 숨긴다("0.0"이 뜨지 않게).
-                if (place.ratingText.isNotBlank()) {
-                    DsRatingStar(starSize = 12.dp)
-                }
+            val hasAddress = place.address.isNotBlank()
+            val hasCategory = place.categoryLabel.isNotBlank()
+            val hasRating = place.ratingText.isNotBlank()
+            // 1줄: 장소명. 주소가 있으면 카테고리를 이름 옆에 인라인으로 붙여 아래에 주소 줄을 둔다.
+            // 주소가 없으면 카테고리를 1줄에 붙이지 않고 아랫줄로 내려 2줄(이름 / 카테고리)로 보여 준다.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DsText(
-                    text = nearbyPlaceMeta(place),
+                    text = place.name,
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.alignByBaseline().weight(1f, fill = false),
+                )
+                if (hasAddress && hasCategory) {
+                    DsText(
+                        text = place.categoryLabel,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                }
+            }
+            // 2줄: 주소가 없으면 카테고리를 여기에, 그리고 평점(있으면). 평가 없는 장소는 별 아이콘째 숨긴다.
+            val showCategoryBelow = !hasAddress && hasCategory
+            if (showCategoryBelow || hasRating) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    if (showCategoryBelow) {
+                        DsText(
+                            text = place.categoryLabel,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel2,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (showCategoryBelow && hasRating) {
+                        DsText(
+                            text = "·",
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.borderDefaultLevel1,
+                        )
+                    }
+                    if (hasRating) {
+                        DsRatingStar(starSize = 13.dp)
+                        DsText(
+                            text = place.ratingText,
+                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                            color = color.contentDefaultLevel3,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            // 3줄: 상세 주소(있으면). 서버가 주지 않으면 숨겨져 위의 2줄 구성으로 줄어든다.
+            if (hasAddress) {
+                DsText(
+                    text = place.address,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
@@ -645,14 +913,6 @@ private fun NearbyPlaceCard(
         }
     }
 }
-
-/** 평점·카테고리·도보 시간을 " · "로 이은 메타 한 줄(예: "4.8 · 카페·디저트 · 도보 6분"). */
-private fun nearbyPlaceMeta(place: HomeNearbyPlaceVO): String =
-    buildList {
-        if (place.ratingText.isNotBlank()) add(place.ratingText)
-        if (place.categoryLabel.isNotBlank()) add(place.categoryLabel)
-        place.walkingMinutes?.let { add("도보 ${it}분") }
-    }.joinToString(" · ")
 
 /** "테마별 둘러보기" 섹션: 3열 그리드 타일 10개. 탭하면 추천 코스의 해당 카테고리 필터를 연다. */
 @Composable
@@ -693,22 +953,6 @@ private fun ThemeTile(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    // 일러스트는 기존 장소 테마 세트를 가장 가까운 코스 태그에 재사용한다(family·solo 만 신규).
-    val imageRes =
-        when (category) {
-            CourseTagVO.DATE -> MainR.drawable.img_theme_date
-            CourseTagVO.HEALING -> MainR.drawable.img_theme_wellness
-            CourseTagVO.FOOD -> MainR.drawable.img_theme_restaurant
-            CourseTagVO.CAFETOUR -> MainR.drawable.img_theme_cafe
-            CourseTagVO.CULTURE -> MainR.drawable.img_theme_culture
-            CourseTagVO.NATURE -> MainR.drawable.img_theme_nature
-            CourseTagVO.NIGHTVIEW -> MainR.drawable.img_theme_drinks
-            CourseTagVO.SHOPPING -> MainR.drawable.img_theme_shopping
-            CourseTagVO.TRADITION -> MainR.drawable.img_theme_landmark
-            CourseTagVO.ACTIVITY -> MainR.drawable.img_theme_experience
-            CourseTagVO.FAMILY -> MainR.drawable.img_theme_family
-            CourseTagVO.SOLO -> MainR.drawable.img_theme_solo
-        }
     Box(
         modifier =
             modifier
@@ -719,7 +963,7 @@ private fun ThemeTile(
                 .clickable(onClick = onClick),
     ) {
         Image(
-            painter = painterResource(imageRes),
+            painter = painterResource(category.themeImageRes),
             contentDescription = null,
             contentScale = ContentScale.Fit,
             alignment = Alignment.BottomEnd,
@@ -795,3 +1039,148 @@ private fun NearbyLocationPrompt(
 }
 
 private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else GuestMyPage
+
+/** 진행 중이던 코스가 있으면(=[course] 가 null 이 아니면) 추천 위에 카드 아이템을 넣는다. null 이면 넣지 않는다. */
+private fun LazyListScope.inProgressCourseItem(
+    course: HomeInProgressCourseVO?,
+    onResume: (HomeInProgressCourseVO) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    course ?: return
+    item {
+        InProgressCourseSection(course = course, onResume = onResume, onDismiss = onDismiss, modifier = modifier)
+    }
+}
+
+/**
+ * 홈 "진행 중인 코스" 카드. 따라가는 중 세션이 있을 때만(=[course] 가 있을 때만) 노출한다.
+ * 카드를 누르면 이어서 따라가기로 간다. 우측 상단 X 를 누르면 확인 다이얼로그를 거쳐
+ * 이 카드를 홈에서 지운다([onDismiss] — 서버 세션 종료가 아니라 홈 로컬 숨김).
+ * 코스를 더 볼 수 없으면([HomeInProgressCourseVO.isDeleted]) "비공개된 코스"로 표시하되 따라가기는 계속한다.
+ *
+ * 어두운 면이라 테마에 on-dark 슬롯이 없어 기존 토큰 값을 그대로 재사용한다(새 토큰 추가 없음):
+ * 배경 [contentDefaultLevel0](Black) · 흰 글자 [contentOnAccent](White) · 보조 글자/막대/아이콘 [contentDefaultLevel3].
+ */
+@Composable
+private fun InProgressCourseSection(
+    course: HomeInProgressCourseVO,
+    onResume: (HomeInProgressCourseVO) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    var showDismissDialog by remember { mutableStateOf(false) }
+    if (showDismissDialog) {
+        DsConfirmDialog(
+            title = "진행 중인 코스를 종료할까요?",
+            description = "종료된 코스는 완주되어 저장함에서 볼 수 있어요.",
+            onConfirm = {
+                showDismissDialog = false
+                onDismiss()
+            },
+            onDismiss = { showDismissDialog = false },
+            destructive = true,
+        )
+    }
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(color.contentDefaultLevel0)
+                .clickable { onResume(course) }
+                .padding(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AsyncImage(
+            model = course.coverImageUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(color.imagePlaceholder),
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            // 좌측 라벨, 우측 끝에 홈에서 지우는 X.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                DsText(
+                    text = if (course.isDeleted) "비공개된 코스" else "진행 중인 코스",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    painter = painterResource(R.drawable.close_small_24),
+                    contentDescription = "진행 중인 코스 지우기",
+                    tint = color.contentDefaultLevel3,
+                    modifier = Modifier.clip(CircleShape).clickable { showDismissDialog = true }.size(22.dp),
+                )
+            }
+            DsText(
+                text = course.title,
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = color.contentOnAccent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            // 진행 현황: 막대 + "N / M곳 방문"을 한 줄에(줄바꿈 없이). 진행도 정보가 없으면 지역·장소 수 요약으로 폴백.
+            if (course.hasProgress) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    InProgressBar(progress = course.progress, modifier = Modifier.weight(1f))
+                    DsText(
+                        text = course.progressText,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel3,
+                        maxLines = 1,
+                    )
+                }
+            } else if (course.summaryText.isNotBlank()) {
+                DsText(
+                    text = course.summaryText,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/** 진행도 막대(방문/전체). 어두운 카드 위: 트랙 [contentDefaultLevel2], 채움 [contentOnAccent]. */
+@Composable
+private fun InProgressBar(
+    progress: Float,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            modifier
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(color.contentDefaultLevel2),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(progress)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(color.contentOnAccent),
+        )
+    }
+}

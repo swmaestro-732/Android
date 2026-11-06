@@ -6,9 +6,13 @@ import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CheckInTracePlaceUseCase
 import com.chillsam.courmy.course.domain.EndCourseTraceUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
+import com.chillsam.courmy.course.domain.GetTraceRouteUseCase
 import com.chillsam.courmy.course.domain.StartCourseTraceUseCase
+import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.TraceVisitVO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -34,11 +38,13 @@ class CourseFollowViewModel
         private val startCourseTrace: StartCourseTraceUseCase,
         private val checkInTracePlace: CheckInTracePlaceUseCase,
         private val endCourseTrace: EndCourseTraceUseCase,
+        private val getTraceRoute: GetTraceRouteUseCase,
     ) : MviViewModel<CourseFollowIntent, CourseFollowUIState, CourseFollowReducerEvent>(
             CourseFollowUIState.empty,
         ) {
         private var loadJob: Job? = null
         private var startJob: Job? = null
+        private var routeJob: Job? = null
         private var courseId: Long? = null
 
         /** 서버가 발급한 따라가기 기록 id. 시작 기록이 실패하면 null 로 남아 이후 기록을 건너뛴다. */
@@ -47,12 +53,21 @@ class CourseFollowViewModel
         /** 이번 따라가기의 방문 기록. 종료 시 전체를 함께 보낸다(체크인 유실 보완). */
         private val visits = mutableListOf<TraceVisitVO>()
 
+        /** 이어가기(홈 진행 중인 코스 카드)로 들어왔을 때의 진행 정보. 일반 진입이면 null. */
+        private var pendingResume: ResumeInfo? = null
+
         override fun onIntent(intent: CourseFollowIntent) {
             when (intent) {
                 is CourseFollowIntent.Load -> {
                     // 같은 코스로 재진입하면 다시 받지 않는다 — 진행 중 상태(방문 기록)를 지키기 위해서다.
                     if (courseId == intent.courseId && uiState.value.detail != null) return
                     courseId = intent.courseId
+                    pendingResume =
+                        if (intent.resumeTraceId > 0 && intent.resumeVisitedCount > 0) {
+                            ResumeInfo(intent.resumeTraceId, intent.resumeVisitedCount, intent.resumeStartedAt)
+                        } else {
+                            null
+                        }
                     load()
                 }
 
@@ -76,6 +91,25 @@ class CourseFollowViewModel
 
         private fun start() {
             if (currentState.phase != CourseFollowPhase.PREVIEW || currentState.detail?.places.isNullOrEmpty()) return
+            // 이어가기: 진행 중 세션이 있으면 처음부터가 아니라 현재 진행도에서 TRACKING 으로 연다.
+            val resume = pendingResume
+            if (resume != null) {
+                pendingResume = null
+                traceId = resume.traceId
+                val startedAtMillis =
+                    resume.startedAt
+                        .takeIf { it.isNotBlank() }
+                        ?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() }
+                        ?: System.currentTimeMillis()
+                dispatch(
+                    CourseFollowReducerEvent.Resumed(
+                        currentIndex = resume.visitedCount,
+                        visitedCount = resume.visitedCount,
+                        startedAtMillis = startedAtMillis,
+                    ),
+                )
+                return
+            }
             dispatch(CourseFollowReducerEvent.Started(System.currentTimeMillis()))
             recordStart()
         }
@@ -88,7 +122,11 @@ class CourseFollowViewModel
             recordVisit(state, finishedAtMillis)
         }
 
-        /** 따라가기 시작을 서버에 기록한다. 실패해도 화면 진행은 그대로 — 통계만 빠진다. */
+        /**
+         * 따라가기 시작을 서버에 기록한다. 실패해도 화면 진행은 그대로 — 통계만 빠진다.
+         * 다른 코스의 묵은 세션이 남아 있으면 UseCase 가 그 세션을 종료하고 다시 시작한다
+         * (서버는 사용자당 세션 1개만 허용한다). 그래도 실패하면 로그만 남긴다.
+         */
         private fun recordStart() {
             val id = courseId ?: return
             traceId = null
@@ -154,11 +192,61 @@ class CourseFollowViewModel
                     runCatching { getCourseDetailUseCase(id) }
                         .onSuccess { detail ->
                             dispatch(CourseFollowReducerEvent.Loaded(detail))
+                            offerResume(detail)
+                            loadRoutes(detail)
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "따라가기 코스 로드 실패: courseId=$id", e)
                             dispatch(CourseFollowReducerEvent.LoadFailed("코스를 불러오지 못했어요."))
                         }
+                }
+        }
+
+        /**
+         * 이어가기로 들어왔으면 코스를 받은 직후 **미리보기는 그대로 두고** 버튼만 "이어가기"로 바꾼다.
+         * 실제 진행(TRACKING) 전환은 사용자가 그 버튼을 눌러 [start] 에서 일어난다.
+         *
+         * 코스는 순서대로 따라간다는 가정 아래 방문 수가 1 이상·전체 미만일 때만 이어갈 수 있다
+         * (0 이면 처음부터, 전체 이상이면 모두 방문·미종료라 이어갈 장소가 없어 일반 미리보기).
+         */
+        private fun offerResume(detail: CourseDetailVO) {
+            val resume = pendingResume ?: return
+            val total = detail.places.size
+            if (resume.visitedCount !in 1 until total) {
+                pendingResume = null
+                return
+            }
+            dispatch(CourseFollowReducerEvent.ResumeOffered(resume.visitedCount))
+        }
+
+        /**
+         * 코스를 받으면 좌표가 있는 연속 장소쌍마다 도보 경로를 **병렬로** 조회해 지도에 실제 경로를 채운다.
+         *
+         * 지도는 부가 정보라 한 구간이 실패해도 다른 구간·진행을 막지 않는다 — 실패는 구간별로 [RouteFailed]
+         * 로만 남기고(지도는 직선 폴백, 화면은 외부 지도 안내), 예외를 위로 던지지 않는다.
+         */
+        private fun loadRoutes(detail: CourseDetailVO) {
+            val segments =
+                detail.places
+                    .filter { it.latitude != null && it.longitude != null && it.placeId > 0 }
+                    .zipWithNext()
+                    .filter { (from, to) -> from.placeId != to.placeId }
+            if (segments.isEmpty()) return
+            routeJob?.cancel()
+            dispatch(CourseFollowReducerEvent.RoutesRequested(segments.map { it.first.placeId }))
+            routeJob =
+                viewModelScope.launch {
+                    segments.forEach { (from, to) ->
+                        launch {
+                            runCatching { getTraceRoute(from.placeId, to.placeId) }
+                                .onSuccess { dispatch(CourseFollowReducerEvent.RouteLoaded(from.placeId, it)) }
+                                .onFailure { e ->
+                                    if (e is CancellationException) throw e
+                                    Log.w(TAG, "도보 경로 조회 실패(직선 폴백): ${from.placeId}→${to.placeId}", e)
+                                    dispatch(CourseFollowReducerEvent.RouteFailed(from.placeId))
+                                }
+                        }
+                    }
                 }
         }
 
@@ -168,7 +256,21 @@ class CourseFollowViewModel
         ): CourseFollowUIState =
             when (event) {
                 CourseFollowReducerEvent.LoadStarted -> {
-                    state.copy(isLoading = true, errorMessage = null)
+                    state.copy(isLoading = true, errorMessage = null, routes = persistentMapOf())
+                }
+
+                is CourseFollowReducerEvent.RoutesRequested -> {
+                    state.copy(
+                        routes = event.fromPlaceIds.associateWith { FollowRouteStatus.Loading }.toPersistentMap(),
+                    )
+                }
+
+                is CourseFollowReducerEvent.RouteLoaded -> {
+                    state.copy(routes = state.routes.put(event.fromPlaceId, FollowRouteStatus.Ready(event.route)))
+                }
+
+                is CourseFollowReducerEvent.RouteFailed -> {
+                    state.copy(routes = state.routes.put(event.fromPlaceId, FollowRouteStatus.Failed))
                 }
 
                 is CourseFollowReducerEvent.Loaded -> {
@@ -188,21 +290,21 @@ class CourseFollowViewModel
                     )
                 }
 
+                is CourseFollowReducerEvent.ResumeOffered -> {
+                    state.copy(resumeVisitedCount = event.visitedCount)
+                }
+
+                is CourseFollowReducerEvent.Resumed -> {
+                    state.copy(
+                        phase = CourseFollowPhase.TRACKING,
+                        startedAtMillis = event.startedAtMillis,
+                        currentIndex = event.currentIndex,
+                        visitedCount = event.visitedCount,
+                    )
+                }
+
                 is CourseFollowReducerEvent.Visited -> {
-                    if (event.finishedAtMillis != null) {
-                        state.copy(
-                            isRecording = false,
-                            phase = CourseFollowPhase.DONE,
-                            visitedCount = state.visitedCount + 1,
-                            finishedAtMillis = event.finishedAtMillis,
-                        )
-                    } else {
-                        state.copy(
-                            isRecording = false,
-                            visitedCount = state.visitedCount + 1,
-                            currentIndex = state.currentIndex + 1,
-                        )
-                    }
+                    reduceVisited(state, event)
                 }
 
                 CourseFollowReducerEvent.RecordingStarted -> {
@@ -214,7 +316,34 @@ class CourseFollowViewModel
                 }
             }
 
+        /** 방문 체크 반영. 마지막 장소였으면([finishedAtMillis]) 완주(DONE)로, 아니면 다음 장소로 넘긴다. */
+        private fun reduceVisited(
+            state: CourseFollowUIState,
+            event: CourseFollowReducerEvent.Visited,
+        ): CourseFollowUIState =
+            if (event.finishedAtMillis != null) {
+                state.copy(
+                    isRecording = false,
+                    phase = CourseFollowPhase.DONE,
+                    visitedCount = state.visitedCount + 1,
+                    finishedAtMillis = event.finishedAtMillis,
+                )
+            } else {
+                state.copy(
+                    isRecording = false,
+                    visitedCount = state.visitedCount + 1,
+                    currentIndex = state.currentIndex + 1,
+                )
+            }
+
         private companion object {
             const val TAG = "CourseFollow"
         }
     }
+
+/** 이어가기 진입 정보. 진행 중 세션 id·방문 수·시작 시각(ISO-8601 UTC). */
+private data class ResumeInfo(
+    val traceId: Long,
+    val visitedCount: Int,
+    val startedAt: String,
+)

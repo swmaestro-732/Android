@@ -67,7 +67,8 @@ object AnalyticsModule {
             eventName: String,
             properties: Map<String, String>,
         ) {
-            amplitude.track(eventName, properties)
+            runCatching { amplitude.track(eventName, properties) }
+                .onFailure { Log.w(TAG, "Amplitude track failed: ${it.javaClass.simpleName}") }
         }
     }
 }

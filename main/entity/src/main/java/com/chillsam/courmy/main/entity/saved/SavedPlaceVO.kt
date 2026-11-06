@@ -1,5 +1,7 @@
 package com.chillsam.courmy.main.entity.saved
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
+
 /**
  * 저장함 "저장한 장소" 1건. `GET /service/v1/my/saved-places` 응답을 변환한 결과다.
  *
@@ -14,4 +16,5 @@ data class SavedPlaceVO(
     val area: String = "",
     val imageUrl: String = "",
     val visited: Boolean = false,
+    val detailCategory: PlaceDetailCategoryVO? = null,
 )

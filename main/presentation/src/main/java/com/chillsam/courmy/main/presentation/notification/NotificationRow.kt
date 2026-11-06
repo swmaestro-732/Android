@@ -89,9 +89,7 @@ internal fun notificationMessage(item: NotificationItemVO): String {
     return when (item.type) {
         "COURSE_LIKED" -> "${name}님이 내 코스를 좋아해요"
         "COURSE_COMMENTED" -> "${name}님이 내 코스에 댓글을 남겼어요"
-        "COURSE_TRACE_COMPLETED" -> "${name}님이 내 코스를 따라갔어요"
         "COURSE_REVIEWED" -> "${name}님이 내 코스에 후기를 남겼어요"
-        "COURSE_BOOKMARKED" -> "${name}님이 내 코스를 저장했어요"
         "USER_FOLLOWED" -> "${name}님이 나를 팔로우해요"
         else -> "새로운 소식이 도착했어요"
     }
@@ -101,9 +99,7 @@ private fun notificationIcon(type: String): Int =
     when (type) {
         "COURSE_LIKED" -> R.drawable.ic_heart_24
         "COURSE_COMMENTED" -> R.drawable.ic_review_bubble_24
-        "COURSE_TRACE_COMPLETED" -> R.drawable.ic_walk_24
         "COURSE_REVIEWED" -> R.drawable.ic_review_write_24
-        "COURSE_BOOKMARKED" -> R.drawable.ic_bookmark_filled_24
         "USER_FOLLOWED" -> R.drawable.ic_tab_person_24
         else -> R.drawable.ic_notifications_24
     }

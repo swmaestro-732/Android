@@ -1,6 +1,5 @@
 package com.chillsam.courmy.main.presentation.my
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,18 +25,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.domain.PlanDetailPage
 import com.chillsam.courmy.course.presentation.component.dashedBorder
+import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.map.MapPage
 import com.chillsam.courmy.main.domain.my.FollowListPage
@@ -47,6 +50,7 @@ import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.component.navigateToMainTab
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
 import com.chillsam.courmy.main.presentation.notification.NotificationBellButton
 import com.chillsam.courmy.main.presentation.notification.NotificationInboxIntent
@@ -76,6 +80,7 @@ fun MyPage(
     showPlans: Boolean = false,
     notifications: NotificationInboxViewModel = hiltViewModel(),
 ) {
+    val telemetry = LocalTelemetry.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(showPlans) {
         if (showPlans) viewModel.onIntent(MyProfileIntent.SelectTab(ProfileTab.PLAN))
@@ -93,7 +98,10 @@ fun MyPage(
                 uiState = uiState,
                 onLoadMore = { viewModel.onIntent(MyProfileIntent.LoadMore) },
                 onRetryPlans = { viewModel.onIntent(MyProfileIntent.Retry) },
-                onSelectTab = { viewModel.onIntent(MyProfileIntent.SelectTab(it)) },
+                onSelectTab = {
+                    telemetry.selectionChange("/my", "tab", it.name.lowercase())
+                    viewModel.onIntent(MyProfileIntent.SelectTab(it))
+                },
                 modifier = modifier,
             )
         }
@@ -157,29 +165,39 @@ private fun CreateFirstCourseCard(onClick: () -> Unit) {
     }
 }
 
-/** 계획이 없을 때의 안내. 계획을 세우는 자리가 아직 없어 여기서 진입점을 주지 않는다. */
+/** 계획이 없을 때 기존 계획 작성 흐름으로 연결한다. */
 @Composable
-private fun EmptyPlanCourses() {
+private fun CreateFirstPlanCard(onClick: () -> Unit) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp)
-                .height(EmptyCourseCardHeight),
+                .height(EmptyCourseCardHeight)
+                .clip(RoundedCornerShape(16.dp))
+                .dashedBorder(color = color.borderDefaultLevel1, cornerRadius = 16.dp)
+                .clickable(onClick = onClick),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_add_24),
+            contentDescription = null,
+            tint = color.contentAccent,
+            modifier = Modifier.size(28.dp),
+        )
+        Spacer(Modifier.height(8.dp))
         DsText(
-            text = "아직 세운 계획이 없어요",
+            text = "계획 생성하기",
             style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = color.contentDefaultLevel2,
+            color = color.contentAccent,
         )
         Spacer(Modifier.height(4.dp))
         DsText(
             text = "가 보고 싶은 곳을 모아 계획을 세워 보세요",
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = color.contentDefaultLevel3,
+            color = color.contentDefaultLevel2,
         )
     }
 }
@@ -219,10 +237,16 @@ fun MyContent(
                 followerCount = profile.followerCount,
                 followingCount = profile.followingCount,
                 onFollowerClick = {
-                    navigationHelper.navigateByRoute(FollowListPage.route(FollowListPage.TAB_FOLLOWER))
+                    navigationHelper.navigateByRoute(
+                        FollowListPage.route(FollowListPage.TAB_FOLLOWER),
+                        source = NavigationSource("/my", "followers"),
+                    )
                 },
                 onFollowingClick = {
-                    navigationHelper.navigateByRoute(FollowListPage.route(FollowListPage.TAB_FOLLOWING))
+                    navigationHelper.navigateByRoute(
+                        FollowListPage.route(FollowListPage.TAB_FOLLOWING),
+                        source = NavigationSource("/my", "following"),
+                    )
                 },
                 // 마이는 탭으로 들어오는 화면이라 돌아갈 이전 화면이 없다.
                 onBack = null,
@@ -235,11 +259,21 @@ fun MyContent(
                         onClick = shareProfile,
                     )
                 }
-                NotificationBellButton(unreadCount) { navigationHelper.navigateTo(NotificationInboxPage) }
+                NotificationBellButton(unreadCount) {
+                    navigationHelper.navigateTo(
+                        NotificationInboxPage,
+                        source = NavigationSource("/my", "notifications"),
+                    )
+                }
                 ProfileHeaderIconButton(
                     iconRes = R.drawable.ic_settings_24,
                     contentDescription = "설정",
-                    onClick = { navigationHelper.navigateTo(SettingsPage) },
+                    onClick = {
+                        navigationHelper.navigateTo(
+                            SettingsPage,
+                            source = NavigationSource("/my", "settings"),
+                        )
+                    },
                 )
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
@@ -273,9 +307,15 @@ fun MyContent(
                         courses = visibleCourses,
                         onCourseClick = { courseId ->
                             if (uiState.selectedTab == ProfileTab.COURSES) {
-                                navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                                navigationHelper.navigateByRoute(
+                                    CourseDetailPage.route(courseId),
+                                    source = NavigationSource("/my", "course"),
+                                )
                             } else {
-                                navigationHelper.navigateByRoute(PlanDetailPage.route(courseId.removePrefix("plan-")))
+                                navigationHelper.navigateByRoute(
+                                    PlanDetailPage.route(courseId.removePrefix("plan-")),
+                                    source = NavigationSource("/my", "plan"),
+                                )
                             }
                         },
                     )
@@ -284,13 +324,25 @@ fun MyContent(
                 // 코스가 없으면 빈 그리드 대신 만들러 갈 자리를 둔다.
                 uiState.selectedTab == ProfileTab.COURSES -> {
                     CreateFirstCourseCard(
-                        onClick = { navigationHelper.navigateTo(CourseCreatePage) },
+                        onClick = {
+                            navigationHelper.navigateTo(
+                                CourseCreatePage,
+                                source = NavigationSource("/my", "create_course"),
+                            )
+                        },
                     )
                 }
 
-                // 계획은 세우는 자리가 아직 없어 만들기로 유도하지 않는다.
+                // 빈 계획 탭에서도 홈과 같은 계획 작성 화면으로 진입한다.
                 else -> {
-                    EmptyPlanCourses()
+                    CreateFirstPlanCard(
+                        onClick = {
+                            navigationHelper.navigateByRoute(
+                                CourseCreatePage.planRoute(),
+                                source = NavigationSource("/my", "create_plan"),
+                            )
+                        },
+                    )
                 }
             }
             Spacer(Modifier.height(20.dp))
@@ -298,14 +350,7 @@ fun MyContent(
 
         CourmyBottomBar(
             selectedTab = MainTab.MY,
-            onTabSelected = { tab ->
-                when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
-                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
-                    else -> Unit
-                }
-            },
+            onTabSelected = { tab -> navigationHelper.navigateToMainTab(MainTab.MY, tab) },
         )
     }
 }

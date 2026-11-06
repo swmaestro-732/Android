@@ -51,6 +51,7 @@ internal fun CourseSearchDTO.toVOList(): List<SearchCourseVO> =
             SearchCourseVO(
                 id = item.id.toString(),
                 title = item.title.orEmpty(),
+                area = item.area.orEmpty(),
                 coverImageUrl = item.coverImageUrl.orEmpty(),
                 // 배지는 "지역 · 테마" 꼴(FS-18). 한쪽이 비면 그 항목만 뺀다.
                 categoryLabel =
@@ -58,6 +59,7 @@ internal fun CourseSearchDTO.toVOList(): List<SearchCourseVO> =
                         .filter { it.isNotBlank() }
                         .joinToString(" · "),
                 saveCountText = item.savesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
+                saveCount = item.savesCnt?.coerceAtLeast(0),
                 likeCountText = item.likesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
             )
         }

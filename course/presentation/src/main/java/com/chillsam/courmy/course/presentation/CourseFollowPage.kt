@@ -22,12 +22,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
-/** 따라가기 화면(FS-21) 라우팅 진입점. [courseId] 코스를 로드해 단계별 화면을 그린다. */
+/**
+ * 따라가기 화면(FS-21) 라우팅 진입점. [courseId] 코스를 로드해 단계별 화면을 그린다.
+ *
+ * 홈 "진행 중인 코스" 카드로 들어오면 [resumeTraceId]·[resumeVisitedCount]·[resumeStartedAt] 가 실려,
+ * 미리보기를 건너뛰고 현재 진행도에서 TRACKING 으로 연다(기본값이면 일반 진입).
+ */
 @Composable
 fun CourseFollowPage(
     courseId: Long,
     actions: CourseFollowPageActions,
     modifier: Modifier = Modifier,
+    resumeTraceId: Long = 0L,
+    resumeVisitedCount: Int = 0,
+    resumeStartedAt: String = "",
     viewModel: CourseFollowViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -35,7 +43,14 @@ fun CourseFollowPage(
     val color = DesignSystemThemeImpl.designSystemColor
 
     LaunchedEffect(courseId) {
-        viewModel.onIntent(CourseFollowIntent.Load(courseId))
+        viewModel.onIntent(
+            CourseFollowIntent.Load(
+                courseId = courseId,
+                resumeTraceId = resumeTraceId,
+                resumeVisitedCount = resumeVisitedCount,
+                resumeStartedAt = resumeStartedAt,
+            ),
+        )
     }
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->

@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.data.profile
 
 import android.content.Context
 import com.chillsam.courmy.common.data.auth.TokenStore
+import com.chillsam.courmy.main.data.area.LegalAreaCodeMapper
 import com.chillsam.courmy.main.domain.profile.ProfileRepository
 import dagger.Module
 import dagger.Provides
@@ -23,7 +24,7 @@ object ProfileDataModule {
     @Singleton
     fun provideProfileDataSource(apiService: ProfileApiService): ProfileDataSource = ProfileDataSource(apiService)
 
-    /** TODO-API-SPEC: 마이페이지 응답에 관심 테마·지역이 실리면 이 provider 를 제거한다. [wiki-needed] */
+    /** 기존 가입·저장 호환 캐시. 표시 값은 계정 프로필 GET 응답을 사용한다. */
     @Provides
     @Singleton
     fun provideInterestDataStore(
@@ -35,6 +36,7 @@ object ProfileDataModule {
     fun provideProfileRepository(
         dataSource: ProfileDataSource,
         tokenStore: TokenStore,
+        areaCodeMapper: LegalAreaCodeMapper,
         interestStore: InterestPreferencesDataStore,
-    ): ProfileRepository = ProfileRepositoryImpl(dataSource, tokenStore, interestStore)
+    ): ProfileRepository = ProfileRepositoryImpl(dataSource, tokenStore, areaCodeMapper, interestStore)
 }

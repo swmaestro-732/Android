@@ -1,4 +1,4 @@
-• Improved map: current location, clustering, and search
-• Enhanced course following and reviews
-• More stable sign-in
-• Bug fixes and performance improvements
+Return to the course you were viewing after signing in.
+Review the Terms of Service and Privacy Policy during sign-up.
+Improved readability of search screens and course action buttons.
+Refined course browsing and saving for a smoother experience.

@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.entity
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import kotlinx.serialization.Serializable
 
 /**
@@ -88,6 +89,7 @@ data class CourseDetailPlaceVO(
     val walkingMinutesToNext: Int? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val detailCategory: PlaceDetailCategoryVO? = null,
 )
 
 /**

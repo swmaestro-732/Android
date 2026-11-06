@@ -12,15 +12,27 @@ package com.chillsam.courmy.common.domain.navigation
 sealed interface NavSignal {
     data class GoToDestPage(
         val route: NavRoute,
+        val source: NavigationSource? = null,
     ) : NavSignal
 
     data class DeepLink(
         val route: NavRoute,
+        val source: NavigationSource? = null,
     ) : NavSignal
 
     data class Replace(
         val route: NavRoute,
+        val source: NavigationSource? = null,
     ) : NavSignal
 
     data object Back : NavSignal
+
+    data object AuthenticationCompleted : NavSignal
 }
+
+/** 사용자가 누른 컨트롤의 고정 식별자. 입력값·닉네임·URL을 담지 않는다. */
+data class NavigationSource(
+    val screen: String,
+    val button: String,
+    val trigger: String = "button",
+)

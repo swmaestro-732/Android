@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.data.profile
 import com.chillsam.courmy.common.data.auth.TokenStore
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.format.formatCount
+import com.chillsam.courmy.main.data.area.LegalAreaCodeMapper
 import com.chillsam.courmy.main.data.profile.dto.MyPageEnvelope
 import com.chillsam.courmy.main.data.profile.dto.MyPageScreenDTO
 import com.chillsam.courmy.main.data.profile.dto.UpdateProfileRequest
@@ -21,27 +22,33 @@ import com.chillsam.courmy.main.entity.user.UserProfileVO
 class ProfileRepositoryImpl(
     private val dataSource: ProfileDataSource,
     private val tokenStore: TokenStore,
+    private val areaCodeMapper: LegalAreaCodeMapper,
     private val interestStore: InterestPreferencesDataStore,
 ) : ProfileRepository {
-    /**
-     * 소개(bio)는 응답에 담겨 오므로 그대로 쓰고, 관심 테마·지역만 기기 캐시에서 덮어쓴다.
-     *
-     * TODO-API-SPEC: 관심사는 서버가 저장은 하지만 마이페이지 응답(`MyPageProfileResponse`)에
-     * `likeThemes`·`areas` 가 없어 되읽을 수 없다. 조회 경로가 생기면 이 병합과
-     * [interestStore] 를 함께 지운다. [wiki-needed]
-     */
+    /** 코스·카운트는 BFF, 편집 필드·관심사는 계정 API의 서버 값을 사용한다. */
     override suspend fun getMyProfile(
         size: Int,
         cursor: String?,
-    ): MyProfileVO =
-        dataSource
-            .getMyPage(cursor = cursor, size = size)
-            .requireData()
-            .toMyProfileVO()
-            .copy(
-                interestThemes = interestStore.getThemes(),
-                interestRegions = interestStore.getRegions(),
-            )
+    ): MyProfileVO {
+        val page = dataSource.getMyPage(cursor = cursor, size = size).requireData().toMyProfileVO()
+        val account =
+            dataSource.getAccountProfile().let {
+                requireNotNull(it.data) { it.message ?: "내 프로필 응답에 data 가 없습니다." }
+            }
+        return page.copy(
+            id = account.id ?: page.id,
+            nickname = account.nickname.orEmpty(),
+            handle = account.handle.orEmpty(),
+            bio = account.bio.orEmpty(),
+            profileImageUrl = account.profileImageUrl.orEmpty(),
+            interestThemes =
+                account.likeThemes
+                    .orEmpty()
+                    .mapNotNull { CourseTagVO.fromCode(it)?.code }
+                    .distinct(),
+            interestRegions = areaCodeMapper.restore(account.areas.orEmpty().map { it.toVO() }),
+        )
+    }
 
     /**
      * 서버에 먼저 반영하고 성공했을 때만 캐시를 갱신한다 — 실패했는데 화면만 바뀌면
@@ -54,9 +61,9 @@ class ProfileRepositoryImpl(
         interestStore.setThemes(tags.map { it.code })
     }
 
-    /** 서버에는 코드만 보낸다. 지역 이름은 화면 표시용이라 캐시에만 남는다. */
+    /** 서버에는 법정 읍·면·동 코드 배열, 캐시에는 화면의 압축된 선택과 이름을 보관한다. */
     override suspend fun saveInterestRegions(regions: List<AreaVO>) {
-        dataSource.updateProfile(UpdateProfileRequest(areaCodes = regions.map { it.code }))
+        dataSource.updateProfile(UpdateProfileRequest(areaCodes = areaCodeMapper.expand(regions.map { it.code })))
         interestStore.setRegions(regions)
     }
 

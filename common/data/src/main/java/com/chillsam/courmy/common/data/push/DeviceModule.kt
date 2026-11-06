@@ -1,5 +1,6 @@
 package com.chillsam.courmy.common.data.push
 
+import com.chillsam.courmy.common.domain.push.NotificationConsentStore
 import com.chillsam.courmy.common.domain.push.NotificationSettings
 import dagger.Module
 import dagger.Provides
@@ -14,6 +15,9 @@ import javax.inject.Singleton
 object DeviceModule {
     @Provides
     fun notificationSettings(devices: DeviceRegistration): NotificationSettings = devices
+
+    @Provides
+    fun notificationConsentStore(devices: DeviceRegistration): NotificationConsentStore = devices
 
     @Provides
     @Singleton

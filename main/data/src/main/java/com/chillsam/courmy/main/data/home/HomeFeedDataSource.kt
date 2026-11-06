@@ -11,7 +11,8 @@ class HomeFeedDataSource(
         size: Int,
         cursor: String?,
         category: String?,
-    ): CourseFeedEnvelope = checkResponse(apiService.getCourseFeed(size, cursor, category))
+        sigungu: String?,
+    ): CourseFeedEnvelope = checkResponse(apiService.getCourseFeed(size, cursor, category, sigungu))
 
     suspend fun getHome(
         userLat: Double?,

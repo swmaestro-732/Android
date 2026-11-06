@@ -58,36 +58,29 @@ class PlaceSearchViewModelTest {
         }
 
     @Test
-    fun `등록 결과가 없으면 같은 검색어로 외부 결과를 자동 표시한다`() =
+    fun `등록 결과가 없어도 외부 검색을 자동 호출하지 않는다`() =
         runTest(dispatcher) {
-            val places = listOf(place("205"))
-            val externalResponse = CompletableDeferred<List<CoursePlaceVO>>()
-            repository.external = { externalResponse.await() }
+            repository.external = { listOf(place("205")) }
             val viewModel = viewModel()
-
             viewModel.onIntent(PlaceSearchIntent.QueryChanged("  새로운 카페  "))
-            advanceTimeBy(300)
-            runCurrent()
-            assertTrue(viewModel.uiState.value.isSearching)
-            assertEquals(listOf("새로운 카페"), repository.externalQueries)
-
-            externalResponse.complete(places)
             advanceUntilIdle()
 
-            assertEquals(places, viewModel.uiState.value.results)
-            assertTrue(viewModel.uiState.value.fromMapSearch)
+            assertTrue(repository.externalQueries.isEmpty())
+            assertTrue(
+                viewModel.uiState.value.results
+                    .isEmpty(),
+            )
+            assertFalse(viewModel.uiState.value.fromMapSearch)
             assertFalse(viewModel.uiState.value.isSearching)
-            assertFalse(viewModel.uiState.value.hasNext)
-            assertNull(viewModel.uiState.value.nextCursor)
             assertNull(viewModel.uiState.value.errorMessage)
         }
 
     @Test
-    fun `두 검색 모두 비어야 최종 빈 결과가 된다`() =
+    fun `새 장소 추가 검색이 비면 외부 검색의 빈 결과를 표시한다`() =
         runTest(dispatcher) {
             val viewModel = viewModel()
 
-            viewModel.onIntent(PlaceSearchIntent.QueryChanged("없는 장소"))
+            viewModel.onIntent(PlaceSearchIntent.SearchOnMap("없는 장소"))
             advanceUntilIdle()
 
             assertEquals(listOf("없는 장소"), repository.externalQueries)
@@ -121,7 +114,7 @@ class PlaceSearchViewModelTest {
             repository.external = { throw IOException("external unavailable") }
             val viewModel = viewModel()
 
-            viewModel.onIntent(PlaceSearchIntent.QueryChanged("새 장소"))
+            viewModel.onIntent(PlaceSearchIntent.SearchOnMap("새 장소"))
             advanceUntilIdle()
 
             assertEquals(listOf("새 장소"), repository.externalQueries)
@@ -146,7 +139,7 @@ class PlaceSearchViewModelTest {
                 }
             }
             val viewModel = viewModel()
-            viewModel.onIntent(PlaceSearchIntent.QueryChanged("이전 검색"))
+            viewModel.onIntent(PlaceSearchIntent.SearchOnMap("이전 검색"))
             advanceTimeBy(300)
             runCurrent()
             assertEquals(listOf("이전 검색"), repository.externalQueries)
@@ -169,7 +162,7 @@ class PlaceSearchViewModelTest {
             val pending = CompletableDeferred<List<CoursePlaceVO>>()
             repository.external = { pending.await() }
             val viewModel = viewModel()
-            viewModel.onIntent(PlaceSearchIntent.QueryChanged("검색"))
+            viewModel.onIntent(PlaceSearchIntent.SearchOnMap("검색"))
             advanceTimeBy(300)
             runCurrent()
             assertTrue(viewModel.uiState.value.isSearching)
@@ -194,7 +187,7 @@ class PlaceSearchViewModelTest {
         }
 
     @Test
-    fun `빠른 입력은 마지막 검색어만 조회하고 외부 결과는 추가 페이지를 호출하지 않는다`() =
+    fun `빠른 입력은 마지막 등록 검색만 조회하고 빈 결과는 추가 페이지를 호출하지 않는다`() =
         runTest(dispatcher) {
             repository.external = { listOf(place("external")) }
             val viewModel = viewModel()
@@ -206,7 +199,7 @@ class PlaceSearchViewModelTest {
             advanceUntilIdle()
 
             assertEquals(listOf("성수" to null), repository.registeredQueries)
-            assertEquals(listOf("성수"), repository.externalQueries)
+            assertTrue(repository.externalQueries.isEmpty())
             assertFalse(viewModel.uiState.value.isLoadingMore)
         }
 

@@ -4,7 +4,9 @@ import com.chillsam.courmy.common.presentation.mvi.MviIntent
 
 /** 검색어 입력 화면(FS-17)의 사용자 입력. */
 sealed interface SearchIntent : MviIntent {
-    data object Load : SearchIntent
+    data class Load(
+        val placeSearch: Boolean = false,
+    ) : SearchIntent
 
     data class ChangeQuery(
         val query: String,

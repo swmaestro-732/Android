@@ -13,10 +13,10 @@ class NotificationDataSource(
 
     suspend fun markRead(id: Long) {
         require(id > 0) { "알림 ID가 올바르지 않습니다." }
-        checked(api.markRead(id))
+        checked(api.markRead(id, NotificationReadRequest()))
     }
 
-    suspend fun markAllRead(): Long = count(checked(api.markAllRead()))
+    suspend fun markAllRead(): Long = count(checked(api.markAllRead(NotificationReadRequest())))
 
     private fun count(envelope: NotificationEnvelope<NotificationCountDTO>): Long =
         requireNotNull(envelope.data?.count?.takeIf { it >= 0 }) { "알림 개수가 올바르지 않습니다." }

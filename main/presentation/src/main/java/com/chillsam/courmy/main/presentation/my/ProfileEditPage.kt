@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -86,7 +87,7 @@ fun ProfileEditPage(
     StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    // 편집 원본값은 실제 내 프로필(GET /service/v1/mypage)에서 가져온다.
+    // 편집 원본과 관심사는 계정 프로필(GET /api/v1/users) 응답을 사용한다.
     val myState by myViewModel.uiState.collectAsStateWithLifecycle()
     // MyViewModel 은 init 에서 로드하지 않는다. 여기서 부르지 않으면 편집 원본이 빈 값이 된다.
     RefreshOnResume { myViewModel.onIntent(MyProfileIntent.Retry) }
@@ -187,22 +188,42 @@ fun ProfileEditPage(
                     profile?.interestThemes.orEmpty().map { code ->
                         CourseTagVO.labelOf(code).ifBlank { code }
                     },
-                onEdit = { navigationHelper.navigateTo(InterestThemePage) },
+                onEdit = {
+                    navigationHelper.navigateTo(
+                        InterestThemePage,
+                        source = NavigationSource("/my/profile/edit", "interest_themes"),
+                    )
+                },
             )
             InterestSummary(
                 title = "관심 지역",
                 chips = profile?.interestRegions.orEmpty().map { it.shortName },
-                onEdit = { navigationHelper.navigateTo(InterestRegionPage) },
+                onEdit = {
+                    navigationHelper.navigateTo(
+                        InterestRegionPage,
+                        source = NavigationSource("/my/profile/edit", "interest_regions"),
+                    )
+                },
                 region = true,
             )
             Spacer(Modifier.height(12.dp))
+        }
+
+        // 조회 상태는 편집 화면을 가리지 않는다. 관심 테마/지역 편집과 같은 하단 안내로 통일해
+        // (전체 오류 화면 대신) 입력칸을 유지한 채 최초 로딩/실패만 작은 바로 알리고 새로고침을 준다.
+        // 이미 프로필을 받은 뒤 복귀 새로고침은 기존 값을 유지하므로 로딩 바를 띄우지 않는다.
+        InterestLoadFeedback(
+            isLoading = myState.isLoading && myState.profile == null,
+            loadError = myState.errorMessage != null,
+        ) {
+            myViewModel.onIntent(MyProfileIntent.Retry)
         }
 
         // 하단 저장 버튼 영역도 흰색(Figma FS-26).
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
                 text = "변경 사항 저장",
-                enabled = hasChanges && !editState.isSaving,
+                enabled = profile != null && hasChanges && !editState.isSaving,
                 loading = editState.isSaving,
                 onClick = {
                     // 바뀐 항목만 넘긴다(아이디를 그대로 다시 보내면 중복으로 거부될 수 있다).

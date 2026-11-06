@@ -41,8 +41,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
-import com.chillsam.courmy.main.domain.home.HomePage
-import com.chillsam.courmy.main.domain.login.ProfileSetupPage
+import com.chillsam.courmy.main.domain.login.TermsAgreementPage
 
 private val KakaoYellow = Color(0xFFFEE500)
 
@@ -51,7 +50,7 @@ private val NaverGreen = Color(0xFF03C75A)
 
 /**
  * 로그인·시작하기 화면(FS-03). "카카오로 시작하기" → 카카오 SDK 로그인(idToken) → 서버 social-login.
- * 기존 회원이면 홈으로, 신규 회원이면 회원가입 플로우(프로필→…→완료)로 진입한다.
+ * 기존 회원이면 이전 화면으로, 신규 회원이면 회원가입 플로우(프로필→…→완료)로 진입한다.
  */
 @Composable
 fun LoginPage(modifier: Modifier = Modifier) {
@@ -69,16 +68,17 @@ fun LoginPage(modifier: Modifier = Modifier) {
         viewModel.onIntent(LoginIntent.CancelGoogleLogin)
     }
 
-    // 로그인 성공 → 분기 내비게이션(1회성). 기존 회원은 세션 로그인 후 홈, 신규 회원은 가입 플로우.
+    // 로그인 성공 → 분기 내비게이션(1회성). 기존 회원은 세션 로그인 후 이전 화면, 신규 회원은 가입 플로우.
     LaunchedEffect(uiState.result) {
         when (uiState.result) {
             LoginResult.EXISTING_USER -> {
                 session.login()
-                navigationHelper.navigateReplace(HomePage)
+                navigationHelper.finishAuthentication()
             }
 
             LoginResult.NEW_USER -> {
-                navigationHelper.navigateTo(ProfileSetupPage)
+                SignupSelectionStore.clear()
+                navigationHelper.navigateTo(TermsAgreementPage)
             }
 
             null -> {

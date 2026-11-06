@@ -1,5 +1,6 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import io.mockk.coEvery
@@ -39,13 +40,15 @@ class GetCourseForkSourceUseCaseTest {
             coEvery { repository.getCourseDetail(7L) } returns
                 detailWith(
                     place(order = 2, placeId = 22L, latitude = 37.5, longitude = 127.0),
-                    place(order = 1, placeId = 11L, walkingMinutesToNext = 6),
+                    place(order = 1, placeId = 11L, walkingMinutesToNext = 6)
+                        .copy(detailCategory = PlaceDetailCategoryVO.BAKERY),
                 )
 
             val source = useCase(7L)
 
             assertEquals(listOf("11", "22"), source.places.map { it.id })
             assertEquals(6, source.places.first().walkingMinutes)
+            assertEquals(PlaceDetailCategoryVO.BAKERY, source.places.first().detailCategory)
             assertEquals(37.5, source.places.last().latitude!!, 0.0)
             assertEquals(127.0, source.places.last().longitude!!, 0.0)
         }

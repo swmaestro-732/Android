@@ -15,11 +15,13 @@ interface HomeFeedRepository {
      * 저장수 내림차순·최신순으로 랭킹된 공개 코스 한 페이지. [size] 는 서버가 1~50 으로 제한한다.
      * [cursor] 가 null 이면 첫 페이지, 아니면 그 커서 다음부터 이어 받는다.
      * [category] 를 주면 해당 코스 태그의 공개 코스만 내려온다(정렬·커서 규칙은 동일). null 이면 전체.
+     * [sigungu] 를 주면 그 시·군·구 코스로 좁힌다(법정동코드). 백엔드 선행: 서버가 받기 전까지는 무시된다.
      */
     suspend fun getCourseFeed(
         size: Int,
         cursor: String? = null,
         category: CourseTagVO? = null,
+        sigungu: String? = null,
     ): CursorPageVO<HomeCourseVO>
 
     /**

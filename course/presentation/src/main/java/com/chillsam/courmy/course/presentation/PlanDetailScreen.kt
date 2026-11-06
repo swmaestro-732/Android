@@ -49,6 +49,7 @@ import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.PlanDetailVO
 import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
 import com.chillsam.courmy.course.presentation.component.PlaceSheetCourse
+import com.chillsam.courmy.course.presentation.component.PlannedDateField
 
 @Composable
 internal fun PlanDetailScreen(
@@ -96,7 +97,6 @@ internal fun PlanDetailScreen(
             )
             CourseMapSection(
                 places = places,
-                onPlaceClick = { selectedPlace = it },
                 onOpenDetail = {
                     openSheetInOverview = true
                     selectedPlace = it
@@ -191,7 +191,12 @@ private fun EditPlanDialog(
     ) {
         DsTextField(value = title, onValueChange = { title = it }, placeholder = "계획 이름")
         DsTextField(value = memo, onValueChange = { memo = it }, placeholder = "메모 (선택)")
-        DsTextField(value = date, onValueChange = { date = it }, placeholder = "방문 날짜 YYYY-MM-DD (선택)")
+        DsText(
+            text = "방문 날짜 (선택)",
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+        )
+        PlannedDateField(plannedDate = date, onDateChange = { date = it })
         DsButton(
             text = "저장",
             enabled = title.isNotBlank() && !isSaving,
@@ -400,10 +405,12 @@ private fun PlanPlaceDetail(
             place.copy(
                 name = state.place?.name?.takeIf { it.isNotBlank() } ?: place.name,
                 category = state.place?.category?.takeIf { it.isNotBlank() } ?: place.category,
+                detailCategory = state.place?.detailCategory ?: place.detailCategory,
                 latitude = state.place?.latitude ?: place.latitude,
                 longitude = state.place?.longitude ?: place.longitude,
             ),
         address = state.place?.address?.takeIf { it.isNotBlank() } ?: initialAddress,
+        openingHours = state.place?.openingHours.orEmpty(),
         reviews = state.reviews,
         reviewCategories = state.place?.categories.orEmpty(),
         onReviewWritten = viewModel::refreshReviews,
@@ -422,6 +429,7 @@ private fun PlanDetailVO.toDisplayPlaces(): List<CourseDetailPlaceVO> =
             order = index + 1,
             name = place.name.ifBlank { "장소 정보를 불러오지 못했어요" },
             category = place.categoryLabel,
+            detailCategory = place.detailCategory,
             photoCountText = "",
             tip = place.memo,
             latitude = place.latitude,

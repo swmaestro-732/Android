@@ -123,6 +123,7 @@ private fun PlaceHeader(
         PlaceThumbnail(
             url = place.thumbnailUrl.ifBlank { null },
             category = place.category,
+            detailCategory = place.detailCategory,
             modifier = Modifier.size(48.dp),
             shape = RoundedCornerShape(11.dp),
         )

@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -13,15 +14,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.metrics.performance.JankStats
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
+import com.chillsam.courmy.common.domain.push.NotificationConsentStore
 import com.chillsam.courmy.common.domain.push.NotificationSettings
 import com.chillsam.courmy.common.domain.push.PushTarget
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
@@ -32,6 +31,7 @@ import com.chillsam.courmy.common.presentation.jank.JankReporter
 import com.chillsam.courmy.common.presentation.jank.LocalJankReporter
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.main.presentation.deeplink.resolveNewIntentRoute
+import com.chillsam.courmy.main.presentation.deeplink.resolveRoute
 import com.chillsam.courmy.main.presentation.deeplink.resolveStartStack
 import com.chillsam.courmy.main.presentation.navigation.RootComposable
 import com.chillsam.courmy.tti.TTIHelper
@@ -58,6 +58,9 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var notificationSettings: NotificationSettings
 
+    @Inject
+    lateinit var notificationConsent: NotificationConsentStore
+
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             // 허용/거절과 관계없이 앱 진입을 계속한다. 설정 화면은 OS 상태를 다시 읽는다.
@@ -70,9 +73,22 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // App Link 진입 시 Intent.data 에서 시작 백스택을 구성한다.
+        // App Link 는 Intent.data, 알림 탭은 extras(활동=pendingPush / 일회성=link)에서 시작 스택을 만든다.
         pendingPush = readPush(savedInstanceState?.getBundle("pendingPush") ?: intent?.extras)
-        val startStack = resolveStartStack(if (pendingPush != null) null else intent?.data)
+        val pushLink = if (pendingPush == null) intent?.extras?.pushLinkUri() else null
+        val startStack =
+            resolveStartStack(
+                when {
+                    pendingPush != null -> null
+                    pushLink != null -> pushLink
+                    else -> intent?.data
+                },
+            )
+        // courmy 딥링크가 아닌 외부 link 는 브라우저로 연다. 회전 재실행을 막으려 소비 표시한다.
+        if (pushLink != null && pushLink.resolveRoute() == null) {
+            openExternalLink(pushLink)
+            intent?.removeExtra("link")
+        }
 
         // JankStats 는 DecorView 가 생성된 이후에만 만들 수 있다. setContent 가 DecorView 를
         // 보장하므로 lifecycle observer 안에서 lazy 하게 생성하고, tracking on/off 와 백그라운드
@@ -102,7 +118,6 @@ class MainActivity : FragmentActivity() {
 
         // 상태바 영역의 색과 아이콘 밝기는 화면마다 달라 RootComposable 이 맡는다.
         enableEdgeToEdge()
-        hideNavigationBar()
         setContent {
             CompositionLocalProvider(
                 LocalNavigationHelper provides navigationHelper,
@@ -131,6 +146,7 @@ class MainActivity : FragmentActivity() {
                 permissionGranted = granted,
                 alreadyRequested = preferences.getBoolean("requested", false),
                 notificationsEnabled = notificationSettings.notificationsEnabled,
+                consentDecided = notificationConsent.isDecided,
             )
         ) {
             return
@@ -138,29 +154,6 @@ class MainActivity : FragmentActivity() {
         // 회전·재진입이나 거절 뒤 다음 실행에서 자동으로 다시 묻지 않는다.
         preferences.edit().putBoolean("requested", true).apply()
         notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-    }
-
-    /**
-     * 다이얼로그·키보드·시스템 UI 가 뜨면 안드로이드가 내비게이션 바를 되돌려 놓는다.
-     * 포커스를 되찾을 때마다 다시 숨겨 몰입 상태를 유지한다.
-     */
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideNavigationBar()
-    }
-
-    /**
-     * 시스템 내비게이션 바(뒤로가기·홈·최근앱)를 숨긴다. 상태 바는 그대로 둔다.
-     *
-     * 완전히 막지는 않는다 — 화면 아래 가장자리에서 위로 쓸면 잠시 나타났다 사라진다
-     * (BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE). 제스처 내비게이션 기기에서는 뒤로가기 제스처가
-     * 그대로 동작하므로, 버튼 내비게이션 기기에서만 스와이프가 필요하다.
-     */
-    private fun hideNavigationBar() {
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            hide(WindowInsetsCompat.Type.navigationBars())
-        }
     }
 
     /**
@@ -194,22 +187,40 @@ class MainActivity : FragmentActivity() {
             )
         }
 
+    /** 일회성(마케팅) 알림의 탭 대상. data 의 "link" 를 Uri 로 읽는다(없으면 null). */
+    private fun Bundle.pushLinkUri(): Uri? = getString("link")?.takeIf { it.isNotBlank() }?.let(Uri::parse)
+
+    /** courmy 라우트가 아닌 외부 링크를 외부 앱(브라우저 등)으로 연다. */
+    private fun openExternalLink(uri: Uri) {
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
 
-        readPush(intent.extras)?.let {
-            pendingPush = it
-            return
+        val push = readPush(intent.extras)
+        val link = if (push == null) intent.extras?.pushLinkUri() else null
+        when {
+            // 활동 알림 탭 → 대상 화면으로 이동(RootComposable 이 소비).
+            push != null -> pendingPush = push
+
+            // 일회성(마케팅) 알림 탭 → courmy 라우트면 인앱, 외부면 브라우저.
+            link != null -> link.resolveRoute()?.let(navigationHelper::navigateDeepLink) ?: openExternalLink(link)
+
+            // App Link 웜 스타트.
+            else -> intent.data?.let(::resolveNewIntentRoute)?.let(navigationHelper::navigateDeepLink)
         }
-        val route = intent.data?.let(::resolveNewIntentRoute) ?: return
-        navigationHelper.navigateDeepLink(route)
     }
 }
 
-/** 자동 요청은 미응답 사용자에게만 한 번. 이후 변경은 설정 > 알림에서 한다. */
+/**
+ * 자동 요청은 미응답 사용자에게만 한 번. 이후 변경은 설정 > 알림에서 한다.
+ * 홈 동의 팝업을 거치지 않았으면 미루고, 팝업 확인 직후의 요청이 첫 요청이 되게 한다.
+ */
 internal fun shouldRequestStartupNotificationPermission(
     permissionGranted: Boolean,
     alreadyRequested: Boolean,
     notificationsEnabled: Boolean,
-): Boolean = notificationsEnabled && !permissionGranted && !alreadyRequested
+    consentDecided: Boolean,
+): Boolean = consentDecided && notificationsEnabled && !permissionGranted && !alreadyRequested

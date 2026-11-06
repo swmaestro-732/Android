@@ -11,7 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
+import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.ProfileEditPage
 import com.chillsam.courmy.main.presentation.component.BackTopBar
@@ -37,6 +41,7 @@ private const val NOT_READY_HINT = "(준비 중)"
 fun SettingsPage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
+    val telemetry = LocalTelemetry.current
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     // 공지는 아직 상세 화면이 없어, 무반응 대신 "준비 중" 안내를 띄운다.
@@ -58,9 +63,13 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
         ) {
-            SettingsMenuRow(label = "프로필 수정", onClick = { navigationHelper.navigateTo(ProfileEditPage) })
+            SettingsMenuRow(label = "프로필 수정", onClick = {
+                navigationHelper.navigateTo(ProfileEditPage, source = NavigationSource("/settings", "edit_profile"))
+            })
             SettingsDivider()
-            SettingsMenuRow(label = "계정 관리", onClick = { navigationHelper.navigateTo(AccountManageRoute) })
+            SettingsMenuRow(label = "계정 관리", onClick = {
+                navigationHelper.navigateTo(AccountManageRoute, source = NavigationSource("/settings", "account"))
+            })
             SettingsDivider()
             SettingsMenuRow(label = "공지", onClick = notReady, hint = NOT_READY_HINT)
             SettingsDivider()
@@ -69,15 +78,24 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                 onClick = {
                     navigationHelper.navigateTo(
                         com.chillsam.courmy.main.domain.settings.NotificationSettingsPage,
+                        source = NavigationSource("/settings", "notifications"),
                     )
                 },
             )
             SettingsDivider()
-            SettingsMenuRow(label = "문의하기", onClick = { openUrl(CONTACT_FORM_URL) })
+            SettingsMenuRow(label = "문의하기", onClick = {
+                telemetry.buttonClick("/settings", "contact", mapOf("destination" to "external_browser"))
+                openUrl(CONTACT_FORM_URL)
+            })
             SettingsDivider()
-            SettingsMenuRow(label = "개인정보 보호", onClick = { openUrl(PRIVACY_POLICY_URL) })
+            SettingsMenuRow(label = "개인정보 보호", onClick = {
+                telemetry.buttonClick("/settings", "privacy_policy", mapOf("destination" to "external_browser"))
+                openUrl(PRIVACY_POLICY_URL)
+            })
             SettingsDivider()
-            SettingsMenuRow(label = "앱 버전", onClick = { navigationHelper.navigateTo(AppVersionRoute) })
+            SettingsMenuRow(label = "앱 버전", onClick = {
+                navigationHelper.navigateTo(AppVersionRoute, source = NavigationSource("/settings", "app_version"))
+            })
         }
     }
 }

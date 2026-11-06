@@ -39,21 +39,43 @@ class HomeFeedViewModel
         private var moreJob: Job? = null
         private var syncJob: Job? = null
 
+        /** 지역별 둘러보기에서 진입할 때 고정되는 시·군·구 필터. null 이면 지역 제한 없음(백엔드 선행 전까지 서버가 무시). */
+        private var sigungu: String? = null
+
         override fun onIntent(intent: HomeFeedIntent) {
             when (intent) {
                 HomeFeedIntent.Load,
                 HomeFeedIntent.Retry,
-                -> load()
+                -> {
+                    load()
+                }
 
-                HomeFeedIntent.LoadMore -> loadMore()
+                HomeFeedIntent.LoadMore -> {
+                    loadMore()
+                }
 
-                HomeFeedIntent.SyncSavedIds -> syncSavedIds()
+                HomeFeedIntent.SyncSavedIds -> {
+                    syncSavedIds()
+                }
 
-                is HomeFeedIntent.ToggleSave -> toggleSave(intent.courseId)
+                is HomeFeedIntent.ToggleSave -> {
+                    toggleSave(intent.courseId)
+                }
 
-                is HomeFeedIntent.SelectCategory -> selectCategory(intent.category)
+                is HomeFeedIntent.SelectCategory -> {
+                    selectCategory(intent.category)
+                }
 
-                HomeFeedIntent.ConsumeError -> dispatch(HomeFeedReducerEvent.ErrorConsumed)
+                is HomeFeedIntent.SetRegion -> {
+                    if (sigungu != intent.sigungu) {
+                        sigungu = intent.sigungu
+                        load()
+                    }
+                }
+
+                HomeFeedIntent.ConsumeError -> {
+                    dispatch(HomeFeedReducerEvent.ErrorConsumed)
+                }
             }
         }
 
@@ -235,7 +257,7 @@ class HomeFeedViewModel
             moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getHomeFeedUseCase(category = category) }
+                    runCatching { getHomeFeedUseCase(category = category, sigungu = sigungu) }
                         .onSuccess { page ->
                             val savedIds = loadSavedCourseIds()
                             dispatch(
@@ -274,7 +296,7 @@ class HomeFeedViewModel
             moreJob?.cancel()
             moreJob =
                 viewModelScope.launch {
-                    runCatching { getHomeFeedUseCase(cursor = cursor, category = category) }
+                    runCatching { getHomeFeedUseCase(cursor = cursor, category = category, sigungu = sigungu) }
                         .onSuccess { page ->
                             dispatch(
                                 HomeFeedReducerEvent.MoreLoaded(

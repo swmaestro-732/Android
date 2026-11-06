@@ -22,6 +22,11 @@ interface HomeFeedApiService {
          * 알 수 없는 값은 400(4001)으로 거절되므로 enum `name` 외의 값을 보내지 않는다.
          */
         @Query("category") category: String? = null,
+        /**
+         * 코스를 특정 시·군·구로 좁히는 법정동코드(앞 5자리가 시군구). null 이면 전체.
+         * [wiki-needed] 백엔드 선행: 현재 서버는 이 파라미터를 받지 않아 무시(전체 반환)한다.
+         */
+        @Query("sigungu") sigungu: String? = null,
     ): Response<CourseFeedEnvelope>
 
     /**

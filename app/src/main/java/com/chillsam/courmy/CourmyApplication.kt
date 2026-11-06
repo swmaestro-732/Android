@@ -23,6 +23,8 @@ class CourmyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         devices.sync()
+        // 홈 동의 팝업에서 저장한 광고성·야간 동의가 서버에 못 갔으면 여기서 재시도한다.
+        devices.syncConsent()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
                 NotificationChannel("courmy_activity", "활동 알림", NotificationManager.IMPORTANCE_DEFAULT),

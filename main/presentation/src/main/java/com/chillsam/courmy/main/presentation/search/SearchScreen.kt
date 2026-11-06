@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,10 +25,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.main.presentation.FeatureFlags
 import com.chillsam.courmy.main.presentation.search.component.RecentKeywordChips
 import com.chillsam.courmy.main.presentation.search.component.SearchInputBar
 import com.chillsam.courmy.main.presentation.search.component.TrendingKeywordRow
@@ -50,10 +55,9 @@ fun SearchScreen(
             query = uiState.query,
             placeholder = placeholder,
             onQueryChange = actions.onQueryChange,
-            onSubmit = { actions.onSubmit(uiState.query) },
+            onSubmit = { actions.onSubmit(uiState.query, "keyboard") },
             onClear = actions.onClearQuery,
             onBack = actions.onBack,
-            onCancel = actions.onBack,
         )
         Column(
             modifier =
@@ -63,6 +67,9 @@ fun SearchScreen(
                     .verticalScroll(rememberScrollState())
                     .imePadding(),
         ) {
+            if (uiState.placeSearch && uiState.query.isNotBlank()) {
+                PlaceSuggestions(uiState, actions)
+            }
             if (uiState.recentKeywords.isNotEmpty()) {
                 SectionHeader(
                     title = "최근 검색",
@@ -71,13 +78,20 @@ fun SearchScreen(
                 )
                 RecentKeywordChips(
                     keywords = uiState.recentKeywords,
-                    onKeywordClick = actions.onSubmit,
+                    onKeywordClick = { actions.onSubmit(it, "recent") },
                     onRemoveClick = actions.onRemoveRecent,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
                 )
                 Spacer(Modifier.height(28.dp))
             }
             if (uiState.trendingKeywords.isNotEmpty()) TrendingSection(uiState = uiState, actions = actions)
+            // 검색어가 없어도 탐색을 시작할 수 있게 테마 바로가기를 항상 둔다(SCRUM-798).
+            if (FeatureFlags.SEARCH_THEME_BROWSE_ENABLED && !uiState.placeSearch) {
+                if (uiState.recentKeywords.isEmpty() && uiState.trendingKeywords.isEmpty()) {
+                    Spacer(Modifier.height(20.dp))
+                }
+                ThemeFindSection(onThemeClick = actions.onThemeClick)
+            }
             Spacer(Modifier.height(20.dp))
         }
     }
@@ -91,7 +105,6 @@ private fun SearchTopBar(
     onSubmit: () -> Unit,
     onClear: () -> Unit,
     onBack: () -> Unit,
-    onCancel: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
@@ -122,17 +135,6 @@ private fun SearchTopBar(
             onSubmit = onSubmit,
             onClear = onClear,
             modifier = Modifier.weight(1f),
-        )
-        DsText(
-            text = "취소",
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = color.contentDefaultLevel1,
-            modifier =
-                Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onCancel,
-                ),
         )
     }
 }
@@ -166,9 +168,32 @@ private fun TrendingSection(
     uiState.trendingKeywords.forEach { item ->
         TrendingKeywordRow(
             item = item,
-            onClick = { actions.onSubmit(item.keyword) },
+            onClick = { actions.onSubmit(item.keyword, "trending") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
         )
+    }
+}
+
+/** "테마로 찾기": 코스 태그 12종 칩. 검색어 없이도 테마 피드로 바로 가는 탐색 시작점(SCRUM-798). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ThemeFindSection(onThemeClick: (String) -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    DsText(
+        text = "테마로 찾기",
+        style = DesignSystemThemeImpl.typeScale.textStrongS,
+        color = color.contentDefaultLevel0,
+        modifier = Modifier.padding(horizontal = ScreenHorizontalPadding).padding(bottom = 12.dp),
+    )
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        CourseTagVO.entries.forEach { tag ->
+            // 라우트 인자는 taxonomy 컨벤션대로 소문자 코드("date")를 싣는다. 라벨은 표시 전용.
+            DsChip(text = tag.label, selected = false, onClick = { onThemeClick(tag.code) })
+        }
     }
 }
 
@@ -205,5 +230,47 @@ private fun SectionHeader(
                     onClick = onActionClick,
                 ),
         )
+    }
+}
+
+@Composable
+private fun PlaceSuggestions(
+    state: SearchUIState,
+    actions: SearchActions,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val message =
+        when {
+            state.suggestionsLoading -> "장소를 찾고 있어요"
+            state.suggestionsError != null -> state.suggestionsError
+            state.suggestions.isEmpty() -> "일치하는 장소가 없어요"
+            else -> null
+        }
+    message?.let {
+        DsText(
+            text = it,
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = color.contentDefaultLevel2,
+            modifier = Modifier.padding(ScreenHorizontalPadding),
+        )
+    }
+    state.suggestions.forEach { place ->
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clickable { actions.onSuggestionClick(place) }
+                .padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
+        ) {
+            DsText(
+                text = place.name,
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = color.contentDefaultLevel0,
+            )
+            DsText(
+                text = place.category,
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel2,
+            )
+        }
     }
 }

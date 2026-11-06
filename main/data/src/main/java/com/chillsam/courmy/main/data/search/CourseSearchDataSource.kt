@@ -10,5 +10,18 @@ class CourseSearchDataSource(
         keyword: String,
         size: Int,
         cursor: String?,
-    ): CourseSearchEnvelope = checkResponse(apiService.searchCourses(keyword = keyword, size = size, cursor = cursor))
+        area: String?,
+        category: String?,
+        sort: String?,
+    ): CourseSearchEnvelope =
+        checkResponse(
+            apiService.searchCourses(
+                keyword = keyword,
+                size = size,
+                cursor = cursor,
+                area = area,
+                category = category,
+                sort = sort,
+            ),
+        )
 }

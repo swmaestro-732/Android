@@ -173,11 +173,8 @@ data class UpdateProfileRequest(
 /**
  * `PATCH /api/v1/users` 응답 봉투.
  *
- * TODO-API-SPEC: `data`(`AccountProfileResponse`)에 서버가 정규화한 최종 값
- * (`bio`·`likeThemes`·`areas`)이 담겨 오는데 지금은 받지 않는다. 관심 지역·테마를 **되읽을 수 있는
- * 유일한 경로**이기도 하다(마이페이지 응답에는 없다). 다만 `areas` 는 `{code, name}` 뿐이라
- * 화면이 쓰는 `AreaVO`(shortName·fullName)를 복원할 수 없어, 지역 조회 API 가 생길 때 함께
- * 정리하는 편이 낫다. [wiki-needed]
+ * 저장 성공 여부를 확인하며 편집 화면 복귀 시 GET /api/v1/users로 최종 관심사를 다시 읽는다.
+ * PATCH의 data는 현재 사용하지 않는다.
  */
 @Serializable
 data class UpdateProfileEnvelope(

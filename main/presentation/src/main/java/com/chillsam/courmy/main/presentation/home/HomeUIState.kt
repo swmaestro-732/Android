@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.presentation.home
 
 import com.chillsam.courmy.common.presentation.mvi.UiState
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.entity.home.HomeInProgressCourseVO
 import com.chillsam.courmy.main.entity.home.HomeNearbyPlaceVO
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -16,6 +17,10 @@ data class HomeUIState(
     val courses: ImmutableList<HomeCourseVO> = persistentListOf(),
     /** 근처 저장 장소. 로그인 상태의 빈 결과는 지도 탐색 안내로 표시한다. */
     val nearbyPlaces: ImmutableList<HomeNearbyPlaceVO> = persistentListOf(),
+    /** 진행 중이던 코스. null 이면 카드를 숨긴다(따라가는 중 세션 없음). */
+    val inProgressCourse: HomeInProgressCourseVO? = null,
+    /** 진행 중인 코스 종료(end)가 서버에 실제로 기록됐을 때 true. 화면이 저장함(완주)으로 보내고 소비한다. */
+    val inProgressEnded: Boolean = false,
     val errorMessage: String? = null,
 ) : UiState {
     val showNearbyEmptyState: Boolean
