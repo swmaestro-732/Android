@@ -26,4 +26,15 @@ object FeatureFlags {
      * - false: 섹션 전체를 숨긴다. 지역별 코스 필터는 백엔드 선행이라 서버 준비 전 숨기고 싶을 때 쓴다.
      */
     const val REGION_BROWSE_ENABLED = false
+
+    /**
+     * 커미 AI 코스 추천(홈 "커미 AI" 배너·채팅 화면) 노출 여부.
+     *
+     * - true: 홈 검색바 아래에 커미 AI 배너가 보이고 `/ai/course-chat` 라우트가 등록된다.
+     * - false: 배너를 숨기고 라우트도 등록하지 않는다(딥링크로도 진입 불가).
+     *
+     * 추천 API 가 아직 없어 대화·추천이 스크립트 기반 목업이라 repo 는 false 로 둔다
+     * (로컬 데모에서만 true 로 켜 확인). 추천 API 연동 후 영구히 켜지면 스위치를 지운다.
+     */
+    const val AI_COURSE_CHAT_ENABLED = false
 }
