@@ -68,6 +68,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.domain.DraftListPage
+import com.chillsam.courmy.main.domain.aichat.AiCourseChatPage
 import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.domain.map.MapPage
@@ -129,13 +130,14 @@ private val themeTiles = CourseTagVO.entries
 /**
  * 앱의 기본 시작 화면(FS-09). 새 시안 기준으로 섹션형 홈으로 개편했다.
  *
- * 헤더(위치·날씨 mock + 인사) → 검색바 → 오늘의 추천 코스(가로 미리보기)
+ * 헤더(위치·날씨 mock + 인사) → 검색바 → 커미 AI 배너 → 오늘의 추천 코스(가로 미리보기)
  * → 근처 저장 장소 → 테마별 둘러보기 순서다.
  *
  * 추천 코스·근처 저장 장소는 `GET /service/v2/home`(공개 엔드포인트) 한 번으로 받는다.
  * 세로 피드 전체는 [RecommendedCoursesPage] 로 옮겼다(`GET /service/v1/home` 페이지네이션 유지)
  * — 홈은 앞쪽 몇 건만 미리 보여준다.
- * "커미 AI" 배너·"진행 중인 코스" 띠는 이번 범위에서 제외했다. [wiki-needed]
+ * "커미 AI" 배너는 [CourmyAiCard] 로 추가했다(탭 → [AiCourseChatPage], SCRUM-745).
+ * "진행 중인 코스" 띠는 아직 범위에서 제외했다. [wiki-needed]
  */
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
@@ -197,6 +199,14 @@ fun HomePage(modifier: Modifier = Modifier) {
             item {
                 HomeSearchBar(
                     onClick = { navigationHelper.navigateTo(SearchPage) },
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                )
+            }
+
+            // 커미 AI 코스 추천 배너(FS-09). 게스트에서도 둘러보는 진입점이라 세션 분기 없이 노출한다.
+            item {
+                CourmyAiCard(
+                    onClick = { navigationHelper.navigateTo(AiCourseChatPage) },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }

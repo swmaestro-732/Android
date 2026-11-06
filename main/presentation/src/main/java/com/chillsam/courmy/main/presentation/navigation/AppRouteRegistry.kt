@@ -30,6 +30,7 @@ import com.chillsam.courmy.course.presentation.PlanDetailPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.map.searchBounds
 import com.chillsam.courmy.main.presentation.FeatureFlags
+import com.chillsam.courmy.main.presentation.aichat.AiCourseChatPage
 import com.chillsam.courmy.main.presentation.chat.ChatPage
 import com.chillsam.courmy.main.presentation.chat.ChatRoomPage
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
@@ -67,6 +68,7 @@ import com.chillsam.courmy.course.domain.CourseFollowPage as CourseFollowRoute
 import com.chillsam.courmy.course.domain.CourseReviewListPage as CourseReviewListRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.course.domain.PlanDetailPage as PlanDetailRoute
+import com.chillsam.courmy.main.domain.aichat.AiCourseChatPage as AiCourseChatRoute
 import com.chillsam.courmy.main.domain.chat.ChatPage as ChatRoute
 import com.chillsam.courmy.main.domain.chat.ChatRoomPage as ChatRoomRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
@@ -192,6 +194,14 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = HomeRoute.PATH,
             render = { HomePage() },
+        ),
+        // 커미 AI 코스 추천 채팅(FS-09 "커미 AI" 배너 진입). 현재는 스크립트 기반 목업 대화.
+        AppRoute(
+            path = AiCourseChatRoute.PATH,
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
+                AiCourseChatPage(onBack = { navigationHelper.navigateToBack() })
+            },
         ),
         // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다. 지역별 둘러보기 진입 시 지역 인자가 실린다.
         AppRoute(
