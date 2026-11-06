@@ -13,6 +13,11 @@ import com.chillsam.courmy.main.entity.area.AreaVO
  * 프로세스 종료 후 미완료 가입 정보의 복원은 제공하지 않는다.
  */
 object SignupSelectionStore {
+    var ageConfirmed by mutableStateOf(false)
+    var termsAgreed by mutableStateOf(false)
+    var privacyAgreed by mutableStateOf(false)
+    val requiredTermsAgreed: Boolean get() = ageConfirmed && termsAgreed && privacyAgreed
+
     var nickname by mutableStateOf("")
     var handle by mutableStateOf("")
     var profileImageUrl by mutableStateOf<String?>(null)
@@ -35,6 +40,9 @@ object SignupSelectionStore {
 
     /** 가입 완료/취소 시 다음 세션을 위해 비운다. */
     fun clear() {
+        ageConfirmed = false
+        termsAgreed = false
+        privacyAgreed = false
         nickname = ""
         handle = ""
         profileImageUrl = null

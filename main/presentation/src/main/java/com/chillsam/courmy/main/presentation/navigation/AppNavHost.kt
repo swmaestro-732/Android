@@ -41,6 +41,7 @@ fun AppNavHost(
                 is NavSignal.DeepLink -> handleDeepLink(signal.route, backStack)
                 is NavSignal.Replace -> handleReplace(signal.route, backStack)
                 NavSignal.Back -> backStack.handleBack(exitApp)
+                NavSignal.AuthenticationCompleted -> finishAuthentication(backStack)
             }
         }
     }

@@ -27,4 +27,7 @@ interface NavigationHelper {
     fun navigateDeepLink(route: NavRoute)
 
     fun navigateToBack()
+
+    /** 로그인·가입 화면만 닫고 인증을 시작했던 화면으로 복귀한다. */
+    fun finishAuthentication()
 }

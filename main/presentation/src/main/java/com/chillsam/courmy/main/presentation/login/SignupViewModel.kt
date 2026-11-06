@@ -18,6 +18,7 @@ import javax.inject.Inject
 sealed interface SignupIntent : MviIntent {
     data class Submit(
         val profile: SignupProfile,
+        val requiredTermsAgreed: Boolean = false,
         /** 사용자가 고른 로컬 이미지(content://). 가입 성공 후 업로드한다. */
         val localImageUri: String? = null,
         /** 가입 중 고른 관심사. 서버 전송분과 별개로 기기에도 남긴다([SignupUseCase] 주석 참고). */
@@ -99,6 +100,10 @@ class SignupViewModel
 
         private fun submit(intent: SignupIntent.Submit) {
             if (currentState.isLoading) return
+            if (!intent.requiredTermsAgreed) {
+                dispatch(SignupReducerEvent.Failed("필수 약관에 동의해 주세요."))
+                return
+            }
             dispatch(SignupReducerEvent.Started)
             job?.cancel()
             job =
