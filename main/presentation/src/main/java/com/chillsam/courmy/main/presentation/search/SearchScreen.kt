@@ -85,7 +85,12 @@ fun SearchScreen(
             }
             if (uiState.trendingKeywords.isNotEmpty()) TrendingSection(uiState = uiState, actions = actions)
             // 검색어가 없어도 탐색을 시작할 수 있게 테마 바로가기를 항상 둔다(SCRUM-798).
-            if (!uiState.placeSearch) ThemeFindSection(onThemeClick = actions.onThemeClick)
+            if (!uiState.placeSearch) {
+                if (uiState.recentKeywords.isEmpty() && uiState.trendingKeywords.isEmpty()) {
+                    Spacer(Modifier.height(20.dp))
+                }
+                ThemeFindSection(onThemeClick = actions.onThemeClick)
+            }
             Spacer(Modifier.height(20.dp))
         }
     }
@@ -175,7 +180,7 @@ private fun ThemeFindSection(onThemeClick: (String) -> Unit) {
     val color = DesignSystemThemeImpl.designSystemColor
     DsText(
         text = "테마로 찾기",
-        style = DesignSystemThemeImpl.typeScale.textStrongM,
+        style = DesignSystemThemeImpl.typeScale.textStrongS,
         color = color.contentDefaultLevel0,
         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding).padding(bottom = 12.dp),
     )
