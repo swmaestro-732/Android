@@ -29,12 +29,10 @@ class RecentSearchPreferences
                             .getOrDefault(emptyList())
                     }.orEmpty()
             set(value) {
-                check(
-                    preferences
-                        .edit()
-                        .putString(KEY_RECENT, Json.encodeToString(ListSerializer(String.serializer()), value))
-                        .commit(),
-                )
+                preferences
+                    .edit()
+                    .putString(KEY_RECENT, Json.encodeToString(ListSerializer(String.serializer()), value))
+                    .apply()
             }
 
         private companion object {
