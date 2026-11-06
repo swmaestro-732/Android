@@ -516,8 +516,12 @@ val appRoutes: List<AppRoute> =
             },
         ),
     ).filter { route ->
-        // 채팅 기능 토글이 꺼져 있으면 채팅 라우트(/chat, /chat/room)를 등록하지 않는다.
-        FeatureFlags.CHAT_ENABLED || (route.path != ChatRoute.PATH && route.path != ChatRoomRoute.PATH)
+        // 기능 토글이 꺼져 있으면 해당 라우트를 등록하지 않는다(딥링크로도 진입 불가).
+        when (route.path) {
+            ChatRoute.PATH, ChatRoomRoute.PATH -> FeatureFlags.CHAT_ENABLED
+            AiCourseChatRoute.PATH -> FeatureFlags.AI_COURSE_CHAT_ENABLED
+            else -> true
+        }
     }
 
 val appRouteByPath: Map<String, AppRoute> = appRoutes.associateBy { it.path }
