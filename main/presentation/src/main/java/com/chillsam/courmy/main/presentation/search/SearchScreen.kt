@@ -55,7 +55,7 @@ fun SearchScreen(
             query = uiState.query,
             placeholder = placeholder,
             onQueryChange = actions.onQueryChange,
-            onSubmit = { actions.onSubmit(uiState.query) },
+            onSubmit = { actions.onSubmit(uiState.query, "keyboard") },
             onClear = actions.onClearQuery,
             onBack = actions.onBack,
         )
@@ -78,7 +78,7 @@ fun SearchScreen(
                 )
                 RecentKeywordChips(
                     keywords = uiState.recentKeywords,
-                    onKeywordClick = actions.onSubmit,
+                    onKeywordClick = { actions.onSubmit(it, "recent") },
                     onRemoveClick = actions.onRemoveRecent,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
                 )
@@ -168,7 +168,7 @@ private fun TrendingSection(
     uiState.trendingKeywords.forEach { item ->
         TrendingKeywordRow(
             item = item,
-            onClick = { actions.onSubmit(item.keyword) },
+            onClick = { actions.onSubmit(item.keyword, "trending") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
         )
     }

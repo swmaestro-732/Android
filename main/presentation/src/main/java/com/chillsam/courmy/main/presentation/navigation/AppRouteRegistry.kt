@@ -6,6 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
@@ -135,11 +136,32 @@ val appRoutes: List<AppRoute> =
                 val viewModel = hiltViewModel<OnboardingViewModel>()
                 OnboardingPage(
                     // 로그인 하기 → 온보딩 완료 처리 후 로그인 플로우(FS-03)로 진입.
-                    onLogin = { viewModel.complete { navigationHelper.navigateTo(LoginRoute) } },
-                    onBrowse = { viewModel.complete { navigationHelper.navigateReplace(HomeRoute) } },
+                    onLogin = {
+                        viewModel.complete {
+                            navigationHelper.navigateTo(
+                                LoginRoute,
+                                source = NavigationSource(OnboardingRoute.PATH, "login"),
+                            )
+                        }
+                    },
+                    onBrowse = {
+                        viewModel.complete {
+                            navigationHelper.navigateReplace(
+                                HomeRoute,
+                                source = NavigationSource(OnboardingRoute.PATH, "browse_guest"),
+                            )
+                        }
+                    },
                     // 건너뛰기 → 홈(게스트) 대신 로그인 플로우로 보낸다. 로그인 하기와 같은 navigateTo 라
                     // 로그인에서 뒤로가기하면 온보딩으로 돌아온다.
-                    onSkip = { viewModel.complete { navigationHelper.navigateTo(LoginRoute) } },
+                    onSkip = {
+                        viewModel.complete {
+                            navigationHelper.navigateTo(
+                                LoginRoute,
+                                source = NavigationSource(OnboardingRoute.PATH, "skip"),
+                            )
+                        }
+                    },
                 )
             },
         ),
@@ -164,7 +186,10 @@ val appRoutes: List<AppRoute> =
                 InterestThemePage(
                     onNext = { themes ->
                         SignupSelectionStore.themes = themes
-                        navigationHelper.navigateTo(SignupRegionRoute)
+                        navigationHelper.navigateTo(
+                            SignupRegionRoute,
+                            source = NavigationSource(SignupThemeRoute.PATH, "next"),
+                        )
                     },
                     progressStep = 2,
                 )
@@ -177,7 +202,10 @@ val appRoutes: List<AppRoute> =
                 InterestRegionPage(
                     onNext = { regions ->
                         SignupSelectionStore.regions = regions
-                        navigationHelper.navigateTo(CompleteRoute)
+                        navigationHelper.navigateTo(
+                            CompleteRoute,
+                            source = NavigationSource(SignupRegionRoute.PATH, "next"),
+                        )
                     },
                     progressStep = 3,
                 )
@@ -300,9 +328,25 @@ val appRoutes: List<AppRoute> =
                     onSaveCourse = {
                         navigationHelper.navigateToBack()
                         if (isPlan) {
-                            navigationHelper.navigateByRoute(MyRoute.plansRoute())
+                            navigationHelper.navigateByRoute(
+                                MyRoute.plansRoute(),
+                                source =
+                                    NavigationSource(
+                                        CourseCreateRoute.PATH,
+                                        "plan_save_success",
+                                        trigger = "result",
+                                    ),
+                            )
                         } else {
-                            navigationHelper.navigateTo(CourseCompleteRoute)
+                            navigationHelper.navigateTo(
+                                CourseCompleteRoute,
+                                source =
+                                    NavigationSource(
+                                        CourseCreateRoute.PATH,
+                                        "publish_success",
+                                        trigger = "result",
+                                    ),
+                            )
                         }
                     },
                 )
@@ -318,11 +362,17 @@ val appRoutes: List<AppRoute> =
                     viewModel = hiltViewModel<CourseCompleteViewModel>(),
                     onClose = {
                         navigationHelper.navigateToBack()
-                        navigationHelper.navigateTo(HomeRoute)
+                        navigationHelper.navigateTo(
+                            HomeRoute,
+                            source = NavigationSource(CourseCompleteRoute.PATH, "home"),
+                        )
                     },
                     onViewMyCourses = {
                         navigationHelper.navigateToBack()
-                        navigationHelper.navigateTo(MyRoute)
+                        navigationHelper.navigateTo(
+                            MyRoute,
+                            source = NavigationSource(CourseCompleteRoute.PATH, "my_courses"),
+                        )
                     },
                 )
             },
@@ -406,7 +456,12 @@ val appRoutes: List<AppRoute> =
                 PlanDetailPage(
                     planId = args[PlanDetailRoute.ARG_PLAN_ID]?.toLongOrNull() ?: 0L,
                     onBack = { navigationHelper.navigateToBack() },
-                    onSourceCourse = { navigationHelper.navigateByRoute(CourseDetailRoute.route(it.toString())) },
+                    onSourceCourse = {
+                        navigationHelper.navigateByRoute(
+                            CourseDetailRoute.route(it.toString()),
+                            source = NavigationSource(PlanDetailRoute.PATH, "source_course"),
+                        )
+                    },
                 )
             },
         ),
@@ -425,11 +480,21 @@ val appRoutes: List<AppRoute> =
                     ) {
                         DsButton(text = "계획하기", onClick = {
                             showCopyChoice = false
-                            sourceId?.let { navigationHelper.navigateByRoute(CourseCreateRoute.planRoute(it)) }
+                            sourceId?.let {
+                                navigationHelper.navigateByRoute(
+                                    CourseCreateRoute.planRoute(it),
+                                    source = NavigationSource(CourseDetailRoute.PATH, "copy_as_plan"),
+                                )
+                            }
                         })
                         DsButton(text = "후기 작성", variant = DsButtonVariant.Secondary, onClick = {
                             showCopyChoice = false
-                            sourceId?.let { navigationHelper.navigateByRoute(CourseCreateRoute.forkRoute(it)) }
+                            sourceId?.let {
+                                navigationHelper.navigateByRoute(
+                                    CourseCreateRoute.forkRoute(it),
+                                    source = NavigationSource(CourseDetailRoute.PATH, "copy_as_course"),
+                                )
+                            }
                         })
                         DsButton(text = "취소", variant = DsButtonVariant.Secondary, onClick = { showCopyChoice = false })
                     }
@@ -441,9 +506,17 @@ val appRoutes: List<AppRoute> =
                         CourseDetailPageActions(
                             onBack = { navigationHelper.navigateToBack() },
                             onAuthorClick = { handle ->
-                                navigationHelper.navigateByRoute(UserProfileRoute.route(handle))
+                                navigationHelper.navigateByRoute(
+                                    UserProfileRoute.route(handle),
+                                    source = NavigationSource(CourseDetailRoute.PATH, "author"),
+                                )
                             },
-                            onMyProfileClick = { navigationHelper.navigateTo(MyRoute) },
+                            onMyProfileClick = {
+                                navigationHelper.navigateTo(
+                                    MyRoute,
+                                    source = NavigationSource(CourseDetailRoute.PATH, "my_profile"),
+                                )
+                            },
                             onShare = {
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
                                 context.copyShareLink(CourseDetailRoute.route(courseId))
@@ -453,17 +526,31 @@ val appRoutes: List<AppRoute> =
                             },
                             onFollowCourse = {
                                 args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull()?.let { courseId ->
-                                    navigationHelper.navigateByRoute(CourseFollowRoute.route(courseId))
+                                    navigationHelper.navigateByRoute(
+                                        CourseFollowRoute.route(courseId),
+                                        source = NavigationSource(CourseDetailRoute.PATH, "follow_course"),
+                                    )
                                 }
                             },
                             onEditCourse = {
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
-                                navigationHelper.navigateByRoute(CourseEditRoute.route(courseId))
+                                navigationHelper.navigateByRoute(
+                                    CourseEditRoute.route(courseId),
+                                    source = NavigationSource(CourseDetailRoute.PATH, "edit"),
+                                )
                             },
-                            onLogin = { navigationHelper.navigateTo(LoginRoute) },
+                            onLogin = {
+                                navigationHelper.navigateTo(
+                                    LoginRoute,
+                                    source = NavigationSource(CourseDetailRoute.PATH, "login_required_confirm"),
+                                )
+                            },
                             onSeeAllReviews = {
                                 val courseId = args[CourseDetailRoute.ARG_COURSE_ID].orEmpty()
-                                navigationHelper.navigateByRoute(CourseReviewListRoute.route(courseId))
+                                navigationHelper.navigateByRoute(
+                                    CourseReviewListRoute.route(courseId),
+                                    source = NavigationSource(CourseDetailRoute.PATH, "reviews"),
+                                )
                             },
                         ),
                 )
@@ -496,7 +583,10 @@ val appRoutes: List<AppRoute> =
                             onBack = { navigationHelper.navigateToBack() },
                             // 후기 작성은 후기 전체보기(FS-37) 위의 오버레이가 맡는다 — 그 화면으로 보낸다.
                             onLeaveReview = {
-                                navigationHelper.navigateByRoute(CourseReviewListRoute.route(courseId.toString()))
+                                navigationHelper.navigateByRoute(
+                                    CourseReviewListRoute.route(courseId.toString()),
+                                    source = NavigationSource(CourseFollowRoute.PATH, "write_review"),
+                                )
                             },
                         ),
                 )

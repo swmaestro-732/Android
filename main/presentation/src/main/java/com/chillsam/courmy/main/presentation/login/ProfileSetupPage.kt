@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -175,7 +176,7 @@ fun ProfileSetupPage(
                     SignupSelectionStore.nickname = nickname
                     SignupSelectionStore.handle = handle
                     SignupSelectionStore.profileImageUrl = profileImageUri?.toString()
-                    navigationHelper.navigateTo(SignupThemePage)
+                    navigationHelper.navigateTo(SignupThemePage, source = NavigationSource("/login/profile", "next"))
                 },
                 modifier =
                     Modifier

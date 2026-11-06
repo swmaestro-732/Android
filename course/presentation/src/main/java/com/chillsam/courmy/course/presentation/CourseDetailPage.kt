@@ -19,9 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 /**
@@ -43,6 +45,10 @@ fun CourseDetailPage(
     // Load 로는 위 가드에 걸려 서버를 안 치므로, 가드 없는 Retry 로 강제로 다시 읽는다.
     RefreshOnResume { viewModel.onIntent(CourseDetailIntent.Retry) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val telemetry = LocalTelemetry.current
+    val trackClick: (String) -> Unit = { button ->
+        telemetry.buttonClick("/course/detail", button, mapOf("course_id" to courseId.toString()))
+    }
     val context = LocalContext.current
     val detail = uiState.detail
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -90,15 +96,39 @@ fun CourseDetailPage(
                                     ?.let(actions.onAuthorClick)
                             }
                         },
-                        onFollowAuthor = { viewModel.onIntent(CourseDetailIntent.ToggleFollowAuthor) },
-                        onShare = actions.onShare,
-                        onSaveCourse = { viewModel.onIntent(CourseDetailIntent.ToggleSave) },
-                        onForkCourse = { viewModel.onIntent(CourseDetailIntent.ForkCourse) },
-                        onFollowCourse = actions.onFollowCourse,
-                        onEditCourse = actions.onEditCourse,
+                        onFollowAuthor = {
+                            trackClick("follow_author")
+                            viewModel.onIntent(CourseDetailIntent.ToggleFollowAuthor)
+                        },
+                        onShare = {
+                            trackClick("share")
+                            actions.onShare()
+                        },
+                        onSaveCourse = {
+                            trackClick("bookmark")
+                            viewModel.onIntent(CourseDetailIntent.ToggleSave)
+                        },
+                        onForkCourse = {
+                            trackClick("fork")
+                            viewModel.onIntent(CourseDetailIntent.ForkCourse)
+                        },
+                        onFollowCourse = {
+                            trackClick("follow_course")
+                            actions.onFollowCourse()
+                        },
+                        onEditCourse = {
+                            trackClick("edit")
+                            actions.onEditCourse()
+                        },
                         onDeleteCourse = { showDeleteConfirm = true },
-                        onToggleLike = { viewModel.onIntent(CourseDetailIntent.ToggleLike) },
-                        onSeeAllReviews = actions.onSeeAllReviews,
+                        onToggleLike = {
+                            trackClick("like")
+                            viewModel.onIntent(CourseDetailIntent.ToggleLike)
+                        },
+                        onSeeAllReviews = {
+                            trackClick("reviews")
+                            actions.onSeeAllReviews()
+                        },
                         onCommentAuthorClick = { comment ->
                             if (comment.isMine) {
                                 actions.onMyProfileClick()
@@ -123,6 +153,7 @@ fun CourseDetailPage(
                 LoginRequiredDialog(
                     onConfirm = {
                         viewModel.onIntent(CourseDetailIntent.ConsumeLoginRequired)
+                        trackClick("login_required_confirm")
                         actions.onLogin()
                     },
                     onDismiss = { viewModel.onIntent(CourseDetailIntent.ConsumeLoginRequired) },

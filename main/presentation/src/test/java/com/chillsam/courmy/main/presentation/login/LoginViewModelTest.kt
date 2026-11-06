@@ -1,12 +1,14 @@
 package com.chillsam.courmy.main.presentation.login
 
 import android.content.Context
+import com.chillsam.courmy.common.domain.telemetry.ProductEvent
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.main.domain.auth.SocialLoginUseCase
 import com.chillsam.courmy.main.entity.auth.SocialLoginResult
 import com.chillsam.courmy.main.entity.auth.SocialProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
@@ -48,6 +50,56 @@ class LoginViewModelTest {
         unmockkObject(GoogleLoginClient)
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun providerAnalyticsRecordsOnlyProviderAndOutcomeWithoutTokens() =
+        runTest {
+            val events = mutableListOf<Pair<ProductEvent, Map<String, String>>>()
+            every { telemetry.logEvent(any(), any()) } answers {
+                events += firstArg<ProductEvent>() to secondArg<Map<String, String>>()
+            }
+            coEvery { GoogleLoginClient.login(context) } returns "secret-google-token"
+            coEvery { socialLogin(SocialProvider.GOOGLE, "secret-google-token") } returns
+                SocialLoginResult(newUser = true)
+            val viewModel = LoginViewModel(socialLogin, telemetry)
+
+            viewModel.onIntent(LoginIntent.GoogleLogin(context))
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    ProductEvent.ButtonClick to
+                        mapOf("screen" to "/login", "button" to "social_login", "provider" to "google"),
+                    ProductEvent.LoginProviderResult to
+                        mapOf("provider" to "google", "result" to "success", "new_user" to "true"),
+                ),
+                events,
+            )
+            assertFalse(events.any { (_, properties) -> properties.values.any { "secret-google-token" in it } })
+        }
+
+    @Test
+    fun providerFailureAnalyticsExcludesServerMessageAndToken() =
+        runTest {
+            val events = mutableListOf<Pair<ProductEvent, Map<String, String>>>()
+            every { telemetry.logEvent(any(), any()) } answers {
+                events += firstArg<ProductEvent>() to secondArg<Map<String, String>>()
+            }
+            coEvery { GoogleLoginClient.login(context) } returns "secret-token"
+            coEvery { socialLogin(SocialProvider.GOOGLE, "secret-token") } throws
+                IllegalStateException("server body with secret-token")
+            val viewModel = LoginViewModel(socialLogin, telemetry)
+
+            viewModel.onIntent(LoginIntent.GoogleLogin(context))
+            runCurrent()
+
+            assertEquals(
+                ProductEvent.LoginProviderResult to
+                    mapOf("provider" to "google", "result" to "failure", "stage" to "server"),
+                events.last(),
+            )
+            assertFalse(events.any { (_, properties) -> properties.values.any { "secret-token" in it } })
+        }
 
     @Test
     fun accountSelectionWaitsWithoutSpinnerAndAllowsCancelAndRetry() =

@@ -14,6 +14,12 @@ package com.chillsam.courmy.common.domain.telemetry
  * **여기에 넘기는 값에 개인정보·토큰·서버 응답 본문을 담지 않는다.** 리포트는 외부(Firebase)에 저장된다.
  */
 interface Telemetry {
+    /** 제품 상호작용. 검색 제출 외 자유 입력·인증 정보는 속성으로 전달하지 않는다. */
+    fun logEvent(
+        event: ProductEvent,
+        properties: Map<String, String>,
+    ) = Unit
+
     /**
      * 현재 화면을 기록한다. 크래시가 나면 직전까지의 화면 이동 경로가 리포트에 함께 보인다.
      *

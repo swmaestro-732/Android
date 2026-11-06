@@ -25,12 +25,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
@@ -77,6 +80,7 @@ fun MyPage(
     showPlans: Boolean = false,
     notifications: NotificationInboxViewModel = hiltViewModel(),
 ) {
+    val telemetry = LocalTelemetry.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(showPlans) {
         if (showPlans) viewModel.onIntent(MyProfileIntent.SelectTab(ProfileTab.PLAN))
@@ -94,7 +98,10 @@ fun MyPage(
                 uiState = uiState,
                 onLoadMore = { viewModel.onIntent(MyProfileIntent.LoadMore) },
                 onRetryPlans = { viewModel.onIntent(MyProfileIntent.Retry) },
-                onSelectTab = { viewModel.onIntent(MyProfileIntent.SelectTab(it)) },
+                onSelectTab = {
+                    telemetry.selectionChange("/my", "tab", it.name.lowercase())
+                    viewModel.onIntent(MyProfileIntent.SelectTab(it))
+                },
                 modifier = modifier,
             )
         }
@@ -230,10 +237,16 @@ fun MyContent(
                 followerCount = profile.followerCount,
                 followingCount = profile.followingCount,
                 onFollowerClick = {
-                    navigationHelper.navigateByRoute(FollowListPage.route(FollowListPage.TAB_FOLLOWER))
+                    navigationHelper.navigateByRoute(
+                        FollowListPage.route(FollowListPage.TAB_FOLLOWER),
+                        source = NavigationSource("/my", "followers"),
+                    )
                 },
                 onFollowingClick = {
-                    navigationHelper.navigateByRoute(FollowListPage.route(FollowListPage.TAB_FOLLOWING))
+                    navigationHelper.navigateByRoute(
+                        FollowListPage.route(FollowListPage.TAB_FOLLOWING),
+                        source = NavigationSource("/my", "following"),
+                    )
                 },
                 // 마이는 탭으로 들어오는 화면이라 돌아갈 이전 화면이 없다.
                 onBack = null,
@@ -246,11 +259,21 @@ fun MyContent(
                         onClick = shareProfile,
                     )
                 }
-                NotificationBellButton(unreadCount) { navigationHelper.navigateTo(NotificationInboxPage) }
+                NotificationBellButton(unreadCount) {
+                    navigationHelper.navigateTo(
+                        NotificationInboxPage,
+                        source = NavigationSource("/my", "notifications"),
+                    )
+                }
                 ProfileHeaderIconButton(
                     iconRes = R.drawable.ic_settings_24,
                     contentDescription = "설정",
-                    onClick = { navigationHelper.navigateTo(SettingsPage) },
+                    onClick = {
+                        navigationHelper.navigateTo(
+                            SettingsPage,
+                            source = NavigationSource("/my", "settings"),
+                        )
+                    },
                 )
             }
             // 프로필과 코스 목록은 성격이 다른 구역이라 선으로 끊는다.
@@ -284,9 +307,15 @@ fun MyContent(
                         courses = visibleCourses,
                         onCourseClick = { courseId ->
                             if (uiState.selectedTab == ProfileTab.COURSES) {
-                                navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                                navigationHelper.navigateByRoute(
+                                    CourseDetailPage.route(courseId),
+                                    source = NavigationSource("/my", "course"),
+                                )
                             } else {
-                                navigationHelper.navigateByRoute(PlanDetailPage.route(courseId.removePrefix("plan-")))
+                                navigationHelper.navigateByRoute(
+                                    PlanDetailPage.route(courseId.removePrefix("plan-")),
+                                    source = NavigationSource("/my", "plan"),
+                                )
                             }
                         },
                     )
@@ -295,14 +324,24 @@ fun MyContent(
                 // 코스가 없으면 빈 그리드 대신 만들러 갈 자리를 둔다.
                 uiState.selectedTab == ProfileTab.COURSES -> {
                     CreateFirstCourseCard(
-                        onClick = { navigationHelper.navigateTo(CourseCreatePage) },
+                        onClick = {
+                            navigationHelper.navigateTo(
+                                CourseCreatePage,
+                                source = NavigationSource("/my", "create_course"),
+                            )
+                        },
                     )
                 }
 
                 // 빈 계획 탭에서도 홈과 같은 계획 작성 화면으로 진입한다.
                 else -> {
                     CreateFirstPlanCard(
-                        onClick = { navigationHelper.navigateByRoute(CourseCreatePage.planRoute()) },
+                        onClick = {
+                            navigationHelper.navigateByRoute(
+                                CourseCreatePage.planRoute(),
+                                source = NavigationSource("/my", "create_plan"),
+                            )
+                        },
                     )
                 }
             }

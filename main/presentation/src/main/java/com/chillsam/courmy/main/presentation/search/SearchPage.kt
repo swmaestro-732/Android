@@ -8,7 +8,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
+import com.chillsam.courmy.common.domain.telemetry.searchSubmit
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.domain.map.MapSearchResultPage
 import com.chillsam.courmy.main.entity.map.MapBounds
@@ -31,6 +35,7 @@ fun SearchPage(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
+    val telemetry = LocalTelemetry.current
     val navigationHelper = LocalNavigationHelper.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -40,20 +45,34 @@ fun SearchPage(
     }
 
     val actions =
-        remember(viewModel, navigationHelper, target, latitude, longitude, bounds) {
+        remember(viewModel, navigationHelper, telemetry, target, latitude, longitude, bounds) {
             SearchActions(
                 onQueryChange = { viewModel.onIntent(SearchIntent.ChangeQuery(it)) },
-                onClearQuery = { viewModel.onIntent(SearchIntent.ClearQuery) },
+                onClearQuery = {
+                    telemetry.buttonClick(SearchRoute.PATH, "clear_query")
+                    viewModel.onIntent(SearchIntent.ClearQuery)
+                },
                 // 테마 칩: 홈 테마 타일과 같은 목적지(추천 코스의 해당 카테고리 필터)로 보낸다.
                 onThemeClick = { code ->
+                    telemetry.buttonClick(SearchRoute.PATH, "theme", mapOf("theme" to code))
                     navigationHelper.navigateToBack()
-                    navigationHelper.navigateByRoute(RecommendedCoursesPage.route(code))
+                    navigationHelper.navigateByRoute(
+                        RecommendedCoursesPage.route(code),
+                        source = NavigationSource("/search", "theme"),
+                    )
                 },
-                onRemoveRecent = { viewModel.onIntent(SearchIntent.RemoveRecent(it)) },
-                onClearAllRecent = { viewModel.onIntent(SearchIntent.ClearAllRecent) },
-                onSubmit = { keyword ->
+                onRemoveRecent = {
+                    telemetry.buttonClick(SearchRoute.PATH, "remove_recent")
+                    viewModel.onIntent(SearchIntent.RemoveRecent(it))
+                },
+                onClearAllRecent = {
+                    telemetry.buttonClick(SearchRoute.PATH, "clear_all_recent")
+                    viewModel.onIntent(SearchIntent.ClearAllRecent)
+                },
+                onSubmit = { keyword, source ->
                     val trimmed = keyword.trim()
                     if (trimmed.isNotEmpty()) {
+                        telemetry.searchSubmit(trimmed, target, source)
                         viewModel.onIntent(SearchIntent.Submit(trimmed))
                         navigationHelper.navigateToBack()
                         navigationHelper.navigateByRoute(
@@ -67,6 +86,7 @@ fun SearchPage(
                             } else {
                                 SearchResultRoute.route(trimmed)
                             },
+                            source = NavigationSource("/search", "search_$source"),
                         )
                     }
                 },
@@ -75,6 +95,7 @@ fun SearchPage(
                     val keyword =
                         viewModel.uiState.value.query
                             .trim()
+                    telemetry.searchSubmit(keyword, target, "place_suggestion")
                     viewModel.onIntent(SearchIntent.Submit(keyword))
                     navigationHelper.navigateToBack()
                     navigationHelper.navigateByRoute(
@@ -86,6 +107,7 @@ fun SearchPage(
                             targetLatitude = place.latitude,
                             targetLongitude = place.longitude,
                         ),
+                        source = NavigationSource("/search", "place_suggestion"),
                     )
                 },
             )

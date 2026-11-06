@@ -27,11 +27,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.login.ProfileSetupPage
@@ -44,6 +47,7 @@ import com.chillsam.courmy.main.domain.login.ProfileSetupPage
 fun TermsAgreementPage(modifier: Modifier = Modifier) {
     // 상단이 흰색이라 상태바도 같은 색으로 이어 붙인다. 회색으로 두면 띠만 분리돼 보인다.
     StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
+    val telemetry = LocalTelemetry.current
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
 
@@ -54,6 +58,17 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
     val privacy = SignupSelectionStore.privacyAgreed
     val requiredAll = SignupSelectionStore.requiredTermsAgreed
     val openDocument: (String) -> Unit = { url ->
+        telemetry.buttonClick(
+            "/login/terms",
+            if (url ==
+                SERVICE_TERMS_URL
+            ) {
+                "view_terms"
+            } else {
+                "view_privacy"
+            },
+            mapOf("destination" to "external_browser"),
+        )
         runCatching { uriHandler.openUri(url) }.onFailure {
             Toast.makeText(context, "문서를 열 수 없어요. 잠시 후 다시 시도해 주세요.", Toast.LENGTH_SHORT).show()
         }
@@ -123,7 +138,11 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
                 text = "동의하고 계속하기",
                 enabled = requiredAll,
                 onClick = {
-                    navigationHelper.navigateTo(ProfileSetupPage)
+                    telemetry.buttonClick("/login/terms", "agree_continue")
+                    navigationHelper.navigateTo(
+                        ProfileSetupPage,
+                        source = NavigationSource("/login/terms", "agree_continue"),
+                    )
                 },
                 modifier =
                     Modifier

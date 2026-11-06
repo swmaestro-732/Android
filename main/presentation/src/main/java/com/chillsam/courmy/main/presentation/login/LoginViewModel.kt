@@ -5,7 +5,9 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.telemetry.AppFailure
 import com.chillsam.courmy.common.domain.telemetry.AppFlow
+import com.chillsam.courmy.common.domain.telemetry.ProductEvent
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.auth.SocialLoginUseCase
 import com.chillsam.courmy.main.entity.auth.SocialProvider
@@ -116,6 +118,7 @@ class LoginViewModel
             // 진행 중이면 무시한다. 버튼도 isLoading 으로 잠그지만, 화면 재구성 등으로 상태가
             // 초기화되면 중복 진입이 가능하다. 그때 continuation 이 여러 개 생기면 결과가 뒤섞인다.
             if (loginJob?.isCompleted == false) return
+            telemetry.buttonClick("/login", "social_login", mapOf("provider" to provider.name.lowercase()))
             dispatch(
                 if (provider == SocialProvider.GOOGLE) {
                     LoginReducerEvent.GoogleSelectionStarted
@@ -134,6 +137,7 @@ class LoginViewModel
                                 requestSocialLogin(provider, token)
                             }
                         if (completed == null) {
+                            logProviderOutcome(provider, "timeout", "server")
                             dispatch(LoginReducerEvent.Failed("로그인 응답이 늦어지고 있어요. 다시 시도해 주세요."))
                         }
                     } finally {
@@ -170,6 +174,7 @@ class LoginViewModel
                         e is NaverLoginClient.CanceledException ||
                         e is GoogleLoginClient.CanceledException
                     -> {
+                        logProviderOutcome(provider, "cancelled", "sdk")
                         dispatch(LoginReducerEvent.Canceled)
                     }
 
@@ -177,19 +182,23 @@ class LoginViewModel
                     e is NaverLoginClient.NotConfiguredException ||
                         e is GoogleLoginClient.NotConfiguredException
                     -> {
+                        logProviderOutcome(provider, "not_configured", "sdk")
                         dispatch(LoginReducerEvent.Failed("${provider.label()} 로그인이 아직 준비되지 않았어요."))
                     }
 
                     provider == SocialProvider.KAKAO -> {
+                        logProviderOutcome(provider, "failure", "sdk")
                         reportKakaoFailure(context, e)
                     }
 
                     // 구글은 서명 SHA-1 미등록이 기기별 실패로 나타난다(카카오 키 해시와 같은 패턴).
                     provider == SocialProvider.GOOGLE -> {
+                        logProviderOutcome(provider, "failure", "sdk")
                         reportSocialSdkFailure(provider, e, GoogleLoginClient.diagnostics(context))
                     }
 
                     else -> {
+                        logProviderOutcome(provider, "failure", "sdk")
                         reportSocialSdkFailure(provider, e)
                     }
                 }
@@ -243,14 +252,38 @@ class LoginViewModel
             idToken: String,
         ) {
             runCatching { socialLoginUseCase(provider, idToken) }
-                .onSuccess { dispatch(LoginReducerEvent.Succeeded(it.newUser)) }
-                .onFailure { e ->
+                .onSuccess {
+                    telemetry.logEvent(
+                        ProductEvent.LoginProviderResult,
+                        mapOf(
+                            "provider" to provider.name.lowercase(),
+                            "result" to "success",
+                            "new_user" to it.newUser.toString(),
+                        ),
+                    )
+                    dispatch(LoginReducerEvent.Succeeded(it.newUser))
+                }.onFailure { e ->
                     if (e is CancellationException) throw e
+                    telemetry.logEvent(
+                        ProductEvent.LoginProviderResult,
+                        mapOf("provider" to provider.name.lowercase(), "result" to "failure", "stage" to "server"),
+                    )
                     // 원시 예외 메시지(개발자용 requireNotNull·URL 포함 등)는 로그로만 남기고,
                     // 사용자에게는 고정 안내 문구를 보여준다.
                     Log.w(TAG, "소셜 로그인 실패: ${e.javaClass.simpleName} - ${e.message}", e)
                     dispatch(LoginReducerEvent.Failed("로그인에 실패했어요. 잠시 후 다시 시도해 주세요."))
                 }
+        }
+
+        private fun logProviderOutcome(
+            provider: SocialProvider,
+            result: String,
+            stage: String,
+        ) {
+            telemetry.logEvent(
+                ProductEvent.LoginProviderResult,
+                mapOf("provider" to provider.name.lowercase(), "result" to result, "stage" to stage),
+            )
         }
 
         private companion object {
