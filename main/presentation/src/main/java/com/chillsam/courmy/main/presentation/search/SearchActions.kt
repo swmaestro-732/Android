@@ -1,7 +1,9 @@
 package com.chillsam.courmy.main.presentation.search
 
 import androidx.compose.runtime.Immutable
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import com.chillsam.courmy.main.entity.search.SearchCourseSortVO
 import com.chillsam.courmy.main.entity.search.SearchCourseVO
 
 /** 검색어 입력 화면(FS-17)이 상위로 올려 보내는 동작 묶음. */
@@ -26,6 +28,10 @@ data class SearchResultActions(
     val onQueryClick: () -> Unit,
     val onClearQuery: () -> Unit,
     val onCourseClick: (SearchCourseVO) -> Unit,
+    val onToggleSave: (SearchCourseVO) -> Unit,
+    val onSelectArea: (String?) -> Unit,
+    val onSelectCategory: (CourseTagVO?) -> Unit,
+    val onSelectSort: (SearchCourseSortVO) -> Unit,
     val onRetry: () -> Unit,
     val onLoadMore: () -> Unit,
 )

@@ -14,6 +14,8 @@ data class SearchCourseVO(
     val title: String,
     /** 커버 좌상단 배지(예: "성수 · 데이트"). */
     val categoryLabel: String = "",
+    /** 지역 표시 문자열 원본(예: "성수"). 검색 지역 필터 옵션 수집에 쓴다. */
+    val area: String = "",
     val coverImageUrl: String = "",
     val spotCount: Int = 0,
     val durationHours: Int = 0,
