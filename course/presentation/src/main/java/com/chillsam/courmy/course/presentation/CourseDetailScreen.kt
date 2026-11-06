@@ -1510,8 +1510,8 @@ private fun DetailBottomBar(
         ) {
             val idle =
                 BottomBarIconColors(
-                    tint = color.contentDefaultLevel2,
-                    border = color.borderDefaultLevel0,
+                    tint = color.contentDefaultLevel0,
+                    border = color.contentDefaultLevel2,
                     background = color.bgDefaultLevel1,
                 )
             BottomBarIconButton(
