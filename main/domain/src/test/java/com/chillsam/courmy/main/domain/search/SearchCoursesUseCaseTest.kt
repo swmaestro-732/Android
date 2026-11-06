@@ -15,15 +15,24 @@ class SearchCoursesUseCaseTest {
         var requestedKeyword: String? = null
         var requestedSize: Int? = null
         var requestedCursor: String? = null
+        var requestedArea: String? = null
+        var requestedCategory: String? = null
+        var requestedSort: String? = null
 
         override suspend fun searchCourses(
             keyword: String,
             size: Int,
             cursor: String?,
+            area: String?,
+            category: String?,
+            sort: String?,
         ): CursorPageVO<SearchCourseVO> {
             requestedKeyword = keyword
             requestedSize = size
             requestedCursor = cursor
+            requestedArea = area
+            requestedCategory = category
+            requestedSort = sort
             return page
         }
     }
@@ -63,6 +72,23 @@ class SearchCoursesUseCaseTest {
                 useCase("산책", size = size)
                 assertEquals(expected, repository.requestedSize)
             }
+        }
+
+    @Test
+    fun `필터는 그대로 전달하되 빈 문자열은 null 로 바꿔 보낸다`() =
+        runTest {
+            val repository = FakeRepository()
+            val useCase = SearchCoursesUseCase(repository)
+
+            useCase("산책", area = "서울", category = "FOOD", sort = "LATEST")
+            assertEquals("서울", repository.requestedArea)
+            assertEquals("FOOD", repository.requestedCategory)
+            assertEquals("LATEST", repository.requestedSort)
+
+            useCase("산책", area = " ", category = "", sort = "")
+            assertNull(repository.requestedArea)
+            assertNull(repository.requestedCategory)
+            assertNull(repository.requestedSort)
         }
 
     @Test
