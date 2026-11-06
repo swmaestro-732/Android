@@ -122,7 +122,11 @@ class CourseFollowViewModel
             recordVisit(state, finishedAtMillis)
         }
 
-        /** 따라가기 시작을 서버에 기록한다. 실패해도 화면 진행은 그대로 — 통계만 빠진다. */
+        /**
+         * 따라가기 시작을 서버에 기록한다. 실패해도 화면 진행은 그대로 — 통계만 빠진다.
+         * 다른 코스의 묵은 세션이 남아 있으면 UseCase 가 그 세션을 종료하고 다시 시작한다
+         * (서버는 사용자당 세션 1개만 허용한다). 그래도 실패하면 로그만 남긴다.
+         */
         private fun recordStart() {
             val id = courseId ?: return
             traceId = null
