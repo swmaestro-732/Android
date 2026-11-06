@@ -68,10 +68,10 @@ import com.naver.maps.map.overlay.OverlayImage
 internal const val PLACE_MAP_ZOOM = 16.0
 
 /** 순번 마커 지름(dp). 그릴 때 화면 밀도를 곱해 px 로 쓴다. */
-private const val MARKER_SIZE_DP = 26
+private const val MARKER_SIZE_DP = 22
 
 /** 지금 보고 있는 장소의 마커 지름(dp). 나머지보다 확실히 크게 잡아 눈에 띄게 한다. */
-private const val FOCUSED_MARKER_SIZE_DP = 40
+private const val FOCUSED_MARKER_SIZE_DP = 34
 
 /** 장소를 잇는 점선 패턴(칠하는 길이, 비우는 길이). */
 private val ROUTE_DASH_PATTERN = arrayOf(8.dp, 6.dp)

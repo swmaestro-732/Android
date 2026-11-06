@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -310,7 +311,9 @@ fun CourseDetailScreen(
 private val PinnedBarHeight = 56.dp
 
 /**
- * 스크롤로 히어로가 가려졌을 때 상단에 남는 요약 바 — 뒤로가기 + 제목 + "4곳 · 도보 20분".
+ * 스크롤로 히어로가 가려졌을 때 상단에 남는 요약 바 — 뒤로가기 + 제목 + "4곳 · 데이트 · 카페투어".
+ * 부제는 장소 수와 테마 라벨로 잇는다 — 히어로의 카테고리 칩이 가려져도 코스 성격이 남게.
+ * 도보 시간은 본문 스탯 줄이 이미 말해 주므로 싣지 않는다.
  * 히어로 위에서는 커버 위 버튼들이 그 역할을 하므로 숨긴다.
  */
 @Composable
@@ -357,10 +360,9 @@ private fun DetailPinnedBar(
                         overflow = TextOverflow.Ellipsis,
                     )
                     val meta =
-                        listOf(
-                            detail.placeCountText,
-                            detail.walkText,
-                        ).filter { it.isNotBlank() }.joinToString(" · ")
+                        (listOf(detail.placeCountText) + detail.themeLabels)
+                            .filter { it.isNotBlank() }
+                            .joinToString(" · ")
                     if (meta.isNotBlank()) {
                         DsText(
                             text = meta,
@@ -774,6 +776,7 @@ private fun RowScope.AuthorContent(
  * 작성자 팔로우 버튼.
  *
  * 팔로우 전에는 채운 강조 버튼("팔로우"), 팔로우 중에는 흐린 버튼("팔로잉")으로 바뀐다.
+ * 흐린 버튼은 밴드 배경과 같은 흰색이라 테두리를 둘러 알약이 묻히지 않게 한다.
  * 예전에는 팔로우하면 버튼이 사라져 이 화면에서 팔로우를 풀 방법이 없었는데,
  * "팔로잉" 상태에서도 누르면 [CourseDetailIntent.ToggleFollowAuthor] 가 언팔로우로 동작한다.
  */
@@ -785,12 +788,19 @@ private fun AuthorFollowButton(
     val color = DesignSystemThemeImpl.designSystemColor
     val background = if (isFollowing) color.bgDefaultLevel1 else color.bgAccent
     val contentColor = if (isFollowing) color.contentDefaultLevel3 else color.contentOnAccent
+    val shape = RoundedCornerShape(9999.dp)
     Box(
         modifier =
             Modifier
-                .clip(RoundedCornerShape(9999.dp))
+                .clip(shape)
                 .background(background)
-                .clickable(onClick = onClick)
+                .then(
+                    if (isFollowing) {
+                        Modifier.border(1.dp, color.borderDefaultLevel1, shape)
+                    } else {
+                        Modifier
+                    },
+                ).clickable(onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         DsText(
@@ -958,12 +968,7 @@ internal fun PlacesSection(
                     color = color.contentAccent,
                 )
             }
-            DsText(
-                text = if (expanded) "접기" else "펼치기",
-                modifier = Modifier.clickable { expanded = !expanded },
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentAccent,
-            )
+            ExpandToggleChip(expanded = expanded, onClick = { expanded = !expanded })
         }
         if (expanded) {
             places.forEach { place ->
@@ -983,6 +988,51 @@ internal fun PlacesSection(
         }
     }
 }
+
+/**
+ * "펼치기/접기" 토글 칩. 글자만 두면 눌리는 컨트롤로 보이지 않아, 가벼운 배경·테두리의
+ * 칩 모양에 셰브론을 붙여 세운다. 셰브론은 펼침 상태에서 180도 돌려 "접기" 방향(위)을 가리킨다.
+ */
+@Composable
+private fun ExpandToggleChip(
+    expanded: Boolean,
+    onClick: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    val shape = RoundedCornerShape(9999.dp)
+    Row(
+        modifier =
+            Modifier
+                .clip(shape)
+                .background(color.bgDefaultLevel1)
+                .border(1.dp, color.borderDefaultLevel0, shape)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        DsText(
+            text = if (expanded) "접기" else "펼치기",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentAccent,
+        )
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_down_24),
+            contentDescription = null,
+            tint = color.contentAccent,
+            modifier =
+                Modifier
+                    .size(EXPAND_CHIP_CHEVRON_SIZE)
+                    .rotate(if (expanded) CHEVRON_FLIP_DEGREES else 0f),
+        )
+    }
+}
+
+/** 토글 칩 셰브론 크기. 칩 글자(textRegularXS)와 눈높이를 맞춘 값. */
+private val EXPAND_CHIP_CHEVRON_SIZE = 14.dp
+
+/** 펼침 상태에서 셰브론을 위로 뒤집는 회전각. */
+private const val CHEVRON_FLIP_DEGREES = 180f
 
 /**
  * 접힘 목록: 앞 [COLLAPSED_VISIBLE_PLACES]곳만 헤더 행 + "나머지 N곳 더보기".
@@ -1478,11 +1528,12 @@ private fun DetailBottomBar(
                     onClick = onForkClick,
                 )
             }
+            // 이 화면의 주행동이라 연한 배경이 아닌 꽉 찬 강조색으로 세운다.
             BottomBarButton(
                 text = "따라가기",
                 shape = BOTTOM_BAR_BUTTON_SHAPE,
-                background = color.bgAccentSubtle,
-                contentColor = color.contentAccent,
+                background = color.bgAccent,
+                contentColor = color.contentOnAccent,
                 enabled = true,
                 iconRes = R.drawable.ic_footprint_24,
                 onClick = onFollowClick,
