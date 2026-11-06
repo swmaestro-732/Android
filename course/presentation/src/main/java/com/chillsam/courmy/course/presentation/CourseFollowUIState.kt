@@ -50,6 +50,8 @@ data class CourseFollowUIState(
     val phase: CourseFollowPhase = CourseFollowPhase.PREVIEW,
     val currentIndex: Int = 0,
     val visitedCount: Int = 0,
+    /** 이어가기(홈 진행 중인 코스)로 들어왔을 때 이미 방문한 장소 수. 0 이면 이어갈 진행이 없다(처음부터). */
+    val resumeVisitedCount: Int = 0,
     val startedAtMillis: Long? = null,
     val finishedAtMillis: Long? = null,
     val routes: PersistentMap<Long, FollowRouteStatus> = persistentMapOf(),

@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.EndCourseTraceUseCase
+import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.main.domain.home.GetHomeUseCase
 import com.chillsam.courmy.main.presentation.location.DefaultLocation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +31,7 @@ class HomeViewModel
     constructor(
         private val getHomeUseCase: GetHomeUseCase,
         private val endCourseTraceUseCase: EndCourseTraceUseCase,
+        private val setCourseSavedUseCase: SetCourseSavedUseCase,
     ) : MviViewModel<HomeIntent, HomeUIState, HomeReducerEvent>(
             HomeUIState.empty,
         ) {
@@ -59,6 +61,10 @@ class HomeViewModel
                 HomeIntent.DismissInProgressCourse -> {
                     endInProgressTrace()
                 }
+
+                HomeIntent.ConsumeInProgressEnded -> {
+                    dispatch(HomeReducerEvent.InProgressEndedConsumed)
+                }
             }
         }
 
@@ -85,6 +91,16 @@ class HomeViewModel
                         durationMinutes = elapsedMinutesSince(course.startedAt),
                         distanceMeters = 0,
                     )
+                }.onSuccess {
+                    // 저장함 목록은 저장(북마크)한 코스만 보이므로, 완주 기록이 목록에 나타나게 저장도 함께 한다.
+                    // 이미 저장돼 있으면 실패해도 목록에 있으니 삼키고 넘어간다(이동은 계속).
+                    runCatching { setCourseSavedUseCase(courseId = course.courseId, saved = true) }
+                        .onFailure { e ->
+                            if (e is CancellationException) throw e
+                            Log.w(TAG, "종료 코스 저장 실패(무시): courseId=${course.courseId}", e)
+                        }
+                    // 서버가 완주(COMPLETED)로 기록했다 — 화면이 저장함(완주)으로 보내게 알린다.
+                    dispatch(HomeReducerEvent.InProgressEnded)
                 }.onFailure { e ->
                     if (e is CancellationException) throw e
                     Log.w(TAG, "진행 중인 코스 종료 실패: traceId=$traceId", e)
@@ -126,6 +142,14 @@ class HomeViewModel
 
                 HomeReducerEvent.InProgressDismissed -> {
                     state.copy(inProgressCourse = null)
+                }
+
+                HomeReducerEvent.InProgressEnded -> {
+                    state.copy(inProgressEnded = true)
+                }
+
+                HomeReducerEvent.InProgressEndedConsumed -> {
+                    state.copy(inProgressEnded = false)
                 }
             }
 

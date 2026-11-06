@@ -155,6 +155,15 @@ fun HomePage(modifier: Modifier = Modifier) {
     // 헤더 인사말·아바타는 내 프로필에서 가져온다.
     val profile = if (session.isLoggedIn) myProfileForHeader() else null
 
+    // 진행 중인 코스 종료(end)가 서버에 실제로 기록되면 저장함(코스 · 완주)으로 보낸다
+    // — 다이얼로그 안내("저장함에서 볼 수 있어요")와 목적지를 맞춘다. 실패하면 이동하지 않는다.
+    LaunchedEffect(homeState.inProgressEnded) {
+        if (homeState.inProgressEnded) {
+            homeViewModel.onIntent(HomeIntent.ConsumeInProgressEnded)
+            navigationHelper.navigateByRoute(SavedPage.completedCourses())
+        }
+    }
+
     // 근처 저장 장소의 거리 기준점(SCRUM-634). 권한·GPS 상태는 설정에 다녀오면 바뀔 수 있어
     // 복귀할 때마다 다시 평가한다(locationTick).
     val context = LocalContext.current
@@ -210,7 +219,17 @@ fun HomePage(modifier: Modifier = Modifier) {
             // 진행 중이던(따라가는) 코스가 있으면 추천보다 위에 띄워 이어가기를 먼저 유도한다. 없으면(null) 숨긴다.
             inProgressCourseItem(
                 course = homeState.inProgressCourse,
-                onResume = { navigationHelper.navigateByRoute(CourseFollowPage.route(it)) },
+                onResume = { course ->
+                    // 현재 진행도(traceId·방문 수·시작 시각)를 실어 미리보기 대신 이어가기로 연다.
+                    navigationHelper.navigateByRoute(
+                        CourseFollowPage.route(
+                            courseId = course.courseId,
+                            traceId = course.traceId,
+                            visitedPlaceCount = course.visitedPlaceCount ?: 0,
+                            startedAt = course.startedAt,
+                        ),
+                    )
+                },
                 onDismiss = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
             )
@@ -934,7 +953,7 @@ private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else Gue
 /** 진행 중이던 코스가 있으면(=[course] 가 null 이 아니면) 추천 위에 카드 아이템을 넣는다. null 이면 넣지 않는다. */
 private fun LazyListScope.inProgressCourseItem(
     course: HomeInProgressCourseVO?,
-    onResume: (Long) -> Unit,
+    onResume: (HomeInProgressCourseVO) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -956,7 +975,7 @@ private fun LazyListScope.inProgressCourseItem(
 @Composable
 private fun InProgressCourseSection(
     course: HomeInProgressCourseVO,
-    onResume: (Long) -> Unit,
+    onResume: (HomeInProgressCourseVO) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -965,7 +984,7 @@ private fun InProgressCourseSection(
     if (showDismissDialog) {
         DsConfirmDialog(
             title = "진행 중인 코스를 종료할까요?",
-            description = "종료하면 홈에서 이 코스가 사라져요.",
+            description = "종료된 코스는 완주되어 저장함에서 볼 수 있어요.",
             onConfirm = {
                 showDismissDialog = false
                 onDismiss()
@@ -980,7 +999,7 @@ private fun InProgressCourseSection(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(color.contentDefaultLevel0)
-                .clickable { onResume(course.courseId) }
+                .clickable { onResume(course) }
                 .padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,

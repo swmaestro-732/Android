@@ -21,6 +21,25 @@ sealed interface CourseFollowReducerEvent : ReducerEvent {
         val startedAtMillis: Long,
     ) : CourseFollowReducerEvent
 
+    /**
+     * 이어가기 가능. 미리보기는 그대로 두고, 이미 방문한 수만 알려 미리보기 버튼을 "이어가기"로 바꾼다.
+     * 실제 이어가기(TRACKING 전환)는 사용자가 버튼을 눌러 [Resumed] 로 일어난다.
+     */
+    data class ResumeOffered(
+        val visitedCount: Int,
+    ) : CourseFollowReducerEvent
+
+    /**
+     * 이어가기. 진행 중 세션을 현재 진행도에서 TRACKING 으로 연다.
+     * [currentIndex] 는 다음 가야 할 장소(= 방문 수), [visitedCount] 는 지금까지 방문 수,
+     * [startedAtMillis] 는 소요 시간 기준점(서버 startedAt).
+     */
+    data class Resumed(
+        val currentIndex: Int,
+        val visitedCount: Int,
+        val startedAtMillis: Long,
+    ) : CourseFollowReducerEvent
+
     /** 지금 장소 방문 처리. 마지막 장소였으면 [finishedAtMillis] 가 담겨 완주로 넘어간다. */
     data class Visited(
         val finishedAtMillis: Long?,
