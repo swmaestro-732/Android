@@ -1,8 +1,9 @@
 package com.chillsam.courmy.main.presentation.search
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,12 +15,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.component.DsChip
@@ -54,7 +60,12 @@ fun SearchResultScreen(
             onClear = actions.onClearQuery,
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 8.dp),
         )
-        SearchFilterSection(uiState = uiState, actions = actions)
+        // 카테고리는 상시 칩 줄(추천 코스와 동일 패턴), 정렬은 목록 위 오른쪽에 따로 둔다(SCRUM-795).
+        CategoryChipRow(
+            selected = uiState.selectedCategory,
+            onSelect = actions.onSelectCategory,
+        )
+        SortSelectorRow(sort = uiState.sort, onSelect = actions.onSelectSort)
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -103,104 +114,76 @@ private fun SearchCourseVO.toHomeCard(): HomeCourseVO =
         likeCountText = likeCountText,
     )
 
-/**
- * 필터 줄(SCRUM-794). "필터" 칩을 누르면 정렬·지역·카테고리 선택이 펼쳐진다.
- * 선택 즉시 재검색하고, 지역 옵션은 이번 검색어의 결과에서 모은 지역명이다(서버 area 가 표시명 그대로라서).
- */
+/** 카테고리(코스 태그) 칩 줄. 진입·선택 시 선택 칩이 보이도록 자동 스크롤한다(SCRUM-793과 동일 규칙). */
 @Composable
-private fun SearchFilterSection(
-    uiState: SearchResultUIState,
-    actions: SearchResultActions,
+private fun CategoryChipRow(
+    selected: CourseTagVO?,
+    onSelect: (CourseTagVO?) -> Unit,
 ) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-        Row(
-            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            DsChip(
-                text = if (uiState.hasActiveFilter) "필터 ${activeFilterCount(uiState)}" else "필터",
-                selected = expanded || uiState.hasActiveFilter,
-                onClick = { expanded = !expanded },
-            )
+    val listState = rememberLazyListState()
+    val selectedIndex = CourseTagVO.entries.indexOfFirst { it == selected } + 1
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex > 0) listState.animateScrollToItem(selectedIndex)
+    }
+    LazyRow(
+        state = listState,
+        contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            DsChip(text = "전체", selected = selected == null, onClick = { onSelect(null) })
         }
-        AnimatedVisibility(visible = expanded) {
-            Column(
-                modifier = Modifier.padding(top = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                FilterChipRow(label = "정렬") {
-                    items(SearchCourseSortVO.entries) { sort ->
-                        DsChip(
-                            text = sort.label,
-                            selected = uiState.sort == sort,
-                            onClick = { actions.onSelectSort(sort) },
-                        )
-                    }
-                }
-                FilterChipRow(label = "지역") {
-                    item {
-                        DsChip(
-                            text = "전체",
-                            selected = uiState.selectedArea == null,
-                            onClick = { actions.onSelectArea(null) },
-                        )
-                    }
-                    items(uiState.areaOptions) { area ->
-                        DsChip(
-                            text = area,
-                            selected = uiState.selectedArea == area,
-                            onClick = { actions.onSelectArea(area) },
-                        )
-                    }
-                }
-                FilterChipRow(label = "카테고리") {
-                    item {
-                        DsChip(
-                            text = "전체",
-                            selected = uiState.selectedCategory == null,
-                            onClick = { actions.onSelectCategory(null) },
-                        )
-                    }
-                    items(CourseTagVO.entries) { category ->
-                        DsChip(
-                            text = category.label,
-                            selected = uiState.selectedCategory == category,
-                            onClick = { actions.onSelectCategory(category) },
-                        )
-                    }
-                }
-            }
+        items(CourseTagVO.entries) { category ->
+            DsChip(
+                text = category.label,
+                selected = selected == category,
+                onClick = { onSelect(category) },
+            )
         }
     }
 }
 
-/** 기본값이 아닌 필터 수(필터 칩 라벨에 붙인다). */
-private fun activeFilterCount(uiState: SearchResultUIState): Int =
-    listOf(
-        uiState.selectedArea != null,
-        uiState.selectedCategory != null,
-        uiState.sort != SearchCourseSortVO.RELEVANCE,
-    ).count { it }
-
-/** 라벨 + 가로 스크롤 칩 한 줄. */
+/** 정렬 선택. 목록 바로 위 오른쪽에 "관련순 ▾" 꼴로 두고, 누르면 드롭다운에서 고른다. */
 @Composable
-private fun FilterChipRow(
-    label: String,
-    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+private fun SortSelectorRow(
+    sort: SearchCourseSortVO,
+    onSelect: (SearchCourseSortVO) -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        DsText(
-            text = label,
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = color.contentDefaultLevel2,
-            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
-        )
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            content = content,
-        )
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 6.dp),
+        horizontalArrangement = Arrangement.End,
+    ) {
+        Box {
+            DsText(
+                text = "${sort.label} ▾",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel1,
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { expanded = true }
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                SearchCourseSortVO.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            DsText(
+                                text = option.label,
+                                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                                color =
+                                    if (option == sort) color.contentAccent else color.contentDefaultLevel1,
+                            )
+                        },
+                        onClick = {
+                            expanded = false
+                            onSelect(option)
+                        },
+                    )
+                }
+            }
+        }
     }
 }
