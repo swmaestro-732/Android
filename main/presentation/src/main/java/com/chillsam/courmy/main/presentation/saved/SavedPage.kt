@@ -39,6 +39,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
+import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
@@ -48,6 +51,7 @@ import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
@@ -84,6 +88,7 @@ fun SavedPage(
     /** true 면 코스 탭 · 완주 목록으로 바로 연다(따라가기 종료 직후 이동용). */
     openCompletedCourses: Boolean = false,
 ) {
+    val telemetry = LocalTelemetry.current
     val session = LocalSessionUiState.current
     if (session.isLoggedIn) {
         var selectedTab by rememberSaveable {
@@ -92,11 +97,17 @@ fun SavedPage(
         if (selectedTab == SAVED_TAB_COURSES) {
             SavedCourseList(
                 modifier = modifier,
-                onSelectTab = { selectedTab = it },
+                onSelectTab = {
+                    telemetry.selectionChange("/saved", "tab", if (it == SAVED_TAB_COURSES) "courses" else "places")
+                    selectedTab = it
+                },
                 initialCompleted = openCompletedCourses,
             )
         } else {
-            SavedPlaceList(modifier = modifier, onSelectTab = { selectedTab = it })
+            SavedPlaceList(modifier = modifier, onSelectTab = {
+                telemetry.selectionChange("/saved", "tab", if (it == SAVED_TAB_COURSES) "courses" else "places")
+                selectedTab = it
+            })
         }
     } else {
         GuestSaved(modifier = modifier)
@@ -154,7 +165,12 @@ private fun SavedCourseList(
                     uiState.courses.forEach { course ->
                         SavedCourseCard(
                             course = course,
-                            onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
+                            onClick = {
+                                navigationHelper.navigateByRoute(
+                                    CourseDetailPage.route(course.id),
+                                    source = NavigationSource("/saved", "course"),
+                                )
+                            },
                             onBookmarkClick = { pendingRemoval = course },
                             modifier = Modifier.padding(bottom = 12.dp),
                         )
@@ -408,7 +424,12 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                 )
                 DsButton(
                     text = "로그인 / 회원가입",
-                    onClick = { navigationHelper.navigateTo(LoginPage) },
+                    onClick = {
+                        navigationHelper.navigateTo(
+                            LoginPage,
+                            source = NavigationSource("/saved", "guest_login"),
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
                 )
             }
@@ -418,11 +439,37 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
             selectedTab = MainTab.SAVED,
             onTabSelected = { tab ->
                 when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
-                    MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
-                    MainTab.MY -> navigationHelper.navigateTo(GuestMyPage)
-                    else -> Unit
+                    MainTab.HOME -> {
+                        navigationHelper.navigateTo(
+                            HomePage,
+                            source = NavigationSource("/saved", "bottom_tab_home"),
+                        )
+                    }
+
+                    MainTab.MAP -> {
+                        navigationHelper.navigateTo(
+                            MapPage,
+                            source = NavigationSource("/saved", "bottom_tab_map"),
+                        )
+                    }
+
+                    MainTab.CHAT -> {
+                        navigationHelper.navigateTo(
+                            ChatPage,
+                            source = NavigationSource("/saved", "bottom_tab_chat"),
+                        )
+                    }
+
+                    MainTab.MY -> {
+                        navigationHelper.navigateTo(
+                            GuestMyPage,
+                            source = NavigationSource("/saved", "bottom_tab_my"),
+                        )
+                    }
+
+                    else -> {
+                        Unit
+                    }
                 }
             },
         )

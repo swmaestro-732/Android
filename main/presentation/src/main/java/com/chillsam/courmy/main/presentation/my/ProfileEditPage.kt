@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -187,12 +188,22 @@ fun ProfileEditPage(
                     profile?.interestThemes.orEmpty().map { code ->
                         CourseTagVO.labelOf(code).ifBlank { code }
                     },
-                onEdit = { navigationHelper.navigateTo(InterestThemePage) },
+                onEdit = {
+                    navigationHelper.navigateTo(
+                        InterestThemePage,
+                        source = NavigationSource("/my/profile/edit", "interest_themes"),
+                    )
+                },
             )
             InterestSummary(
                 title = "관심 지역",
                 chips = profile?.interestRegions.orEmpty().map { it.shortName },
-                onEdit = { navigationHelper.navigateTo(InterestRegionPage) },
+                onEdit = {
+                    navigationHelper.navigateTo(
+                        InterestRegionPage,
+                        source = NavigationSource("/my/profile/edit", "interest_regions"),
+                    )
+                },
                 region = true,
             )
             Spacer(Modifier.height(12.dp))

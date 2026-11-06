@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
@@ -83,7 +84,7 @@ fun UserProfilePage(
         LoginRequiredDialog(
             onConfirm = {
                 viewModel.onIntent(UserProfileIntent.ConsumeLoginRequired)
-                navigationHelper.navigateTo(LoginPage)
+                navigationHelper.navigateTo(LoginPage, source = NavigationSource("/user/profile", "follow_login"))
             },
             onDismiss = { viewModel.onIntent(UserProfileIntent.ConsumeLoginRequired) },
         )
@@ -113,7 +114,12 @@ fun UserProfilePage(
                 modifier = modifier,
                 // 공유 링크·딥링크로 바로 들어오면 뒤로 갈 화면이 없어 "다시 시도"만으로는 막다른
                 // 화면이 된다. 현재 화면을 홈으로 바꿔 끼워 탈출구를 만든다.
-                onGoHome = { navigationHelper.navigateReplace(HomePage) },
+                onGoHome = {
+                    navigationHelper.navigateReplace(
+                        HomePage,
+                        source = NavigationSource("/user/profile", "error_home"),
+                    )
+                },
             )
         }
     }
@@ -154,11 +160,13 @@ private fun UserProfileContent(
                 onFollowerClick = {
                     navigationHelper.navigateByRoute(
                         FollowListPage.route(FollowListPage.TAB_FOLLOWER, profile.id),
+                        source = NavigationSource("/user/profile", "followers"),
                     )
                 },
                 onFollowingClick = {
                     navigationHelper.navigateByRoute(
                         FollowListPage.route(FollowListPage.TAB_FOLLOWING, profile.id),
+                        source = NavigationSource("/user/profile", "following"),
                     )
                 },
                 onBack = { navigationHelper.navigateToBack() },
@@ -196,7 +204,10 @@ private fun UserProfileContent(
             ProfileCoursesGrid(
                 courses = courses,
                 onCourseClick = { courseId ->
-                    navigationHelper.navigateByRoute(CourseDetailPage.route(courseId))
+                    navigationHelper.navigateByRoute(
+                        CourseDetailPage.route(courseId),
+                        source = NavigationSource("/user/profile", "course"),
+                    )
                 },
             )
             Spacer(Modifier.height(20.dp))
@@ -208,25 +219,40 @@ private fun UserProfileContent(
             onTabSelected = { tab ->
                 when (tab) {
                     MainTab.HOME -> {
-                        navigationHelper.navigateTo(HomePage)
+                        navigationHelper.navigateTo(
+                            HomePage,
+                            source = NavigationSource("/user/profile", "bottom_tab_home"),
+                        )
                     }
 
                     MainTab.MAP -> {
-                        navigationHelper.navigateTo(MapPage)
+                        navigationHelper.navigateTo(
+                            MapPage,
+                            source = NavigationSource("/user/profile", "bottom_tab_map"),
+                        )
                     }
 
                     MainTab.SAVED -> {
-                        navigationHelper.navigateTo(SavedPage)
+                        navigationHelper.navigateTo(
+                            SavedPage,
+                            source = NavigationSource("/user/profile", "bottom_tab_saved"),
+                        )
                     }
 
                     MainTab.CHAT -> {
-                        navigationHelper.navigateTo(ChatPage)
+                        navigationHelper.navigateTo(
+                            ChatPage,
+                            source = NavigationSource("/user/profile", "bottom_tab_chat"),
+                        )
                     }
 
                     // 비로그인으로 MyPage 에 들어가면 프로필 조회가 401 로 떨어져 오류 화면만 남는다.
                     // 그 화면에는 탭바가 없어 뒤로가기 말고는 빠져나갈 길도 없다.
                     MainTab.MY -> {
-                        navigationHelper.navigateTo(if (session.isLoggedIn) MyPage else GuestMyPage)
+                        navigationHelper.navigateTo(
+                            if (session.isLoggedIn) MyPage else GuestMyPage,
+                            source = NavigationSource("/user/profile", "bottom_tab_my"),
+                        )
                     }
                 }
             },

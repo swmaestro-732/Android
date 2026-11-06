@@ -38,12 +38,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
+import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.area.AreaLevel
@@ -61,7 +65,9 @@ fun InterestRegionPage(
     val viewModel: RegionMapViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val navigation = LocalNavigationHelper.current
+    val telemetry = LocalTelemetry.current
     val editing = onNext == null
+    val screen = if (editing) "/my/interest/region" else "/login/region"
     LaunchedEffect(Unit) {
         viewModel.onIntent(
             RegionMapIntent.Initialize(editing, if (editing) emptyList() else SignupSelectionStore.regions),
@@ -76,7 +82,10 @@ fun InterestRegionPage(
     InterestRegionScreen(
         state = state,
         progressStep = progressStep,
-        onIntent = viewModel::onIntent,
+        onIntent = { intent ->
+            telemetry.trackRegionSelection(screen, intent, state)
+            viewModel.onIntent(intent)
+        },
         onBack = {
             if (state.provinceCode != null) {
                 viewModel.onIntent(RegionMapIntent.Browse(null))
@@ -84,7 +93,20 @@ fun InterestRegionPage(
                 navigation.navigateToBack()
             }
         },
-        onContinue = { onNext?.invoke(state.selected) ?: viewModel.onIntent(RegionMapIntent.Save) },
+        onContinue = {
+            telemetry.buttonClick(
+                screen,
+                if (editing) "save" else "next",
+                mapOf(
+                    "regions" to
+                        state.selected
+                            .map { it.code }
+                            .sorted()
+                            .joinToString(","),
+                ),
+            )
+            onNext?.invoke(state.selected) ?: viewModel.onIntent(RegionMapIntent.Save)
+        },
         modifier = modifier,
     )
 }
@@ -301,5 +323,38 @@ private fun RegionTableCell(
             textAlign = TextAlign.Center,
             maxLines = 2,
         )
+    }
+}
+
+private fun Telemetry.trackRegionSelection(
+    screen: String,
+    intent: RegionMapIntent,
+    state: RegionMapUiState,
+) {
+    when (intent) {
+        is RegionMapIntent.Browse -> {
+            selectionChange(screen, "province", intent.code ?: "all")
+        }
+
+        is RegionMapIntent.Toggle -> {
+            selectionChange(
+                screen,
+                "region",
+                intent.code,
+                state.selected.none { intent.code.startsWith(it.code) },
+            )
+        }
+
+        is RegionMapIntent.Remove -> {
+            selectionChange(screen, "region", intent.code, false)
+        }
+
+        RegionMapIntent.Retry -> {
+            buttonClick(screen, "retry")
+        }
+
+        else -> {
+            Unit
+        }
     }
 }

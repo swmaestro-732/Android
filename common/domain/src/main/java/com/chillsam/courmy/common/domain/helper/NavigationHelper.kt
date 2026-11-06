@@ -2,6 +2,7 @@ package com.chillsam.courmy.common.domain.helper
 
 import com.chillsam.courmy.common.domain.navigation.NavRoute
 import com.chillsam.courmy.common.domain.navigation.NavSignal
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.domain.navigation.Page
 import kotlinx.coroutines.flow.Flow
 
@@ -17,12 +18,21 @@ import kotlinx.coroutines.flow.Flow
 interface NavigationHelper {
     val navigationFlow: Flow<NavSignal>
 
-    fun navigateByRoute(route: NavRoute)
+    fun navigateByRoute(
+        route: NavRoute,
+        source: NavigationSource? = null,
+    )
 
-    fun navigateTo(page: Page)
+    fun navigateTo(
+        page: Page,
+        source: NavigationSource? = null,
+    )
 
     /** 백스택을 [page] 하나로 교체(스플래시/온보딩 등 되돌아오면 안 되는 진입 흐름). */
-    fun navigateReplace(page: Page)
+    fun navigateReplace(
+        page: Page,
+        source: NavigationSource? = null,
+    )
 
     fun navigateDeepLink(route: NavRoute)
 

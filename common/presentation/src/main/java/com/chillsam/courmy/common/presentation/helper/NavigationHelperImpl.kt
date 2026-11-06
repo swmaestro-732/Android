@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.domain.helper.NavigationHelper
 import com.chillsam.courmy.common.domain.message.MessageEffect
 import com.chillsam.courmy.common.domain.navigation.NavRoute
 import com.chillsam.courmy.common.domain.navigation.NavSignal
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.domain.navigation.Page
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -15,16 +16,25 @@ class NavigationHelperImpl : NavigationHelper {
     private val _navigationFlow = Channel<NavSignal>(capacity = Channel.BUFFERED)
     override val navigationFlow: Flow<NavSignal> = _navigationFlow.receiveAsFlow()
 
-    override fun navigateTo(page: Page) {
-        navigateByRoute(page.toRoute())
+    override fun navigateTo(
+        page: Page,
+        source: NavigationSource?,
+    ) {
+        navigateByRoute(page.toRoute(), source)
     }
 
-    override fun navigateByRoute(route: NavRoute) {
-        emit(NavSignal.GoToDestPage(route))
+    override fun navigateByRoute(
+        route: NavRoute,
+        source: NavigationSource?,
+    ) {
+        emit(NavSignal.GoToDestPage(route, source))
     }
 
-    override fun navigateReplace(page: Page) {
-        emit(NavSignal.Replace(page.toRoute()))
+    override fun navigateReplace(
+        page: Page,
+        source: NavigationSource?,
+    ) {
+        emit(NavSignal.Replace(page.toRoute(), source))
     }
 
     override fun navigateDeepLink(route: NavRoute) {

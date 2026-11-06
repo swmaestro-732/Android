@@ -71,12 +71,14 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.report.ReportAction
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.modifier.cardElevation
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -117,6 +119,7 @@ fun CourseDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val telemetry = LocalTelemetry.current
     val context = LocalContext.current
     // 장소 행 화살표를 누르면 해당 장소 상세 시트를 띄운다(null 이면 시트 닫힘).
     var selectedPlaceId by rememberSaveable(courseId) { mutableStateOf<Long?>(null) }
@@ -239,6 +242,7 @@ fun CourseDetailScreen(
             DetailBottomBar(
                 isMine = detail.isMine,
                 onCommentClick = {
+                    telemetry.buttonClick("/course/detail", "comments", mapOf("course_id" to courseId.toString()))
                     showComments = true
                 },
                 onForkClick = actions.onForkCourse,

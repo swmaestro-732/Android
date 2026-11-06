@@ -22,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -72,6 +73,7 @@ internal fun NavigationHelper.navigateToMainTab(
             MainTab.SAVED -> SavedPage
             MainTab.MY -> MyPage
         },
+        source = NavigationSource("/${from.name.lowercase()}", "bottom_tab_${to.name.lowercase()}"),
     )
 }
 

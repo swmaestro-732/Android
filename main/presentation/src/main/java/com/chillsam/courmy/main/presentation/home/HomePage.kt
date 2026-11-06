@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -67,6 +69,7 @@ import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
@@ -164,6 +167,7 @@ private val themeTiles = CourseTagVO.entries
  */
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
+    val telemetry = LocalTelemetry.current
     val navigationHelper = LocalNavigationHelper.current
     val session = LocalSessionUiState.current
     var menuExpanded by remember { mutableStateOf(false) }
@@ -177,7 +181,12 @@ fun HomePage(modifier: Modifier = Modifier) {
     InProgressEndedEffect(
         ended = homeState.inProgressEnded,
         onConsume = { homeViewModel.onIntent(HomeIntent.ConsumeInProgressEnded) },
-        onNavigate = { navigationHelper.navigateByRoute(SavedPage.completedCourses()) },
+        onNavigate = {
+            navigationHelper.navigateByRoute(
+                SavedPage.completedCourses(),
+                source = NavigationSource("/home", "complete_course_success", trigger = "result"),
+            )
+        },
     )
 
     // 근처 저장 장소의 거리 기준점(SCRUM-634). 권한·GPS 상태는 설정에 다녀오면 바뀔 수 있어
@@ -221,13 +230,22 @@ fun HomePage(modifier: Modifier = Modifier) {
             item {
                 HomeHeader(
                     profile = profile,
-                    onProfileClick = { navigationHelper.navigateTo(myPageDestination(session.isLoggedIn)) },
+                    onProfileClick = {
+                        telemetry.buttonClick("/home", "profile")
+                        navigationHelper.navigateTo(
+                            myPageDestination(session.isLoggedIn),
+                            source = NavigationSource("/home", "profile"),
+                        )
+                    },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
             item {
                 HomeSearchBar(
-                    onClick = { navigationHelper.navigateTo(SearchPage) },
+                    onClick = {
+                        telemetry.buttonClick("/home", "search")
+                        navigationHelper.navigateTo(SearchPage, source = NavigationSource("/home", "search"))
+                    },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
             }
@@ -244,6 +262,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                             visitedPlaceCount = course.visitedPlaceCount ?: 0,
                             startedAt = course.startedAt,
                         ),
+                        source = NavigationSource("/home", "in_progress_course"),
                     )
                 },
                 onDismiss = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
@@ -252,8 +271,19 @@ fun HomePage(modifier: Modifier = Modifier) {
             item {
                 RecommendedCoursesSection(
                     homeState = homeState,
-                    onSeeAll = { navigationHelper.navigateTo(RecommendedCoursesPage) },
-                    onCourseClick = { id -> navigationHelper.navigateByRoute(CourseDetailPage.route(id)) },
+                    onSeeAll = {
+                        navigationHelper.navigateTo(
+                            RecommendedCoursesPage,
+                            source = NavigationSource("/home", "recommended_all"),
+                        )
+                    },
+                    onCourseClick = { id ->
+                        telemetry.buttonClick("/home", "course", mapOf("course_id" to id))
+                        navigationHelper.navigateByRoute(
+                            CourseDetailPage.route(id),
+                            source = NavigationSource("/home", "course"),
+                        )
+                    },
                     onRetry = { homeViewModel.onIntent(HomeIntent.Retry) },
                 )
             }
@@ -289,11 +319,16 @@ fun HomePage(modifier: Modifier = Modifier) {
                 item {
                     NearbySavedSection(
                         places = homeState.nearbyPlaces,
-                        onSeeMap = { navigationHelper.navigateTo(MapPage) },
+                        onSeeMap = {
+                            navigationHelper.navigateTo(
+                                MapPage,
+                                source = NavigationSource("/home", "nearby_map"),
+                            )
+                        },
                         onPlaceClick = { placeId ->
                             // 지도 탭이 장소 목록을 받은 뒤 이 장소를 선택해(시트·카메라) 보여준다.
                             MapFocusRequestStore.request(placeId)
-                            navigationHelper.navigateTo(MapPage)
+                            navigationHelper.navigateTo(MapPage, source = NavigationSource("/home", "nearby_place"))
                         },
                         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                     )
@@ -303,7 +338,12 @@ fun HomePage(modifier: Modifier = Modifier) {
                     NearbyLocationPrompt(
                         message = "근처에 저장한 장소가 없어요",
                         actionLabel = "지도에서 장소 찾기",
-                        onAction = { navigationHelper.navigateTo(MapPage) },
+                        onAction = {
+                            navigationHelper.navigateTo(
+                                MapPage,
+                                source = NavigationSource("/home", "empty_nearby_map"),
+                            )
+                        },
                         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                     )
                 }
@@ -311,7 +351,11 @@ fun HomePage(modifier: Modifier = Modifier) {
             item {
                 ThemeBrowseSection(
                     onThemeClick = { theme ->
-                        navigationHelper.navigateByRoute(RecommendedCoursesPage.route(theme))
+                        telemetry.buttonClick("/home", "theme", mapOf("theme" to theme))
+                        navigationHelper.navigateByRoute(
+                            RecommendedCoursesPage.route(theme),
+                            source = NavigationSource("/home", "theme"),
+                        )
                     },
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
                 )
@@ -321,8 +365,10 @@ fun HomePage(modifier: Modifier = Modifier) {
                     RegionBrowseSection(
                         // 지역을 누르면 그 시·도의 "{지역} 코스" 목록으로 가서 세부 지역(구·군) 칩으로 더 좁힌다.
                         onRegionClick = { code, name ->
+                            telemetry.buttonClick("/home", "region", mapOf("region" to code))
                             navigationHelper.navigateByRoute(
                                 RecommendedCoursesPage.regionRoute(sido = areaMapProvinceCode(code), regionName = name),
+                                source = NavigationSource("/home", "region"),
                             )
                         },
                         modifier = Modifier.padding(top = 8.dp).padding(horizontal = ScreenHorizontalPadding),
@@ -342,16 +388,22 @@ fun HomePage(modifier: Modifier = Modifier) {
                 expanded = menuExpanded,
                 onToggle = { menuExpanded = !menuExpanded },
                 onNewCourse = {
+                    telemetry.buttonClick("/home", "create_course")
                     menuExpanded = false
-                    navigationHelper.navigateTo(CourseCreatePage)
+                    navigationHelper.navigateTo(CourseCreatePage, source = NavigationSource("/home", "create_course"))
                 },
                 onLoadDraft = {
+                    telemetry.buttonClick("/home", "load_draft")
                     menuExpanded = false
-                    navigationHelper.navigateTo(DraftListPage)
+                    navigationHelper.navigateTo(DraftListPage, source = NavigationSource("/home", "load_draft"))
                 },
                 onNewPlan = {
+                    telemetry.buttonClick("/home", "create_plan")
                     menuExpanded = false
-                    navigationHelper.navigateByRoute(CourseCreatePage.planRoute())
+                    navigationHelper.navigateByRoute(
+                        CourseCreatePage.planRoute(),
+                        source = NavigationSource("/home", "create_plan"),
+                    )
                 },
             )
         }
@@ -420,15 +472,37 @@ private fun HomeBottomBar(
         onTabSelected = { tab ->
             when (tab) {
                 // 로그인 전이면 게스트 마이, 로그인 후면 마이·프로필로 분기.
-                MainTab.MY -> navigationHelper.navigateTo(myPageDestination(loggedIn))
+                MainTab.MY -> {
+                    navigationHelper.navigateTo(
+                        myPageDestination(loggedIn),
+                        source = NavigationSource("/home", "bottom_tab_my"),
+                    )
+                }
 
-                MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
+                MainTab.SAVED -> {
+                    navigationHelper.navigateTo(
+                        SavedPage,
+                        source = NavigationSource("/home", "bottom_tab_saved"),
+                    )
+                }
 
-                MainTab.MAP -> navigationHelper.navigateTo(MapPage)
+                MainTab.MAP -> {
+                    navigationHelper.navigateTo(
+                        MapPage,
+                        source = NavigationSource("/home", "bottom_tab_map"),
+                    )
+                }
 
-                MainTab.CHAT -> navigationHelper.navigateTo(ChatPage)
+                MainTab.CHAT -> {
+                    navigationHelper.navigateTo(
+                        ChatPage,
+                        source = NavigationSource("/home", "bottom_tab_chat"),
+                    )
+                }
 
-                MainTab.HOME -> Unit
+                MainTab.HOME -> {
+                    Unit
+                }
             }
         },
         modifier = modifier,

@@ -41,6 +41,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
+import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsChip
@@ -50,6 +53,7 @@ import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
@@ -121,6 +125,7 @@ fun RecommendedCoursesPage(
 ) {
     StatusBarColor(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel1)
     val navigationHelper = LocalNavigationHelper.current
+    val telemetry = LocalTelemetry.current
     val context = LocalContext.current
     val feedViewModel: HomeFeedViewModel = hiltViewModel()
     val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
@@ -159,7 +164,10 @@ fun RecommendedCoursesPage(
         RecommendedTopBar(
             title = regionName?.let { "$it 코스" } ?: "오늘의 추천 코스",
             selectedCategory = feedState.selectedCategory,
-            onSelectCategory = { feedViewModel.onIntent(HomeFeedIntent.SelectCategory(it)) },
+            onSelectCategory = {
+                telemetry.selectionChange("/home/recommended", "theme", it?.code)
+                feedViewModel.onIntent(HomeFeedIntent.SelectCategory(it))
+            },
             onBack = { navigationHelper.navigateToBack() },
             // 지역 진입이면 세부 지역 필터를, 아니면 null(= 테마 칩)을 넘긴다.
             regionFilter =
@@ -168,6 +176,7 @@ fun RecommendedCoursesPage(
                         subRegions = subRegions,
                         selected = selectedSub,
                         onSelect = { code ->
+                            telemetry.selectionChange("/home/recommended", "region", code ?: "all")
                             selectedSub = code
                             // 선택한 세부 지역(없으면 시·도 전체)으로 피드를 좁힌다. [wiki-needed] 백엔드 선행:
                             // 서버가 아직 지역 필터를 안 받아 지금은 목록이 바뀌지 않는다(선택만 반영).
@@ -194,8 +203,16 @@ fun RecommendedCoursesPage(
                         HomeCourseCard(
                             course = course,
                             isSaved = course.id in feedState.savedCourseIds,
-                            onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
-                            onBookmarkClick = { feedViewModel.onIntent(HomeFeedIntent.ToggleSave(course.id)) },
+                            onClick = {
+                                navigationHelper.navigateByRoute(
+                                    CourseDetailPage.route(course.id),
+                                    source = NavigationSource("/home/recommended", "course"),
+                                )
+                            },
+                            onBookmarkClick = {
+                                telemetry.buttonClick("/home/recommended", "bookmark", mapOf("course_id" to course.id))
+                                feedViewModel.onIntent(HomeFeedIntent.ToggleSave(course.id))
+                            },
                         )
                     }
                 }

@@ -21,12 +21,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
+import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.StepProgressBar
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
@@ -51,7 +54,9 @@ fun InterestThemePage(
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     // 편집 모드에서만 저장된 관심사를 읽고 되쓴다. 회원가입은 완료 화면까지 홀더로 나른다.
+    val telemetry = LocalTelemetry.current
     val editing = onNext == null
+    val screen = if (editing) "/my/interest/theme" else "/login/theme"
     val viewModel: InterestEditViewModel = hiltViewModel()
     val editState by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(editing) { if (editing) viewModel.onIntent(InterestEditIntent.Load) }
@@ -117,6 +122,7 @@ fun InterestThemePage(
                 selected = selected,
                 enabled = canEdit,
                 onToggle = { theme ->
+                    telemetry.selectionChange(screen, "theme", theme, theme !in selected)
                     selected = if (theme in selected) selected - theme else selected + theme
                 },
             )
@@ -128,6 +134,11 @@ fun InterestThemePage(
             }
         }
         ThemeSaveButton(editState, editing, selected.size, canEdit) {
+            telemetry.buttonClick(
+                screen,
+                if (editing) "save" else "next",
+                mapOf("themes" to selected.sorted().joinToString(",")),
+            )
             val themes = selected.toList()
             // 서버 저장이 성공한 경우에만 완료 신호를 받아 닫는다.
             onNext?.invoke(themes) ?: viewModel.onIntent(InterestEditIntent.SaveThemes(themes))
