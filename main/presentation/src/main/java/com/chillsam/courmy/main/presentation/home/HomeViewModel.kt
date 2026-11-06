@@ -51,6 +51,10 @@ class HomeViewModel
                     myLng = intent.lng
                     if (moved) load()
                 }
+
+                HomeIntent.DismissInProgressCourse -> {
+                    dispatch(HomeReducerEvent.InProgressDismissed)
+                }
             }
         }
 
@@ -68,12 +72,17 @@ class HomeViewModel
                         isLoading = false,
                         courses = event.courses.toImmutableList(),
                         nearbyPlaces = event.nearbyPlaces.toImmutableList(),
+                        inProgressCourse = event.inProgressCourse,
                         errorMessage = null,
                     )
                 }
 
                 is HomeReducerEvent.Failed -> {
                     state.copy(isLoading = false, errorMessage = event.message)
+                }
+
+                HomeReducerEvent.InProgressDismissed -> {
+                    state.copy(inProgressCourse = null)
                 }
             }
 
@@ -93,6 +102,7 @@ class HomeViewModel
                             HomeReducerEvent.Loaded(
                                 courses = home.recommendedCourses,
                                 nearbyPlaces = home.nearbySavedPlaces,
+                                inProgressCourse = home.inProgressCourse,
                             ),
                         )
                     }.onFailure { e ->

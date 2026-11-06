@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -67,6 +68,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.course.domain.CourseFollowPage
 import com.chillsam.courmy.course.domain.DraftListPage
 import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
@@ -76,6 +78,7 @@ import com.chillsam.courmy.main.domain.my.MyPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
 import com.chillsam.courmy.main.domain.search.SearchPage
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.entity.home.HomeInProgressCourseVO
 import com.chillsam.courmy.main.entity.home.HomeNearbyPlaceVO
 import com.chillsam.courmy.main.entity.my.MyProfileVO
 import com.chillsam.courmy.main.presentation.FeatureFlags
@@ -201,6 +204,13 @@ fun HomePage(modifier: Modifier = Modifier) {
                 )
             }
 
+            // 진행 중이던 코스가 있으면 추천보다 위에 띄워 이어가기를 먼저 유도한다. 없으면(null) 숨긴다.
+            inProgressCourseItem(
+                course = homeState.inProgressCourse,
+                onResume = { navigationHelper.navigateByRoute(CourseFollowPage.route(it)) },
+                onStop = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+            )
             item {
                 RecommendedCoursesSection(
                     homeState = homeState,
@@ -912,3 +922,113 @@ private fun NearbyLocationPrompt(
 }
 
 private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else GuestMyPage
+
+/** 진행 중이던 코스가 있으면(=[course] 가 null 이 아니면) 추천 위에 카드 아이템을 넣는다. null 이면 넣지 않는다. */
+private fun LazyListScope.inProgressCourseItem(
+    course: HomeInProgressCourseVO?,
+    onResume: (Long) -> Unit,
+    onStop: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    course ?: return
+    item {
+        InProgressCourseSection(course = course, onResume = onResume, onStop = onStop, modifier = modifier)
+    }
+}
+
+/**
+ * 홈 "진행 중인 코스" 카드. 따라가는 중 세션이 있을 때만(=[course] 가 있을 때만) 노출한다.
+ * 어두운 카드 · 커버의 재생 버튼 · 진행도 막대로 보여 주고, 카드를 누르면 그 코스 따라가기를 이어간다.
+ *
+ * 어두운 면이라 테마에 on-dark 슬롯이 없어 기존 토큰 값을 그대로 재사용한다(새 토큰 추가 없음):
+ * 배경 [contentDefaultLevel0](Black) · 흰 글자 [contentOnAccent](White) · 재생 버튼 [contentLocation](Blue).
+ */
+@Composable
+private fun InProgressCourseSection(
+    course: HomeInProgressCourseVO,
+    onResume: (Long) -> Unit,
+    onStop: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(color.contentDefaultLevel0)
+                .clickable { onResume(course.courseId) }
+                .padding(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AsyncImage(
+            model = course.coverImageUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(color.imagePlaceholder),
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            // 라벨은 왼쪽, 우측 상단에는 따라가기를 멈추는 스톱 버튼을 둔다.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DsText(
+                    text = "진행 중인 코스",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    modifier = Modifier.weight(1f),
+                )
+                StopButton(onClick = { onStop(course.courseId) })
+            }
+            DsText(
+                text = course.title,
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = color.contentOnAccent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            // 진행도(방문 수)는 홈 응답에 없어, 지역·장소 수 요약을 보여 준다.
+            if (course.summaryText.isNotBlank()) {
+                DsText(
+                    text = course.summaryText,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/** 진행 중 코스를 멈추는 스톱 버튼. 스톱 모양(둥근 사각형)을 Compose 로 직접 그린다. 어두운 카드 위라 흐린 회색. */
+@Composable
+private fun StopButton(onClick: () -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            Modifier
+                .clip(CircleShape)
+                .clickable(onClick = onClick)
+                .semantics { contentDescription = "따라가기 멈추기" }
+                .padding(4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(color.contentDefaultLevel3),
+        )
+    }
+}

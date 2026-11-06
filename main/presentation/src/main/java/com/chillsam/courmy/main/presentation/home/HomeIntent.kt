@@ -12,4 +12,7 @@ sealed interface HomeIntent : MviIntent {
         val lat: Double,
         val lng: Double,
     ) : HomeIntent
+
+    /** 진행 중인 코스 카드의 스톱 버튼. 이번 세션에서 카드를 내린다(다음 홈 로드에 서버가 다시 주면 복원). */
+    data object DismissInProgressCourse : HomeIntent
 }

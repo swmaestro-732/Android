@@ -8,10 +8,13 @@ import com.chillsam.courmy.course.domain.CheckInTracePlaceUseCase
 import com.chillsam.courmy.course.domain.CourseRepository
 import com.chillsam.courmy.course.domain.EndCourseTraceUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
+import com.chillsam.courmy.course.domain.GetTraceRouteUseCase
 import com.chillsam.courmy.course.domain.StartCourseTraceUseCase
 import com.chillsam.courmy.course.domain.TraceRepository
+import com.chillsam.courmy.course.domain.TraceRouteRepository
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
+import com.chillsam.courmy.course.entity.TraceRouteVO
 import com.chillsam.courmy.course.entity.TraceVisitVO
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -130,11 +133,20 @@ class CourseFollowViewModelTest {
 
                 override fun recordFailure(failure: AppFailure) = Unit
             }
+        // 이 테스트의 코스는 장소가 1곳뿐이라 구간이 없어 경로 조회를 호출하지 않는다.
+        val routes =
+            object : TraceRouteRepository {
+                override suspend fun walkingRoute(
+                    fromPlaceId: Long,
+                    toPlaceId: Long,
+                ): TraceRouteVO = error("경로 조회를 호출하지 않아야 한다: $fromPlaceId→$toPlaceId")
+            }
         return CourseFollowViewModel(
             getCourseDetailUseCase = GetCourseDetailUseCase(courses, telemetry),
             startCourseTrace = StartCourseTraceUseCase(traces),
             checkInTracePlace = CheckInTracePlaceUseCase(traces),
             endCourseTrace = EndCourseTraceUseCase(traces),
+            getTraceRoute = GetTraceRouteUseCase(routes),
         )
     }
 
