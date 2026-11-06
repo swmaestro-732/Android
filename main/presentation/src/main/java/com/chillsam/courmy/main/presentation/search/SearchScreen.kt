@@ -31,6 +31,7 @@ import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.main.presentation.FeatureFlags
 import com.chillsam.courmy.main.presentation.search.component.RecentKeywordChips
 import com.chillsam.courmy.main.presentation.search.component.SearchInputBar
 import com.chillsam.courmy.main.presentation.search.component.TrendingKeywordRow
@@ -85,7 +86,7 @@ fun SearchScreen(
             }
             if (uiState.trendingKeywords.isNotEmpty()) TrendingSection(uiState = uiState, actions = actions)
             // 검색어가 없어도 탐색을 시작할 수 있게 테마 바로가기를 항상 둔다(SCRUM-798).
-            if (!uiState.placeSearch) {
+            if (FeatureFlags.SEARCH_THEME_BROWSE_ENABLED && !uiState.placeSearch) {
                 if (uiState.recentKeywords.isEmpty() && uiState.trendingKeywords.isEmpty()) {
                     Spacer(Modifier.height(20.dp))
                 }

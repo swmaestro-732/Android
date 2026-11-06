@@ -6,6 +6,9 @@ package com.chillsam.courmy.main.presentation
  * 값만 바꾸면 되고 다른 코드는 손대지 않는다.
  */
 object FeatureFlags {
+    /** 검색의 테마 추천 바로가기 노출 여부. true일 때 해당 테마의 오늘의 추천 코스로 이동한다. */
+    const val SEARCH_THEME_BROWSE_ENABLED = false
+
     /**
      * 채팅 기능(하단 "채팅" 탭·채팅홈·채팅방) 노출 여부.
      *
