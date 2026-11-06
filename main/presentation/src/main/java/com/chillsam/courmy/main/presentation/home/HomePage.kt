@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -175,16 +176,12 @@ fun HomePage(modifier: Modifier = Modifier) {
             }
 
             // 진행 중이던 코스가 있으면 추천보다 위에 띄워 이어가기를 먼저 유도한다. 없으면(null) 숨긴다.
-            homeState.inProgressCourse?.let { inProgress ->
-                item {
-                    InProgressCourseSection(
-                        course = inProgress,
-                        onResume = { navigationHelper.navigateByRoute(CourseFollowPage.route(it)) },
-                        onStop = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
-                        modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
-                    )
-                }
-            }
+            inProgressCourseItem(
+                course = homeState.inProgressCourse,
+                onResume = { navigationHelper.navigateByRoute(CourseFollowPage.route(it)) },
+                onStop = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+            )
             item {
                 RecommendedCoursesSection(
                     homeState = homeState,
@@ -836,6 +833,19 @@ private fun NearbyLocationPrompt(
 }
 
 private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else GuestMyPage
+
+/** 진행 중이던 코스가 있으면(=[course] 가 null 이 아니면) 추천 위에 카드 아이템을 넣는다. null 이면 넣지 않는다. */
+private fun LazyListScope.inProgressCourseItem(
+    course: HomeInProgressCourseVO?,
+    onResume: (Long) -> Unit,
+    onStop: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    course ?: return
+    item {
+        InProgressCourseSection(course = course, onResume = onResume, onStop = onStop, modifier = modifier)
+    }
+}
 
 /**
  * 홈 "진행 중인 코스" 카드. 따라가는 중 세션이 있을 때만(=[course] 가 있을 때만) 노출한다.

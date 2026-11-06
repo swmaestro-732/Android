@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,6 +48,7 @@ import com.naver.maps.geometry.LatLng
 import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
+import com.naver.maps.map.compose.CameraPositionState
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.MapProperties
@@ -129,27 +131,12 @@ fun CourseRouteMap(
 
     // 현위치 표시(따라가기). 권한·위치 구독은 FusedLocationSource 가 맡고, 오버레이(파란 점)만 켠다 —
     // 카메라는 코스 경로를 따라가게 두고(NoFollow) "내 위치" 버튼을 눌렀을 때만 현위치로 옮긴다.
+    // 버튼·권한 요청·리센터는 [MyLocationButton] 이 맡고, 여기선 오버레이에 필요한 것만 둔다.
     val locationSource = if (showMyLocation) rememberFusedLocationSource() else null
     var hasLocationPermission by remember { mutableStateOf(context.hasLocationPermission()) }
     var myLocation by remember { mutableStateOf<LatLng?>(null) }
-    var pendingRecenter by remember { mutableStateOf(false) }
-    val locationPermissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-            if (result.values.any { it }) {
-                hasLocationPermission = true
-                pendingRecenter = true
-            }
-        }
     val trackingMode =
         if (showMyLocation && hasLocationPermission) LocationTrackingMode.NoFollow else LocationTrackingMode.None
-    // "내 위치" 버튼을 누른 뒤 현위치가 들어오면 그 지점으로 카메라를 한 번 옮긴다(이후엔 경로 조작을 막지 않는다).
-    LaunchedEffect(myLocation, pendingRecenter) {
-        val location = myLocation
-        if (pendingRecenter && location != null) {
-            cameraPositionState.animate(CameraUpdate.scrollTo(location))
-            pendingRecenter = false
-        }
-    }
     // 전체 보기면 모든 핀이 들어오게, 아니면 지금 장소로 확대해 맞춘다.
     LaunchedEffect(focus, overview, points, loaded, viewport, fitPadding) {
         if (!loaded || viewport == IntSize.Zero) return@LaunchedEffect
@@ -217,12 +204,59 @@ fun CourseRouteMap(
         }
         if (showMyLocation) {
             MyLocationButton(
-                onClick = {
-                    // 권한이 있으면 바로 현위치로, 없으면 먼저 권한을 요청한다(허용되면 그때 옮긴다).
-                    if (hasLocationPermission) {
+                cameraPositionState = cameraPositionState,
+                myLocation = myLocation,
+                hasPermission = hasLocationPermission,
+                onPermissionGranted = { hasLocationPermission = true },
+            )
+        }
+    }
+}
+
+/**
+ * 지도 위 "내 위치" 버튼(흰 원 + 현위치 아이콘). 권한 요청·현위치 리센터까지 자체적으로 처리해
+ * [CourseRouteMap] 의 복잡도를 낮춘다.
+ *
+ * 권한이 있으면 바로 현위치로 옮기고, 없으면 먼저 요청한 뒤 허용되면 옮긴다. 리센터는 현위치([myLocation])가
+ * 들어온 다음 한 번만 일어난다(이후 지도 조작을 막지 않는다).
+ */
+@OptIn(ExperimentalNaverMapApi::class)
+@Composable
+private fun BoxScope.MyLocationButton(
+    cameraPositionState: CameraPositionState,
+    myLocation: LatLng?,
+    hasPermission: Boolean,
+    onPermissionGranted: () -> Unit,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    var pendingRecenter by remember { mutableStateOf(false) }
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            if (result.values.any { it }) {
+                onPermissionGranted()
+                pendingRecenter = true
+            }
+        }
+    LaunchedEffect(myLocation, pendingRecenter) {
+        val location = myLocation
+        if (pendingRecenter && location != null) {
+            cameraPositionState.animate(CameraUpdate.scrollTo(location))
+            pendingRecenter = false
+        }
+    }
+    Box(
+        modifier =
+            Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(color.bgDefaultLevel1)
+                .clickable {
+                    if (hasPermission) {
                         pendingRecenter = true
                     } else {
-                        locationPermissionLauncher.launch(
+                        launcher.launch(
                             arrayOf(
                                 Manifest.permission.ACCESS_FINE_LOCATION,
                                 Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -230,26 +264,6 @@ fun CourseRouteMap(
                         )
                     }
                 },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            )
-        }
-    }
-}
-
-/** 지도 위 "내 위치" 버튼. 흰 원 + 현위치 아이콘. 지도 컨트롤이라 라벨 없이 아이콘만 둔다. */
-@Composable
-private fun MyLocationButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    Box(
-        modifier =
-            modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(color.bgDefaultLevel1)
-                .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
