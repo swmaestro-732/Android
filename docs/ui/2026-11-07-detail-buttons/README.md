@@ -2,7 +2,7 @@
 
 2026-11-07 최신 debug APK 실제 에뮬레이터 캡처. 코스 169, 테스트용 versionCode=2000000000.
 
-댓글·코스 복제 버튼의 1dp 테두리를 borderDefaultLevel0에서 아이콘과 동일한 contentDefaultLevel2로 변경했다. 흰 배경·아이콘 색·버튼 크기·클릭 동작은 유지한다. 본인 코스의 코스 복제 버튼은 기존처럼 숨긴다.
+댓글·코스 복제 버튼의 아이콘은 상단 공유 아이콘과 동일한 contentDefaultLevel0로 변경했다. 1dp 테두리는 이전 아이콘 색상인 contentDefaultLevel2를 사용한다. 흰 배경·버튼 크기·클릭 동작은 유지한다. 본인 코스의 코스 복제 버튼은 기존처럼 숨긴다.
 
 APK 조립과 detekt 통과. `detail.png`는 서버 실데이터의 두 버튼 노출 상태이며 클릭 동작을 새로 검증한 캡처는 아니다.
 
