@@ -29,6 +29,8 @@ data class SearchResultUIState(
     val areaOptions: ImmutableList<String> = persistentListOf(),
     /** 저장(북마크)된 코스 id. 카드 북마크 상태 표시용. */
     val savedCourseIds: ImmutableSet<String> = persistentSetOf(),
+    /** 저장 목록 동기화가 한 번이라도 됐는지. 되기 전에는 토글해도 집계 숫자를 조정하지 않는다(오차 방지). */
+    val savedIdsKnown: Boolean = false,
     /** 저장 토글 요청이 진행 중인 코스 id. 같은 코스의 중복 탭을 무시한다. */
     val savingCourseIds: ImmutableSet<String> = persistentSetOf(),
     /** 저장 토글 실패 등 화면을 바꾸지 않는 오류. 토스트로 보여 주고 소비한다. */

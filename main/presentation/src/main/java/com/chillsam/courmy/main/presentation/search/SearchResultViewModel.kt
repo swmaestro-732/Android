@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.search
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.entity.category.CourseTagVO
+import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.main.domain.saved.GetSavedCourseIdsUseCase
@@ -235,7 +236,7 @@ class SearchResultViewModel
         ): SearchResultUIState =
             when (event) {
                 is SearchResultReducerEvent.SavedIdsSynced -> {
-                    state.copy(savedCourseIds = event.ids.toImmutableSet())
+                    state.copy(savedCourseIds = event.ids.toImmutableSet(), savedIdsKnown = true)
                 }
 
                 is SearchResultReducerEvent.SaveStarted -> {
@@ -250,6 +251,8 @@ class SearchResultViewModel
                             state.savedCourseIds - event.courseId
                         }
                     state.copy(
+                        // 카드의 저장 수도 함께 ±1 반영한다(홈 피드와 동일 규칙).
+                        courses = updatedSaveCounts(state, event),
                         savedCourseIds = savedIds.toImmutableSet(),
                         savingCourseIds = (state.savingCourseIds - event.courseId).toImmutableSet(),
                     )
@@ -270,6 +273,26 @@ class SearchResultViewModel
                     state
                 }
             }
+
+        /** 저장이 확정된 코스의 집계 숫자를 ±1 반영한다. 동기화 전이거나 원시 값이 없으면 건드리지 않는다. */
+        private fun updatedSaveCounts(
+            state: SearchResultUIState,
+            event: SearchResultReducerEvent.SaveFinished,
+        ) = state.courses
+            .map { course ->
+                if (course.id != event.courseId) return@map course
+                val count = course.saveCount
+                val wasSaved = course.id in state.savedCourseIds
+                if (!state.savedIdsKnown || wasSaved == event.saved || count == null) {
+                    course
+                } else {
+                    val updated =
+                        (count.toLong() + if (event.saved) 1 else -1)
+                            .coerceIn(0, Int.MAX_VALUE.toLong())
+                            .toInt()
+                    course.copy(saveCount = updated, saveCountText = formatCount(updated))
+                }
+            }.toImmutableList()
 
         private companion object {
             const val TAG = "SearchResult"

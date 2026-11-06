@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><!-- 정렬(위아래 화살표). Material swap_vert 형태. -->
+<?xml version="1.0" encoding="utf-8"?><!-- 정렬(위아래 화살표). 작게 그려도 또렷하도록 굵은 화살표로 그린다. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -7,5 +7,5 @@
     android:viewportHeight="24">
     <path
         android:fillColor="@android:color/white"
-        android:pathData="M16,17.01V10h-2v7.01h-3L15,21l4,-3.99h-3zM9,3L5,6.99h3V14h2V6.99h3L9,3z" />
+        android:pathData="M8,3L12.2,8.2H9.6V18H6.4V8.2H3.8L8,3ZM16,21L11.8,15.8H14.4V6H17.6V15.8H20.2L16,21Z" />
 </vector>

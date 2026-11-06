@@ -75,7 +75,14 @@ fun SearchResultScreen(
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
+            // 상단 여백은 정렬 버튼 줄이 이미 주므로 빼고, 바닥만 둔다(정렬 버튼과 첫 카드가 붙어 보이게).
+            contentPadding =
+                PaddingValues(
+                    start = ScreenHorizontalPadding,
+                    end = ScreenHorizontalPadding,
+                    top = 2.dp,
+                    bottom = 16.dp,
+                ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (uiState.isLoading) {

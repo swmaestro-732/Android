@@ -59,6 +59,7 @@ internal fun CourseSearchDTO.toVOList(): List<SearchCourseVO> =
                         .filter { it.isNotBlank() }
                         .joinToString(" · "),
                 saveCountText = item.savesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
+                saveCount = item.savesCnt?.coerceAtLeast(0),
                 likeCountText = item.likesCnt?.let { formatCount(it.coerceAtLeast(0)) }.orEmpty(),
             )
         }
