@@ -22,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -176,6 +178,7 @@ internal fun SearchCourseCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 CourseLikeCount(count = course.likeCountText)
+                CourseSaveCount(count = course.saveCountText)
                 DsText(
                     text = course.summaryLine(),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -226,6 +229,7 @@ internal fun SearchCourseCompactCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 CourseLikeCount(count = course.likeCountText)
+                CourseSaveCount(count = course.saveCountText)
                 DsText(
                     text = course.summaryLine(),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -239,10 +243,39 @@ internal fun SearchCourseCompactCard(
     }
 }
 
-/** `4 스팟 · 3시간 · 지호님 · 1.2k명 따라감`. 비어 있는 값은 빼고 잇는다. */
+/**
+ * 목록용 저장 집계. 홈 코스 카드와 같은 북마크 아이콘 + 숫자 표기다(SCRUM-794).
+ * 개인의 저장 여부나 토글 동작을 나타내지 않는다.
+ */
+@Composable
+private fun CourseSaveCount(
+    count: String,
+    modifier: Modifier = Modifier,
+) {
+    if (count.isBlank()) return
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(
+        modifier = modifier.clearAndSetSemantics { contentDescription = "저장 $count" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_tab_bookmark_24),
+            contentDescription = null,
+            tint = color.contentDefaultLevel3,
+            modifier = Modifier.size(16.dp),
+        )
+        DsText(
+            text = count,
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel2,
+        )
+    }
+}
+
+/** `4 스팟 · 3시간 · 지호님 · 1.2k명 따라감`. 비어 있는 값은 빼고 잇는다(저장 수는 아이콘 집계로 분리). */
 private fun SearchCourseVO.summaryLine(): String =
     listOfNotNull(
-        saveCountText.ifEmpty { null }?.let { "저장 $it" },
         spotCount.takeIf { it > 0 }?.let { "$it 스팟" },
         durationHours.takeIf { it > 0 }?.let { "${it}시간" },
         authorName.ifEmpty { null },
