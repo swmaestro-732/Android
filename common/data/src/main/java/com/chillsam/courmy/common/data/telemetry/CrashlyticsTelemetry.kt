@@ -7,6 +7,7 @@ import com.chillsam.courmy.common.data.BuildConfig
 import com.chillsam.courmy.common.domain.telemetry.AppFailure
 import com.chillsam.courmy.common.domain.telemetry.AppFlow
 import com.chillsam.courmy.common.domain.telemetry.FlowResult
+import com.chillsam.courmy.common.domain.telemetry.ProductEvent
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.facebook.appevents.AppEventsConstants
 import com.facebook.appevents.AppEventsLogger
@@ -57,12 +58,30 @@ class CrashlyticsTelemetry
             runCatching { AppEventsLogger.newLogger(context) }.getOrNull()
         }
 
+        private var previousScreen: String? = null
+
         override fun setScreen(name: String) {
             // custom key 는 마지막 값만 남아 "죽은 화면"이 되고, log 는 쌓여서 "거기까지 온 경로"가 된다.
             crashlytics?.setCustomKey(KEY_SCREEN, name)
             crashlytics?.log("screen: $name")
-            amplitude.track(EVENT_SCREEN_VIEW, mapOf(KEY_SCREEN to name))
+            amplitude.track(
+                EVENT_SCREEN_VIEW,
+                buildMap {
+                    put(KEY_SCREEN, name)
+                    previousScreen?.let { put("previous_screen", it) }
+                },
+            )
+            previousScreen = name
             debugLog("screen: $name")
+        }
+
+        override fun logEvent(
+            event: ProductEvent,
+            properties: Map<String, String>,
+        ) {
+            amplitude.track(event.eventName, properties)
+            // 입력값은 Crashlytics·광고 SDK·logcat에 복제하지 않는다.
+            debugLog("event: ${event.eventName} keys=${properties.keys}")
         }
 
         override fun logFlow(

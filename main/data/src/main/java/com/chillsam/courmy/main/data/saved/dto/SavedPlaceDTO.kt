@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.data.saved.dto
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
@@ -45,6 +46,7 @@ data class SavedPlaceSummaryDTO(
     /** 지역(예: "성수"). 값이 없으면 null 이라 라벨에서 생략한다. */
     val area: String? = null,
     val imageUrl: String? = null,
+    val detailCategory: String? = null,
 )
 
 fun SavedPlaceScreenDTO.toPageVO(): CursorPageVO<SavedPlaceVO> =
@@ -70,5 +72,6 @@ internal fun SavedPlaceScreenDTO.toVOList(): List<SavedPlaceVO> =
                 area = place?.area.orEmpty(),
                 imageUrl = place?.imageUrl.orEmpty(),
                 visited = item.visited,
+                detailCategory = PlaceDetailCategoryVO.fromCode(place?.detailCategory),
             )
         }

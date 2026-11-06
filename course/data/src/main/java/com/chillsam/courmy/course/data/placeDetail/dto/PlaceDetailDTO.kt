@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.data.placeDetail.dto
 
 import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.entity.PlaceDetailVO
 import kotlinx.serialization.Serializable
@@ -9,7 +10,7 @@ import kotlinx.serialization.Serializable
  * `GET /service/v1/places/{placeId}`(장소 상세 화면 조합) 응답 DTO.
  * 봉투는 공통 계약 `{ code, message, data }`.
  *
- * 현재 서버가 채워 주는 장소 필드는 이름·카테고리·주소·좌표뿐이다. 평점·리뷰 수·영업 상태·영업시간·
+ * 현재 서버가 채워 주는 장소 필드는 이름·카테고리·주소·좌표·운영시간 원문뿐이다. 평점·리뷰 수·영업 상태·
  * 사진은 응답에 없어 시트에서 걷어냈으므로 DTO 에서도 받지 않는다(`ignoreUnknownKeys = true` 라
  * 서버가 나중에 다시 내려줘도 파싱은 깨지지 않는다). 응답의 `nearbyCourses`("이 근처 코스")도
  * 시트가 렌더하지 않아 매핑하지 않는다. [wiki-needed]
@@ -32,9 +33,12 @@ data class PlaceScreenDTO(
     val name: String? = null,
     val categories: List<String>? = null,
     val address: String? = null,
+    /** 운영시간 원문. 줄바꿈으로 요일별 줄을 구분해 내려온다 (예: "월 10:00 - 20:00\n화 휴무"). */
+    val openingHoursText: String? = null,
     val location: PlaceLocationDTO? = null,
     /** 조회자 정보. 저장 토글의 초기값(`hasSaved`)이 여기 실려 온다. */
     val viewer: PlaceViewerDTO? = null,
+    val detailCategory: String? = null,
 )
 
 @Serializable
@@ -57,6 +61,7 @@ fun PlaceDetailScreenDTO.toVO(): PlaceDetailVO {
     return PlaceDetailVO(
         name = place?.name.orEmpty(),
         category = place?.categories.toPlaceCategoryLabel(),
+        detailCategory = PlaceDetailCategoryVO.fromCode(place?.detailCategory),
         categories =
             place
                 ?.categories
@@ -68,5 +73,13 @@ fun PlaceDetailScreenDTO.toVO(): PlaceDetailVO {
         longitude = location?.longitude.takeIf { hasCoordinates },
         // viewer 가 없으면(비로그인 등) 저장 안 함으로 본다 — 토글이 서버에서 다시 판정한다.
         isSaved = place?.viewer?.hasSaved ?: false,
+        // 운영시간은 줄 단위가 표시 단위다(한 줄 = 보통 한 요일). 빈 줄·양끝 공백은 걷어낸다.
+        openingHours =
+            place
+                ?.openingHoursText
+                .orEmpty()
+                .lines()
+                .map(String::trim)
+                .filter(String::isNotEmpty),
     )
 }

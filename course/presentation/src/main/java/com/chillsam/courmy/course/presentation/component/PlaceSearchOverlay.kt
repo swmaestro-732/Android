@@ -44,10 +44,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
@@ -244,30 +246,21 @@ private fun ColumnScope.PlaceCandidateList(
     }
 }
 
-/** "새로운 위치 추가" 액션. 등록된 장소 검색으로 못 찾은 곳을 이름으로 직접 찾아 담을 때 쓴다. */
+/**
+ * "새로운 위치 추가" 액션. 등록된 장소 검색으로 못 찾은 곳을 이름으로 직접 찾아 담을 때 쓴다.
+ * 앱 공통 알약([DsChip])을 그대로 써서 다른 화면의 칩과 크기·모양을 맞춘다.
+ */
 @Composable
 private fun AddPlaceButton(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    val color = DesignSystemThemeImpl.designSystemColor
-    val shape = RoundedCornerShape(9999.dp)
-    Box(
-        modifier =
-            Modifier
-                .clip(shape)
-                .border(1.dp, color.borderDefaultLevel1, shape)
-                .clickable(enabled = enabled, onClick = onClick)
-                .sizeIn(minHeight = 48.dp)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        DsText(
-            text = "새로운 위치 추가",
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = if (enabled) color.contentAccent else color.contentDefaultLevel3,
-        )
-    }
+    DsChip(
+        text = "새로운 위치 추가",
+        selected = false,
+        enabled = enabled,
+        onClick = onClick,
+    )
 }
 
 @Composable
@@ -365,20 +358,44 @@ private fun SearchResultRow(
         PlaceThumbnail(
             url = candidate.thumbnailUrl.ifBlank { null },
             category = candidate.category,
+            detailCategory = candidate.detailCategory,
             modifier = Modifier.size(44.dp),
             shape = RoundedCornerShape(10.dp),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            DsText(
-                text = candidate.name,
-                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                color = color.contentDefaultLevel0,
-            )
-            DsText(
-                text = candidate.category,
-                style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentDefaultLevel2,
-            )
+            // 장소명 옆에 카테고리를 나란히 둔다(장소 추가 시안). 둘 다 한 줄을 넘으면 말줄임하고,
+            // 이름이 길어도 카테고리가 먼저 잘리지 않도록 이름 쪽에 남는 폭만 준다.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DsText(
+                    text = candidate.name,
+                    style = DesignSystemThemeImpl.typeScale.textStrongM,
+                    color = color.contentDefaultLevel0,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.alignByBaseline().weight(1f, fill = false),
+                )
+                if (candidate.category.isNotBlank()) {
+                    DsText(
+                        text = candidate.category,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.alignByBaseline(),
+                    )
+                }
+            }
+            // 같은 이름의 지점(스타벅스 ○○점 등)을 주소로 구분한다. 외부 지도 검색처럼
+            // 카테고리 자리에 이미 주소가 들어간 경우는 같은 줄이 두 번 보이므로 생략한다.
+            if (candidate.address.isNotBlank() && candidate.address != candidate.category) {
+                DsText(
+                    text = candidate.address,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         if (orderNumber != null) {
             // 선택 순서를 번호로 표시(담기 순서와 동일).
@@ -398,6 +415,8 @@ private fun SearchResultRow(
                     Modifier
                         .size(24.dp)
                         .clip(CircleShape)
+                        // 행 배경(level0)과 구분되도록 미선택 칩과 같은 흰 배경을 깐다.
+                        .background(color.bgDefaultLevel1)
                         .border(1.dp, color.borderDefaultLevel0, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {

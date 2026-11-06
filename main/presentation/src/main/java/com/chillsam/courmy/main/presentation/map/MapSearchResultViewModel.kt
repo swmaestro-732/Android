@@ -1,14 +1,21 @@
 package com.chillsam.courmy.main.presentation.map
 
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.SetPlaceSavedUseCase
 import com.chillsam.courmy.main.domain.map.SearchMapPlacesUseCase
+import com.chillsam.courmy.main.domain.map.SuggestMapPlacesUseCase
+import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.entity.map.MapCameraMove
+import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.presentation.search.searchErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,10 +25,14 @@ class MapSearchResultViewModel
     constructor(
         private val searchPlaces: SearchMapPlacesUseCase,
         private val setPlaceSaved: SetPlaceSavedUseCase,
+        private val suggestPlaces: SuggestMapPlacesUseCase,
     ) : MviViewModel<MapSearchResultIntent, MapSearchResultUIState, MapSearchResultReducerEvent>(
             MapSearchResultUIState.empty,
         ) {
         private var loadJob: Job? = null
+        private var initialized = false
+        private var fallbackAttempted = false
+        private var moveId = 0L
         private val savingIds = mutableSetOf<Long>()
 
         override fun onIntent(intent: MapSearchResultIntent) {
@@ -30,18 +41,32 @@ class MapSearchResultViewModel
                     loadIfChanged(intent)
                 }
 
-                MapSearchResultIntent.Retry -> {
-                    load(currentState.query, append = currentState.places.isNotEmpty())
+                is MapSearchResultIntent.BoundsChanged -> {
+                    boundsChanged(intent.bounds)
                 }
 
-                MapSearchResultIntent.Refresh -> {
+                is MapSearchResultIntent.SelectCategory -> {
+                    loadIfCategoryChanged(intent.category)
+                }
+
+                MapSearchResultIntent.CameraMoving -> {
+                    loadJob?.cancel()
+                    dispatch(MapSearchResultReducerEvent.CameraMoving)
+                }
+
+                is MapSearchResultIntent.DestinationReached -> {
+                    if (currentState.cameraMove?.id != intent.moveId) return
+                    dispatch(MapSearchResultReducerEvent.CameraStopped)
+                    load(currentState.query, bounds = intent.bounds)
+                }
+
+                MapSearchResultIntent.Retry, MapSearchResultIntent.Refresh -> {
                     load(currentState.query)
                 }
 
+                // /places/map은 커서 페이지네이션이 없다.
                 MapSearchResultIntent.LoadMore -> {
-                    if (currentState.canLoadMore) {
-                        load(currentState.query, true)
-                    }
+                    Unit
                 }
 
                 is MapSearchResultIntent.SelectPlace -> {
@@ -66,11 +91,59 @@ class MapSearchResultViewModel
             }
         }
 
-        private fun loadIfChanged(intent: MapSearchResultIntent.Load) {
-            val locationChanged = intent.latitude != currentState.latitude || intent.longitude != currentState.longitude
-            if (intent.query != currentState.query || locationChanged || currentState.isLoading) {
-                load(intent.query, latitude = intent.latitude, longitude = intent.longitude)
+        private fun loadIfCategoryChanged(category: MapCategory) {
+            if (category != currentState.category) load(currentState.query, category = category)
+        }
+
+        private fun boundsChanged(bounds: MapBounds) {
+            if (currentState.cameraMove != null) return
+            val wasMoving = currentState.isCameraMoving
+            dispatch(MapSearchResultReducerEvent.CameraStopped)
+            if (!initialized) {
+                dispatch(
+                    MapSearchResultReducerEvent.LoadStarted(
+                        currentState.query,
+                        currentState.latitude,
+                        currentState.longitude,
+                        false,
+                        bounds,
+                        currentState.category,
+                    ),
+                )
+            } else if (wasMoving || bounds != currentState.bounds) {
+                load(currentState.query, bounds = bounds)
             }
+        }
+
+        private fun loadIfChanged(intent: MapSearchResultIntent.Load) {
+            if (initialized) return
+            initialized = true
+            fallbackAttempted = false
+            dispatch(
+                MapSearchResultReducerEvent.LoadStarted(
+                    intent.query,
+                    intent.latitude,
+                    intent.longitude,
+                    false,
+                    currentState.bounds,
+                    currentState.category,
+                ),
+            )
+            val latitude = intent.targetLatitude?.takeIf { it in -90.0..90.0 }
+            val longitude = intent.targetLongitude?.takeIf { it in -180.0..180.0 }
+            if (latitude != null && longitude != null) {
+                fallbackAttempted = true
+                requestMove(latitude, longitude)
+            } else if (currentState.bounds != null) {
+                load(intent.query)
+            }
+        }
+
+        private fun requestMove(
+            latitude: Double,
+            longitude: Double,
+        ) {
+            dispatch(MapSearchResultReducerEvent.CameraMoveRequested(MapCameraMove(++moveId, latitude, longitude)))
         }
 
         private fun load(
@@ -78,22 +151,49 @@ class MapSearchResultViewModel
             append: Boolean = false,
             latitude: Double? = currentState.latitude,
             longitude: Double? = currentState.longitude,
+            bounds: MapBounds? = currentState.bounds,
+            category: MapCategory = currentState.category,
         ) {
-            val cursor = if (append) currentState.nextCursor else null
             loadJob?.cancel()
+            if (currentState.cameraMove != null) return
+            dispatch(MapSearchResultReducerEvent.LoadStarted(query, latitude, longitude, append, bounds, category))
+            if (bounds == null) return
             loadJob =
                 viewModelScope.launch {
-                    dispatch(MapSearchResultReducerEvent.LoadStarted(query, latitude, longitude, append))
-                    runCatching { searchPlaces(query, cursor, latitude, longitude) }
-                        .onSuccess { page -> dispatch(MapSearchResultReducerEvent.Loaded(page, append)) }
-                        .onFailure { error ->
-                            if (error is CancellationException) throw error
-                            dispatch(
-                                MapSearchResultReducerEvent.Failed(
-                                    error.searchErrorMessage("장소 검색 결과를 불러오지 못했어요. 다시 시도해 주세요."),
-                                ),
-                            )
+                    runCatching {
+                        val result = searchPlaces(query, bounds, category, latitude, longitude)
+                        currentCoroutineContext().ensureActive()
+                        val noResults = result.places.isEmpty() && result.clusters.isEmpty()
+                        if (!fallbackAttempted && query.isNotBlank() && noResults) {
+                            val destination = suggestPlaces(query).firstOrNull()
+                            currentCoroutineContext().ensureActive()
+                            fallbackAttempted = true
+                            if (destination != null) {
+                                requestMove(
+                                    requireNotNull(destination.latitude),
+                                    requireNotNull(destination.longitude),
+                                )
+                                return@launch
+                            }
+                        } else {
+                            fallbackAttempted = true
                         }
+                        dispatch(
+                            MapSearchResultReducerEvent.Loaded(
+                                page = CursorPageVO(items = result.places),
+                                clusters = result.clusters,
+                                append = false,
+                            ),
+                        )
+                    }.onFailure { error ->
+                        if (error is CancellationException) throw error
+                        currentCoroutineContext().ensureActive()
+                        dispatch(
+                            MapSearchResultReducerEvent.Failed(
+                                error.searchErrorMessage("장소 검색 결과를 불러오지 못했어요. 다시 시도해 주세요."),
+                            ),
+                        )
+                    }
                 }
         }
 
@@ -106,6 +206,7 @@ class MapSearchResultViewModel
                         .onSuccess { dispatch(MapSearchResultReducerEvent.SaveToggled(id, !place.saved)) }
                         .onFailure { error ->
                             if (error is CancellationException) throw error
+                            currentCoroutineContext().ensureActive()
                             dispatch(
                                 MapSearchResultReducerEvent.ActionFailed(
                                     error.searchErrorMessage("장소 저장을 변경하지 못했어요. 로그인 상태를 확인해 주세요."),
@@ -123,6 +224,18 @@ class MapSearchResultViewModel
             event: MapSearchResultReducerEvent,
         ): MapSearchResultUIState =
             when (event) {
+                is MapSearchResultReducerEvent.CameraMoveRequested -> {
+                    state.copy(cameraMove = event.move, isCameraMoving = true, isLoading = true, selectedPlaceId = null)
+                }
+
+                MapSearchResultReducerEvent.CameraMoving -> {
+                    state.copy(isCameraMoving = true, isLoading = true, errorMessage = null)
+                }
+
+                MapSearchResultReducerEvent.CameraStopped -> {
+                    state.copy(cameraMove = null, isCameraMoving = false)
+                }
+
                 is MapSearchResultReducerEvent.LoadStarted -> {
                     loadingState(state, event)
                 }
@@ -151,19 +264,7 @@ class MapSearchResultViewModel
                 }
 
                 is MapSearchResultReducerEvent.SaveToggled -> {
-                    state.copy(
-                        places =
-                            state.places
-                                .map {
-                                    if (it.id ==
-                                        event.placeId
-                                    ) {
-                                        it.copy(saved = event.saved)
-                                    } else {
-                                        it
-                                    }
-                                }.toImmutableList(),
-                    )
+                    state.withSaveToggled(event)
                 }
 
                 is MapSearchResultReducerEvent.ActionFailed -> {
@@ -179,9 +280,12 @@ class MapSearchResultViewModel
             state: MapSearchResultUIState,
             event: MapSearchResultReducerEvent.LoadStarted,
         ): MapSearchResultUIState =
-            if (event.append) {
+            if (event.query == state.query && event.latitude == state.latitude && event.longitude == state.longitude) {
                 state.copy(
-                    isLoadingMore = true,
+                    isLoading = true,
+                    isLoadingMore = false,
+                    bounds = event.bounds,
+                    category = event.category,
                     errorMessage = null,
                 )
             } else {
@@ -189,13 +293,9 @@ class MapSearchResultViewModel
                     query = event.query,
                     latitude = event.latitude,
                     longitude = event.longitude,
+                    bounds = event.bounds,
+                    category = event.category,
                     sheetMode = state.sheetMode,
-                    selectedPlaceId =
-                        state.selectedPlaceId.takeIf {
-                            event.query == state.query &&
-                                event.latitude == state.latitude &&
-                                event.longitude == state.longitude
-                        },
                 )
             }
 
@@ -212,6 +312,7 @@ class MapSearchResultViewModel
                 isLoading = false,
                 isLoadingMore = false,
                 places = places,
+                clusters = event.clusters.toImmutableList(),
                 nextCursor = event.page.nextCursor,
                 hasNext = event.page.hasNext && event.page.nextCursor != state.nextCursor,
                 selectedPlaceId =
@@ -219,3 +320,14 @@ class MapSearchResultViewModel
             )
         }
     }
+
+/** 저장 토글을 목록에 반영한다. 상태만 매만지는 순수 변환이라 클래스 밖에 둔다. */
+private fun MapSearchResultUIState.withSaveToggled(
+    event: MapSearchResultReducerEvent.SaveToggled,
+): MapSearchResultUIState =
+    copy(
+        places =
+            places
+                .map { if (it.id == event.placeId) it.copy(saved = event.saved) else it }
+                .toImmutableList(),
+    )

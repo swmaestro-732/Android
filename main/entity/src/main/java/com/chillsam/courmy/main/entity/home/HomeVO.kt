@@ -10,4 +10,6 @@ data class HomeVO(
     val recommendedCourses: List<HomeCourseVO> = emptyList(),
     /** 근처 저장 장소. 비로그인이거나 근처에 저장한 곳이 없으면 비어 있다. */
     val nearbySavedPlaces: List<HomeNearbyPlaceVO> = emptyList(),
+    /** 진행 중이던 코스. 따라가는 중 세션이 없으면 null 이라 홈에서 카드를 숨긴다. */
+    val inProgressCourse: HomeInProgressCourseVO? = null,
 )

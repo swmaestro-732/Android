@@ -1,0 +1,21 @@
+<!--
+  접은 지도 아이콘: 지그재그로 접힌 세 판. 커버 이미지가 없는 계획 카드의 placeholder 에 쓴다.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 왼쪽 판(바깥 접힘: 오른쪽이 높다) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M4,5.5 L9,3.5 L9,18.5 L4,20.5 Z" />
+    <!-- 가운데 판(안쪽 접힘: 아래로 꺼진다) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M10,3.5 L15,5.5 L15,20.5 L10,18.5 Z" />
+    <!-- 오른쪽 판(바깥 접힘) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M16,5.5 L21,3.5 L21,18.5 L16,20.5 Z" />
+</vector>

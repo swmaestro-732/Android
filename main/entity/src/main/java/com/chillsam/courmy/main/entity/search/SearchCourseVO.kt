@@ -14,6 +14,8 @@ data class SearchCourseVO(
     val title: String,
     /** 커버 좌상단 배지(예: "성수 · 데이트"). */
     val categoryLabel: String = "",
+    /** 지역 표시 문자열 원본(예: "성수"). 검색 지역 필터 옵션 수집에 쓴다. */
+    val area: String = "",
     val coverImageUrl: String = "",
     val spotCount: Int = 0,
     val durationHours: Int = 0,
@@ -23,4 +25,6 @@ data class SearchCourseVO(
     /** 서버 집계 표시값. 미제공이면 빈 문자열로 숨긴다. */
     val likeCountText: String = "",
     val saveCountText: String = "",
+    /** 저장 토글 시 집계에 ±1 반영할 원시 값. 미제공이면 null(집계 미조정). */
+    val saveCount: Int? = null,
 )

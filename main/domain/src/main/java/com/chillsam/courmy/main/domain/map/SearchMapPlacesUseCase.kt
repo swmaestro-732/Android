@@ -1,19 +1,24 @@
 package com.chillsam.courmy.main.domain.map
 
-import com.chillsam.courmy.common.entity.paging.CursorPageVO
+import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import com.chillsam.courmy.main.entity.map.MapPlacesVO
 import javax.inject.Inject
 
 interface MapPlaceSearchRepository {
+    suspend fun suggestions(query: String): List<MapPlaceVO>
+
     suspend fun search(
         query: String,
-        cursor: String?,
+        bounds: MapBounds,
+        category: MapCategory,
         latitude: Double?,
         longitude: Double?,
-    ): CursorPageVO<MapPlaceVO>
+    ): MapPlacesVO
 }
 
-/** 빈 검색어는 등록 장소 목록을 조회한다(지도 탭의 목록 보기). */
+/** 검색어 유무와 관계없이 현재 지도 영역의 장소와 클러스터를 조회한다. */
 class SearchMapPlacesUseCase
     @Inject
     constructor(
@@ -21,16 +26,18 @@ class SearchMapPlacesUseCase
     ) {
         suspend operator fun invoke(
             query: String,
-            cursor: String? = null,
+            bounds: MapBounds,
+            category: MapCategory = MapCategory.ALL,
             latitude: Double? = null,
             longitude: Double? = null,
-        ): CursorPageVO<MapPlaceVO> {
+        ): MapPlacesVO {
             val validLocation =
                 latitude != null && longitude != null &&
                     latitude in -90.0..90.0 && longitude in -180.0..180.0
             return repository.search(
                 query.trim(),
-                cursor,
+                bounds,
+                category,
                 latitude.takeIf { validLocation },
                 longitude.takeIf { validLocation },
             )

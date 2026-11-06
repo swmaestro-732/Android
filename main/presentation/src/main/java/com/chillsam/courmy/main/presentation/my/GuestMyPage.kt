@@ -32,12 +32,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
@@ -52,7 +54,9 @@ import com.chillsam.courmy.main.presentation.component.MainTab
 fun GuestMyPage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
-    val onLogin = { navigationHelper.navigateTo(LoginPage) }
+    val onLogin: (String) -> Unit = { button ->
+        navigationHelper.navigateTo(LoginPage, source = NavigationSource("/my/guest", button))
+    }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(
@@ -71,7 +75,7 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(vertical = 20.dp),
             )
 
-            GuestWelcomeCard(onLogin = onLogin)
+            GuestWelcomeCard(onLogin = { onLogin("welcome_login") })
 
             DsText(
                 text = "가입하면 할 수 있어요",
@@ -84,14 +88,14 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                     iconRes = R.drawable.ic_tab_bookmark_24,
                     title = "장소·코스 저장",
                     subtitle = "가고 싶은 장소와 코스를 모아보세요",
-                    onClick = onLogin,
+                    onClick = { onLogin("saved_benefit") },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
                 GuestBenefitCard(
                     iconRes = R.drawable.ic_calendar_24,
                     title = "여행 계획",
                     subtitle = "원하는 장소로 나만의 일정을 짜보세요",
-                    onClick = onLogin,
+                    onClick = { onLogin("plan_benefit") },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
             }
@@ -101,14 +105,14 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                     iconRes = R.drawable.ic_review_write_24,
                     title = "방문 후기",
                     subtitle = "다녀온 장소의 경험을 나눠보세요",
-                    onClick = onLogin,
+                    onClick = { onLogin("review_benefit") },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
                 GuestBenefitCard(
                     iconRes = R.drawable.ic_tab_person_24,
                     title = "친구 팔로우",
                     subtitle = "취향이 맞는 사람의 코스를 만나보세요",
-                    onClick = onLogin,
+                    onClick = { onLogin("follow_benefit") },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
             }
@@ -119,9 +123,30 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
             selectedTab = MainTab.MY,
             onTabSelected = { tab ->
                 when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.SAVED -> navigationHelper.navigateTo(SavedPage)
-                    else -> Unit
+                    MainTab.HOME -> {
+                        navigationHelper.navigateTo(
+                            HomePage,
+                            source = NavigationSource("/my/guest", "bottom_tab_home"),
+                        )
+                    }
+
+                    MainTab.CHAT -> {
+                        navigationHelper.navigateTo(
+                            ChatPage,
+                            source = NavigationSource("/my/guest", "bottom_tab_chat"),
+                        )
+                    }
+
+                    MainTab.SAVED -> {
+                        navigationHelper.navigateTo(
+                            SavedPage,
+                            source = NavigationSource("/my/guest", "bottom_tab_saved"),
+                        )
+                    }
+
+                    else -> {
+                        Unit
+                    }
                 }
             },
         )

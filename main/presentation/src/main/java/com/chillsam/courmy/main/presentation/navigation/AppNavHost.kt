@@ -21,6 +21,7 @@ import com.chillsam.courmy.common.domain.navigation.NavRoute
 import com.chillsam.courmy.common.domain.navigation.NavSignal
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.jank.JankPageEffect
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.telemetry.TelemetryScreenEffect
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.onboarding.SplashPage
@@ -31,23 +32,36 @@ fun AppNavHost(
     modifier: Modifier = Modifier,
 ) {
     val navigationHelper = LocalNavigationHelper.current
+    val telemetry = LocalTelemetry.current
     val activity = LocalActivity.current
     val exitApp = { activity?.finish() ?: Unit }
 
     LaunchedEffect(Unit) {
         navigationHelper.navigationFlow.collect { signal ->
+            val from = backStack.lastOrNull() as? GenericNavKey
             when (signal) {
                 is NavSignal.GoToDestPage -> handleNavRoute(signal.route, backStack)
                 is NavSignal.DeepLink -> handleDeepLink(signal.route, backStack)
                 is NavSignal.Replace -> handleReplace(signal.route, backStack)
                 NavSignal.Back -> backStack.handleBack(exitApp)
+                NavSignal.AuthenticationCompleted -> finishAuthentication(backStack)
             }
+            telemetry.recordNavigation(
+                from,
+                backStack.lastOrNull() as? GenericNavKey,
+                signal.analyticsAction,
+                signal.analyticsSource,
+            )
         }
     }
 
     NavDisplay(
         backStack = backStack,
-        onBack = { backStack.handleBack(exitApp) },
+        onBack = {
+            val from = backStack.lastOrNull() as? GenericNavKey
+            backStack.handleBack(exitApp)
+            telemetry.recordNavigation(from, backStack.lastOrNull() as? GenericNavKey, "system_back")
+        },
         modifier = modifier,
         transitionSpec = {
             // 스플래시가 들어오거나 나갈 때만 페이드(그 외 화면 전환은 즉시 유지).

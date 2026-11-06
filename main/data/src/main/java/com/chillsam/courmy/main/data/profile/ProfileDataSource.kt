@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.data.profile
 
 import com.chillsam.courmy.common.data.BaseRemoteDataSource
+import com.chillsam.courmy.main.data.profile.dto.AccountProfileEnvelope
 import com.chillsam.courmy.main.data.profile.dto.FollowEnvelope
 import com.chillsam.courmy.main.data.profile.dto.MyPageEnvelope
 import com.chillsam.courmy.main.data.profile.dto.UpdateProfileEnvelope
@@ -9,6 +10,8 @@ import com.chillsam.courmy.main.data.profile.dto.UpdateProfileRequest
 class ProfileDataSource(
     private val apiService: ProfileApiService,
 ) : BaseRemoteDataSource() {
+    suspend fun getAccountProfile(): AccountProfileEnvelope = checkResponse(apiService.getAccountProfile())
+
     suspend fun getMyPage(
         cursor: String?,
         size: Int,

@@ -40,10 +40,9 @@ import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
-import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.entity.auth.SignupProfile
 
-/** 온보딩 완료 화면(FS-08). 가입을 마쳤음을 알리고 "Courmy 시작하기"로 로그인 완료 후 홈으로 진입. */
+/** 온보딩 완료 화면(FS-08). 가입을 마쳤음을 알리고 "Courmy 시작하기"로 로그인 완료 후 이전 화면으로 복귀. */
 @Composable
 fun OnboardingCompletePage(modifier: Modifier = Modifier) {
     // 상단이 흰색이라 상태바도 같은 색으로 이어 붙인다. 회색으로 두면 띠만 분리돼 보인다.
@@ -57,12 +56,12 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
     // 사용자가 입력한 닉네임으로 인사(비어 있으면 기본 호칭).
     val displayName = SignupSelectionStore.nickname.ifBlank { "회원" }
 
-    // 가입 성공 → 세션 로그인 + 홈으로. 실패 → 안내.
+    // 가입 성공 → 세션 로그인 + 이전 화면으로. 실패 → 안내.
     LaunchedEffect(uiState.done) {
         if (uiState.done) {
             session.login()
             SignupSelectionStore.clear()
-            navigationHelper.navigateReplace(HomePage)
+            navigationHelper.finishAuthentication()
             viewModel.onIntent(SignupIntent.ConsumeDone)
         }
     }
@@ -140,14 +139,19 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
                     text = "Courmy 시작하기",
                     enabled = !uiState.isLoading,
                     onClick = {
+                        if (!SignupSelectionStore.requiredTermsAgreed) {
+                            navigationHelper.navigateTo(com.chillsam.courmy.main.domain.login.TermsAgreementPage)
+                            return@DsButton
+                        }
                         // 홀더에 담아둔 프로필로 회원가입 API 호출.
-                        // 관심 지역은 검색 API 가 주는 법정동코드를 그대로 areaCodes 로 보낸다.
+                        // 선택 prefix는 가입 data 레이어에서 활성 법정동 10자리 코드 배열로 변환한다.
                         // 이미지가 이미 http URL 이면 그대로 싣고, 로컬 uri 면 가입 성공 후 업로드하도록 넘긴다
                         // (presign 은 액세스 토큰이 필요해 가입 전에는 호출할 수 없다).
                         val picked = SignupSelectionStore.profileImageUrl
                         val remoteUrl = picked?.takeIf { it.startsWith("http") }
                         viewModel.onIntent(
                             SignupIntent.Submit(
+                                requiredTermsAgreed = SignupSelectionStore.requiredTermsAgreed,
                                 profile =
                                     SignupProfile(
                                         nickname = SignupSelectionStore.nickname,

@@ -20,7 +20,9 @@ class GetHomeFeedUseCase
             size: Int = DEFAULT_SIZE,
             cursor: String? = null,
             category: CourseTagVO? = null,
-        ): CursorPageVO<HomeCourseVO> = repository.getCourseFeed(size.coerceIn(MIN_SIZE, MAX_SIZE), cursor, category)
+            sigungu: String? = null,
+        ): CursorPageVO<HomeCourseVO> =
+            repository.getCourseFeed(size.coerceIn(MIN_SIZE, MAX_SIZE), cursor, category, sigungu)
 
         companion object {
             const val DEFAULT_SIZE = 20

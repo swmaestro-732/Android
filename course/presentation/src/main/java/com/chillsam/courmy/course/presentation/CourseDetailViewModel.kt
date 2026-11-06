@@ -365,6 +365,10 @@ class CourseDetailViewModel
             val id = courseId
             val detail = state.detail
             if (state.isSaving || id == null || detail == null) return
+            if (!isLoggedInUseCase()) {
+                dispatch(CourseDetailReducerEvent.LoginRequired)
+                return
+            }
             val target = !detail.isSaved
             dispatch(CourseDetailReducerEvent.SaveStarted)
             saveJob?.cancel()

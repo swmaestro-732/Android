@@ -28,6 +28,9 @@ data class CourseCommentListDTO(
 data class CourseCommentItemDTO(
     val id: Long? = null,
     val authorId: Long? = null,
+    val authorNickname: String? = null,
+    val authorProfileImageUrl: String? = null,
+    val authorHandle: String? = null,
     val content: String? = null,
     val createdAt: String? = null,
     val isMine: Boolean = false,
@@ -67,6 +70,9 @@ fun CourseCommentListDTO.toVO(): CourseCommentPageVO {
                 CourseCommentVO(
                     id = requireNotNull(item.id),
                     authorId = item.authorId ?: 0L,
+                    authorNickname = item.authorNickname.orEmpty(),
+                    authorProfileImageUrl = item.authorProfileImageUrl.orEmpty(),
+                    authorHandle = item.authorHandle.orEmpty(),
                     content = item.content.orEmpty(),
                     dateText = item.createdAt.toRelativeTimeText(),
                     isMine = item.isMine,

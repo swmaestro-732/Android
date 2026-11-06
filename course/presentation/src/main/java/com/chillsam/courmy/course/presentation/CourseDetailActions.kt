@@ -1,5 +1,7 @@
 package com.chillsam.courmy.course.presentation
 
+import com.chillsam.courmy.course.entity.CourseCommentVO
+
 /**
  * 코스 상세 화면의 액션 묶음.
  * 콜백이 많아 개별 파라미터로 두면 호출부가 길어지고 순서를 헷갈리기 쉬워 한데 모은다
@@ -20,6 +22,7 @@ data class CourseDetailActions(
     val onToggleLike: () -> Unit,
     /** 리뷰 섹션의 "전체보기" → 후기 전체보기 화면(FS-37). */
     val onSeeAllReviews: () -> Unit,
+    val onCommentAuthorClick: (CourseCommentVO) -> Unit = {},
 )
 
 /** 상세 페이지가 앱 네비게이션 계층에 위임하는 동작 모음. */

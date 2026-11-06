@@ -2,9 +2,6 @@ package com.chillsam.courmy.course.entity
 
 /**
  * 코스 댓글 한 건. `GET /api/v1/courses/{courseId}/comments` 응답을 변환한 결과다.
- *
- * 응답에 작성자 이름·아바타가 없어(authorId 뿐) 작성자 표기는 "작성자 N" 형태로 화면이 만든다.
- * TODO-API-SPEC: 서버가 작성자 프로필을 내려주면 VO 에 싣고 표기를 교체한다. [wiki-needed]
  */
 data class CourseCommentVO(
     val id: Long,
@@ -14,6 +11,10 @@ data class CourseCommentVO(
     val dateText: String = "",
     /** 내 댓글 여부. 수정·삭제 메뉴 노출 기준. */
     val isMine: Boolean = false,
+    val authorNickname: String = "",
+    /** 타인 프로필 조회 키. 누락된 작성자는 프로필 이동을 제공하지 않는다. */
+    val authorHandle: String = "",
+    val authorProfileImageUrl: String = "",
 )
 
 /**

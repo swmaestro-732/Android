@@ -39,6 +39,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.domain.navigation.NavigationSource
+import com.chillsam.courmy.common.domain.telemetry.buttonClick
+import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
@@ -48,9 +51,11 @@ import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
+import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.map.MapPage
@@ -66,6 +71,7 @@ import com.chillsam.courmy.main.presentation.component.MainTab
 import com.chillsam.courmy.main.presentation.component.PlaceRowsSkeleton
 import com.chillsam.courmy.main.presentation.component.SavedCourseCard
 import com.chillsam.courmy.main.presentation.component.SavedPlaceCard
+import com.chillsam.courmy.main.presentation.component.navigateToMainTab
 import com.chillsam.courmy.main.presentation.map.MapPlaceDetailSheet
 
 /** 저장함의 콘텐츠 탭 인덱스. 화면 이탈 후 복귀에도 유지되도록 rememberSaveable 로 든다. */
@@ -77,14 +83,31 @@ internal const val SAVED_TAB_PLACES = 1
  * 저장한 코스/장소 리스트([SavedCourseList]·[SavedPlaceList]) / 게스트 잠금([GuestSaved]) 을 분기한다.
  */
 @Composable
-fun SavedPage(modifier: Modifier = Modifier) {
+fun SavedPage(
+    modifier: Modifier = Modifier,
+    /** true 면 코스 탭 · 완주 목록으로 바로 연다(따라가기 종료 직후 이동용). */
+    openCompletedCourses: Boolean = false,
+) {
+    val telemetry = LocalTelemetry.current
     val session = LocalSessionUiState.current
     if (session.isLoggedIn) {
-        var selectedTab by rememberSaveable { mutableStateOf(SAVED_TAB_PLACES) }
+        var selectedTab by rememberSaveable {
+            mutableStateOf(if (openCompletedCourses) SAVED_TAB_COURSES else SAVED_TAB_PLACES)
+        }
         if (selectedTab == SAVED_TAB_COURSES) {
-            SavedCourseList(modifier = modifier, onSelectTab = { selectedTab = it })
+            SavedCourseList(
+                modifier = modifier,
+                onSelectTab = {
+                    telemetry.selectionChange("/saved", "tab", if (it == SAVED_TAB_COURSES) "courses" else "places")
+                    selectedTab = it
+                },
+                initialCompleted = openCompletedCourses,
+            )
         } else {
-            SavedPlaceList(modifier = modifier, onSelectTab = { selectedTab = it })
+            SavedPlaceList(modifier = modifier, onSelectTab = {
+                telemetry.selectionChange("/saved", "tab", if (it == SAVED_TAB_COURSES) "courses" else "places")
+                selectedTab = it
+            })
         }
     } else {
         GuestSaved(modifier = modifier)
@@ -96,6 +119,8 @@ fun SavedPage(modifier: Modifier = Modifier) {
 private fun SavedCourseList(
     onSelectTab: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    /** true 면 진입하자마자 완주 목록을 고른다(따라가기 종료 직후 이동용). */
+    initialCompleted: Boolean = false,
     viewModel: SavedCoursesViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
@@ -103,6 +128,11 @@ private fun SavedCourseList(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingRemoval by remember { mutableStateOf<SavedCourseVO?>(null) }
+
+    // 종료 직후 진입이면 완주 목록부터 연다. 선택은 ViewModel 상태라 한 번만 보낸다.
+    LaunchedEffect(Unit) {
+        if (initialCompleted) viewModel.onIntent(SavedCoursesIntent.SelectCompleted(true))
+    }
 
     // 다른 화면에서 저장한 코스가 반영되도록 다시 보일 때마다 새로 불러온다.
     RefreshOnResume { viewModel.onIntent(SavedCoursesIntent.Retry) }
@@ -135,7 +165,12 @@ private fun SavedCourseList(
                     uiState.courses.forEach { course ->
                         SavedCourseCard(
                             course = course,
-                            onClick = { navigationHelper.navigateByRoute(CourseDetailPage.route(course.id)) },
+                            onClick = {
+                                navigationHelper.navigateByRoute(
+                                    CourseDetailPage.route(course.id),
+                                    source = NavigationSource("/saved", "course"),
+                                )
+                            },
                             onBookmarkClick = { pendingRemoval = course },
                             modifier = Modifier.padding(bottom = 12.dp),
                         )
@@ -163,14 +198,7 @@ private fun SavedCourseList(
 
         CourmyBottomBar(
             selectedTab = MainTab.SAVED,
-            onTabSelected = { tab ->
-                when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
-                    MainTab.MY -> navigationHelper.navigateTo(MyPage)
-                    else -> Unit
-                }
-            },
+            onTabSelected = { tab -> navigationHelper.navigateToMainTab(MainTab.SAVED, tab) },
         )
     }
 
@@ -264,14 +292,7 @@ private fun SavedPlaceList(
 
         CourmyBottomBar(
             selectedTab = MainTab.SAVED,
-            onTabSelected = { tab ->
-                when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
-                    MainTab.MY -> navigationHelper.navigateTo(MyPage)
-                    else -> Unit
-                }
-            },
+            onTabSelected = { tab -> navigationHelper.navigateToMainTab(MainTab.SAVED, tab) },
         )
     }
 
@@ -282,6 +303,7 @@ private fun SavedPlaceList(
                     id = place.placeId,
                     name = place.name,
                     category = place.categoryLabel,
+                    detailCategory = place.detailCategory,
                     thumbnailUrl = place.imageUrl,
                     saved = true,
                 ),
@@ -402,7 +424,12 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                 )
                 DsButton(
                     text = "로그인 / 회원가입",
-                    onClick = { navigationHelper.navigateTo(LoginPage) },
+                    onClick = {
+                        navigationHelper.navigateTo(
+                            LoginPage,
+                            source = NavigationSource("/saved", "guest_login"),
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
                 )
             }
@@ -412,10 +439,37 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
             selectedTab = MainTab.SAVED,
             onTabSelected = { tab ->
                 when (tab) {
-                    MainTab.HOME -> navigationHelper.navigateTo(HomePage)
-                    MainTab.MAP -> navigationHelper.navigateTo(MapPage)
-                    MainTab.MY -> navigationHelper.navigateTo(GuestMyPage)
-                    else -> Unit
+                    MainTab.HOME -> {
+                        navigationHelper.navigateTo(
+                            HomePage,
+                            source = NavigationSource("/saved", "bottom_tab_home"),
+                        )
+                    }
+
+                    MainTab.MAP -> {
+                        navigationHelper.navigateTo(
+                            MapPage,
+                            source = NavigationSource("/saved", "bottom_tab_map"),
+                        )
+                    }
+
+                    MainTab.CHAT -> {
+                        navigationHelper.navigateTo(
+                            ChatPage,
+                            source = NavigationSource("/saved", "bottom_tab_chat"),
+                        )
+                    }
+
+                    MainTab.MY -> {
+                        navigationHelper.navigateTo(
+                            GuestMyPage,
+                            source = NavigationSource("/saved", "bottom_tab_my"),
+                        )
+                    }
+
+                    else -> {
+                        Unit
+                    }
                 }
             },
         )

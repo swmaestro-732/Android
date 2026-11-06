@@ -16,6 +16,12 @@ data class NotificationCountDTO(
     val count: Long? = null,
 )
 
+/** 읽음 처리 요청. 서버는 `read=true` 만 받는다(읽지 않음 되돌리기 미지원). */
+@Serializable
+data class NotificationReadRequest(
+    val read: Boolean = true,
+)
+
 @Serializable
 data class NotificationItemDTO(
     val id: Long? = null,

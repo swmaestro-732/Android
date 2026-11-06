@@ -25,7 +25,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
@@ -41,6 +45,7 @@ import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.presentation.component.CourseRouteMap
 import com.chillsam.courmy.course.presentation.component.latLngOrNull
 import com.chillsam.courmy.course.presentation.component.toRoutePoints
+import com.naver.maps.geometry.LatLng
 import java.util.Locale
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -54,11 +59,14 @@ private val FOLLOW_PANEL_SHAPE = RoundedCornerShape(topStart = 20.dp, topEnd = 2
 /** 동선 목록이 지도를 다 밀어내지 않게 제한하는 높이. */
 private val ROUTE_LIST_MAX_HEIGHT = 230.dp
 
+/** 진행 중 하단 패널의 턴바이턴 안내 목록 최대 높이. 안내가 길어도 패널이 화면을 덮지 않게 한다. */
+private val ROUTE_GUIDE_MAX_HEIGHT = 140.dp
+
 /**
  * 따라가기 화면(FS-21). [CourseFollowPhase] 에 따라 세 모습을 오간다.
  *
  * - 미리보기: 지도(전체 동선) + 동선 목록 + "이 코스 따라가기"
- * - 진행: 지도(지금 장소) + 다음 스팟 + "도착 · 방문 체크"
+ * - 진행: 지도(지금 장소) + 다음 스팟 + "도착"(방문 체크)
  * - 완주: 축하 + 통계(방문 스팟·소요 시간·이동 거리) + "리뷰 남기기"
  *
  */
@@ -81,7 +89,13 @@ internal fun CourseFollowScreen(
     ) {
         when (state.phase) {
             CourseFollowPhase.PREVIEW -> {
-                PreviewPhase(detail = detail, onIntent = onIntent, onBack = onBack)
+                PreviewPhase(
+                    detail = detail,
+                    routes = state.routes,
+                    resumeVisitedCount = state.resumeVisitedCount,
+                    onIntent = onIntent,
+                    onBack = onBack,
+                )
             }
 
             CourseFollowPhase.TRACKING -> {
@@ -109,6 +123,8 @@ internal fun CourseFollowScreen(
 @Composable
 private fun ColumnScope.PreviewPhase(
     detail: CourseDetailVO,
+    routes: Map<Long, FollowRouteStatus>,
+    resumeVisitedCount: Int,
     onIntent: (CourseFollowIntent) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -121,7 +137,7 @@ private fun ColumnScope.PreviewPhase(
                 .joinToString(" · "),
         onBack = onBack,
     )
-    FollowMap(detail = detail, focusIndex = null, modifier = Modifier.weight(1f))
+    FollowMap(detail = detail, focusIndex = null, routes = routes, modifier = Modifier.weight(1f))
     Column(
         modifier =
             Modifier
@@ -144,12 +160,21 @@ private fun ColumnScope.PreviewPhase(
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            detail.places.forEach { place ->
-                RoutePlaceRow(place = place, stateText = "예정", highlighted = false)
+            // 이어가기면 이미 방문한 앞 장소는 "방문함", 다음 가야 할 장소는 강조, 나머지는 "예정".
+            detail.places.forEachIndexed { index, place ->
+                RoutePlaceRow(
+                    place = place,
+                    stateText = if (index < resumeVisitedCount) "방문함" else "예정",
+                    highlighted = resumeVisitedCount > 0 && index == resumeVisitedCount,
+                )
             }
         }
         Spacer(Modifier.height(14.dp))
-        FollowPrimaryButton(text = "이 코스 따라가기", iconRes = R.drawable.ic_footprint_24) {
+        FollowPrimaryButton(
+            text = if (resumeVisitedCount > 0) "이어가기" else "이 코스 따라가기",
+            iconRes = R.drawable.ic_footprint_24,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             onIntent(CourseFollowIntent.Start)
         }
     }
@@ -164,12 +189,18 @@ private fun ColumnScope.TrackingPhase(
     onBack: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    var showEndConfirm by remember { mutableStateOf(false) }
     FollowTopBar(
         title = "${detail.title} · ${state.visitedCount + 1}/${detail.places.size} 진행 중",
         subtitle = "",
         onBack = onBack,
     )
-    FollowMap(detail = detail, focusIndex = state.currentIndex, modifier = Modifier.weight(1f))
+    FollowMap(
+        detail = detail,
+        focusIndex = state.currentIndex,
+        routes = state.routes,
+        modifier = Modifier.weight(1f),
+    )
     Column(
         modifier =
             Modifier
@@ -192,14 +223,37 @@ private fun ColumnScope.TrackingPhase(
                 stateText = current.walkToNextText?.let { "다음까지 $it" } ?: "마지막 스팟",
                 highlighted = true,
             )
+            WalkingRouteSection(
+                status = state.currentRouteStatus,
+                next = state.nextPlace,
+            )
         }
-        FollowPrimaryButton(
-            text = if (state.isRecording) "방문 기록 저장 중…" else "도착 · 방문 체크",
-            iconRes = R.drawable.ic_check_24,
-            enabled = !state.isRecording,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            onIntent(CourseFollowIntent.CheckArrival)
+            FollowPrimaryButton(
+                text = if (state.isRecording) "방문 기록 저장 중…" else "도착",
+                iconRes = R.drawable.ic_check_24,
+                modifier = Modifier.weight(1f),
+                enabled = !state.isRecording,
+            ) {
+                onIntent(CourseFollowIntent.CheckArrival)
+            }
+            FollowEndButton(onClick = { showEndConfirm = true })
         }
+    }
+    if (showEndConfirm) {
+        DsConfirmDialog(
+            title = "따라가기를 종료할까요?",
+            description = "지금 종료하면 진행 화면을 나가요. 나중에 코스에서 다시 이어갈 수 있어요.",
+            onConfirm = {
+                showEndConfirm = false
+                onBack()
+            },
+            onDismiss = { showEndConfirm = false },
+        )
     }
 }
 
@@ -298,7 +352,12 @@ private fun ColumnScope.DonePhase(
                 .padding(bottom = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        FollowPrimaryButton(text = "리뷰 남기기", iconRes = null, onClick = onLeaveReview)
+        FollowPrimaryButton(
+            text = "리뷰 남기기",
+            iconRes = null,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onLeaveReview,
+        )
         DsText(
             text = "건너뛰기",
             style = DesignSystemThemeImpl.typeScale.textRegularS,
@@ -357,14 +416,16 @@ private fun FollowTopBar(
     }
 }
 
-/** 동선 지도. [focusIndex] 가 null 이면 전체 보기, 아니면 그 장소에 집중한다. */
+/** 동선 지도. [focusIndex] 가 null 이면 전체 보기, 아니면 그 장소에 집중한다. [routes] 로 실제 도보 경로를 실선으로 긋는다. */
 @Composable
 private fun FollowMap(
     detail: CourseDetailVO,
     focusIndex: Int?,
+    routes: Map<Long, FollowRouteStatus>,
     modifier: Modifier = Modifier,
 ) {
     val points = remember(detail.places) { detail.places.toRoutePoints() }
+    val routePaths = remember(routes) { routes.toRoutePaths() }
     val focusPlace = focusIndex?.let { detail.places.getOrNull(it) }
     val focus = focusPlace?.latLngOrNull() ?: points.firstOrNull()?.second
     Box(modifier = modifier.fillMaxWidth()) {
@@ -375,9 +436,109 @@ private fun FollowMap(
                 points = points,
                 overview = focusIndex == null,
                 onMarkerClick = {},
+                routePaths = routePaths,
+                showMyLocation = true,
             )
         }
     }
+}
+
+/** 경로 상태 맵을 지도용 폴리라인 좌표로 바꾼다 — 걸을 수 있고 좌표가 2개 이상인 구간만 실선으로 그린다. */
+private fun Map<Long, FollowRouteStatus>.toRoutePaths(): Map<Long, List<LatLng>> =
+    mapNotNull { (fromPlaceId, status) ->
+        val route = (status as? FollowRouteStatus.Ready)?.route?.takeIf { it.walkable } ?: return@mapNotNull null
+        val coords = route.path.mapNotNull { it.latLngOrNull() }
+        if (coords.size < 2) null else fromPlaceId to coords
+    }.toMap()
+
+/**
+ * 진행 중 "현재 → 다음" 구간의 상세 도보 경로.
+ * - 걸을 수 있으면 거리·시간과 Tmap 턴바이턴 안내를 보여 준다.
+ * - 조회 중이면 안내 문구만, 도보 불가·조회 실패·마지막 장소면 아무것도 그리지 않는다.
+ */
+@Composable
+private fun WalkingRouteSection(
+    status: FollowRouteStatus?,
+    next: CourseDetailPlaceVO?,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    when (status) {
+        FollowRouteStatus.Loading -> {
+            DsText(
+                text = "도보 경로 불러오는 중…",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentDefaultLevel3,
+            )
+        }
+
+        is FollowRouteStatus.Ready -> {
+            if (status.route.walkable && status.route.guides.isNotEmpty()) {
+                WalkingRouteGuides(route = status.route, nextName = next?.name.orEmpty())
+            }
+        }
+
+        null, FollowRouteStatus.Failed -> {
+            Unit
+        }
+    }
+}
+
+/** 걸을 수 있는 구간: 거리·시간 헤더 + 턴바이턴 안내 목록(길면 스크롤). */
+@Composable
+private fun WalkingRouteGuides(
+    route: com.chillsam.courmy.course.entity.TraceRouteVO,
+    nextName: String,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val summary =
+            listOfNotNull(
+                nextName.takeIf { it.isNotBlank() }?.let { "$it 까지" },
+                routeDistanceText(route.distanceMeters),
+                route.durationMinutes?.let { "도보 ${it}분" },
+            ).joinToString(" · ")
+        DsText(
+            text = summary.ifBlank { "상세 도보 경로" },
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel0,
+        )
+        Column(
+            modifier =
+                Modifier
+                    .heightIn(max = ROUTE_GUIDE_MAX_HEIGHT)
+                    .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            route.guides.forEach { guide ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(color.contentAccent),
+                    )
+                    DsText(
+                        text = guide.description,
+                        style = DesignSystemThemeImpl.typeScale.textRegularS,
+                        color = color.contentDefaultLevel2,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 도보 거리 표기: 1km 미만은 "320m", 이상은 "1.2km". null 이면 표기하지 않는다. */
+private fun routeDistanceText(meters: Int?): String? {
+    if (meters == null) return null
+    return if (meters < 1_000) "${meters}m" else String.format(Locale.US, "%.1fkm", meters / 1000.0)
 }
 
 /** 동선 목록 한 줄: 순번 배지 + 썸네일 + 이름·카테고리 + 상태. 진행 중 현재 장소는 테두리로 강조. */
@@ -474,19 +635,19 @@ private fun RowScope.FollowStatCard(
     }
 }
 
-/** 각 단계의 주 버튼. 하단 액션바 주 버튼과 같은 결(강조 배경 + 풀폭)이다. */
+/** 각 단계의 주 버튼. 하단 액션바 주 버튼과 같은 결(강조 배경)이다. 폭은 [modifier] 로 정한다. */
 @Composable
 private fun FollowPrimaryButton(
     text: String,
     iconRes: Int?,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
         modifier =
-            Modifier
-                .fillMaxWidth()
+            modifier
                 .height(52.dp)
                 .clip(FOLLOW_BUTTON_SHAPE)
                 .background(color.bgAccent)
@@ -507,6 +668,28 @@ private fun FollowPrimaryButton(
             text = text,
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentOnAccent,
+        )
+    }
+}
+
+/** 진행 중 "도착" 옆의 정사각형 종료 버튼. 눌러도 바로 나가지 않고 확인 모달을 한 번 더 띄운다. */
+@Composable
+private fun FollowEndButton(onClick: () -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Box(
+        modifier =
+            Modifier
+                .size(52.dp)
+                .clip(FOLLOW_BUTTON_SHAPE)
+                .background(color.bgDefaultLevel0)
+                .border(1.dp, color.borderDefaultLevel1, FOLLOW_BUTTON_SHAPE)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        DsText(
+            text = "종료",
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = color.contentDefaultLevel1,
         )
     }
 }

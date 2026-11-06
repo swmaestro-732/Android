@@ -83,12 +83,12 @@ class NotificationRepositoryTest {
 
     @Test fun `읽음 응답은 data 없이 성공하고 전체 읽음은 변경된 행 수를 반환한다`() =
         runBlocking {
-            coEvery { api.markRead(7) } returns Response.success(NotificationEnvelope(2000))
-            coEvery { api.markAllRead() } returns
+            coEvery { api.markRead(7, any()) } returns Response.success(NotificationEnvelope(2000))
+            coEvery { api.markAllRead(any()) } returns
                 Response.success(NotificationEnvelope(2000, data = NotificationCountDTO(4)))
             repository.markRead(7)
             assertEquals(4L, repository.markAllRead())
-            coVerify(exactly = 1) { api.markRead(7) }
+            coVerify(exactly = 1) { api.markRead(7, NotificationReadRequest(read = true)) }
         }
 
     @Test fun `미확인 개수 누락은 0개로 표시하지 않는다`() {
