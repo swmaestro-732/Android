@@ -17,6 +17,8 @@ data class SearchActions(
     val onSubmit: (String) -> Unit,
     val onBack: () -> Unit,
     val onSuggestionClick: (MapPlaceVO) -> Unit = {},
+    /** "테마로 찾기" 칩 — 코스 태그 소문자 코드를 싣는다(홈 테마 타일과 동일 목적지). */
+    val onThemeClick: (String) -> Unit = {},
 )
 
 /** 검색 결과 화면(FS-18)이 상위로 올려 보내는 동작 묶음. */

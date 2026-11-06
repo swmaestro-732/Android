@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.search
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.map.SuggestMapPlacesUseCase
+import com.chillsam.courmy.main.domain.search.RecentSearchRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -23,17 +24,43 @@ class SearchViewModel
     @Inject
     constructor(
         private val suggestPlaces: SuggestMapPlacesUseCase,
+        private val recentSearchRepository: RecentSearchRepository,
     ) : MviViewModel<SearchIntent, SearchUIState, SearchReducerEvent>(SearchUIState.empty) {
         private var suggestionsJob: Job? = null
 
         override fun onIntent(intent: SearchIntent) {
             when (intent) {
-                is SearchIntent.Load -> dispatch(SearchReducerEvent.Configured(intent.placeSearch))
-                is SearchIntent.ChangeQuery -> changeQuery(intent.query)
-                SearchIntent.ClearQuery -> changeQuery("")
-                is SearchIntent.RemoveRecent -> removeRecent(intent.keyword)
-                SearchIntent.ClearAllRecent -> dispatch(SearchReducerEvent.RecentChanged(emptyList()))
-                is SearchIntent.Submit -> submit(intent.keyword)
+                is SearchIntent.Load -> {
+                    dispatch(SearchReducerEvent.Configured(intent.placeSearch))
+                    // 저장해 둔 최근 검색어를 함께 올린다 — 이게 없으면 진입 때마다 빈 화면이다.
+                    dispatch(
+                        SearchReducerEvent.Loaded(
+                            recentKeywords = recentSearchRepository.getAll(),
+                            trendingKeywords = currentState.trendingKeywords,
+                            trendingBaseTime = currentState.trendingBaseTime,
+                        ),
+                    )
+                }
+
+                is SearchIntent.ChangeQuery -> {
+                    changeQuery(intent.query)
+                }
+
+                SearchIntent.ClearQuery -> {
+                    changeQuery("")
+                }
+
+                is SearchIntent.RemoveRecent -> {
+                    removeRecent(intent.keyword)
+                }
+
+                SearchIntent.ClearAllRecent -> {
+                    changeRecent(emptyList())
+                }
+
+                is SearchIntent.Submit -> {
+                    submit(intent.keyword)
+                }
             }
         }
 
@@ -63,7 +90,13 @@ class SearchViewModel
         }
 
         private fun removeRecent(keyword: String) {
-            dispatch(SearchReducerEvent.RecentChanged(currentState.recentKeywords - keyword))
+            changeRecent(currentState.recentKeywords - keyword)
+        }
+
+        /** 최근 검색어 변경을 화면 상태와 로컬 저장에 함께 반영한다(다음 진입에도 남게). */
+        private fun changeRecent(keywords: List<String>) {
+            recentSearchRepository.replaceAll(keywords)
+            dispatch(SearchReducerEvent.RecentChanged(keywords))
         }
 
         /** 검색한 말을 최근 목록 맨 앞으로 올린다. 이미 있던 말이면 자리만 옮긴다(중복으로 쌓이지 않게). */
@@ -71,7 +104,7 @@ class SearchViewModel
             val trimmed = keyword.trim()
             if (trimmed.isEmpty()) return
             val next = (listOf(trimmed) + (currentState.recentKeywords - trimmed)).take(MAX_RECENT_KEYWORDS)
-            dispatch(SearchReducerEvent.RecentChanged(next))
+            changeRecent(next)
         }
 
         override fun reduce(

@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,7 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
@@ -80,6 +84,8 @@ fun SearchScreen(
                 Spacer(Modifier.height(28.dp))
             }
             if (uiState.trendingKeywords.isNotEmpty()) TrendingSection(uiState = uiState, actions = actions)
+            // 검색어가 없어도 탐색을 시작할 수 있게 테마 바로가기를 항상 둔다(SCRUM-798).
+            if (!uiState.placeSearch) ThemeFindSection(onThemeClick = actions.onThemeClick)
             Spacer(Modifier.height(20.dp))
         }
     }
@@ -159,6 +165,29 @@ private fun TrendingSection(
             onClick = { actions.onSubmit(item.keyword) },
             modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
         )
+    }
+}
+
+/** "테마로 찾기": 코스 태그 12종 칩. 검색어 없이도 테마 피드로 바로 가는 탐색 시작점(SCRUM-798). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ThemeFindSection(onThemeClick: (String) -> Unit) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    DsText(
+        text = "테마로 찾기",
+        style = DesignSystemThemeImpl.typeScale.textStrongM,
+        color = color.contentDefaultLevel0,
+        modifier = Modifier.padding(horizontal = ScreenHorizontalPadding).padding(bottom = 12.dp),
+    )
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        CourseTagVO.entries.forEach { tag ->
+            // 라우트 인자는 taxonomy 컨벤션대로 소문자 코드("date")를 싣는다. 라벨은 표시 전용.
+            DsChip(text = tag.label, selected = false, onClick = { onThemeClick(tag.code) })
+        }
     }
 }
 
