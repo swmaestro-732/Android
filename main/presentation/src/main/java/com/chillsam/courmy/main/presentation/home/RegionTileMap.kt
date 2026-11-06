@@ -5,10 +5,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.StrokeJoin
@@ -31,8 +28,8 @@ private const val GRID_COLS = 16
  * 홈 지역별 둘러보기 **타일 지도**(디자인 목업과 동일한 그리드 타일 시안).
  *
  * 각 시·도를 20px 격자 셀의 합집합으로 두고, 셀 합집합 외곽선을 둥글려 말랑한 블록으로 그린다.
- * 지역 사이는 카드 배경색 선으로 떼어 타일처럼 보이게 한다. 도(道)는 이름 텍스트를, 광역시·특별시는
- * 흰 알약을 중심에 얹는다. 지역을 누르면 [onRegionClick] 으로 코드(시·도 법정동 2자리)와 이름을 넘긴다.
+ * 지역 사이는 카드 배경색 선으로 떼어 타일처럼 보이게 한다. 도·광역시 모두 이름 텍스트를 같은 크기로
+ * 중심에 얹는다(알약 배경 없음). 지역을 누르면 [onRegionClick] 으로 코드(시·도 법정동 2자리)와 이름을 넘긴다.
  */
 @Composable
 internal fun RegionTileMap(
@@ -40,9 +37,9 @@ internal fun RegionTileMap(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val labelStyle = DesignSystemThemeImpl.typeScale.textStrongS.copy(color = color.contentDefaultLevel0)
-    // textExtraXS 토큰의 넓은 자간(0.22em)은 한글 두 글자 알약에서 "서 울"처럼 벌어져 보이므로 자간만 0 으로 덮는다.
-    val pillStyle =
+    // 도(경기 등)·광역시(서울 등) 라벨은 같은 크기로 통일한다(서울 기준 textExtraXS, SCRUM-791).
+    // 자간은 지도 위 두 글자가 "서 울"처럼 벌어져 보이지 않게 0 으로 덮는다.
+    val labelStyle =
         DesignSystemThemeImpl.typeScale.textExtraXS.copy(color = color.contentDefaultLevel0, letterSpacing = 0.sp)
     val measurer = rememberTextMeasurer()
     val cardColor = color.bgDefaultLevel1
@@ -72,13 +69,10 @@ internal fun RegionTileMap(
             drawPath(path, cardColor, style = Stroke(width = gap, join = StrokeJoin.Round))
         }
 
+        // 광역시(서울 등)도 알약 배경 없이 도 라벨과 같은 방식으로 글자만 올린다(SCRUM-791).
         regionTiles.forEach { region ->
             val center = Offset(region.labelCol * cell, region.labelRow * cell)
-            if (region.isMetro) {
-                drawPill(measurer, region.label, center, pillStyle, cardColor, color.borderDefaultLevel0)
-            } else {
-                drawCenteredText(measurer, region.label, center, labelStyle)
-            }
+            drawCenteredText(measurer, region.label, center, labelStyle)
         }
     }
 }
@@ -204,26 +198,6 @@ private fun DrawScope.drawCenteredText(
     style: TextStyle,
 ) {
     val measured = measurer.measure(text, style)
-    drawText(measured, topLeft = Offset(center.x - measured.size.width / 2, center.y - measured.size.height / 2))
-}
-
-private fun DrawScope.drawPill(
-    measurer: TextMeasurer,
-    text: String,
-    center: Offset,
-    style: TextStyle,
-    background: Color,
-    border: Color,
-) {
-    val measured = measurer.measure(text, style)
-    val padH = 8.dp.toPx()
-    val padV = 4.dp.toPx()
-    val w = measured.size.width + padH * 2
-    val h = measured.size.height + padV * 2
-    val topLeft = Offset(center.x - w / 2, center.y - h / 2)
-    val cr = CornerRadius(h / 2)
-    drawRoundRect(background, topLeft = topLeft, size = Size(w, h), cornerRadius = cr)
-    drawRoundRect(border, topLeft = topLeft, size = Size(w, h), cornerRadius = cr, style = Stroke(1.dp.toPx()))
     drawText(measured, topLeft = Offset(center.x - measured.size.width / 2, center.y - measured.size.height / 2))
 }
 

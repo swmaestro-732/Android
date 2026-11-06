@@ -116,13 +116,14 @@ private fun NearbyLocationEffect(
 }
 
 /**
- * 타일 지도 코드 → area_map 시·도 코드. area_map 은 광주·전남을 코드 "12"로, 울릉을 경북("47") 안에 두므로
- * 전체 화면 지도로 들어갈 때 그 상위 시·도 코드로 매핑한다.
+ * 타일 지도 코드 → 지역 코스 필터 코드. area_map 은 광주·전남을 코드 "12"로 두므로 상위 코드로 매핑한다.
+ * 울릉("47U")은 경북("47")으로 보내면 경북 전체 구·군(포항시 남구 등)이 울릉 밑에 나오므로,
+ * 울릉군 시군구 코드("47940")로 바로 좁힌다 — 칩·피드 필터 모두 prefix 비교라 울릉군만 남는다.
  */
 private fun areaMapProvinceCode(tileCode: String): String =
     when (tileCode) {
         "29" -> "12"
-        "47U" -> "47"
+        "47U" -> "47940"
         else -> tileCode
     }
 
