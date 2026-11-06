@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.presentation.search
 
 import com.chillsam.courmy.main.domain.map.MapPlaceSearchRepository
 import com.chillsam.courmy.main.domain.map.SuggestMapPlacesUseCase
+import com.chillsam.courmy.main.domain.search.RecentSearchRepository
 import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
@@ -32,6 +33,7 @@ import java.io.IOException
 class SearchViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeRepository()
+    private val recentSearchRepository = FakeRecentSearchRepository()
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -40,7 +42,7 @@ class SearchViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun viewModel(placeSearch: Boolean = true) =
-        SearchViewModel(SuggestMapPlacesUseCase(repository)).also {
+        SearchViewModel(SuggestMapPlacesUseCase(repository), recentSearchRepository).also {
             it.onIntent(SearchIntent.Load(placeSearch))
         }
 
@@ -147,6 +149,46 @@ class SearchViewModelTest {
             assertNull(vm.uiState.value.suggestionsError)
             assertFalse(vm.uiState.value.suggestionsLoading)
         }
+
+    @Test
+    fun `최근 검색어는 재진입에 복원되고 중복 순서와 삭제가 저장된다`() {
+        val vm = viewModel()
+        repeat(12) { vm.onIntent(SearchIntent.Submit("검색어 $it")) }
+        vm.onIntent(SearchIntent.Submit("  검색어 5  "))
+        val restored = viewModel()
+        assertEquals(10, restored.uiState.value.recentKeywords.size)
+        assertEquals(
+            "검색어 5",
+            restored.uiState.value.recentKeywords
+                .first(),
+        )
+        assertFalse(
+            restored.uiState.value.recentKeywords
+                .contains("검색어 0"),
+        )
+        restored.onIntent(SearchIntent.RemoveRecent("검색어 5"))
+        assertFalse(
+            viewModel()
+                .uiState.value.recentKeywords
+                .contains("검색어 5"),
+        )
+        restored.onIntent(SearchIntent.ClearAllRecent)
+        assertTrue(
+            viewModel()
+                .uiState.value.recentKeywords
+                .isEmpty(),
+        )
+    }
+
+    private class FakeRecentSearchRepository : RecentSearchRepository {
+        private var keywords: List<String> = emptyList()
+
+        override fun getAll(): List<String> = keywords
+
+        override fun replaceAll(keywords: List<String>) {
+            this.keywords = keywords
+        }
+    }
 
     private fun place(id: Long) = MapPlaceVO(id, "장소 $id", "카페", latitude = 37.5, longitude = 127.0)
 

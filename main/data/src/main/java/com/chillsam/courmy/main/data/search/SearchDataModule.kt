@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.data.search
 
 import com.chillsam.courmy.main.domain.search.CourseSearchRepository
+import com.chillsam.courmy.main.domain.search.RecentSearchRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,4 +26,9 @@ object SearchDataModule {
     @Singleton
     fun provideCourseSearchRepository(dataSource: CourseSearchDataSource): CourseSearchRepository =
         CourseSearchRepositoryImpl(dataSource)
+
+    @Provides
+    @Singleton
+    fun provideRecentSearchRepository(preferences: RecentSearchPreferences): RecentSearchRepository =
+        RecentSearchRepositoryImpl(preferences)
 }
