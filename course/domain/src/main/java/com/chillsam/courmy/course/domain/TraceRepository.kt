@@ -9,7 +9,11 @@ import com.chillsam.courmy.course.entity.TraceVisitVO
  * 막지 않을지는 호출부(ViewModel)가 정한다.
  */
 interface TraceRepository {
-    /** 따라가기 시작(`POST /api/v1/courses/{courseId}/traces`). 서버가 발급한 traceId 를 돌려준다. */
+    /**
+     * 따라가기 시작(`POST /api/v1/courses/{courseId}/traces`). 서버가 발급한 traceId 를 돌려준다.
+     * 같은 코스의 진행 중 세션이 있으면 서버가 그 세션을 그대로 돌려주고, **다른 코스**의 세션이
+     * 있으면 409(4100)로 거절된다 — 구현이 기존 traceId 를 담아 [ActiveTraceConflictException] 을 던진다.
+     */
     suspend fun startTrace(courseId: Long): Long
 
     /** 장소 방문 체크(`POST /api/v1/traces/{traceId}/places`). */
