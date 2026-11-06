@@ -3,7 +3,6 @@ package com.chillsam.courmy.main.presentation.home
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,9 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -261,22 +260,33 @@ private fun RecommendedTopBar(
                 color = color.contentDefaultLevel0,
             )
         }
-        Row(
-            modifier =
-                Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = ScreenHorizontalPadding)
-                    .padding(bottom = 12.dp),
+        // 선택된 칩이 오른쪽에 있어도 진입하자마자 보이도록 LazyRow 로 선택 위치까지 스크롤한다(SCRUM-793).
+        val chipListState = rememberLazyListState()
+        val selectedIndex =
+            if (regionFilter != null) {
+                regionFilter.subRegions.indexOfFirst { it.code == regionFilter.selected } + 1
+            } else {
+                recommendedCategories.indexOfFirst { (category, _) -> category == selectedCategory }
+            }
+        LaunchedEffect(selectedIndex) {
+            if (selectedIndex > 0) chipListState.animateScrollToItem(selectedIndex)
+        }
+        LazyRow(
+            state = chipListState,
+            modifier = Modifier.padding(bottom = 12.dp),
+            contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (regionFilter != null) {
                 // 지역 진입: 세부 지역(구·군) 칩만. 첫 칩 "추천순"이 그 시·도 전체다(카테고리 칩은 두지 않는다).
-                DsChip(
-                    text = "추천순",
-                    selected = regionFilter.selected == null,
-                    onClick = { regionFilter.onSelect(null) },
-                )
-                regionFilter.subRegions.forEach { sub ->
+                item {
+                    DsChip(
+                        text = "추천순",
+                        selected = regionFilter.selected == null,
+                        onClick = { regionFilter.onSelect(null) },
+                    )
+                }
+                items(regionFilter.subRegions) { sub ->
                     DsChip(
                         text = sub.name,
                         selected = regionFilter.selected == sub.code,
@@ -285,7 +295,7 @@ private fun RecommendedTopBar(
                 }
             } else {
                 // 일반 "오늘의 추천 코스": 코스 태그(테마) 칩.
-                recommendedCategories.forEach { (category, label) ->
+                items(recommendedCategories) { (category, label) ->
                     DsChip(
                         text = label,
                         selected = selectedCategory == category,
