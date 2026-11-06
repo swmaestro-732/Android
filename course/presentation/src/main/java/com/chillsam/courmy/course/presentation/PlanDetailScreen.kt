@@ -49,6 +49,7 @@ import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.PlanDetailVO
 import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
 import com.chillsam.courmy.course.presentation.component.PlaceSheetCourse
+import com.chillsam.courmy.course.presentation.component.PlannedDateField
 
 @Composable
 internal fun PlanDetailScreen(
@@ -190,7 +191,12 @@ private fun EditPlanDialog(
     ) {
         DsTextField(value = title, onValueChange = { title = it }, placeholder = "계획 이름")
         DsTextField(value = memo, onValueChange = { memo = it }, placeholder = "메모 (선택)")
-        DsTextField(value = date, onValueChange = { date = it }, placeholder = "방문 날짜 YYYY-MM-DD (선택)")
+        DsText(
+            text = "방문 날짜 (선택)",
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+        )
+        PlannedDateField(plannedDate = date, onDateChange = { date = it })
         DsButton(
             text = "저장",
             enabled = title.isNotBlank() && !isSaving,
