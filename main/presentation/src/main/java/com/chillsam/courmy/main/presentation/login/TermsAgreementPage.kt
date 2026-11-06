@@ -1,7 +1,7 @@
 package com.chillsam.courmy.main.presentation.login
 
+import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,13 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
@@ -39,7 +37,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.login.ProfileSetupPage
 
 /**
- * 약관 동의 화면(FS-04, Figma 상 "보류"). 필수 3 + 선택 1 약관을 동의하고 프로필 설정으로 이어진다.
+ * 약관 동의 화면(FS-04). 필수 3개 항목을 동의하고 프로필 설정으로 이어진다.
  * 필수 항목을 모두 체크해야 "동의하고 계속하기"가 활성화된다.
  */
 @Composable
@@ -49,12 +47,17 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
 
-    var age14 by remember { mutableStateOf(false) }
-    var tos by remember { mutableStateOf(false) }
-    var privacy by remember { mutableStateOf(false) }
-    var marketing by remember { mutableStateOf(false) }
-    val requiredAll = age14 && tos && privacy
-    val allChecked = requiredAll && marketing
+    val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+    val age14 = SignupSelectionStore.ageConfirmed
+    val tos = SignupSelectionStore.termsAgreed
+    val privacy = SignupSelectionStore.privacyAgreed
+    val requiredAll = SignupSelectionStore.requiredTermsAgreed
+    val openDocument: (String) -> Unit = { url ->
+        runCatching { uriHandler.openUri(url) }.onFailure {
+            Toast.makeText(context, "문서를 열 수 없어요. 잠시 후 다시 시도해 주세요.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel1).statusBarsPadding()) {
         Column(
@@ -80,14 +83,13 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
 
             AgreeRow(
                 text = "전체 동의",
-                checked = allChecked,
+                checked = requiredAll,
                 emphasize = true,
                 onToggle = {
-                    val v = !allChecked
-                    age14 = v
-                    tos = v
-                    privacy = v
-                    marketing = v
+                    val v = !requiredAll
+                    SignupSelectionStore.ageConfirmed = v
+                    SignupSelectionStore.termsAgreed = v
+                    SignupSelectionStore.privacyAgreed = v
                 },
             )
             HorizontalDivider(
@@ -95,19 +97,24 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
                 color = color.borderDefaultLevel0,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
-            AgreeRow(text = "[필수] 만 14세 이상입니다", checked = age14, onToggle = { age14 = !age14 })
-            AgreeRow(text = "[필수] 서비스 이용약관 동의", checked = tos, showView = true, onToggle = { tos = !tos })
             AgreeRow(
-                text = "[필수] 개인정보 수집·이용 동의",
-                checked = privacy,
-                showView = true,
-                onToggle = { privacy = !privacy },
+                text = "[필수] 만 14세 이상입니다",
+                checked = age14,
+                onToggle = { SignupSelectionStore.ageConfirmed = !age14 },
             )
+            AgreeRow(text = "[필수] 서비스 이용약관 동의", checked = tos, onView = {
+                openDocument(
+                    SERVICE_TERMS_URL,
+                )
+            }, onToggle = {
+                SignupSelectionStore.termsAgreed =
+                    !tos
+            })
             AgreeRow(
-                text = "[선택] 마케팅 정보 수신 동의",
-                checked = marketing,
-                showView = true,
-                onToggle = { marketing = !marketing },
+                text = "[필수] 개인정보 처리방침 동의",
+                checked = privacy,
+                onView = { openDocument(PRIVACY_POLICY_URL) },
+                onToggle = { SignupSelectionStore.privacyAgreed = !privacy },
             )
             Spacer(Modifier.height(12.dp))
         }
@@ -115,7 +122,9 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
             DsButton(
                 text = "동의하고 계속하기",
                 enabled = requiredAll,
-                onClick = { navigationHelper.navigateTo(ProfileSetupPage) },
+                onClick = {
+                    navigationHelper.navigateTo(ProfileSetupPage)
+                },
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -126,7 +135,7 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
     }
 }
 
-/** 상단 "카카오로 로그인됨" 배지(소셜 로그인 완료 표시). */
+/** 상단 "소셜 계정 확인 완료" 배지(소셜 로그인 완료 표시). */
 @Composable
 private fun LoggedInBadge() {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -141,7 +150,7 @@ private fun LoggedInBadge() {
     ) {
         Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color.contentAccent))
         DsText(
-            text = "카카오로 로그인됨",
+            text = "소셜 계정 확인 완료",
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel1,
         )
@@ -154,7 +163,7 @@ private fun AgreeRow(
     checked: Boolean,
     onToggle: () -> Unit,
     emphasize: Boolean = false,
-    showView: Boolean = false,
+    onView: (() -> Unit)? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
@@ -192,12 +201,18 @@ private fun AgreeRow(
             color = color.contentDefaultLevel0,
             modifier = Modifier.weight(1f),
         )
-        if (showView) {
+        if (onView != null) {
             DsText(
                 text = "보기 ›",
+                modifier = Modifier.clickable(onClick = onView).padding(8.dp),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
             )
         }
     }
 }
+
+internal const val SERVICE_TERMS_URL =
+    "https://brook-insect-146.notion.site/3b25d2e08a5c80ce9d6dfb98d6de2b07"
+internal const val PRIVACY_POLICY_URL =
+    "https://brook-insect-146.notion.site/3b25d2e08a5c80fc8bade8eefd0ddbb9"

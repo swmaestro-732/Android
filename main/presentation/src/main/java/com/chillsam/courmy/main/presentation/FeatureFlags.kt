@@ -25,5 +25,5 @@ object FeatureFlags {
      * - true: 테마별 둘러보기 아래에 시·도 타일 지도가 보이고, 지역 탭 시 "{지역} 코스"로 이동한다.
      * - false: 섹션 전체를 숨긴다. 지역별 코스 필터는 백엔드 선행이라 서버 준비 전 숨기고 싶을 때 쓴다.
      */
-    const val REGION_BROWSE_ENABLED = true
+    const val REGION_BROWSE_ENABLED = false
 }

@@ -44,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -118,13 +119,16 @@ fun CourseDetailScreen(
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
     // 장소 행 화살표를 누르면 해당 장소 상세 시트를 띄운다(null 이면 시트 닫힘).
-    var selectedPlace by remember { mutableStateOf<CourseDetailPlaceVO?>(null) }
+    var selectedPlaceId by rememberSaveable(courseId) { mutableStateOf<Long?>(null) }
     // 지도의 "자세히" 로 열면 시트를 코스 전체 보기 상태로 시작한다.
-    var openSheetInOverview by remember { mutableStateOf(false) }
+    var openSheetInOverview by rememberSaveable(courseId) { mutableStateOf(false) }
     val placeDetailViewModel: PlaceDetailViewModel = hiltViewModel()
     val placeDetailState by placeDetailViewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(selectedPlaceId) {
+        selectedPlaceId?.let { placeDetailViewModel.open(placeId = it) }
+    }
     // 댓글은 본문에 깔지 않고 하단 시트로 띄운다([CourseCommentSheet]).
-    var showComments by remember { mutableStateOf(false) }
+    var showComments by rememberSaveable(courseId) { mutableStateOf(false) }
     // 히어로(커버·제목)가 스크롤로 가려지면 상단 고정 바가 제목·요약을 대신 보여준다.
     val scrollState = rememberScrollState()
     var heroHeightPx by remember { mutableStateOf(0) }
@@ -206,8 +210,7 @@ fun CourseDetailScreen(
                         authorName = detail.authorName,
                         onPlaceClick = { place ->
                             openSheetInOverview = false
-                            selectedPlace = place
-                            placeDetailViewModel.open(placeId = place.placeId)
+                            selectedPlaceId = place.placeId
                         },
                     )
                     // 장소를 다 훑은 뒤 전체 동선을 확인하는 자리다.
@@ -216,8 +219,7 @@ fun CourseDetailScreen(
                         places = detail.places,
                         onOpenDetail = { place ->
                             openSheetInOverview = true
-                            selectedPlace = place
-                            placeDetailViewModel.open(placeId = place.placeId)
+                            selectedPlaceId = place.placeId
                         },
                     )
                     // Figma FS-11 에서 리뷰는 장소·동선을 다 본 뒤(= 코스 자체 정보의 끝) 오는 남의 평가다.
@@ -236,7 +238,9 @@ fun CourseDetailScreen(
             }
             DetailBottomBar(
                 isMine = detail.isMine,
-                onCommentClick = { showComments = true },
+                onCommentClick = {
+                    showComments = true
+                },
                 onForkClick = actions.onForkCourse,
                 onFollowClick = actions.onFollowCourse,
             )
@@ -255,10 +259,10 @@ fun CourseDetailScreen(
             onAuthorClick = actions.onCommentAuthorClick,
         )
     }
-    val currentPlace = selectedPlace
+    val currentPlace = detail.places.firstOrNull { it.placeId == selectedPlaceId }
     if (currentPlace != null) {
         val dismiss = {
-            selectedPlace = null
+            selectedPlaceId = null
             openSheetInOverview = false
             placeDetailViewModel.clear()
         }
@@ -292,8 +296,7 @@ fun CourseDetailScreen(
             onToggleSave = { placeDetailViewModel.toggleSave() },
             onDismiss = dismiss,
             onSelectPlace = { target ->
-                selectedPlace = target
-                placeDetailViewModel.open(placeId = target.placeId)
+                selectedPlaceId = target.placeId
             },
             startInOverview = openSheetInOverview,
             onDeleteReview = { reviewId -> placeDetailViewModel.deleteReview(reviewId) },
@@ -521,7 +524,7 @@ private fun CourseSettingsMenu(
     actions: CourseDetailActions,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
     Box {
         HeroCircleButton(
             iconRes = R.drawable.ic_more_vert_24,
@@ -944,7 +947,7 @@ internal fun PlacesSection(
     title: String = "코스 속 장소",
     expandedPlaceContent: (@Composable (CourseDetailPlaceVO) -> Unit)? = null,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
     val color = DesignSystemThemeImpl.designSystemColor
     // 위쪽 소개·태그 묶음과 장소 목록 사이를 한 단 더 벌려 섹션이 나뉘어 보이게 한다.
     Column(

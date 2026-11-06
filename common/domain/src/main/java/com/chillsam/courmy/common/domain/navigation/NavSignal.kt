@@ -23,4 +23,6 @@ sealed interface NavSignal {
     ) : NavSignal
 
     data object Back : NavSignal
+
+    data object AuthenticationCompleted : NavSignal
 }
