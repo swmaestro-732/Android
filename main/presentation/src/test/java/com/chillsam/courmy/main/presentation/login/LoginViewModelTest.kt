@@ -120,6 +120,13 @@ class LoginViewModelTest {
             assertFalse(viewModel.uiState.value.isLoading)
             viewModel.onIntent(LoginIntent.CancelGoogleLogin)
             runCurrent()
+            viewModel.onIntent(LoginIntent.CancelGoogleLogin)
+            verify(exactly = 1) {
+                telemetry.logEvent(
+                    ProductEvent.LoginProviderResult,
+                    mapOf("provider" to "google", "result" to "cancelled", "stage" to "sdk"),
+                )
+            }
             assertFalse(viewModel.uiState.value.isLoading)
             assertNull(viewModel.uiState.value.errorMessage)
             assertFalse(viewModel.uiState.value.isSelectingGoogleAccount)

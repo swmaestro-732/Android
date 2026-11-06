@@ -48,6 +48,7 @@ class LoginViewModel
 
                 LoginIntent.CancelGoogleLogin -> {
                     if (currentState.isSelectingGoogleAccount) {
+                        logProviderOutcome(SocialProvider.GOOGLE, "cancelled", "sdk")
                         loginJob?.cancel()
                         dispatch(LoginReducerEvent.Canceled)
                     }
