@@ -19,6 +19,8 @@ data class HomeUIState(
     val nearbyPlaces: ImmutableList<HomeNearbyPlaceVO> = persistentListOf(),
     /** 진행 중이던 코스. null 이면 카드를 숨긴다(따라가는 중 세션 없음). */
     val inProgressCourse: HomeInProgressCourseVO? = null,
+    /** 진행 중인 코스 종료(end)가 서버에 실제로 기록됐을 때 true. 화면이 저장함(완주)으로 보내고 소비한다. */
+    val inProgressEnded: Boolean = false,
     val errorMessage: String? = null,
 ) : UiState {
     val showNearbyEmptyState: Boolean

@@ -79,12 +79,22 @@ internal const val SAVED_TAB_PLACES = 1
  * 저장한 코스/장소 리스트([SavedCourseList]·[SavedPlaceList]) / 게스트 잠금([GuestSaved]) 을 분기한다.
  */
 @Composable
-fun SavedPage(modifier: Modifier = Modifier) {
+fun SavedPage(
+    modifier: Modifier = Modifier,
+    /** true 면 코스 탭 · 완주 목록으로 바로 연다(따라가기 종료 직후 이동용). */
+    openCompletedCourses: Boolean = false,
+) {
     val session = LocalSessionUiState.current
     if (session.isLoggedIn) {
-        var selectedTab by rememberSaveable { mutableStateOf(SAVED_TAB_PLACES) }
+        var selectedTab by rememberSaveable {
+            mutableStateOf(if (openCompletedCourses) SAVED_TAB_COURSES else SAVED_TAB_PLACES)
+        }
         if (selectedTab == SAVED_TAB_COURSES) {
-            SavedCourseList(modifier = modifier, onSelectTab = { selectedTab = it })
+            SavedCourseList(
+                modifier = modifier,
+                onSelectTab = { selectedTab = it },
+                initialCompleted = openCompletedCourses,
+            )
         } else {
             SavedPlaceList(modifier = modifier, onSelectTab = { selectedTab = it })
         }
@@ -98,6 +108,8 @@ fun SavedPage(modifier: Modifier = Modifier) {
 private fun SavedCourseList(
     onSelectTab: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    /** true 면 진입하자마자 완주 목록을 고른다(따라가기 종료 직후 이동용). */
+    initialCompleted: Boolean = false,
     viewModel: SavedCoursesViewModel = hiltViewModel(),
 ) {
     val navigationHelper = LocalNavigationHelper.current
@@ -105,6 +117,11 @@ private fun SavedCourseList(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var pendingRemoval by remember { mutableStateOf<SavedCourseVO?>(null) }
+
+    // 종료 직후 진입이면 완주 목록부터 연다. 선택은 ViewModel 상태라 한 번만 보낸다.
+    LaunchedEffect(Unit) {
+        if (initialCompleted) viewModel.onIntent(SavedCoursesIntent.SelectCompleted(true))
+    }
 
     // 다른 화면에서 저장한 코스가 반영되도록 다시 보일 때마다 새로 불러온다.
     RefreshOnResume { viewModel.onIntent(SavedCoursesIntent.Retry) }

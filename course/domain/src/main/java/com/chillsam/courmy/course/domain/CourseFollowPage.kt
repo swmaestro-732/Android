@@ -13,11 +13,40 @@ object CourseFollowPage : Page {
     const val PATH = "/course/follow"
     const val ARG_COURSE_ID = "courseId"
 
+    /** 이어가기 인자. 홈 "진행 중인 코스" 카드에서만 싣는다 — 진행 중 세션을 현재 진행도로 바로 연다. */
+    const val ARG_TRACE_ID = "traceId"
+    const val ARG_VISITED_COUNT = "visited"
+    const val ARG_STARTED_AT = "startedAt"
+
     override fun toRoute(): NavRoute = NavRoute(PATH)
 
     fun route(courseId: Long): NavRoute =
         NavRoute(
             path = PATH,
             args = mapOf(ARG_COURSE_ID to courseId.toString()),
+        )
+
+    /**
+     * 이어가기용 진입. 진행 중 세션([traceId])과 방문 수([visitedPlaceCount])·시작 시각([startedAt])을 실어,
+     * 미리보기를 건너뛰고 현재 진행도에서 TRACKING 으로 연다. 방문 수가 0 이거나 traceId 가 없으면
+     * 일반 진입과 같다(미리보기부터).
+     */
+    fun route(
+        courseId: Long,
+        traceId: Long,
+        visitedPlaceCount: Int,
+        startedAt: String,
+    ): NavRoute =
+        NavRoute(
+            path = PATH,
+            args =
+                buildMap {
+                    put(ARG_COURSE_ID, courseId.toString())
+                    if (traceId > 0 && visitedPlaceCount > 0) {
+                        put(ARG_TRACE_ID, traceId.toString())
+                        put(ARG_VISITED_COUNT, visitedPlaceCount.toString())
+                        if (startedAt.isNotBlank()) put(ARG_STARTED_AT, startedAt)
+                    }
+                },
         )
 }

@@ -393,7 +393,11 @@ val appRoutes: List<AppRoute> =
         ),
         AppRoute(
             path = SavedRoute.PATH,
-            render = { SavedPage() },
+            render = { args ->
+                SavedPage(
+                    openCompletedCourses = args[SavedRoute.ARG_SECTION] == SavedRoute.SECTION_COMPLETED_COURSES,
+                )
+            },
         ),
         AppRoute(
             path = PlanDetailRoute.PATH,
@@ -483,6 +487,10 @@ val appRoutes: List<AppRoute> =
                 val courseId = args[CourseFollowRoute.ARG_COURSE_ID]?.toLongOrNull() ?: 0L
                 CourseFollowPage(
                     courseId = courseId,
+                    // 홈 진행 중인 코스 카드에서만 실린다 — 현재 진행도로 이어가기.
+                    resumeTraceId = args[CourseFollowRoute.ARG_TRACE_ID]?.toLongOrNull() ?: 0L,
+                    resumeVisitedCount = args[CourseFollowRoute.ARG_VISITED_COUNT]?.toIntOrNull() ?: 0,
+                    resumeStartedAt = args[CourseFollowRoute.ARG_STARTED_AT].orEmpty(),
                     actions =
                         CourseFollowPageActions(
                             onBack = { navigationHelper.navigateToBack() },

@@ -66,7 +66,7 @@ private val ROUTE_GUIDE_MAX_HEIGHT = 140.dp
  * 따라가기 화면(FS-21). [CourseFollowPhase] 에 따라 세 모습을 오간다.
  *
  * - 미리보기: 지도(전체 동선) + 동선 목록 + "이 코스 따라가기"
- * - 진행: 지도(지금 장소) + 다음 스팟 + "도착 · 방문 체크"
+ * - 진행: 지도(지금 장소) + 다음 스팟 + "도착"(방문 체크)
  * - 완주: 축하 + 통계(방문 스팟·소요 시간·이동 거리) + "리뷰 남기기"
  *
  */
@@ -89,7 +89,13 @@ internal fun CourseFollowScreen(
     ) {
         when (state.phase) {
             CourseFollowPhase.PREVIEW -> {
-                PreviewPhase(detail = detail, routes = state.routes, onIntent = onIntent, onBack = onBack)
+                PreviewPhase(
+                    detail = detail,
+                    routes = state.routes,
+                    resumeVisitedCount = state.resumeVisitedCount,
+                    onIntent = onIntent,
+                    onBack = onBack,
+                )
             }
 
             CourseFollowPhase.TRACKING -> {
@@ -118,6 +124,7 @@ internal fun CourseFollowScreen(
 private fun ColumnScope.PreviewPhase(
     detail: CourseDetailVO,
     routes: Map<Long, FollowRouteStatus>,
+    resumeVisitedCount: Int,
     onIntent: (CourseFollowIntent) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -153,13 +160,18 @@ private fun ColumnScope.PreviewPhase(
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            detail.places.forEach { place ->
-                RoutePlaceRow(place = place, stateText = "예정", highlighted = false)
+            // 이어가기면 이미 방문한 앞 장소는 "방문함", 다음 가야 할 장소는 강조, 나머지는 "예정".
+            detail.places.forEachIndexed { index, place ->
+                RoutePlaceRow(
+                    place = place,
+                    stateText = if (index < resumeVisitedCount) "방문함" else "예정",
+                    highlighted = resumeVisitedCount > 0 && index == resumeVisitedCount,
+                )
             }
         }
         Spacer(Modifier.height(14.dp))
         FollowPrimaryButton(
-            text = "이 코스 따라가기",
+            text = if (resumeVisitedCount > 0) "이어가기" else "이 코스 따라가기",
             iconRes = R.drawable.ic_footprint_24,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -222,7 +234,7 @@ private fun ColumnScope.TrackingPhase(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             FollowPrimaryButton(
-                text = if (state.isRecording) "방문 기록 저장 중…" else "도착 · 방문 체크",
+                text = if (state.isRecording) "방문 기록 저장 중…" else "도착",
                 iconRes = R.drawable.ic_check_24,
                 modifier = Modifier.weight(1f),
                 enabled = !state.isRecording,
@@ -660,7 +672,7 @@ private fun FollowPrimaryButton(
     }
 }
 
-/** 진행 중 "도착·방문 체크" 옆의 정사각형 종료 버튼. 눌러도 바로 나가지 않고 확인 모달을 한 번 더 띄운다. */
+/** 진행 중 "도착" 옆의 정사각형 종료 버튼. 눌러도 바로 나가지 않고 확인 모달을 한 번 더 띄운다. */
 @Composable
 private fun FollowEndButton(onClick: () -> Unit) {
     val color = DesignSystemThemeImpl.designSystemColor

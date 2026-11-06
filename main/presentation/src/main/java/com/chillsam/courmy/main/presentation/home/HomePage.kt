@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -58,6 +60,7 @@ import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
+import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
@@ -99,6 +102,24 @@ import com.google.android.gms.location.LocationServices
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
+
+/**
+ * 진행 중인 코스 종료(end)가 서버에 실제로 기록되면 저장함(코스 · 완주)으로 보낸다
+ * — 다이얼로그 안내("저장함에서 볼 수 있어요")와 목적지를 맞춘다. 실패하면 이동하지 않는다.
+ */
+@Composable
+private fun InProgressEndedEffect(
+    ended: Boolean,
+    onConsume: () -> Unit,
+    onNavigate: () -> Unit,
+) {
+    LaunchedEffect(ended) {
+        if (ended) {
+            onConsume()
+            onNavigate()
+        }
+    }
+}
 
 /** 위치 권한·GPS 가 모두 켜져 있으면 마지막 위치를 받아 [onLocation] 으로 넘긴다(근처 저장 장소 기준점). */
 @Composable
@@ -153,6 +174,12 @@ fun HomePage(modifier: Modifier = Modifier) {
     // 헤더 인사말·아바타는 내 프로필에서 가져온다.
     val profile = if (session.isLoggedIn) myProfileForHeader() else null
 
+    InProgressEndedEffect(
+        ended = homeState.inProgressEnded,
+        onConsume = { homeViewModel.onIntent(HomeIntent.ConsumeInProgressEnded) },
+        onNavigate = { navigationHelper.navigateByRoute(SavedPage.completedCourses()) },
+    )
+
     // 근처 저장 장소의 거리 기준점(SCRUM-634). 권한·GPS 상태는 설정에 다녀오면 바뀔 수 있어
     // 복귀할 때마다 다시 평가한다(locationTick).
     val context = LocalContext.current
@@ -205,11 +232,21 @@ fun HomePage(modifier: Modifier = Modifier) {
                 )
             }
 
-            // 진행 중이던 코스가 있으면 추천보다 위에 띄워 이어가기를 먼저 유도한다. 없으면(null) 숨긴다.
+            // 진행 중이던(따라가는) 코스가 있으면 추천보다 위에 띄워 이어가기를 먼저 유도한다. 없으면(null) 숨긴다.
             inProgressCourseItem(
                 course = homeState.inProgressCourse,
-                onResume = { navigationHelper.navigateByRoute(CourseFollowPage.route(it)) },
-                onStop = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
+                onResume = { course ->
+                    // 현재 진행도(traceId·방문 수·시작 시각)를 실어 미리보기 대신 이어가기로 연다.
+                    navigationHelper.navigateByRoute(
+                        CourseFollowPage.route(
+                            courseId = course.courseId,
+                            traceId = course.traceId,
+                            visitedPlaceCount = course.visitedPlaceCount ?: 0,
+                            startedAt = course.startedAt,
+                        ),
+                    )
+                },
+                onDismiss = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
             )
             item {
@@ -433,6 +470,7 @@ private fun HomeHeader(
         } else {
             "어디로 떠나볼까요?"
         }
+    // 인사말이 2줄(titleExtraL 24sp × 2 ≈ 62dp)이라, 아바타를 그 높이에 맞춰 크게 둔다.
     Row(modifier = modifier, verticalAlignment = Alignment.Top) {
         Column(modifier = Modifier.weight(1f)) {
             DsText(
@@ -442,17 +480,21 @@ private fun HomeHeader(
                 maxLines = 2,
             )
         }
+        // 밝은 홈 배경에 아바타가 묻히지 않도록 흰 바탕·테두리·옅은 그림자로 배경과 분리한다.
         Box(
             modifier =
                 Modifier
                     .padding(start = 12.dp)
-                    .size(48.dp)
+                    .size(62.dp)
+                    .shadow(3.dp, CircleShape)
                     .clip(CircleShape)
+                    .background(color.bgDefaultLevel1)
+                    .border(1.dp, color.borderDefaultLevel0, CircleShape)
                     .clickable(onClickLabel = "마이로 이동", role = Role.Button, onClick = onProfileClick)
                     .semantics { contentDescription = "내 프로필" },
             contentAlignment = Alignment.Center,
         ) {
-            ProfileAvatar(imageUrl = profile?.profileImageUrl.orEmpty(), size = 44.dp)
+            ProfileAvatar(imageUrl = profile?.profileImageUrl.orEmpty(), size = 56.dp)
         }
     }
 }
@@ -927,38 +969,53 @@ private fun myPageDestination(loggedIn: Boolean) = if (loggedIn) MyPage else Gue
 /** 진행 중이던 코스가 있으면(=[course] 가 null 이 아니면) 추천 위에 카드 아이템을 넣는다. null 이면 넣지 않는다. */
 private fun LazyListScope.inProgressCourseItem(
     course: HomeInProgressCourseVO?,
-    onResume: (Long) -> Unit,
-    onStop: (Long) -> Unit,
+    onResume: (HomeInProgressCourseVO) -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     course ?: return
     item {
-        InProgressCourseSection(course = course, onResume = onResume, onStop = onStop, modifier = modifier)
+        InProgressCourseSection(course = course, onResume = onResume, onDismiss = onDismiss, modifier = modifier)
     }
 }
 
 /**
  * 홈 "진행 중인 코스" 카드. 따라가는 중 세션이 있을 때만(=[course] 가 있을 때만) 노출한다.
- * 어두운 카드 · 커버의 재생 버튼 · 진행도 막대로 보여 주고, 카드를 누르면 그 코스 따라가기를 이어간다.
+ * 카드를 누르면 이어서 따라가기로 간다. 우측 상단 X 를 누르면 확인 다이얼로그를 거쳐
+ * 이 카드를 홈에서 지운다([onDismiss] — 서버 세션 종료가 아니라 홈 로컬 숨김).
+ * 코스를 더 볼 수 없으면([HomeInProgressCourseVO.isDeleted]) "비공개된 코스"로 표시하되 따라가기는 계속한다.
  *
  * 어두운 면이라 테마에 on-dark 슬롯이 없어 기존 토큰 값을 그대로 재사용한다(새 토큰 추가 없음):
- * 배경 [contentDefaultLevel0](Black) · 흰 글자 [contentOnAccent](White) · 재생 버튼 [contentLocation](Blue).
+ * 배경 [contentDefaultLevel0](Black) · 흰 글자 [contentOnAccent](White) · 보조 글자/막대/아이콘 [contentDefaultLevel3].
  */
 @Composable
 private fun InProgressCourseSection(
     course: HomeInProgressCourseVO,
-    onResume: (Long) -> Unit,
-    onStop: (Long) -> Unit,
+    onResume: (HomeInProgressCourseVO) -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    var showDismissDialog by remember { mutableStateOf(false) }
+    if (showDismissDialog) {
+        DsConfirmDialog(
+            title = "진행 중인 코스를 종료할까요?",
+            description = "종료된 코스는 완주되어 저장함에서 볼 수 있어요.",
+            onConfirm = {
+                showDismissDialog = false
+                onDismiss()
+            },
+            onDismiss = { showDismissDialog = false },
+            destructive = true,
+        )
+    }
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(color.contentDefaultLevel0)
-                .clickable { onResume(course.courseId) }
+                .clickable { onResume(course) }
                 .padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -977,18 +1034,23 @@ private fun InProgressCourseSection(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            // 라벨은 왼쪽, 우측 상단에는 따라가기를 멈추는 스톱 버튼을 둔다.
+            // 좌측 라벨, 우측 끝에 홈에서 지우는 X.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 DsText(
-                    text = "진행 중인 코스",
+                    text = if (course.isDeleted) "비공개된 코스" else "진행 중인 코스",
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
                     modifier = Modifier.weight(1f),
                 )
-                StopButton(onClick = { onStop(course.courseId) })
+                Icon(
+                    painter = painterResource(R.drawable.close_small_24),
+                    contentDescription = "진행 중인 코스 지우기",
+                    tint = color.contentDefaultLevel3,
+                    modifier = Modifier.clip(CircleShape).clickable { showDismissDialog = true }.size(22.dp),
+                )
             }
             DsText(
                 text = course.title,
@@ -997,8 +1059,21 @@ private fun InProgressCourseSection(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            // 진행도(방문 수)는 홈 응답에 없어, 지역·장소 수 요약을 보여 준다.
-            if (course.summaryText.isNotBlank()) {
+            // 진행 현황: 막대 + "N / M곳 방문"을 한 줄에(줄바꿈 없이). 진행도 정보가 없으면 지역·장소 수 요약으로 폴백.
+            if (course.hasProgress) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    InProgressBar(progress = course.progress, modifier = Modifier.weight(1f))
+                    DsText(
+                        text = course.progressText,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = color.contentDefaultLevel3,
+                        maxLines = 1,
+                    )
+                }
+            } else if (course.summaryText.isNotBlank()) {
                 DsText(
                     text = course.summaryText,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -1011,25 +1086,27 @@ private fun InProgressCourseSection(
     }
 }
 
-/** 진행 중 코스를 멈추는 스톱 버튼. 스톱 모양(둥근 사각형)을 Compose 로 직접 그린다. 어두운 카드 위라 흐린 회색. */
+/** 진행도 막대(방문/전체). 어두운 카드 위: 트랙 [contentDefaultLevel2], 채움 [contentOnAccent]. */
 @Composable
-private fun StopButton(onClick: () -> Unit) {
+private fun InProgressBar(
+    progress: Float,
+    modifier: Modifier = Modifier,
+) {
     val color = DesignSystemThemeImpl.designSystemColor
     Box(
         modifier =
-            Modifier
-                .clip(CircleShape)
-                .clickable(onClick = onClick)
-                .semantics { contentDescription = "따라가기 멈추기" }
-                .padding(4.dp),
-        contentAlignment = Alignment.Center,
+            modifier
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(color.contentDefaultLevel2),
     ) {
         Box(
             modifier =
                 Modifier
-                    .size(14.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(color.contentDefaultLevel3),
+                    .fillMaxWidth(progress)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(color.contentOnAccent),
         )
     }
 }
