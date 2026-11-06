@@ -12,8 +12,19 @@ class CourseSearchRepositoryImpl(
         keyword: String,
         size: Int,
         cursor: String?,
+        area: String?,
+        category: String?,
+        sort: String?,
     ): CursorPageVO<SearchCourseVO> {
-        val envelope = dataSource.searchCourses(keyword = keyword, size = size, cursor = cursor)
+        val envelope =
+            dataSource.searchCourses(
+                keyword = keyword,
+                size = size,
+                cursor = cursor,
+                area = area,
+                category = category,
+                sort = sort,
+            )
         val data =
             requireNotNull(envelope.data) {
                 envelope.message ?: "코스 검색 응답에 data 가 없습니다."

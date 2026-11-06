@@ -53,7 +53,6 @@ fun SearchScreen(
             onSubmit = { actions.onSubmit(uiState.query) },
             onClear = actions.onClearQuery,
             onBack = actions.onBack,
-            onCancel = actions.onBack,
         )
         Column(
             modifier =
@@ -94,7 +93,6 @@ private fun SearchTopBar(
     onSubmit: () -> Unit,
     onClear: () -> Unit,
     onBack: () -> Unit,
-    onCancel: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
@@ -125,17 +123,6 @@ private fun SearchTopBar(
             onSubmit = onSubmit,
             onClear = onClear,
             modifier = Modifier.weight(1f),
-        )
-        DsText(
-            text = "취소",
-            style = DesignSystemThemeImpl.typeScale.textRegularS,
-            color = color.contentDefaultLevel1,
-            modifier =
-                Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onCancel,
-                ),
         )
     }
 }

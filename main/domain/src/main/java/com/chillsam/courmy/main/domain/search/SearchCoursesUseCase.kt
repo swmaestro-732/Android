@@ -19,6 +19,9 @@ class SearchCoursesUseCase
             keyword: String,
             size: Int = DEFAULT_SIZE,
             cursor: String? = null,
+            area: String? = null,
+            category: String? = null,
+            sort: String? = null,
         ): CursorPageVO<SearchCourseVO> {
             val trimmed = keyword.trim()
             return if (trimmed.isEmpty()) {
@@ -28,6 +31,9 @@ class SearchCoursesUseCase
                     trimmed,
                     size.coerceIn(MIN_SIZE, MAX_SIZE),
                     cursor,
+                    area = area?.takeIf { it.isNotBlank() },
+                    category = category?.takeIf { it.isNotBlank() },
+                    sort = sort?.takeIf { it.isNotBlank() },
                 )
             }
         }
