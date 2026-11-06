@@ -341,10 +341,7 @@ private fun Telemetry.trackRegionSelection(
                 screen,
                 "region",
                 intent.code,
-                state.selected.none {
-                    it.code ==
-                        intent.code
-                },
+                state.selected.none { intent.code.startsWith(it.code) },
             )
         }
 

@@ -55,3 +55,5 @@ route args 전체를 전송하지 않는다. 이동의 허용 부가정보는 `c
 ## 1.2.0 배포 준비
 
 2026-11-07 읽기 전용 [Play 조회](https://github.com/swmaestro-732/Android/actions/runs/42286188778): production 11, beta 없음, alpha 3, internal 3. Gradle versionBase=1.2, Fastlane patch_base_code=12로 변경해 다음 versionCode12를1.2.0으로 산정한다. 이후13은1.2.1이다. APK와AAB에 동일 속성을주입한다. 개발용고정versionCode2000000000은Play에업로드하지않는다.
+
+외부 딥링크 인자는 이름뿐 아니라 값도 검증한다. 코스/장소/계획 ID는 양의 Long, theme/category는 CourseTagVO 코드로 정규화, tab은 plans/follower/following, target은 course/place, section은 completedCourses, sido는 실제 시·도 2자리 코드만 허용한다. 잘못된 값은 from_/to_ 모두에서 제외한다. 구글 계정 선택 중 명시적 취소도 cancelled를 한 번 기록하며, 관심지역은 상위 지역이 선택된 하위 지역 해제를 selected=false로 기록한다.

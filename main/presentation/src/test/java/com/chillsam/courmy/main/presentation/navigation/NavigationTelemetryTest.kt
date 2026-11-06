@@ -86,7 +86,7 @@ class NavigationTelemetryTest {
                 "theme" to "date",
                 "tab" to "plans",
                 "target" to "place",
-                "section" to "nearby",
+                "section" to "completedCourses",
                 "sido" to "11",
             )
         val privateArgs =
@@ -110,6 +110,18 @@ class NavigationTelemetryTest {
             mapOf("from_screen" to "/map", "to_screen" to "/map/search", "action" to "push") +
                 publicArgs.mapKeys { "from_${it.key}" } + publicArgs.mapKeys { "to_${it.key}" }
         assertEquals(expected, events.single().second)
+    }
+
+    @Test
+    fun `허용된 인자 이름이어도 외부 링크의 임의 값은 전송하지 않는다`() {
+        val invalid =
+            listOf("courseId", "placeId", "planId", "theme", "category", "tab", "target", "section", "sido")
+                .associateWith { "private@example.com" }
+        telemetry.recordNavigation(GenericNavKey("/search", invalid), GenericNavKey("/saved", invalid), "deep_link")
+        assertEquals(
+            mapOf("from_screen" to "/search", "to_screen" to "/saved", "action" to "deep_link"),
+            events.single().second,
+        )
     }
 
     @Test
