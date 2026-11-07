@@ -430,11 +430,13 @@ private fun FollowMap(
     val points = remember(detail.places) { detail.places.toRoutePoints() }
     val routePaths = remember(routes) { routes.toRoutePaths() }
     val focusPlace = focusIndex?.let { detail.places.getOrNull(it) }
-    // 진행 중엔 "직전 스팟 → 지금 스팟" 구간만 비춘다 — 그 두 점을 카메라에 함께 담고, 그 구간만 강조한다(B-②).
+    // 진행 중엔 "직전 스팟 → 지금 스팟" 구간을 비춘다 — 그 구간만 강조하고(B-②), 카메라는 **다음 장소까지의
+    // 실제 도보 경로 전체**를 한 화면에 담는다. 경로가 없으면(폴백) 두 핀만 맞춘다.
     val previousPlace = focusIndex?.takeIf { it > 0 }?.let { detail.places.getOrNull(it - 1) }
+    val incomingPath = previousPlace?.let { routePaths[it.placeId] }?.takeIf { it.size >= 2 }
     val focus = focusPlace?.latLngOrNull() ?: points.firstOrNull()?.second
     val fitPoints =
-        listOfNotNull(previousPlace?.latLngOrNull(), focusPlace?.latLngOrNull()).takeIf { it.size == 2 }
+        incomingPath ?: listOfNotNull(previousPlace?.latLngOrNull(), focusPlace?.latLngOrNull()).takeIf { it.size == 2 }
     Box(modifier = modifier.fillMaxWidth()) {
         if (focus != null) {
             CourseRouteMap(
