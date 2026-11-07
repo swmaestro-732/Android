@@ -1,0 +1,84 @@
+name: Remote Config bump
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 소프트 업데이트 안내용 Remote Config(latest_version_code/latest_version_name) 게시.
+# 앱은 latest_version_code > 설치본 versionCode 이면 업데이트 안내를 띄운다.
+#
+# ⚠️ 새 버전이 Play 에서 "라이브"된 뒤에 돌릴 것(수동 trigger). 심사 중 버전으로 올리면
+#   사용자가 받을 수 없는 버전으로 안내가 뜬다.
+#
+# 🔑 Secrets:
+#   FIREBASE_SERVICE_ACCOUNT_JSON : Remote Config 관리자 권한 Firebase 서비스계정 JSON 원문. (필수)
+#     Firebase 콘솔 → 프로젝트 설정 → 서비스 계정 → 새 비공개 키 생성.
+#   PLAY_SERVICE_ACCOUNT_JSON     : version_code 를 비워 자동 조회할 때만 필요(프로덕션 라이브값 읽기).
+#     version_code 를 직접 입력하면 없어도 된다.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: "latest_version_code (비우면 Play 프로덕션 최고값 사용 — 심사 중 포함 주의)"
+        required: false
+        type: string
+      version_name:
+        description: "latest_version_name 예: 1.2.1 (비우면 versionCode 로 산정)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: remote-config
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: publish remote config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - name: Restore Firebase service account
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${FIREBASE_SERVICE_ACCOUNT_JSON:-}" ]]; then
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON secret 이 없습니다." >&2
+            echo "Firebase 콘솔 → 프로젝트 설정 → 서비스 계정에서 키를 발급(Remote Config 관리자 권한)하고" >&2
+            echo "저장소 Settings → Secrets 에 FIREBASE_SERVICE_ACCOUNT_JSON 으로 등록하세요." >&2
+            exit 1
+          fi
+          echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-key.json"
+      # version_code 를 입력하지 않으면 Play 프로덕션 라이브값을 읽으므로 Play SA 도 필요하다.
+      - name: Restore Play service account (버전 자동조회용, 선택)
+        shell: bash
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${PLAY_SERVICE_ACCOUNT_JSON:-}" ]]; then
+            echo "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play-key.json"
+          fi
+      - name: Publish Remote Config (Fastlane)
+        shell: bash
+        env:
+          FIREBASE_JSON_KEY_FILE: ${{ runner.temp }}/firebase-key.json
+          PLAY_JSON_KEY_FILE: ${{ runner.temp }}/play-key.json
+          FIREBASE_PROJECT_ID: courmy-qa732
+          IN_VERSION_CODE: ${{ inputs.version_code }}
+          IN_VERSION_NAME: ${{ inputs.version_name }}
+        run: |
+          set -euo pipefail
+          args=()
+          [[ -n "${IN_VERSION_CODE}" ]] && args+=("version_code:${IN_VERSION_CODE}")
+          [[ -n "${IN_VERSION_NAME}" ]] && args+=("version_name:${IN_VERSION_NAME}")
+          bundle exec fastlane android bump_remote_config "${args[@]}"
