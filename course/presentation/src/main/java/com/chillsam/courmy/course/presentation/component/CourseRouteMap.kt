@@ -408,14 +408,22 @@ private fun RouteSegment(
             isCurrentLeg -> colors.accentLine
             else -> colors.dimLine
         }
+    // 지금 가야 할 구간은 다른 구간 선과 겹쳐도 가려지지 않게 항상 위로 올린다(zIndex ↑).
+    val lineZIndex = if (isCurrentLeg) 1 else 0
     if (path != null && path.size >= 2) {
-        PolylineOverlay(coords = path, width = if (isCurrentLeg) 6.dp else 4.dp, color = lineColor)
+        PolylineOverlay(
+            coords = path,
+            width = if (isCurrentLeg) 6.dp else 4.dp,
+            color = lineColor,
+            zIndex = lineZIndex,
+        )
     } else {
         PolylineOverlay(
             coords = listOf(from, to),
             width = if (isCurrentLeg) 4.dp else 3.dp,
             color = lineColor,
             pattern = ROUTE_DASH_PATTERN,
+            zIndex = lineZIndex,
         )
     }
 }

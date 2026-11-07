@@ -132,10 +132,8 @@ private fun ColumnScope.PreviewPhase(
     val color = DesignSystemThemeImpl.designSystemColor
     FollowTopBar(
         title = detail.title,
-        subtitle =
-            listOf(detail.placeCountText, detail.walkText)
-                .filter { it.isNotBlank() }
-                .joinToString(" · "),
+        // 도보 시간은 빼고 장소 수만 — 진행 중에 구간별로 보여 주므로 미리보기 총합은 생략한다.
+        subtitle = detail.placeCountText,
         onBack = onBack,
     )
     FollowMap(detail = detail, focusIndex = null, routes = routes, modifier = Modifier.weight(1f))
@@ -161,11 +159,11 @@ private fun ColumnScope.PreviewPhase(
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // 이어가기면 이미 방문한 앞 장소는 "방문함", 다음 가야 할 장소는 강조, 나머지는 "예정".
+            // 이어가기면 이미 방문한 앞 장소만 "방문함"으로 표시하고, 나머지는 상태 문구 없이 둔다(안 간 곳은 당연히 예정이라 생략).
             detail.places.forEachIndexed { index, place ->
                 RoutePlaceRow(
                     place = place,
-                    stateText = if (index < resumeVisitedCount) "방문함" else "예정",
+                    stateText = if (index < resumeVisitedCount) "방문함" else "",
                     highlighted = resumeVisitedCount > 0 && index == resumeVisitedCount,
                 )
             }
@@ -219,10 +217,10 @@ private fun ColumnScope.TrackingPhase(
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
             )
-            // 보조 문구는 "다음 스팟까지 오는 구간" 기준. 첫 스팟은 들어오는 구간이 없어 "여기서 출발".
+            // 도보 시간은 아래 요약 줄에서 보여 주므로 카드에서는 빼고, 첫 스팟만 "여기서 출발" 표시.
             RoutePlaceRow(
                 place = current,
-                stateText = state.previousPlace?.walkToNextText?.let { "여기까지 $it" } ?: "여기서 출발",
+                stateText = if (state.previousPlace == null) "여기서 출발" else "",
                 highlighted = true,
             )
             WalkingRouteSection(
@@ -552,29 +550,41 @@ private fun WalkingRouteSummary(
                 Column(
                     modifier =
                         Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(color.bgDefaultLevel0)
                             .heightIn(max = ROUTE_GUIDE_MAX_HEIGHT)
-                            .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                            .verticalScroll(rememberScrollState())
+                            .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    route.guides.forEach { guide ->
+                    route.guides.forEachIndexed { index, guide ->
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
+                            // 순서 번호를 작은 원에 담아 "몇 번째 안내"인지 한눈에 보이게 한다.
                             Box(
                                 modifier =
                                     Modifier
-                                        .size(6.dp)
+                                        .size(20.dp)
                                         .clip(CircleShape)
-                                        .background(color.contentAccent),
-                            )
+                                        .background(color.bgAccentSubtle),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                DsText(
+                                    text = "${index + 1}",
+                                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                                    color = color.contentAccent,
+                                )
+                            }
                             DsText(
                                 text = guide.description,
                                 style = DesignSystemThemeImpl.typeScale.textRegularS,
-                                color = color.contentDefaultLevel2,
+                                color = color.contentDefaultLevel1,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).padding(top = 1.dp),
                             )
                         }
                     }
