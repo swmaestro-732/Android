@@ -62,9 +62,15 @@ data class CourseFollowUIState(
     /** 다음에 갈 장소. 마지막 장소를 보고 있으면 null. */
     val nextPlace get() = detail?.places?.getOrNull(currentIndex + 1)
 
-    /** 지금 가야 할 장소에서 다음 장소까지의 도보 경로 상태. 마지막 장소면 null. */
-    val currentRouteStatus: FollowRouteStatus?
-        get() = if (nextPlace == null) null else currentPlace?.let { routes[it.placeId] }
+    /**
+     * 지금 스팟 **직전** 장소(지금 가야 할 구간의 출발지). 첫 스팟이면 null.
+     * 경로 안내는 "지금 스팟에서 다음으로"가 아니라 "여기(직전)에서 지금 스팟으로" 오는 구간을 보여 준다.
+     */
+    val previousPlace get() = if (currentIndex > 0) detail?.places?.getOrNull(currentIndex - 1) else null
+
+    /** 지금 스팟까지 오는 구간(직전 스팟 → 지금 스팟)의 도보 경로 상태. 첫 스팟이면 null. */
+    val incomingRouteStatus: FollowRouteStatus?
+        get() = previousPlace?.let { routes[it.placeId] }
 
     companion object {
         val empty: CourseFollowUIState = CourseFollowUIState()
