@@ -14,9 +14,10 @@ sealed interface AiCourseChatReducerEvent : ReducerEvent {
         val typing: Boolean,
     ) : AiCourseChatReducerEvent
 
-    /** 입력창 아래 빠른 답변 칩 목록을 교체한다(없으면 숨김). */
+    /** 대화 아래 빠른 답변 카드 목록을 교체한다(없으면 숨김). [kind] 로 리딩 아이콘을 정한다. */
     data class SetQuickReplies(
         val replies: List<String>,
+        val kind: QuickReplyKind = QuickReplyKind.GENERIC,
     ) : AiCourseChatReducerEvent
 
     /** 입력 가능 여부. AI 가 답하는 중에는 중복 전송을 막으려 잠근다. */
@@ -26,4 +27,9 @@ sealed interface AiCourseChatReducerEvent : ReducerEvent {
 
     /** 대화 전체를 비운다("다시 추천받기"). */
     data object Clear : AiCourseChatReducerEvent
+
+    /** 추천 결과 배치 방식 변경. */
+    data class SetLayout(
+        val layout: AiRecLayout,
+    ) : AiCourseChatReducerEvent
 }

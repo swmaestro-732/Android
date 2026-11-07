@@ -11,12 +11,16 @@ import kotlinx.collections.immutable.persistentListOf
  */
 data class AiCourseChatUIState(
     val messages: ImmutableList<AiChatMessage> = persistentListOf(),
-    /** 입력창 위에 뜨는 빠른 답변 칩. 비어 있으면 숨긴다. */
+    /** 대화 아래에 뜨는 빠른 답변 카드 라벨. 비어 있으면 숨긴다. */
     val quickReplies: ImmutableList<String> = persistentListOf(),
+    /** 현재 빠른 답변 카드의 종류(리딩 아이콘 결정). */
+    val quickReplyKind: QuickReplyKind = QuickReplyKind.GENERIC,
     /** AI "입력 중…" 말풍선 노출 여부. */
     val isAiTyping: Boolean = false,
     /** 입력(전송·칩) 허용 여부. AI 응답 생성 중에는 false. */
     val inputEnabled: Boolean = true,
+    /** 추천 결과 3개의 배치 방식. 현재는 대표+2([AiRecLayout.FEATURED])로 고정해 보여 준다. */
+    val resultLayout: AiRecLayout = AiRecLayout.FEATURED,
 ) : UiState {
     companion object {
         val empty: AiCourseChatUIState = AiCourseChatUIState()

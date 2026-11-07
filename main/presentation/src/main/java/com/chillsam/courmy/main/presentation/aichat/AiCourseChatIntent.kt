@@ -19,4 +19,9 @@ sealed interface AiCourseChatIntent : MviIntent {
 
     /** 추천 결과에서 "다시 추천받기". 대화를 초기화하고 처음부터 시작한다. */
     data object Restart : AiCourseChatIntent
+
+    /** 추천 결과 3개의 배치 방식을 바꾼다(프리뷰 토글). */
+    data class SetLayout(
+        val layout: AiRecLayout,
+    ) : AiCourseChatIntent
 }
