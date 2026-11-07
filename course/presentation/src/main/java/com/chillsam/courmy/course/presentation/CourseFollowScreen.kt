@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -131,10 +132,8 @@ private fun ColumnScope.PreviewPhase(
     val color = DesignSystemThemeImpl.designSystemColor
     FollowTopBar(
         title = detail.title,
-        subtitle =
-            listOf(detail.placeCountText, detail.walkText)
-                .filter { it.isNotBlank() }
-                .joinToString(" · "),
+        // 도보 시간은 빼고 장소 수만 — 진행 중에 구간별로 보여 주므로 미리보기 총합은 생략한다.
+        subtitle = detail.placeCountText,
         onBack = onBack,
     )
     FollowMap(detail = detail, focusIndex = null, routes = routes, modifier = Modifier.weight(1f))
@@ -160,11 +159,11 @@ private fun ColumnScope.PreviewPhase(
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // 이어가기면 이미 방문한 앞 장소는 "방문함", 다음 가야 할 장소는 강조, 나머지는 "예정".
+            // 이어가기면 이미 방문한 앞 장소만 "방문함"으로 표시하고, 나머지는 상태 문구 없이 둔다(안 간 곳은 당연히 예정이라 생략).
             detail.places.forEachIndexed { index, place ->
                 RoutePlaceRow(
                     place = place,
-                    stateText = if (index < resumeVisitedCount) "방문함" else "예정",
+                    stateText = if (index < resumeVisitedCount) "방문함" else "",
                     highlighted = resumeVisitedCount > 0 && index == resumeVisitedCount,
                 )
             }
@@ -214,18 +213,20 @@ private fun ColumnScope.TrackingPhase(
         val current = state.currentPlace
         if (current != null) {
             DsText(
-                text = "지금 스팟",
+                text = "다음 스팟",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
             )
+            // 도보 시간은 아래 요약 줄에서 보여 주므로 카드에서는 빼고, 첫 스팟만 "여기서 출발" 표시.
             RoutePlaceRow(
                 place = current,
-                stateText = current.walkToNextText?.let { "다음까지 $it" } ?: "마지막 스팟",
+                stateText = if (state.previousPlace == null) "여기서 출발" else "",
                 highlighted = true,
             )
             WalkingRouteSection(
-                status = state.currentRouteStatus,
-                next = state.nextPlace,
+                status = state.incomingRouteStatus,
+                destName = current.name,
+                isFirstSpot = state.previousPlace == null,
             )
         }
         Row(
@@ -427,7 +428,13 @@ private fun FollowMap(
     val points = remember(detail.places) { detail.places.toRoutePoints() }
     val routePaths = remember(routes) { routes.toRoutePaths() }
     val focusPlace = focusIndex?.let { detail.places.getOrNull(it) }
+    // 진행 중엔 "직전 스팟 → 지금 스팟" 구간을 비춘다 — 그 구간만 강조하고(B-②), 카메라는 **다음 장소까지의
+    // 실제 도보 경로 전체**를 한 화면에 담는다. 경로가 없으면(폴백) 두 핀만 맞춘다.
+    val previousPlace = focusIndex?.takeIf { it > 0 }?.let { detail.places.getOrNull(it - 1) }
+    val incomingPath = previousPlace?.let { routePaths[it.placeId] }?.takeIf { it.size >= 2 }
     val focus = focusPlace?.latLngOrNull() ?: points.firstOrNull()?.second
+    val fitPoints =
+        incomingPath ?: listOfNotNull(previousPlace?.latLngOrNull(), focusPlace?.latLngOrNull()).takeIf { it.size == 2 }
     Box(modifier = modifier.fillMaxWidth()) {
         if (focus != null) {
             CourseRouteMap(
@@ -435,6 +442,9 @@ private fun FollowMap(
                 focusOrder = focusPlace?.order ?: 0,
                 points = points,
                 overview = focusIndex == null,
+                // 전체 보기(미리보기)는 강조 없이 전 구간, 진행 중은 지금 스팟으로 오는 구간만 강조.
+                highlightToOrder = if (focusIndex == null) null else focusPlace?.order,
+                fitPoints = fitPoints,
                 onMarkerClick = {},
                 routePaths = routePaths,
                 showMyLocation = true,
@@ -452,16 +462,27 @@ private fun Map<Long, FollowRouteStatus>.toRoutePaths(): Map<Long, List<LatLng>>
     }.toMap()
 
 /**
- * 진행 중 "현재 → 다음" 구간의 상세 도보 경로.
- * - 걸을 수 있으면 거리·시간과 Tmap 턴바이턴 안내를 보여 준다.
- * - 조회 중이면 안내 문구만, 도보 불가·조회 실패·마지막 장소면 아무것도 그리지 않는다.
+ * 진행 중 "직전 스팟 → 지금 스팟" 구간의 도보 안내(비실시간 요약).
+ *
+ * - 걸을 수 있으면 "지금 스팟까지 · 거리 · 도보 N분" 요약만 크게 보이고, 상세 턴바이턴은 "가는 길 설명"으로 접는다.
+ * - 첫 스팟([isFirstSpot])은 들어오는 구간이 없어 "여기서 코스를 시작해요"만.
+ * - 조회 중이면 안내 문구, 도보 불가·조회 실패면 아무것도 그리지 않는다.
  */
 @Composable
 private fun WalkingRouteSection(
     status: FollowRouteStatus?,
-    next: CourseDetailPlaceVO?,
+    destName: String,
+    isFirstSpot: Boolean,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    if (isFirstSpot) {
+        DsText(
+            text = "여기서 코스를 시작해요",
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = color.contentDefaultLevel3,
+        )
+        return
+    }
     when (status) {
         FollowRouteStatus.Loading -> {
             DsText(
@@ -472,8 +493,8 @@ private fun WalkingRouteSection(
         }
 
         is FollowRouteStatus.Ready -> {
-            if (status.route.walkable && status.route.guides.isNotEmpty()) {
-                WalkingRouteGuides(route = status.route, nextName = next?.name.orEmpty())
+            if (status.route.walkable) {
+                WalkingRouteSummary(route = status.route, destName = destName)
             }
         }
 
@@ -483,17 +504,18 @@ private fun WalkingRouteSection(
     }
 }
 
-/** 걸을 수 있는 구간: 거리·시간 헤더 + 턴바이턴 안내 목록(길면 스크롤). */
+/** 걸을 수 있는 구간: "지금 스팟까지 · 거리 · 도보 N분" 요약 + 접는 턴바이턴("가는 길 설명"). */
 @Composable
-private fun WalkingRouteGuides(
+private fun WalkingRouteSummary(
     route: com.chillsam.courmy.course.entity.TraceRouteVO,
-    nextName: String,
+    destName: String,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    var guidesOpen by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         val summary =
             listOfNotNull(
-                nextName.takeIf { it.isNotBlank() }?.let { "$it 까지" },
+                destName.takeIf { it.isNotBlank() }?.let { "$it 까지" },
                 routeDistanceText(route.distanceMeters),
                 route.durationMinutes?.let { "도보 ${it}분" },
             ).joinToString(" · ")
@@ -502,33 +524,70 @@ private fun WalkingRouteGuides(
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel0,
         )
-        Column(
-            modifier =
-                Modifier
-                    .heightIn(max = ROUTE_GUIDE_MAX_HEIGHT)
-                    .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            route.guides.forEach { guide ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+        if (route.guides.isNotEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { guidesOpen = !guidesOpen }
+                        .padding(vertical = 2.dp),
+            ) {
+                DsText(
+                    text = if (guidesOpen) "가는 길 설명 접기" else "가는 길 설명",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentAccent,
+                )
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_down_24),
+                    contentDescription = null,
+                    tint = color.contentAccent,
+                    modifier = Modifier.size(14.dp).rotate(if (guidesOpen) 180f else 0f),
+                )
+            }
+            if (guidesOpen) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(color.bgDefaultLevel0)
+                            .heightIn(max = ROUTE_GUIDE_MAX_HEIGHT)
+                            .verticalScroll(rememberScrollState())
+                            .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(color.contentAccent),
-                    )
-                    DsText(
-                        text = guide.description,
-                        style = DesignSystemThemeImpl.typeScale.textRegularS,
-                        color = color.contentDefaultLevel2,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
+                    route.guides.forEachIndexed { index, guide ->
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            // 순서 번호를 작은 원에 담아 "몇 번째 안내"인지 한눈에 보이게 한다.
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(color.bgAccentSubtle),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                DsText(
+                                    text = "${index + 1}",
+                                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                                    color = color.contentAccent,
+                                )
+                            }
+                            DsText(
+                                text = guide.description,
+                                style = DesignSystemThemeImpl.typeScale.textRegularS,
+                                color = color.contentDefaultLevel1,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).padding(top = 1.dp),
+                            )
+                        }
+                    }
                 }
             }
         }
