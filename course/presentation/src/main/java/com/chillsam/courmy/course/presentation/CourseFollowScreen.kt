@@ -215,11 +215,11 @@ private fun ColumnScope.TrackingPhase(
         val current = state.currentPlace
         if (current != null) {
             DsText(
-                text = "지금 스팟",
+                text = "다음 스팟",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
             )
-            // 보조 문구는 "지금 스팟까지 오는 구간" 기준. 첫 스팟은 들어오는 구간이 없어 "여기서 출발".
+            // 보조 문구는 "다음 스팟까지 오는 구간" 기준. 첫 스팟은 들어오는 구간이 없어 "여기서 출발".
             RoutePlaceRow(
                 place = current,
                 stateText = state.previousPlace?.walkToNextText?.let { "여기까지 $it" } ?: "여기서 출발",
