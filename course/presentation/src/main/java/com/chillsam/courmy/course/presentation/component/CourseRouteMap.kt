@@ -118,6 +118,11 @@ fun CourseRouteMap(
     onMapClick: (() -> Unit)? = null,
     routePaths: Map<Long, List<LatLng>> = emptyMap(),
     showMyLocation: Boolean = false,
+    // 진행 중 "지금 스팟으로 오는 구간"만 강조한다(B-②). 그 구간(= order 로 도착하는 구간)은 악센트색·굵게,
+    // 나머지는 흐리게. null 이면 전 구간을 같은 색으로 긋는다(미리보기·코스 상세·장소 시트 기존 동작).
+    highlightToOrder: Int? = null,
+    // 진행 중 카메라에 함께 담을 두 점(직전·지금 스팟). 설정되고 전체 보기가 아니면 이 둘을 한 화면에 맞춘다.
+    fitPoints: List<LatLng>? = null,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val density = LocalDensity.current
@@ -137,14 +142,15 @@ fun CourseRouteMap(
     var myLocation by remember { mutableStateOf<LatLng?>(null) }
     val trackingMode =
         if (showMyLocation && hasLocationPermission) LocationTrackingMode.NoFollow else LocationTrackingMode.None
-    // 전체 보기면 모든 핀이 들어오게, 아니면 지금 장소로 확대해 맞춘다.
-    LaunchedEffect(focus, overview, points, loaded, viewport, fitPadding) {
+    // 전체 보기면 모든 핀이, 진행 중이면 "직전·지금 스팟" 두 점이 들어오게, 그 외엔 지금 장소로 확대해 맞춘다.
+    LaunchedEffect(focus, overview, points, loaded, viewport, fitPadding, fitPoints) {
         if (!loaded || viewport == IntSize.Zero) return@LaunchedEffect
         // 네이티브 지도에 변경된 레이아웃 크기가 적용된 다음 카메라 경계를 맞춘다.
         withFrameNanos { }
         val coords = points.map { it.second }
-        if (overview && coords.size >= 2) {
-            val bounds = LatLngBounds.Builder().apply { coords.forEach { include(it) } }.build()
+        val fitCoords = if (overview) coords else fitPoints.orEmpty()
+        if (fitCoords.size >= 2) {
+            val bounds = LatLngBounds.Builder().apply { fitCoords.forEach { include(it) } }.build()
             with(density) {
                 cameraPositionState.animate(
                     CameraUpdate.fitBounds(
@@ -190,11 +196,14 @@ fun CourseRouteMap(
                 points = points,
                 focusOrder = focusOrder,
                 allFocused = overview,
+                highlightToOrder = highlightToOrder,
                 routePaths = routePaths,
                 colors =
                     RouteMarkerColors(
-                        // 지도 배경과 겹쳐도 또렷하도록 경로선은 검정으로 둔다.
+                        // 지도 배경과 겹쳐도 또렷하도록 경로선은 검정으로 둔다. 강조 모드일 땐 지금 구간만 악센트색.
                         line = color.contentDefaultLevel0,
+                        accentLine = color.contentAccent,
+                        dimLine = color.contentDefaultLevel3,
                         focusFillArgb = color.bgAccent.toArgb(),
                         restFillArgb = color.contentDefaultLevel2.toArgb(),
                         textArgb = color.contentOnAccent.toArgb(),
@@ -315,6 +324,8 @@ private val VALID_LONGITUDE = -180.0..180.0
 @Immutable
 private data class RouteMarkerColors(
     val line: Color,
+    val accentLine: Color,
+    val dimLine: Color,
     val focusFillArgb: Int,
     val restFillArgb: Int,
     val textArgb: Int,
@@ -328,6 +339,7 @@ private fun RouteOverlays(
     points: List<Pair<CourseDetailPlaceVO, LatLng>>,
     focusOrder: Int,
     allFocused: Boolean,
+    highlightToOrder: Int?,
     routePaths: Map<Long, List<LatLng>>,
     colors: RouteMarkerColors,
     onMarkerClick: (CourseDetailPlaceVO) -> Unit,
@@ -335,21 +347,15 @@ private fun RouteOverlays(
     val density = LocalDensity.current.density
     // 구간마다: 실제 도보 경로가 있으면 실선으로, 없으면 두 핀을 점선 직선으로 잇는다(폴백).
     points.zipWithNext().forEach { (from, to) ->
-        val path = routePaths[from.first.placeId]
-        if (path != null && path.size >= 2) {
-            PolylineOverlay(
-                coords = path,
-                width = 4.dp,
-                color = colors.line,
-            )
-        } else {
-            PolylineOverlay(
-                coords = listOf(from.second, to.second),
-                width = 3.dp,
-                color = colors.line,
-                pattern = ROUTE_DASH_PATTERN,
-            )
-        }
+        RouteSegment(
+            from = from.second,
+            to = to.second,
+            path = routePaths[from.first.placeId],
+            // 강조 모드면 그 순번으로 **도착하는** 구간만 "지금 구간"으로 본다.
+            isCurrentLeg = highlightToOrder != null && to.first.order == highlightToOrder,
+            highlighting = highlightToOrder != null,
+            colors = colors,
+        )
     }
     points.forEach { (place, position) ->
         // 지금 보고 있는 장소는 크고 진한 핀, 나머지는 작고 흐린 핀으로 찍어 어디를 보는지 알 수 있게 한다.
@@ -377,6 +383,39 @@ private fun RouteOverlays(
                 onMarkerClick(place)
                 true
             },
+        )
+    }
+}
+
+/**
+ * 한 구간 선. 실제 도보 경로([path])가 있으면 실선, 없으면 두 핀을 점선 직선으로 잇는다(폴백).
+ * 강조 모드([highlighting])에서 "지금 구간"([isCurrentLeg])은 악센트색·굵게, 나머지는 흐리게.
+ */
+@OptIn(ExperimentalNaverMapApi::class)
+@Composable
+@NaverMapComposable
+private fun RouteSegment(
+    from: LatLng,
+    to: LatLng,
+    path: List<LatLng>?,
+    isCurrentLeg: Boolean,
+    highlighting: Boolean,
+    colors: RouteMarkerColors,
+) {
+    val lineColor =
+        when {
+            !highlighting -> colors.line
+            isCurrentLeg -> colors.accentLine
+            else -> colors.dimLine
+        }
+    if (path != null && path.size >= 2) {
+        PolylineOverlay(coords = path, width = if (isCurrentLeg) 6.dp else 4.dp, color = lineColor)
+    } else {
+        PolylineOverlay(
+            coords = listOf(from, to),
+            width = if (isCurrentLeg) 4.dp else 3.dp,
+            color = lineColor,
+            pattern = ROUTE_DASH_PATTERN,
         )
     }
 }
