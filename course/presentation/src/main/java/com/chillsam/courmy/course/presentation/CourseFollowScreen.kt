@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
@@ -311,37 +314,17 @@ private fun ColumnScope.DonePhase(
             FollowStatCard(value = elapsedText(state), label = "소요 시간")
             FollowStatCard(value = distanceText(detail.places), label = "이동 거리")
         }
-        Spacer(Modifier.height(16.dp))
-        detail.places.lastOrNull()?.let { last ->
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(color.bgDefaultLevel1)
-                        .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                CourseImage(
-                    url = last.imageUrls.firstOrNull().orEmpty(),
-                    modifier = Modifier.size(44.dp),
-                    shape = RoundedCornerShape(10.dp),
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    DsText(
-                        text = "마지막 스팟 · ${last.name}",
-                        style = DesignSystemThemeImpl.typeScale.textStrongS,
-                        color = color.contentDefaultLevel0,
-                    )
-                    DsText(
-                        text = "방문 완료",
-                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                        color = color.contentDefaultLevel3,
-                    )
-                }
-            }
-        }
+        Spacer(Modifier.height(24.dp))
+        // 완주한 전체 스팟을 순서대로 — 마지막 한 곳만이 아니라 다녀온 코스 여정을 돌아보게 한다.
+        DsText(
+            text = "다녀온 코스",
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Start,
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+        )
+        Spacer(Modifier.height(10.dp))
+        CompletedCourseTimeline(places = detail.places)
         Spacer(Modifier.height(16.dp))
     }
     Column(
@@ -659,6 +642,130 @@ private fun RoutePlaceRow(
                 color = color.contentDefaultLevel3,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/**
+ * 완주 화면의 "다녀온 코스" 타임라인. 방문한 전체 스팟을 순서대로 세우고
+ * 배지 사이를 세로선으로 이어, 코스를 끝까지 걸은 여정을 한눈에 돌아보게 한다.
+ */
+@Composable
+private fun CompletedCourseTimeline(places: List<CourseDetailPlaceVO>) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        places.forEachIndexed { index, place ->
+            CompletedSpotRow(
+                place = place,
+                isFirst = index == 0,
+                isLast = index == places.lastIndex,
+            )
+        }
+    }
+}
+
+/** 타임라인 한 줄: 연결선 레일(순번 배지) + 썸네일 + 이름·카테고리 + "방문 완료". */
+@Composable
+private fun CompletedSpotRow(
+    place: CourseDetailPlaceVO,
+    isFirst: Boolean,
+    isLast: Boolean,
+) {
+    val color = DesignSystemThemeImpl.designSystemColor
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        // 배지 + 연결선 레일. 위/아래 반쪽 선이 이웃 행과 맞닿아 끊김 없는 타임라인이 된다.
+        Box(
+            modifier =
+                Modifier
+                    .width(24.dp)
+                    .fillMaxHeight(),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (!isFirst) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .width(2.dp)
+                            .fillMaxHeight(0.5f)
+                            .background(color.bgAccentSubtle),
+                )
+            }
+            if (!isLast) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .width(2.dp)
+                            .fillMaxHeight(0.5f)
+                            .background(color.bgAccentSubtle),
+                )
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .size(23.dp)
+                        .clip(CircleShape)
+                        .background(color.bgAccent),
+                contentAlignment = Alignment.Center,
+            ) {
+                DsText(
+                    text = place.order.toString(),
+                    style = DesignSystemThemeImpl.typeScale.textStrongS,
+                    color = color.contentOnAccent,
+                )
+            }
+        }
+        CourseImage(
+            url = place.imageUrls.firstOrNull().orEmpty(),
+            modifier = Modifier.size(40.dp),
+            shape = RoundedCornerShape(10.dp),
+        )
+        Column(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .padding(vertical = 9.dp),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            DsText(
+                text = place.name,
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = color.contentDefaultLevel0,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (place.category.isNotBlank()) {
+                DsText(
+                    text = place.category,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_check_24),
+                contentDescription = null,
+                tint = color.contentAccent,
+                modifier = Modifier.size(14.dp),
+            )
+            DsText(
+                text = "방문 완료",
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                color = color.contentAccent,
             )
         }
     }
