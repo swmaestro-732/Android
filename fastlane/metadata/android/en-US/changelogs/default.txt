@@ -1,4 +1,2 @@
-Return to the course you were viewing after signing in.
-Review the Terms of Service and Privacy Policy during sign-up.
-Improved readability of search screens and course action buttons.
-Refined course browsing and saving for a smoother experience.
+Fixed an issue where continuing as a guest could loop back to the intro screen.
+Fixed the home screen's bottom theme list being hidden behind the navigation bar.
