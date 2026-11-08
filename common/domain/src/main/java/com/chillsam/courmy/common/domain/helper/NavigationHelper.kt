@@ -40,4 +40,10 @@ interface NavigationHelper {
 
     /** 로그인·가입 화면만 닫고 인증을 시작했던 화면으로 복귀한다. */
     fun finishAuthentication()
+
+    /**
+     * 로그인 화면을 닫고 게스트 둘러보기로 돌아간다. 온보딩/스플래시에서 올라와 돌아갈 게스트 홈이 없으면
+     * 홈(게스트)으로 보내 온보딩↔로그인 무한 루프를 막는다.
+     */
+    fun continueAsGuest()
 }
