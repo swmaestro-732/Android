@@ -27,4 +27,22 @@
     <string name="home_menu_new_course">새 코스 만들기</string>
     <string name="home_menu_load_draft">임시저장 가져오기</string>
     <string name="home_menu_new_plan">계획하기</string>
+
+    <!-- ↓ 공통 재사용 UI 문구(하드코딩 외부화 1차: common:presentation 컴포넌트/신고). -->
+    <!-- 공통 버튼·응답 -->
+    <string name="common_yes">네</string>
+    <string name="common_no">아니요</string>
+    <string name="common_cancel">취소</string>
+
+    <!-- 접근성 -->
+    <string name="a11y_more">더 보기</string>
+    <!-- 별점 표시/입력 접근성(스크린 리더). %1$d 는 별 개수 -->
+    <string name="rating_stars_description">별점 %1$d점</string>
+    <string name="rating_input_description">별점 %1$d점 주기</string>
+
+    <!-- 신고(공용 신고 액션·다이얼로그) -->
+    <string name="report_action">신고하기</string>
+    <string name="report_reason_prompt">신고 사유를 선택해 주세요.</string>
+    <string name="report_detail_placeholder">추가 설명 (선택, 최대 500자)</string>
+    <string name="report_submit">신고 접수</string>
 </resources>

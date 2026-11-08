@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -65,7 +66,7 @@ fun ReportAction(
             ) {
                 Icon(
                     painterResource(R.drawable.ic_more_horizontal_24),
-                    contentDescription = "더 보기",
+                    contentDescription = stringResource(R.string.a11y_more),
                     modifier = Modifier.size(22.dp),
                     tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
                 )
@@ -74,7 +75,7 @@ fun ReportAction(
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(text = {
                 DsText(
-                    text = "신고하기",
+                    text = stringResource(R.string.report_action),
                     style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
                 )
@@ -130,12 +131,12 @@ private fun ReportDialog(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             DsText(
-                text = "신고하기",
+                text = stringResource(R.string.report_action),
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
             )
             DsText(
-                text = "신고 사유를 선택해 주세요.",
+                text = stringResource(R.string.report_reason_prompt),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
                 maxLines = Int.MAX_VALUE,
@@ -145,9 +146,18 @@ private fun ReportDialog(
                     viewModel.onIntent(ReportIntent.SelectReason(reason))
                 })
             }
-            DsTextField(value = state.description, onValueChange = {
-                viewModel.onIntent(ReportIntent.Describe(it))
-            }, enabled = !state.submitting, singleLine = false, placeholder = "추가 설명 (선택, 최대 500자)")
+            DsTextField(
+                value = state.description,
+                onValueChange = {
+                    viewModel.onIntent(ReportIntent.Describe(it))
+                },
+                enabled = !state.submitting,
+                singleLine = false,
+                placeholder =
+                    stringResource(
+                        R.string.report_detail_placeholder,
+                    ),
+            )
             state.error?.let {
                 DsText(
                     text = it,
@@ -157,12 +167,17 @@ private fun ReportDialog(
                 )
             }
             DsButton(
-                text = "신고 접수",
+                text = stringResource(R.string.report_submit),
                 enabled = state.reason != null && !state.submitting,
                 loading = state.submitting,
                 onClick = { viewModel.onIntent(ReportIntent.Submit(targetType, targetId)) },
             )
-            DsButton(text = "취소", variant = DsButtonVariant.Secondary, enabled = !state.submitting, onClick = close)
+            DsButton(
+                text = stringResource(R.string.common_cancel),
+                variant = DsButtonVariant.Secondary,
+                enabled = !state.submitting,
+                onClick = close,
+            )
         }
     }
 }

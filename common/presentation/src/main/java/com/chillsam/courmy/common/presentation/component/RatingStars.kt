@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -46,8 +47,9 @@ fun DsRatingStars(
     emptyColor: Color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
 ) {
     val filled = rating.coerceIn(0, MAX_RATING)
+    val description = stringResource(R.string.rating_stars_description, filled)
     Row(
-        modifier = modifier.clearAndSetSemantics { contentDescription = "별점 ${filled}점" },
+        modifier = modifier.clearAndSetSemantics { contentDescription = description },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(1.dp),
     ) {
@@ -86,6 +88,7 @@ fun DsRatingInput(
     ) {
         repeat(MAX_RATING) { index ->
             val value = index + 1
+            val description = stringResource(R.string.rating_input_description, value)
             Box(
                 modifier =
                     Modifier
@@ -93,7 +96,7 @@ fun DsRatingInput(
                         .clip(CircleShape)
                         .clickable(enabled = enabled) { onRatingChange(value) }
                         .semantics {
-                            contentDescription = "별점 ${value}점 주기"
+                            contentDescription = description
                             selected = value == filled
                         },
                 contentAlignment = Alignment.Center,
