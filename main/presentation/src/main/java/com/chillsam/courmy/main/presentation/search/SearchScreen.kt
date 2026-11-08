@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.category.orCategoryLabel
@@ -272,6 +273,15 @@ private fun PlaceSuggestions(
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
+            if (place.address.isNotBlank()) {
+                DsText(
+                    text = place.address,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
