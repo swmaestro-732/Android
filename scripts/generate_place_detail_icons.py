@@ -59,7 +59,7 @@ def append_element(parent, element):
 def main():
     html = SOURCE.read_text(encoding='utf-8')
     matches = re.findall(r'(<svg class="ic".*?</svg>).*?<div class="code">([^<]+)</div>', html, re.S)
-    assert len(matches) == 74 and len({code for _, code in matches}) == 74
+    assert len(matches) == 64 and len({code for _, code in matches}) == 64
     for source, code in matches:
         svg = ET.fromstring(source)
         assert svg.get('viewBox') == '0 0 24 24'

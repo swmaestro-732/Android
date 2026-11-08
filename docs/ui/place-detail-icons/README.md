@@ -7,7 +7,22 @@
 사용자 승인 원본은 [approved.html](approved.html)이다. 빵은 v12 바게트, 수예·자수는 v13 가위로 확정했다.
 여가시설 게임패드는 세로 도형 중심이 약 y=13.23이어서 전체를 1.25 위로 이동했다(2026-11-03). 형태·크기는 유지하고 공통 원본과 다운로드 확정본을 동기화했다.
 상세값 73종 + 알 수 없는 카테고리의 기본 핀 1종을 24×24 / stroke 1.65 / round cap·join으로 변환했다.
-2026-11-07 신규 상세값 25종(쇼핑 11·체험 2·자연 1·명소 6·여가 1·웰니스 4)을 같은 규격으로 추가했다(시안: `proposed-2026-11-07.html`). 폴백 핀 전용 상위 카테고리로 `PlaceCategoryVO.ETC`("기타")를 추가했으며, 지도 10종 필터(`MapCategory`)는 그대로 둔다. 신규 25종의 code 는 기존 48종과 같이 **앱 디자인 제안값(서버 `detailCategory` 계약 확정 대상)** 이다.
+2026-11-07 신규 상세값 25종(쇼핑 11·체험 2·자연 1·명소 6·여가 1·웰니스 4)을 추가했다(시안: `proposed-2026-11-07.html`). 이 중 **15종은 전용 아이콘**을 새로 그렸고, **10종은 기존 아이콘을 재사용**한다(시안에서 확정). 재사용 10종은 전용 drawable·approved.html 카드를 두지 않는다(그래서 아이콘 drawable은 63 상세 + 폴백 핀 1 = 64):
+
+| 상세값(재사용) | 사용 아이콘 |
+|---|---|
+| 장난감·완구 | 기념품판매(`souvenir`) |
+| 취미용품점 | 여가시설(`leisure_facility`) |
+| 드럭스토어 | 편의점(`convenience_store`) |
+| 식품판매 | 슈퍼마켓(`supermarket`) |
+| 상가·아케이드 | 복합쇼핑몰(`shopping_mall`) |
+| 농장·목장 | 생태보존·서식지(`ecology_reserve`) |
+| 공원시설물 | 공원(`park`) |
+| 관광지부속시설 | 관광·명소(`tourist_attraction`) |
+| 공간대여 | 빌딩(`building`) |
+| 숙박부속시설 | 숙박(`accommodation`) |
+
+폴백 핀 전용 상위 카테고리로 `PlaceCategoryVO.ETC`("기타")를 추가했으며, 지도 10종 필터(`MapCategory`)는 그대로 둔다. 신규 25종의 code 는 기존 48종과 같이 **앱 디자인 제안값(서버 `categoryDetail` 한글 값 매칭으로 동작)** 이다.
 
 ```bash
 python3 scripts/generate_place_detail_icons.py
