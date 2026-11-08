@@ -48,6 +48,9 @@ googleServices = "4.5.0"
 firebaseCrashlyticsPlugin = "3.0.7"
 firebaseBom = "34.17.0"
 amplitude = "1.35.0"
+# ML Kit 온디바이스 번역 PoC(디버그 전용). 모델은 런타임에 언어별로 다운로드된다.
+mlkitTranslate = "17.0.3"
+mlkitLanguageId = "17.0.6"
 # 광고 전환 추적 SDK.
 facebook = "19.0.0"
 
@@ -129,6 +132,10 @@ firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics
 
 # Amplitude — 제품 분석. SDK 의존성은 app 모듈에만 두고, data 레이어는 AmplitudeClient 인터페이스만 안다.
 amplitude-analytics = { group = "com.amplitude", name = "analytics-android", version.ref = "amplitude" }
+
+# ML Kit 온디바이스 번역 PoC. 현재는 debug 전용 미리보기 화면에서만 사용한다.
+mlkit-translate = { group = "com.google.mlkit", name = "translate", version.ref = "mlkitTranslate" }
+mlkit-language-id = { group = "com.google.mlkit", name = "language-id", version.ref = "mlkitLanguageId" }
 
 # 광고 전환 추적. 메타(Facebook) 앱 이벤트는 Telemetry 구현이 보내므로 common:data 에 둔다.
 # facebook-core 만 쓴다(로그인·공유 모듈 불필요, 앱 이벤트 측정만).

@@ -321,6 +321,11 @@ dependencies {
     implementation(libs.amplitude.analytics)
     debugImplementation(libs.kotlinx.collections.immutable)
 
+    // ML Kit 온디바이스 번역 PoC — debug 전용 TranslationPreviewActivity 에서 품질을 확인한다.
+    // 모델(언어팩)은 런타임에 다운로드되므로 릴리스에는 포함하지 않는다.
+    debugImplementation(libs.mlkit.translate)
+    debugImplementation(libs.mlkit.language.id)
+
     // 광고 전환 추적(메타). facebook-core 는 common:data 의 Telemetry 구현이 쓰지만,
     // Manifest meta-data·resValue 가 app 에 있어야 SDK 가 자동 초기화되므로 설정은 app 이 소유한다
     // (의존성은 common:data 가 전이). 네이버 GFA(NTracker)는 지원 종료되어 제거했다(SCRUM-719).

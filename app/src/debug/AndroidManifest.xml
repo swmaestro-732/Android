@@ -27,6 +27,11 @@
             android:launchMode="singleTop"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Courmy" />
+        <activity
+            android:name=".debug.TranslationPreviewActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Courmy" />
     </application>
 
 </manifest>
