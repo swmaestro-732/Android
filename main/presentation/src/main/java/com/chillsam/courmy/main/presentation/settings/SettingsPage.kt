@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.domain.telemetry.selectionChange
@@ -18,6 +19,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.ProfileEditPage
+import com.chillsam.courmy.main.presentation.R
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 import com.chillsam.courmy.main.domain.settings.AccountManagePage as AccountManageRoute
 import com.chillsam.courmy.main.domain.settings.AppVersionPage as AppVersionRoute
@@ -30,9 +32,6 @@ private const val CONTACT_FORM_URL =
 private const val PRIVACY_POLICY_URL =
     "https://brook-insect-146.notion.site/3b25d2e08a5c80fc8bade8eefd0ddbb9"
 
-/** 상세 화면이 아직 없는 항목에 붙는 표시. */
-private const val NOT_READY_HINT = "(준비 중)"
-
 /**
  * 설정 화면(FS-28).
  * 유형별 섹션 구분 없이 항목 하나하나를 목록 행으로 두고, 행 사이만 구분선으로 나눈다.
@@ -44,17 +43,23 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     val telemetry = LocalTelemetry.current
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    val notReadyMessage = stringResource(R.string.settings_toast_not_ready)
+    val noBrowserMessage = stringResource(R.string.settings_toast_no_browser)
     // 공지는 아직 상세 화면이 없어, 무반응 대신 "준비 중" 안내를 띄운다.
-    val notReady = { Toast.makeText(context, "준비 중이에요", Toast.LENGTH_SHORT).show() }
+    val notReady = { Toast.makeText(context, notReadyMessage, Toast.LENGTH_SHORT).show() }
     // 브라우저가 없는 기기에서 uriHandler 가 던지면 앱이 죽으므로 안내로 대체한다.
     val openUrl = { url: String ->
         runCatching { uriHandler.openUri(url) }
-            .onFailure { Toast.makeText(context, "브라우저를 열 수 없어요", Toast.LENGTH_SHORT).show() }
+            .onFailure { Toast.makeText(context, noBrowserMessage, Toast.LENGTH_SHORT).show() }
         Unit
     }
 
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
-        BackTopBar(title = "설정", onBack = { navigationHelper.navigateToBack() }, boxed = true)
+        BackTopBar(
+            title = stringResource(R.string.settings_title),
+            onBack = { navigationHelper.navigateToBack() },
+            boxed = true,
+        )
 
         Column(
             modifier =
@@ -63,18 +68,22 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
         ) {
-            SettingsMenuRow(label = "프로필 수정", onClick = {
+            SettingsMenuRow(label = stringResource(R.string.settings_profile_edit), onClick = {
                 navigationHelper.navigateTo(ProfileEditPage, source = NavigationSource("/settings", "edit_profile"))
             })
             SettingsDivider()
-            SettingsMenuRow(label = "계정 관리", onClick = {
+            SettingsMenuRow(label = stringResource(R.string.settings_account), onClick = {
                 navigationHelper.navigateTo(AccountManageRoute, source = NavigationSource("/settings", "account"))
             })
             SettingsDivider()
-            SettingsMenuRow(label = "공지", onClick = notReady, hint = NOT_READY_HINT)
+            SettingsMenuRow(
+                label = stringResource(R.string.settings_notice),
+                onClick = notReady,
+                hint = stringResource(R.string.settings_hint_not_ready),
+            )
             SettingsDivider()
             SettingsMenuRow(
-                label = "알림",
+                label = stringResource(R.string.settings_notification),
                 onClick = {
                     navigationHelper.navigateTo(
                         com.chillsam.courmy.main.domain.settings.NotificationSettingsPage,
@@ -84,7 +93,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
             )
             SettingsDivider()
             SettingsMenuRow(
-                label = "언어",
+                label = stringResource(R.string.settings_language),
                 onClick = {
                     navigationHelper.navigateTo(
                         com.chillsam.courmy.main.domain.settings.LanguageSettingsPage,
@@ -93,17 +102,17 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                 },
             )
             SettingsDivider()
-            SettingsMenuRow(label = "문의하기", onClick = {
+            SettingsMenuRow(label = stringResource(R.string.settings_contact), onClick = {
                 telemetry.buttonClick("/settings", "contact", mapOf("destination" to "external_browser"))
                 openUrl(CONTACT_FORM_URL)
             })
             SettingsDivider()
-            SettingsMenuRow(label = "개인정보 보호", onClick = {
+            SettingsMenuRow(label = stringResource(R.string.settings_privacy), onClick = {
                 telemetry.buttonClick("/settings", "privacy_policy", mapOf("destination" to "external_browser"))
                 openUrl(PRIVACY_POLICY_URL)
             })
             SettingsDivider()
-            SettingsMenuRow(label = "앱 버전", onClick = {
+            SettingsMenuRow(label = stringResource(R.string.settings_app_version), onClick = {
                 navigationHelper.navigateTo(AppVersionRoute, source = NavigationSource("/settings", "app_version"))
             })
         }

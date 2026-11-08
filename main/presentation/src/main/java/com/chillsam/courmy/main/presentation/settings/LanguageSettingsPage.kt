@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,6 +26,7 @@ import com.chillsam.courmy.common.presentation.translation.nativeName
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 설정 > 언어. 표시 언어(한국어·영어·일본어)를 고른다.
@@ -37,9 +39,13 @@ fun LanguageSettingsPage(viewModel: LanguageSettingsViewModel = hiltViewModel())
     val color = DesignSystemThemeImpl.designSystemColor
 
     Column(Modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
-        BackTopBar(title = "언어", onBack = navigation::navigateToBack, boxed = true)
+        BackTopBar(
+            title = stringResource(MainR.string.settings_language),
+            onBack = navigation::navigateToBack,
+            boxed = true,
+        )
         DsText(
-            text = "한국어가 아니면 코스 설명 등에서 번역 보기를 사용할 수 있어요. 번역은 기기에서 처리돼요.",
+            text = stringResource(MainR.string.language_description),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel2,
             maxLines = 2,
@@ -80,7 +86,7 @@ private fun LanguageRow(
         if (selected) {
             Icon(
                 painter = painterResource(R.drawable.ic_check_24),
-                contentDescription = "선택됨",
+                contentDescription = stringResource(MainR.string.language_selected),
                 tint = color.contentAccent,
                 modifier = Modifier.size(22.dp),
             )

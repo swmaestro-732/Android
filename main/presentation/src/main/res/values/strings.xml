@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  main:presentation 화면 전용 UI 문구. 하드코딩 대신 stringResource 로 참조한다.
+  공통 재사용 문구는 common:presentation 의 strings.xml 에 둔다. en/ja 는 values-en/values-ja 로 추가.
+-->
+<resources>
+    <!-- 설정 화면(목록) -->
+    <string name="settings_title">설정</string>
+    <string name="settings_profile_edit">프로필 수정</string>
+    <string name="settings_account">계정 관리</string>
+    <string name="settings_notice">공지</string>
+    <string name="settings_notification">알림</string>
+    <string name="settings_language">언어</string>
+    <string name="settings_contact">문의하기</string>
+    <string name="settings_privacy">개인정보 보호</string>
+    <string name="settings_app_version">앱 버전</string>
+    <string name="settings_hint_not_ready">(준비 중)</string>
+    <string name="settings_toast_not_ready">준비 중이에요</string>
+    <string name="settings_toast_no_browser">브라우저를 열 수 없어요</string>
+
+    <!-- 설정 > 언어 -->
+    <string name="language_description">한국어가 아니면 코스 설명 등에서 번역 보기를 사용할 수 있어요. 번역은 기기에서 처리돼요.</string>
+    <string name="language_selected">선택됨</string>
+</resources>
