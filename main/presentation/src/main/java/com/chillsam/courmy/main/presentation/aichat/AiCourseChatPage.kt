@@ -1,6 +1,10 @@
 package com.chillsam.courmy.main.presentation.aichat
 
-import androidx.annotation.DrawableRes
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -28,7 +32,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,8 +39,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,41 +53,92 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.entity.aichat.QuickReplyVO
+import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.presentation.component.hasLocationPermission
+import com.google.android.gms.location.LocationServices
 
 private val ScreenPadding = 16.dp
 private val BubbleMaxWidth = 272.dp
 private val AvatarSize = 40.dp
-private val GlassRadius = RoundedCornerShape(22.dp)
 private val CardRadius = RoundedCornerShape(20.dp)
 
 /**
- * 커미 AI 코스 추천 채팅 화면(파스텔 + 글래스).
+ * 커미 AI 코스 추천 채팅 화면(파스텔 + 글래스). 서버 주도 대화([AiCourseChatViewModel]).
  *
- * 몽환적 민트·초록 오로라 배경 위에 반투명 글래스 말풍선·카드가 떠 있다. 진입하면 인사 + 작은 선택 알약,
- * 문답(지역 → 테마 → 장소)을 거쳐 코스 3개를 추천한다. 결과는 대표+2([AiRecLayout.FEATURED])로 보여 준다.
+ * 로그인 전용이라 비로그인은 로그인 안내로 막는다. 진입 시 위치 권한을 확인해 좌표를 ViewModel 에 전달하고
+ * (지역 칩·내 근처), 서버 턴의 말풍선·칩·입력창·코스를 그대로 그린다. 코스 카드를 누르면 상세로 간다.
  */
 @Composable
 fun AiCourseChatPage(
     onBack: () -> Unit,
+    onLogin: () -> Unit,
+    onCourseClick: (String) -> Unit,
     viewModel: AiCourseChatViewModel = hiltViewModel(),
 ) {
+    val session = LocalSessionUiState.current
+    if (!session.isLoggedIn) {
+        LoginGate(onBack = onBack, onLogin = onLogin)
+        return
+    }
+
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.onIntent(AiCourseChatIntent.Start) }
+    LocationEffect { lat, lng -> viewModel.onIntent(AiCourseChatIntent.ProvideLocation(lat, lng)) }
+
     AiCourseChatScreen(
         state = state,
         onBack = onBack,
         onSend = { viewModel.onIntent(AiCourseChatIntent.SendText(it)) },
-        onQuickReply = { viewModel.onIntent(AiCourseChatIntent.QuickReply(it)) },
+        onRegionChip = { viewModel.onIntent(AiCourseChatIntent.RegionChipTap(it)) },
+        onQuickReply = { viewModel.onIntent(AiCourseChatIntent.QuickReplyTap(it)) },
+        onCourseClick = onCourseClick,
     )
+}
+
+/** 위치 권한을 확인·요청하고, 있으면 마지막 좌표를 [onLocation] 으로 넘긴다(지역 칩·내 근처용). */
+@Composable
+private fun LocationEffect(onLocation: (Double, Double) -> Unit) {
+    val context = LocalContext.current
+    var tick by remember { mutableIntStateOf(0) }
+    val hasPermission = remember(tick) { context.hasLocationPermission() }
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { tick++ }
+    LaunchedEffect(hasPermission) {
+        if (hasPermission) {
+            fetchLastLocation(context, onLocation)
+        } else {
+            launcher.launch(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+            )
+        }
+    }
+}
+
+@SuppressLint("MissingPermission")
+private fun fetchLastLocation(
+    context: Context,
+    onLocation: (Double, Double) -> Unit,
+) {
+    LocationServices
+        .getFusedLocationProviderClient(context)
+        .lastLocation
+        .addOnSuccessListener { location -> location?.let { onLocation(it.latitude, it.longitude) } }
 }
 
 @Composable
@@ -92,21 +146,23 @@ private fun AiCourseChatScreen(
     state: AiCourseChatUIState,
     onBack: () -> Unit,
     onSend: (String) -> Unit,
-    onQuickReply: (String) -> Unit,
+    onRegionChip: (String) -> Unit,
+    onQuickReply: (QuickReplyVO) -> Unit,
+    onCourseClick: (String) -> Unit,
 ) {
-    // 상태바 스크림을 투명(밝은 RGB+알파0)으로 선언해 오로라가 상태바 뒤까지 비치게 한다.
-    // RGB 가 밝아 시스템 아이콘은 어둡게 유지된다(RootComposable 의 휘도 판정).
     StatusBarColor(AiChatPalette.auroraBase.copy(alpha = 0f))
     val drift = rememberAuroraDrift()
-    val hasCards = state.quickReplies.isNotEmpty() && !state.isAiTyping
-    // 오로라는 상태바 뒤까지 꽉 채우고(바깥 Box), 콘텐츠만 상태바 여백을 둔다(엣지-투-엣지).
+    val showRegion = state.showRegionChips && state.regionChips.isNotEmpty() && !state.isAiTyping
+    val showServer = !state.showRegionChips && state.quickReplies.isNotEmpty() && !state.isAiTyping
+    val hasChips = showRegion || showServer
+
     Box(modifier = Modifier.fillMaxSize().drawBehind { drawAurora(drift) }) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             ChatTopBar(onBack = onBack)
 
             val listState = rememberLazyListState()
-            LaunchedEffect(state.messages.size, state.quickReplies.size, state.isAiTyping) {
-                val extra = (if (hasCards) 1 else 0) + (if (state.isAiTyping) 1 else 0)
+            LaunchedEffect(state.messages.size, hasChips, state.isAiTyping) {
+                val extra = (if (hasChips) 1 else 0) + (if (state.isAiTyping) 1 else 0)
                 val target = state.messages.size - 1 + extra
                 if (target >= 0) listState.animateScrollToItem(target)
             }
@@ -118,16 +174,15 @@ private fun AiCourseChatScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 itemsIndexed(state.messages, key = { _, m -> m.id }) { _, message ->
-                    MessageRow(message = message, layout = state.resultLayout)
+                    MessageRow(message = message, onCourseClick = onCourseClick)
                 }
-                if (hasCards) {
-                    item(key = "cards") {
-                        QuickReplyPills(
-                            replies = state.quickReplies,
-                            kind = state.quickReplyKind,
-                            enabled = state.inputEnabled,
-                            onQuickReply = onQuickReply,
-                        )
+                if (showRegion) {
+                    item(key = "regionChips") {
+                        ChipRow(state.regionChips.map { it to true }, state.inputEnabled) { onRegionChip(it) }
+                    }
+                } else if (showServer) {
+                    item(key = "serverChips") {
+                        ServerChipRow(state.quickReplies, state.inputEnabled, onQuickReply)
                     }
                 }
                 if (state.isAiTyping) {
@@ -135,7 +190,44 @@ private fun AiCourseChatScreen(
                 }
             }
 
-            ChatInputBar(enabled = state.inputEnabled, onSend = onSend)
+            ChatInputBar(
+                enabled = state.inputEnabled,
+                placeholder = state.inputPlaceholder,
+                onSend = onSend,
+            )
+        }
+    }
+}
+
+// ---------------- login gate ----------------
+
+@Composable
+private fun LoginGate(
+    onBack: () -> Unit,
+    onLogin: () -> Unit,
+) {
+    StatusBarColor(AiChatPalette.auroraBase.copy(alpha = 0f))
+    val drift = rememberAuroraDrift()
+    Box(modifier = Modifier.fillMaxSize().drawBehind { drawAurora(drift) }) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+            ChatTopBar(onBack = onBack)
+            Column(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                AiAvatar()
+                Spacer(Modifier.height(16.dp))
+                DsText(
+                    text = "로그인하고\n커미 AI에게 코스를 추천받아 보세요",
+                    style = DesignSystemThemeImpl.typeScale.textStrongM,
+                    color = AiChatPalette.ink,
+                    maxLines = 2,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(24.dp))
+                DsButton(text = "로그인하기", onClick = onLogin, modifier = Modifier.widthIn(max = 240.dp))
+            }
         }
     }
 }
@@ -160,16 +252,8 @@ private fun ChatTopBar(onBack: () -> Unit) {
                     .clickable(onClick = onBack)
                     .padding(8.dp),
         )
-        DsText(
-            text = "커미 AI",
-            style = DesignSystemThemeImpl.typeScale.textStrongS,
-            color = AiChatPalette.ink,
-        )
-        DsText(
-            text = "Beta",
-            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-            color = AiChatPalette.inkSoft,
-        )
+        DsText("커미 AI", style = DesignSystemThemeImpl.typeScale.textStrongS, color = AiChatPalette.ink)
+        DsText("Beta", style = DesignSystemThemeImpl.typeScale.textRegularXS, color = AiChatPalette.inkSoft)
     }
 }
 
@@ -178,10 +262,10 @@ private fun ChatTopBar(onBack: () -> Unit) {
 @Composable
 private fun MessageRow(
     message: AiChatMessage,
-    layout: AiRecLayout,
+    onCourseClick: (String) -> Unit,
 ) {
     when (message.role) {
-        ChatRole.AI -> AiMessageRow(message = message, layout = layout)
+        ChatRole.AI -> AiMessageRow(message = message, onCourseClick = onCourseClick)
         ChatRole.USER -> UserMessageRow(message)
     }
 }
@@ -189,15 +273,22 @@ private fun MessageRow(
 @Composable
 private fun AiMessageRow(
     message: AiChatMessage,
-    layout: AiRecLayout,
+    onCourseClick: (String) -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         AiAvatar()
         Spacer(Modifier.width(11.dp))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             GlassBubble(message.text)
-            if (message.recommendations.isNotEmpty()) {
-                RecommendationBlock(recommendations = message.recommendations, layout = layout)
+            if (message.courses.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.widthIn(max = BubbleMaxWidth),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    message.courses.forEach { course ->
+                        ChatCourseCard(course = course, onClick = { onCourseClick(course.id) })
+                    }
+                }
             }
         }
     }
@@ -257,14 +348,34 @@ private fun AiAvatar() {
     }
 }
 
-// ---------------- quick reply pills ----------------
+// ---------------- chips ----------------
 
+/** 지역 칩(앱 소유). 라벨만 받아 그린다 — 눌리면 [onTap] 에 라벨을 넘긴다. */
 @Composable
-private fun QuickReplyPills(
-    replies: List<String>,
-    kind: QuickReplyKind,
+private fun ChipRow(
+    chips: List<Pair<String, Boolean>>,
     enabled: Boolean,
-    onQuickReply: (String) -> Unit,
+    onTap: (String) -> Unit,
+) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(start = AvatarSize + 11.dp, top = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        chips.forEach { (label, withPin) ->
+            ChipPill(label = label, iconRes = if (withPin) R.drawable.ic_location_24 else null, enabled = enabled) {
+                onTap(label)
+            }
+        }
+    }
+}
+
+/** 서버 칩(THEME 이후). value 는 해석하지 않고 그대로 되돌려 보낸다. */
+@Composable
+private fun ServerChipRow(
+    replies: List<QuickReplyVO>,
+    enabled: Boolean,
+    onTap: (QuickReplyVO) -> Unit,
 ) {
     FlowRow(
         modifier = Modifier.fillMaxWidth().padding(start = AvatarSize + 11.dp, top = 2.dp),
@@ -272,228 +383,96 @@ private fun QuickReplyPills(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         replies.forEach { reply ->
-            Row(
-                modifier =
-                    Modifier
-                        .glass(CircleShape, elevation = 5.dp)
-                        .clickable(enabled = enabled) { if (enabled) onQuickReply(reply) }
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                Icon(
-                    painter = painterResource(kind.iconRes()),
-                    contentDescription = null,
-                    tint = DesignSystemThemeImpl.designSystemColor.contentAccent,
-                    modifier = Modifier.size(13.dp),
-                )
-                DsText(
-                    text = reply,
-                    style = DesignSystemThemeImpl.typeScale.textRegularS,
-                    color = AiChatPalette.ink,
-                )
-            }
+            val icon = if (reply.requiresLocation) R.drawable.ic_location_24 else R.drawable.ic_sparkle_24
+            ChipPill(label = reply.label, iconRes = icon, enabled = enabled) { onTap(reply) }
         }
     }
 }
 
-@DrawableRes
-private fun QuickReplyKind.iconRes(): Int =
-    when (this) {
-        QuickReplyKind.REGION -> R.drawable.ic_location_24
-        QuickReplyKind.THEME -> R.drawable.ic_sparkle_24
-        QuickReplyKind.PLACE -> R.drawable.ic_star_24
-        QuickReplyKind.GENERIC -> R.drawable.ic_sparkle_24
-    }
-
-// ---------------- recommendation layouts ----------------
-
-/**
- * 추천 3개 묶음. 배치는 [layout] 으로 고르며, 지금은 [AiRecLayout.FEATURED] 하나로 고정해 보여 준다.
- * 나머지 배치(CAROUSEL·STACKED)도 아래 when 분기로 살려 둔다 — 기본값만 바꾸면 그대로 쓸 수 있다.
- */
 @Composable
-private fun RecommendationBlock(
-    recommendations: List<AiCourseRecommendation>,
-    layout: AiRecLayout,
+private fun ChipPill(
+    label: String,
+    iconRes: Int?,
+    enabled: Boolean,
+    onClick: () -> Unit,
 ) {
-    when (layout) {
-        AiRecLayout.CAROUSEL -> CarouselLayout(recommendations)
-        AiRecLayout.FEATURED -> FeaturedLayout(recommendations)
-        AiRecLayout.STACKED -> StackedLayout(recommendations)
+    Row(
+        modifier =
+            Modifier
+                .glass(CircleShape, elevation = 5.dp)
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        if (iconRes != null) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = DesignSystemThemeImpl.designSystemColor.contentAccent,
+                modifier = Modifier.size(13.dp),
+            )
+        }
+        DsText(text = label, style = DesignSystemThemeImpl.typeScale.textRegularS, color = AiChatPalette.ink)
     }
 }
 
-/** A — 가로 스와이프 카드 + 점 인디케이터. */
+// ---------------- course card ----------------
+
+/** 추천 코스 카드(글래스). 커버 이미지 + 카테고리 태그 + 제목 + 저장 수. 누르면 코스 상세로. */
 @Composable
-private fun CarouselLayout(recommendations: List<AiCourseRecommendation>) {
-    val rowState = rememberLazyListState()
-    val activeIndex by remember { derivedStateOf { rowState.firstVisibleItemIndex } }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        LazyRow(
-            state = rowState,
-            modifier = Modifier.widthIn(max = BubbleMaxWidth),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            itemsIndexed(recommendations) { index, rec ->
-                Column(modifier = Modifier.width(212.dp).glass(CardRadius).padding(bottom = 2.dp)) {
-                    CourseThumb(index = index, tag = rec.tagLabel, modifier = Modifier.fillMaxWidth().height(132.dp))
-                    Column(modifier = Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        DsText(
-                            text = rec.title,
-                            style = DesignSystemThemeImpl.typeScale.textStrongS,
-                            color = AiChatPalette.ink,
-                            maxLines = 2,
-                        )
-                        DsText(
-                            rec.meta,
-                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                            color = AiChatPalette.inkSoft,
-                        )
-                    }
-                }
-            }
-        }
-        Row(
-            modifier = Modifier.widthIn(max = BubbleMaxWidth).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-        ) {
-            recommendations.indices.forEach { i ->
-                val on = i == activeIndex
+private fun ChatCourseCard(
+    course: HomeCourseVO,
+    onClick: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().glass(CardRadius).clickable(onClick = onClick)) {
+        Box(modifier = Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(14.dp))) {
+            if (course.coverImageUrl.isNotBlank()) {
+                AsyncImage(
+                    model = course.coverImageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
                 Box(
                     modifier =
-                        Modifier
-                            .height(7.dp)
-                            .width(if (on) 18.dp else 7.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (on) {
-                                    AiChatPalette.accentGradient
-                                } else {
-                                    Brush.linearGradient(
-                                        listOf(
-                                            AiChatPalette.inkSoft.copy(alpha = 0.35f),
-                                            AiChatPalette.inkSoft.copy(alpha = 0.35f),
-                                        ),
-                                    )
-                                },
-                            ),
+                        Modifier.fillMaxSize().background(
+                            DesignSystemThemeImpl.designSystemColor.imagePlaceholder,
+                        ),
                 )
             }
-        }
-    }
-}
-
-/** B — 대표 1개 크게 + 나머지 2개 작게. */
-@Composable
-private fun FeaturedLayout(recommendations: List<AiCourseRecommendation>) {
-    val top = recommendations.first()
-    Column(modifier = Modifier.widthIn(max = BubbleMaxWidth), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(modifier = Modifier.glass(CardRadius)) {
-            Box {
-                CourseThumb(index = 0, tag = null, modifier = Modifier.fillMaxWidth().height(138.dp))
+            if (course.categoryLabel.isNotBlank()) {
                 Box(
                     modifier =
                         Modifier
-                            .padding(10.dp)
+                            .padding(8.dp)
                             .clip(CircleShape)
-                            .background(AiChatPalette.accentGradient)
-                            .padding(horizontal = 11.dp, vertical = 5.dp),
+                            .background(AiChatPalette.glassTop)
+                            .padding(horizontal = 9.dp, vertical = 3.dp),
                 ) {
                     DsText(
-                        "추천 1순위",
-                        style = DesignSystemThemeImpl.typeScale.textStrongS,
-                        color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
+                        course.categoryLabel,
+                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                        color = AiChatPalette.ink,
                     )
                 }
             }
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                DsText(
-                    top.title,
-                    style = DesignSystemThemeImpl.typeScale.textStrongS,
-                    color = AiChatPalette.ink,
-                    maxLines = 2,
-                )
-                DsText(top.meta, style = DesignSystemThemeImpl.typeScale.textRegularXS, color = AiChatPalette.inkSoft)
-            }
         }
-        recommendations.drop(1).forEachIndexed { i, rec ->
-            MiniRecRow(index = i + 1, rec = rec)
-        }
-    }
-}
-
-@Composable
-private fun MiniRecRow(
-    index: Int,
-    rec: AiCourseRecommendation,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(18.dp)).padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        CourseThumb(index = index, tag = null, modifier = Modifier.size(width = 72.dp, height = 60.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DsText(
-                rec.title,
+                course.title,
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = AiChatPalette.ink,
                 maxLines = 2,
             )
-            DsText(rec.meta, style = DesignSystemThemeImpl.typeScale.textRegularXS, color = AiChatPalette.inkSoft)
-        }
-    }
-}
-
-/** C — 이미지-탑 세로 카드 3개. */
-@Composable
-private fun StackedLayout(recommendations: List<AiCourseRecommendation>) {
-    Column(modifier = Modifier.widthIn(max = BubbleMaxWidth), verticalArrangement = Arrangement.spacedBy(13.dp)) {
-        recommendations.forEachIndexed { index, rec ->
-            Column(modifier = Modifier.fillMaxWidth().glass(CardRadius)) {
-                CourseThumb(index = index, tag = rec.tagLabel, modifier = Modifier.fillMaxWidth().height(108.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        DsText(
-                            rec.title,
-                            style = DesignSystemThemeImpl.typeScale.textStrongS,
-                            color = AiChatPalette.ink,
-                            maxLines = 1,
-                        )
-                        DsText(
-                            rec.meta,
-                            style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                            color = AiChatPalette.inkSoft,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** 코스 썸네일 자리 — 파스텔 그라데이션 + (옵션) 좌상단 태그. 목업이라 실제 이미지는 없다. */
-@Composable
-private fun CourseThumb(
-    index: Int,
-    tag: String?,
-    modifier: Modifier = Modifier,
-) {
-    Box(modifier = modifier.clip(RoundedCornerShape(14.dp)).background(AiChatPalette.thumbBrush(index))) {
-        if (tag != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .padding(8.dp)
-                        .clip(CircleShape)
-                        .background(AiChatPalette.glassTop)
-                        .padding(horizontal = 9.dp, vertical = 3.dp),
-            ) {
-                DsText(tag, style = DesignSystemThemeImpl.typeScale.textRegularXS, color = AiChatPalette.ink)
+            val meta =
+                buildList {
+                    if (course.saveCountText.isNotBlank()) add("저장 ${course.saveCountText}")
+                    if (course.likeCountText.isNotBlank()) add("좋아요 ${course.likeCountText}")
+                }.joinToString(" · ")
+            if (meta.isNotBlank()) {
+                DsText(meta, style = DesignSystemThemeImpl.typeScale.textRegularXS, color = AiChatPalette.inkSoft)
             }
         }
     }
@@ -541,6 +520,7 @@ private fun TypingDot(index: Int) {
 @Composable
 private fun ChatInputBar(
     enabled: Boolean,
+    placeholder: String,
     onSend: (String) -> Unit,
 ) {
     var input by remember { mutableStateOf("") }
@@ -558,7 +538,8 @@ private fun ChatInputBar(
             value = input,
             onValueChange = { input = it },
             modifier = Modifier.weight(1f),
-            placeholder = "메시지를 입력하세요",
+            placeholder = placeholder,
+            enabled = enabled,
         )
         val canSend = enabled && input.isNotBlank()
         SendButton(
@@ -606,7 +587,6 @@ private fun SendButton(
 
 // ---------------- glass + aurora helpers ----------------
 
-/** 반투명 글래스 표면(흰 그라데이션 + 테두리 + 그림자). */
 private fun Modifier.glass(
     shape: Shape,
     elevation: androidx.compose.ui.unit.Dp = 12.dp,
@@ -621,7 +601,6 @@ private fun Modifier.glass(
         .background(AiChatPalette.glassSurface)
         .border(1.dp, AiChatPalette.glassBorder, shape)
 
-/** 오로라 블롭을 아주 느리게 위아래로 흘린다(reduce-motion 시 정지는 Compose 가 알아서 하지 않으므로 폭만 작게). */
 @Composable
 private fun rememberAuroraDrift(): Float {
     val transition = rememberInfiniteTransition(label = "aurora")

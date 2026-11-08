@@ -1,28 +1,32 @@
 package com.chillsam.courmy.main.presentation.aichat
 
 import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.main.entity.aichat.AiChatStep
+import com.chillsam.courmy.main.entity.aichat.QuickReplyVO
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
 /**
- * 커미 AI 코스 추천 채팅 화면 상태.
+ * 커미 AI 채팅 화면 상태.
  *
- * 화면은 상단바·입력창이 항상 보이고, 가운데 대화 목록만 [messages] 로 채워진다.
+ * REGION 단계는 앱이 소유해 [regionChips] 를 쓰고, 그 뒤는 서버가 준 [quickReplies] 를 쓴다.
+ * 둘 중 지금 그릴 쪽은 [showRegionChips] 로 가른다(REGION 이고 서버 칩이 비었을 때 지역 칩).
  */
 data class AiCourseChatUIState(
     val messages: ImmutableList<AiChatMessage> = persistentListOf(),
-    /** 대화 아래에 뜨는 빠른 답변 카드 라벨. 비어 있으면 숨긴다. */
-    val quickReplies: ImmutableList<String> = persistentListOf(),
-    /** 현재 빠른 답변 카드의 종류(리딩 아이콘 결정). */
-    val quickReplyKind: QuickReplyKind = QuickReplyKind.GENERIC,
-    /** AI "입력 중…" 말풍선 노출 여부. */
+    /** 서버가 내려준 칩(THEME 이후). */
+    val quickReplies: ImmutableList<QuickReplyVO> = persistentListOf(),
+    /** 앱이 위치 기준으로 만든 지역 칩 라벨(첫 항목은 "내 근처"). */
+    val regionChips: ImmutableList<String> = persistentListOf(),
+    /** true 면 서버 칩 대신 지역 칩을 그린다(REGION 단계). */
+    val showRegionChips: Boolean = false,
+    val step: AiChatStep = AiChatStep.REGION,
     val isAiTyping: Boolean = false,
-    /** 입력(전송·칩) 허용 여부. AI 응답 생성 중에는 false. */
     val inputEnabled: Boolean = true,
-    /** 추천 결과 3개의 배치 방식. 현재는 대표+2([AiRecLayout.FEATURED])로 고정해 보여 준다. */
-    val resultLayout: AiRecLayout = AiRecLayout.FEATURED,
+    val inputPlaceholder: String = DEFAULT_PLACEHOLDER,
 ) : UiState {
     companion object {
+        const val DEFAULT_PLACEHOLDER = "메시지를 입력하세요"
         val empty: AiCourseChatUIState = AiCourseChatUIState()
     }
 }

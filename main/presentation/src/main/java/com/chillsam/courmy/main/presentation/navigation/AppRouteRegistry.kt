@@ -228,7 +228,11 @@ val appRoutes: List<AppRoute> =
             path = AiCourseChatRoute.PATH,
             render = {
                 val navigationHelper = LocalNavigationHelper.current
-                AiCourseChatPage(onBack = { navigationHelper.navigateToBack() })
+                AiCourseChatPage(
+                    onBack = { navigationHelper.navigateToBack() },
+                    onLogin = { navigationHelper.navigateTo(LoginRoute) },
+                    onCourseClick = { id -> navigationHelper.navigateByRoute(CourseDetailRoute.route(id)) },
+                )
             },
         ),
         // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다. 지역별 둘러보기 진입 시 지역 인자가 실린다.

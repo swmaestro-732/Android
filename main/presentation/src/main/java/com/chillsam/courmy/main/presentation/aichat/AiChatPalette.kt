@@ -35,19 +35,6 @@ internal object AiChatPalette {
     val ink = Color(0xFF1D2A23)
     val inkSoft = Color(0xFF6A7A71)
 
-    /** 코스 썸네일 그라데이션 3종(인덱스로 순환). */
-    private val thumbColors =
-        listOf(
-            Color(0xFF9EDDBE) to Color(0xFF73C7E6),
-            Color(0xFFB7E6C9) to Color(0xFF8ED2B4),
-            Color(0xFFA9CFF0) to Color(0xFFC7BCEF),
-        )
-
-    fun thumbBrush(index: Int): Brush {
-        val (start, end) = thumbColors[index % thumbColors.size]
-        return Brush.linearGradient(listOf(start, end))
-    }
-
     val glassSurface: Brush
         get() = Brush.verticalGradient(listOf(glassTop, glassBottom))
 

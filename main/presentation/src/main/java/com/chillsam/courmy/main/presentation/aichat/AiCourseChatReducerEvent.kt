@@ -1,6 +1,8 @@
 package com.chillsam.courmy.main.presentation.aichat
 
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
+import com.chillsam.courmy.main.entity.aichat.AiChatStep
+import com.chillsam.courmy.main.entity.aichat.QuickReplyVO
 
 /** 채팅 화면의 내부 상태 변경 이벤트. 외부에서 직접 dispatch 하지 않는다. */
 sealed interface AiCourseChatReducerEvent : ReducerEvent {
@@ -9,27 +11,33 @@ sealed interface AiCourseChatReducerEvent : ReducerEvent {
         val message: AiChatMessage,
     ) : AiCourseChatReducerEvent
 
-    /** AI 가 "입력 중…" 표시를 켜거나 끈다. */
+    /** AI "입력 중…" 표시 토글. */
     data class SetTyping(
         val typing: Boolean,
     ) : AiCourseChatReducerEvent
 
-    /** 대화 아래 빠른 답변 카드 목록을 교체한다(없으면 숨김). [kind] 로 리딩 아이콘을 정한다. */
+    /** 서버 칩 목록 교체(THEME 이후). */
     data class SetQuickReplies(
-        val replies: List<String>,
-        val kind: QuickReplyKind = QuickReplyKind.GENERIC,
+        val replies: List<QuickReplyVO>,
     ) : AiCourseChatReducerEvent
 
-    /** 입력 가능 여부. AI 가 답하는 중에는 중복 전송을 막으려 잠근다. */
-    data class SetInputEnabled(
+    /** 입력창 상태(활성/안내 문구) 교체. */
+    data class SetInput(
         val enabled: Boolean,
+        val placeholder: String,
     ) : AiCourseChatReducerEvent
 
-    /** 대화 전체를 비운다("다시 추천받기"). */
-    data object Clear : AiCourseChatReducerEvent
-
-    /** 추천 결과 배치 방식 변경. */
-    data class SetLayout(
-        val layout: AiRecLayout,
+    /** 현재 단계 교체. */
+    data class SetStep(
+        val step: AiChatStep,
     ) : AiCourseChatReducerEvent
+
+    /** REGION 단계에서 앱이 보여줄 지역 칩(동/구 이름) 교체. [show] 가 true 면 노출. */
+    data class SetRegionChips(
+        val chips: List<String>,
+        val show: Boolean,
+    ) : AiCourseChatReducerEvent
+
+    /** 대화 초기화("처음부터"·세션 만료). 지역 칩은 ViewModel 이 다시 채운다. */
+    data object Reset : AiCourseChatReducerEvent
 }
