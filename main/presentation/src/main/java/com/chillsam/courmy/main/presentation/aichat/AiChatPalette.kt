@@ -17,6 +17,9 @@ internal object AiChatPalette {
     /** 오로라 배경의 베이스(거의 흰색, 아주 옅은 민트). */
     val auroraBase = Color(0xFFF4FAF6)
 
+    /** 홈 배너 카드 전용 베이스 — 흰 피드 위에서 카드가 묻히지 않게 베이스를 민트로 더 올린다. */
+    val cardBase = Color(0xFFE4F3EB)
+
     /** 오로라 블롭 4색 — 민트·하늘·틸·라벤더. 알파로 번지게 깐다. */
     val blobMint = Color(0xFFA9E9C9)
     val blobSky = Color(0xFFBFE0F5)

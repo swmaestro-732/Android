@@ -1,6 +1,7 @@
 package com.chillsam.courmy.main.presentation.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,6 +58,8 @@ fun CourmyAiCard(
                     ambientColor = AiChatPalette.ink.copy(alpha = 0.14f),
                 ).clip(CardShape)
                 .drawBehind { drawCardAurora() }
+                // 흰 피드와 경계를 또렷하게 — 글래스 느낌의 흰 테두리로 카드 가장자리를 세운다.
+                .border(1.dp, Color.White.copy(alpha = 0.6f), CardShape)
                 .clickable(onClick = onClick)
                 .padding(20.dp),
     ) {
@@ -99,27 +102,32 @@ fun CourmyAiCard(
                 maxLines = 2,
             )
 
-            // CTA: 채팅 악센트와 같은 초록 그라데이션 알약.
+            // CTA: 흰 알약 + 초록 화살표 원. 파스텔 카드 위에서 흰색이 또렷한 포인트가 된다.
             Row(
                 modifier =
                     Modifier
                         .clip(CircleShape)
-                        .background(AiChatPalette.accentGradient)
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .background(Color.White)
+                        .padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 DsText(
                     text = "코스 추천받기",
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
-                    color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
+                    color = DesignSystemThemeImpl.designSystemColor.bgAccent,
                 )
-                Spacer(Modifier.width(6.dp))
-                Icon(
-                    painter = painterResource(R.drawable.ic_chevron_right_24),
-                    contentDescription = null,
-                    tint = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
-                    modifier = Modifier.size(18.dp),
-                )
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    modifier = Modifier.size(28.dp).clip(CircleShape).background(AiChatPalette.accentGradient),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_chevron_right_24),
+                        contentDescription = null,
+                        tint = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
+                        modifier = Modifier.size(17.dp),
+                    )
+                }
             }
         }
     }
@@ -127,7 +135,7 @@ fun CourmyAiCard(
 
 /** 카드 배경에 채팅과 같은 민트·초록·라벤더 오로라를 정적으로 깐다(리스트 아이템이라 애니메이션 없음). */
 private fun DrawScope.drawCardAurora() {
-    drawRect(AiChatPalette.auroraBase)
+    drawRect(AiChatPalette.cardBase)
 
     fun blob(
         color: Color,
