@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
@@ -134,7 +135,7 @@ private fun PlaceHeader(
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
             )
             DsText(
-                text = place.category,
+                text = place.detailCategory.orCategoryLabel(place.category),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
             )

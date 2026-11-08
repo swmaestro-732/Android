@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.CourseTagVO
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -267,7 +268,7 @@ private fun PlaceSuggestions(
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = place.category,
+                text = place.detailCategory.orCategoryLabel(place.category),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )

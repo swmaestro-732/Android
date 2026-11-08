@@ -4,6 +4,7 @@ import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -31,6 +32,7 @@ data class MapPlaceSearchItemDTO(
     val location: MapPlaceSearchLocationDTO? = null,
     val hasSaved: Boolean = false,
     /** 선택 필드 선연동: 서버 지원 전에는 누락될 수 있다. */
+    @SerialName("categoryDetail")
     val detailCategory: String? = null,
 )
 
@@ -50,7 +52,7 @@ internal fun MapPlaceSearchDTO.toPageVO(): CursorPageVO<MapPlaceVO> =
                     MapPlaceVO(
                         id = requireNotNull(place.id),
                         name = place.name.orEmpty(),
-                        detailCategory = PlaceDetailCategoryVO.fromCode(place.detailCategory),
+                        detailCategory = PlaceDetailCategoryVO.fromServerValue(place.detailCategory),
                         category = place.categories?.firstOrNull().toPlaceCategoryLabel(),
                         subCategory =
                             place.categories

@@ -9,6 +9,7 @@ import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseReviewVO
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
 
@@ -96,6 +97,7 @@ data class CoursePlaceDTO(
     val categories: List<String>? = null,
     val location: CoursePlaceLocationDTO? = null,
     val images: List<CoursePlaceImageDTO>? = null,
+    @SerialName("categoryDetail")
     val detailCategory: String? = null,
 )
 
@@ -232,7 +234,7 @@ private fun CoursePlaceDTO.toVO(): CourseDetailPlaceVO {
         order = (orderNo ?: 0) + 1,
         name = name.orEmpty(),
         category = categories.toPlaceCategoryLabel(SEPARATOR),
-        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
+        detailCategory = PlaceDetailCategoryVO.fromServerValue(detailCategory),
         photoCountText = "1/${urls.size.coerceAtLeast(1)}",
         tip = caption.orEmpty(),
         imageUrls = urls,

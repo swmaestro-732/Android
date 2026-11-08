@@ -73,6 +73,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.createBitmap
 import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
@@ -1079,7 +1080,7 @@ private fun PlaceInfoCard(
             )
             if (coursePlace.category.isNotBlank()) {
                 DsText(
-                    text = coursePlace.category,
+                    text = coursePlace.detailCategory.orCategoryLabel(coursePlace.category),
                     style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = color.contentDefaultLevel2,
                 )
@@ -1370,7 +1371,7 @@ private fun PlaceInfoHeader(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (coursePlace.category.isNotBlank()) {
                 DsText(
-                    text = coursePlace.category,
+                    text = coursePlace.detailCategory.orCategoryLabel(coursePlace.category),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )

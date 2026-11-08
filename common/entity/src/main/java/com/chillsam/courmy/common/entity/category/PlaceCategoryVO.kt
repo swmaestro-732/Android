@@ -1,6 +1,6 @@
 package com.chillsam.courmy.common.entity.category
 
-/** 장소 카테고리 10종. 코스 쪽은 별개 체계인 [CourseTagVO] 12종을 쓴다. 정본은 `.ai/taxonomy.md`. */
+/** 장소 카테고리 11종(ETC=기타 포함). 코스 쪽은 별개 체계인 [CourseTagVO] 12종을 쓴다. 정본은 `.ai/taxonomy.md`. */
 enum class PlaceCategoryVO(
     val code: String,
     val label: String,
@@ -15,6 +15,9 @@ enum class PlaceCategoryVO(
     LANDMARK("landmark", "역사·명소"),
     ENTERTAINMENT("entertainment", "여가·놀거리"),
     WELLNESS("wellness", "웰니스·힐링"),
+
+    /** 상세·상위 어디에도 매칭되지 않는 장소. 상세 아이콘 없이 폴백 핀으로 표시한다. */
+    ETC("etc", "기타"),
     ;
 
     companion object {

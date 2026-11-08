@@ -48,7 +48,7 @@ private fun CoursePlaceDTO.toDraftPlaceVO(): CoursePlaceVO =
         id = (placeId ?: 0L).toString(),
         name = name.orEmpty(),
         category = categories.toPlaceCategoryLabel(),
-        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
+        detailCategory = PlaceDetailCategoryVO.fromServerValue(detailCategory),
         note = caption.orEmpty(),
         photoUrls =
             images

@@ -37,7 +37,8 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 class PlacePinPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val page = intent.getIntExtra("page", 0).coerceIn(0, 4)
+        // 상세값 + 폴백 핀(null)을 10개씩 나눈 마지막 페이지까지 허용한다.
+        val page = intent.getIntExtra("page", 0).coerceIn(0, PlaceDetailCategoryVO.entries.size / 10)
         setContent {
             DesignSystemTheme {
                 PinPreviewPage(page)
@@ -59,7 +60,11 @@ private fun PinPreviewPage(page: Int) {
             ).windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(20.dp),
     ) {
-        DsText(text = "장소 공통 아이콘 ${page + 1}/5", style = type.textStrongM, color = color.contentDefaultLevel0)
+        DsText(
+            text = "장소 공통 아이콘 ${page + 1}/${PlaceDetailCategoryVO.entries.size / 10 + 1}",
+            style = type.textStrongM,
+            color = color.contentDefaultLevel0,
+        )
         DsText(text = "예시 · 일반 / 선택 / 썸네일 · 2026-11-03", style = type.textRegularM, color = color.contentDefaultLevel0)
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
