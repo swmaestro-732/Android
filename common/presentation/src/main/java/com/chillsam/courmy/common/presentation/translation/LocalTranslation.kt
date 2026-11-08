@@ -17,18 +17,10 @@ val LocalAppLanguage = compositionLocalOf { AppLanguage.KOREAN }
  */
 val LocalTranslator = staticCompositionLocalOf<Translator?> { null }
 
-/** 언어의 자기 이름(설정 목록 표시용). */
+/** 언어의 자기 이름(설정 목록 표시용). 이 문자열은 자동 번역 대상이 아니다(고정 표기). */
 fun AppLanguage.nativeName(): String =
     when (this) {
         AppLanguage.KOREAN -> "한국어"
         AppLanguage.ENGLISH -> "English"
         AppLanguage.JAPANESE -> "日本語"
-    }
-
-/** 번역 토글 문구용 한국어 이름(예: "영어로 번역 보기"). */
-fun AppLanguage.koreanName(): String =
-    when (this) {
-        AppLanguage.KOREAN -> "한국어"
-        AppLanguage.ENGLISH -> "영어"
-        AppLanguage.JAPANESE -> "일본어"
     }

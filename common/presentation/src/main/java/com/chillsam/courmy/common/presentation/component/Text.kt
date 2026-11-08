@@ -10,6 +10,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import com.chillsam.courmy.common.presentation.translation.rememberAutoTranslated
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 @Composable
@@ -27,8 +28,10 @@ fun DsText(
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
 ) {
+    // 선택 언어가 한국어가 아니면 화면의 모든 한국어 텍스트를 온디바이스로 자동 번역한다
+    // (해시태그·숫자·핸들 등은 원문 유지, 전역 캐시로 중복 번역 방지).
     Text(
-        text = text,
+        text = rememberAutoTranslated(text),
         modifier = modifier,
         color = color,
         textDecoration = textDecoration,
