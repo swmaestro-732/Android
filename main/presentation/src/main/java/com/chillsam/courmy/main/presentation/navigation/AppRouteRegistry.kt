@@ -434,6 +434,13 @@ val appRoutes: List<AppRoute> =
             },
         ),
         AppRoute(
+            path = com.chillsam.courmy.main.domain.settings.LanguageSettingsPage.PATH,
+            render = {
+                com.chillsam.courmy.main.presentation.settings
+                    .LanguageSettingsPage()
+            },
+        ),
+        AppRoute(
             path = AppVersionRoute.PATH,
             render = { AppVersionPage() },
         ),

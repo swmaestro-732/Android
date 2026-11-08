@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.metrics.performance.JankStats
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
@@ -24,12 +25,17 @@ import com.chillsam.courmy.common.domain.push.NotificationConsentStore
 import com.chillsam.courmy.common.domain.push.NotificationSettings
 import com.chillsam.courmy.common.domain.push.PushTarget
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.translation.AppLanguage
+import com.chillsam.courmy.common.domain.translation.LanguageRepository
+import com.chillsam.courmy.common.domain.translation.Translator
 import com.chillsam.courmy.common.presentation.LocalTTIHelper
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.jank.JankReporter
 import com.chillsam.courmy.common.presentation.jank.LocalJankReporter
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
+import com.chillsam.courmy.common.presentation.translation.LocalAppLanguage
+import com.chillsam.courmy.common.presentation.translation.LocalTranslator
 import com.chillsam.courmy.main.presentation.deeplink.resolveNewIntentRoute
 import com.chillsam.courmy.main.presentation.deeplink.resolveRoute
 import com.chillsam.courmy.main.presentation.deeplink.resolveStartStack
@@ -60,6 +66,12 @@ class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var notificationConsent: NotificationConsentStore
+
+    @Inject
+    lateinit var translator: Translator
+
+    @Inject
+    lateinit var languageRepository: LanguageRepository
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -119,12 +131,15 @@ class MainActivity : FragmentActivity() {
         // 상태바 영역의 색과 아이콘 밝기는 화면마다 달라 RootComposable 이 맡는다.
         enableEdgeToEdge()
         setContent {
+            val appLanguage by languageRepository.language.collectAsStateWithLifecycle(AppLanguage.KOREAN)
             CompositionLocalProvider(
                 LocalNavigationHelper provides navigationHelper,
                 LocalMessageHelper provides messageHelper,
                 LocalJankReporter provides jankReporter,
                 LocalTTIHelper provides ttiHelper,
                 LocalTelemetry provides telemetry,
+                LocalAppLanguage provides appLanguage,
+                LocalTranslator provides translator,
             ) {
                 RootComposable(
                     startStack = startStack,

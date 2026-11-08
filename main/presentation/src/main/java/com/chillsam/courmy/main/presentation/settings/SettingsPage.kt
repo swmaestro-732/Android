@@ -83,6 +83,16 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                 },
             )
             SettingsDivider()
+            SettingsMenuRow(
+                label = "언어",
+                onClick = {
+                    navigationHelper.navigateTo(
+                        com.chillsam.courmy.main.domain.settings.LanguageSettingsPage,
+                        source = NavigationSource("/settings", "language"),
+                    )
+                },
+            )
+            SettingsDivider()
             SettingsMenuRow(label = "문의하기", onClick = {
                 telemetry.buttonClick("/settings", "contact", mapOf("destination" to "external_browser"))
                 openUrl(CONTACT_FORM_URL)

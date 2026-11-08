@@ -75,6 +75,7 @@ import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.TranslatableText
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.report.ReportAction
@@ -185,7 +186,8 @@ fun CourseDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
                     StatsRow(detail = detail)
-                    DsText(
+                    // 코스 설명: 선택 언어가 한국어가 아니면 "번역 보기"(온디바이스)가 붙는다. 원문은 보존한다.
+                    TranslatableText(
                         text = detail.description,
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel1,
