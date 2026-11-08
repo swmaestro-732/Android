@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -223,7 +226,11 @@ fun HomePage(modifier: Modifier = Modifier) {
             contentPadding =
                 PaddingValues(
                     top = 12.dp,
-                    bottom = BottomBarHeight + 40.dp,
+                    // 바텀바는 BottomBarHeight 위에 navigationBarsPadding 을 더해 그려진다. 콘텐츠도
+                    // 같은 네비게이션 바 인셋을 빼줘야 3버튼 네비 기기에서 마지막 줄이 바텀바에 가리지 않는다.
+                    bottom =
+                        BottomBarHeight + 40.dp +
+                            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
                 ),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {

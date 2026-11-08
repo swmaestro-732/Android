@@ -61,6 +61,7 @@ internal val NavSignal.analyticsAction: String
             is NavSignal.Replace -> "replace"
             NavSignal.Back -> "app_back"
             NavSignal.AuthenticationCompleted -> "authentication_completed"
+            NavSignal.GuestBrowsingContinued -> "guest_browsing_continued"
         }
 
 internal val NavSignal.analyticsSource: NavigationSource?
