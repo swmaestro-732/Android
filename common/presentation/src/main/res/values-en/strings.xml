@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 영어 번역(초안). UI 문구 번역은 검토 필요. -->
+<resources>
+    <string name="app_name">Courmy</string>
+
+    <string name="media_empty">No content to show.</string>
+    <string name="favorite_empty">No saved content to show.</string>
+    <string name="media_default_title">Title</string>
+    <string name="nav_tab_search">Search</string>
+    <string name="nav_tab_favorite">Favorites</string>
+    <string name="nav_back_button">Back</string>
+    <string name="favorite_register_failed">Couldn\'t add to favorites.</string>
+    <string name="favorite_remove_failed">Couldn\'t remove from favorites.</string>
+    <string name="search_hint">Enter search terms</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_failed">Search failed.</string>
+    <string name="search_prompt">Try entering a search term.</string>
+    <string name="list_end_marker">End</string>
+
+    <string name="home_nav_home">Home</string>
+    <string name="home_nav_map">Map</string>
+    <string name="home_nav_chat">Chat</string>
+    <string name="home_nav_saved">Saved</string>
+    <string name="home_nav_my">My</string>
+
+    <string name="home_fab_create">Create course menu</string>
+    <string name="home_menu_new_course">New course</string>
+    <string name="home_menu_load_draft">Load draft</string>
+    <string name="home_menu_new_plan">Plan</string>
+
+    <string name="common_yes">Yes</string>
+    <string name="common_no">No</string>
+    <string name="common_cancel">Cancel</string>
+
+    <string name="a11y_more">More</string>
+    <string name="rating_stars_description">%1$d stars</string>
+    <string name="rating_input_description">Give %1$d stars</string>
+
+    <string name="report_action">Report</string>
+    <string name="report_reason_prompt">Please select a reason for reporting.</string>
+    <string name="report_detail_placeholder">Additional details (optional, up to 500 characters)</string>
+    <string name="report_submit">Submit report</string>
+</resources>

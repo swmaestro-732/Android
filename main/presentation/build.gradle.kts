@@ -77,6 +77,8 @@ dependencies {
     implementation(libs.kotlinx.collections.immutable)
 
     implementation(libs.androidx.activity.compose)
+    // 선택 언어를 앱 locale 로 적용(AppCompatDelegate.setApplicationLocales). strings.xml en/ja 해석용.
+    implementation(libs.androidx.appcompat)
     // 프로필 이미지: 시스템 Photo Picker 로 고른 이미지 렌더(Coil).
     implementation(libs.coil.compose)
     // 지도 탭(FS-10): 네이버 지도 렌더·마커 오버레이.

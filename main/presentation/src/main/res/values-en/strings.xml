@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 영어 번역(초안). UI 문구 번역은 검토 필요. -->
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_profile_edit">Edit profile</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_notice">Notices</string>
+    <string name="settings_notification">Notifications</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_contact">Contact us</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_app_version">App version</string>
+    <string name="settings_hint_not_ready">(Coming soon)</string>
+    <string name="settings_toast_not_ready">Coming soon</string>
+    <string name="settings_toast_no_browser">Can\'t open a browser</string>
+
+    <string name="language_description">If the language isn\'t Korean, you can translate course descriptions and more. Translation runs on your device.</string>
+    <string name="language_selected">Selected</string>
+</resources>

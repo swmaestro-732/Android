@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 일본어 번역(초안). UI 문구 번역은 검토 필요. -->
+<resources>
+    <string name="app_name">Courmy</string>
+
+    <string name="media_empty">表示する内容がありません。</string>
+    <string name="favorite_empty">表示するお気に入りがありません。</string>
+    <string name="media_default_title">タイトル</string>
+    <string name="nav_tab_search">検索</string>
+    <string name="nav_tab_favorite">お気に入り</string>
+    <string name="nav_back_button">戻る</string>
+    <string name="favorite_register_failed">お気に入りに追加できませんでした。</string>
+    <string name="favorite_remove_failed">お気に入りを解除できませんでした。</string>
+    <string name="search_hint">検索ワードを入力</string>
+    <string name="search_clear">検索ワードを消去</string>
+    <string name="search_failed">検索に失敗しました。</string>
+    <string name="search_prompt">検索ワードを入力してください。</string>
+    <string name="list_end_marker">最後</string>
+
+    <string name="home_nav_home">ホーム</string>
+    <string name="home_nav_map">地図</string>
+    <string name="home_nav_chat">チャット</string>
+    <string name="home_nav_saved">保存</string>
+    <string name="home_nav_my">マイ</string>
+
+    <string name="home_fab_create">コース作成メニュー</string>
+    <string name="home_menu_new_course">新しいコースを作成</string>
+    <string name="home_menu_load_draft">下書きを読み込む</string>
+    <string name="home_menu_new_plan">プラン作成</string>
+
+    <string name="common_yes">はい</string>
+    <string name="common_no">いいえ</string>
+    <string name="common_cancel">キャンセル</string>
+
+    <string name="a11y_more">もっと見る</string>
+    <string name="rating_stars_description">星%1$d個</string>
+    <string name="rating_input_description">星%1$d個を付ける</string>
+
+    <string name="report_action">報告する</string>
+    <string name="report_reason_prompt">報告の理由を選択してください。</string>
+    <string name="report_detail_placeholder">追加説明（任意、最大500文字）</string>
+    <string name="report_submit">報告を送信</string>
+</resources>

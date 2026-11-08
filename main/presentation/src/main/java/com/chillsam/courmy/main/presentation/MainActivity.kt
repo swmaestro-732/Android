@@ -9,11 +9,15 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -132,6 +136,9 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         setContent {
             val appLanguage by languageRepository.language.collectAsStateWithLifecycle(AppLanguage.KOREAN)
+            // 선택 언어를 앱 locale 로도 반영해 strings.xml(en/ja) 리소스가 해석되게 한다.
+            // (한국어는 기본 리소스라 빈 목록=시스템 기본으로 둔다.) 적용 시 Activity 가 재생성된다.
+            ApplyAppLocale(appLanguage)
             CompositionLocalProvider(
                 LocalNavigationHelper provides navigationHelper,
                 LocalMessageHelper provides messageHelper,
@@ -225,6 +232,26 @@ class MainActivity : FragmentActivity() {
 
             // App Link 웜 스타트.
             else -> intent.data?.let(::resolveNewIntentRoute)?.let(navigationHelper::navigateDeepLink)
+        }
+    }
+}
+
+/**
+ * 선택 언어를 앱 locale 로 적용한다. strings.xml 의 values-en/values-ja 가 이 locale 로 해석된다.
+ * 한국어는 기본 리소스라 빈 목록(시스템 기본)으로 둔다. 이미 같은 locale 이면 다시 적용하지 않는다
+ * (setApplicationLocales 는 Activity 를 재생성하므로 불필요한 재생성을 막는다).
+ */
+@Composable
+private fun ApplyAppLocale(language: AppLanguage) {
+    LaunchedEffect(language) {
+        val desired =
+            if (language == AppLanguage.KOREAN) {
+                LocaleListCompat.getEmptyLocaleList()
+            } else {
+                LocaleListCompat.forLanguageTags(language.code)
+            }
+        if (AppCompatDelegate.getApplicationLocales() != desired) {
+            AppCompatDelegate.setApplicationLocales(desired)
         }
     }
 }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 일본어 번역(초안). UI 문구 번역은 검토 필요. -->
+<resources>
+    <string name="settings_title">設定</string>
+    <string name="settings_profile_edit">プロフィール編集</string>
+    <string name="settings_account">アカウント管理</string>
+    <string name="settings_notice">お知らせ</string>
+    <string name="settings_notification">通知</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_contact">お問い合わせ</string>
+    <string name="settings_privacy">プライバシー</string>
+    <string name="settings_app_version">アプリバージョン</string>
+    <string name="settings_hint_not_ready">（準備中）</string>
+    <string name="settings_toast_not_ready">準備中です</string>
+    <string name="settings_toast_no_browser">ブラウザを開けません</string>
+
+    <string name="language_description">韓国語以外では、コース説明などで翻訳を利用できます。翻訳は端末内で処理されます。</string>
+    <string name="language_selected">選択中</string>
+</resources>
