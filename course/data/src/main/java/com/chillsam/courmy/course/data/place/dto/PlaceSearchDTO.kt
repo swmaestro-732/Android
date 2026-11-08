@@ -4,6 +4,7 @@ import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -39,6 +40,7 @@ data class PlaceDTO(
     val walkingMinutes: Int? = null,
     val location: PlaceLocationDTO? = null,
     val hasSaved: Boolean = false,
+    @SerialName("categoryDetail")
     val detailCategory: String? = null,
 )
 
@@ -69,7 +71,7 @@ fun PlaceDTO.toVO(): CoursePlaceVO =
         name = name.orEmpty(),
         category = categories.toPlaceCategoryLabel(),
         address = address.orEmpty(),
-        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
+        detailCategory = PlaceDetailCategoryVO.fromServerValue(detailCategory),
         thumbnailUrl = imageUrl.orEmpty(),
         // 좌표는 한쪽만 있으면 쓸 수 없어 둘 다 있을 때만 채운다.
         latitude = location?.latitude?.takeIf { location.longitude != null },

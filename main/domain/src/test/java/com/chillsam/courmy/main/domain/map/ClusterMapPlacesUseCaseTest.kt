@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.domain.map
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import org.junit.Assert.assertEquals
@@ -71,6 +72,38 @@ class ClusterMapPlacesUseCaseTest {
 
         assertEquals(packed, result.singles)
         assertTrue(result.clusters.isEmpty())
+    }
+
+    @Test
+    fun `단독으로 남는 핀은 상세 분류를 그대로 보존한다`() {
+        // 핀이 상위 카테고리(카페)로 폴백되던 회귀 방지: 클러스터링이 detailCategory 를 떨어뜨리면 안 된다.
+        val spread =
+            listOf(
+                MapPlaceVO(
+                    id = 87,
+                    name = "갈릭보이",
+                    category = "카페·디저트",
+                    detailCategory = PlaceDetailCategoryVO.BAKERY,
+                    latitude = 37.05,
+                    longitude = 127.05,
+                ),
+                MapPlaceVO(
+                    id = 88,
+                    name = "좌표 없는 곳",
+                    category = "카페·디저트",
+                    detailCategory = PlaceDetailCategoryVO.CAFE,
+                    latitude = null,
+                    longitude = null,
+                ),
+            )
+
+        val result = useCase(spread, bounds)
+
+        assertTrue(result.clusters.isEmpty())
+        assertEquals(
+            mapOf(87L to PlaceDetailCategoryVO.BAKERY, 88L to PlaceDetailCategoryVO.CAFE),
+            result.singles.associate { it.id to it.detailCategory },
+        )
     }
 
     @Test

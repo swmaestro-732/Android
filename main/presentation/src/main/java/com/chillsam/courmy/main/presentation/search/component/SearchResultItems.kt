@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
@@ -130,7 +131,7 @@ internal fun SearchPlaceRow(
 /** `카페 · 베이커리` — 1줄에서 이름 옆에 붙는 카테고리. 둘 다 비면 빈 문자열. */
 private fun MapPlaceVO.categoryLine(): String =
     listOfNotNull(
-        category.takeIf { it.isNotBlank() },
+        detailCategory.orCategoryLabel(category).takeIf { it.isNotBlank() },
         subCategory,
     ).joinToString(" · ")
 

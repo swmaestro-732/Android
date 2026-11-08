@@ -72,6 +72,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -1153,7 +1154,7 @@ internal fun CompactPlaceRow(
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = place.category,
+                text = place.detailCategory.orCategoryLabel(place.category),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -1270,7 +1271,7 @@ private fun DetailPlaceItem(
                     color = color.contentDefaultLevel0,
                 )
                 DsText(
-                    text = place.category,
+                    text = place.detailCategory.orCategoryLabel(place.category),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )

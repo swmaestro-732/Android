@@ -59,6 +59,7 @@ import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.entity.category.CourseTagVO
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
@@ -841,7 +842,7 @@ private fun NearbyPlaceCard(
                 )
                 if (hasAddress && hasCategory) {
                     DsText(
-                        text = place.categoryLabel,
+                        text = place.detailCategory.orCategoryLabel(place.categoryLabel),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,
@@ -860,7 +861,7 @@ private fun NearbyPlaceCard(
                 ) {
                     if (showCategoryBelow) {
                         DsText(
-                            text = place.categoryLabel,
+                            text = place.detailCategory.orCategoryLabel(place.categoryLabel),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
                             color = color.contentDefaultLevel2,
                             maxLines = 1,

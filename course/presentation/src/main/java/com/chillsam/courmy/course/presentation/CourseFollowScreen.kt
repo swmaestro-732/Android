@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -653,8 +654,9 @@ private fun RoutePlaceRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            val categoryText = place.detailCategory.orCategoryLabel(place.category)
             DsText(
-                text = listOf(place.category, stateText).filter { it.isNotBlank() }.joinToString(" · "),
+                text = listOf(categoryText, stateText).filter { it.isNotBlank() }.joinToString(" · "),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
                 maxLines = 1,

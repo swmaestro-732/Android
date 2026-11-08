@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
@@ -80,7 +81,7 @@ fun SavedPlaceCard(
                 )
                 if (place.categoryLabel.isNotBlank()) {
                     DsText(
-                        text = place.categoryLabel,
+                        text = place.detailCategory.orCategoryLabel(place.categoryLabel),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,

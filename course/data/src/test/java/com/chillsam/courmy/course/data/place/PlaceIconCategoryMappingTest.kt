@@ -22,9 +22,9 @@ class PlaceIconCategoryMappingTest {
     fun `검색 상세 계획 코스 초안은 상세 분류와 누락 폴백을 함께 유지한다`() {
         mapOf(
             "" to null,
-            ",\"detailCategory\":null" to null,
-            ",\"detailCategory\":\"FUTURE\"" to null,
-            ",\"detailCategory\":\"BAKERY\"" to PlaceDetailCategoryVO.BAKERY,
+            ",\"categoryDetail\":null" to null,
+            ",\"categoryDetail\":\"FUTURE\"" to null,
+            ",\"categoryDetail\":\"BAKERY\"" to PlaceDetailCategoryVO.BAKERY,
         ).forEach { (field, expected) ->
             val search = Json.decodeFromString<PlaceDTO>("""{"id":1$field}""").toVO()
             val external =

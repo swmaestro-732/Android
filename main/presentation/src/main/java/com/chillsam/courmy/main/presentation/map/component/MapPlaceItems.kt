@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
@@ -341,13 +342,14 @@ private fun SaveToggleIcon(
 
 /** `카페 · 베이커리`. [prefixSeparator] 면 앞에 붙는 평점과 잇도록 구분점으로 시작한다. */
 private fun MapPlaceVO.categoryMeta(prefixSeparator: Boolean = false): String {
-    val parts = listOfNotNull(category, subCategory)
+    val parts = listOfNotNull(detailCategory.orCategoryLabel(category), subCategory)
     val joined = parts.joinToString(" · ")
     return if (prefixSeparator && joined.isNotEmpty()) "· $joined" else joined
 }
 
 /** 첫 줄에 인라인으로 붙는 카테고리 라벨. 세부 카테고리가 있으면 `카페 · 베이커리`처럼 잇는다. */
-private fun MapPlaceVO.categoryLabel(): String = listOfNotNull(category, subCategory).joinToString(" · ")
+private fun MapPlaceVO.categoryLabel(): String =
+    listOfNotNull(detailCategory.orCategoryLabel(category), subCategory).joinToString(" · ")
 
 /**
  * 결과 행용 영업 상태 문구.
