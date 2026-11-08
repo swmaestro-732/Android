@@ -28,6 +28,13 @@ sealed interface NavSignal {
     data object Back : NavSignal
 
     data object AuthenticationCompleted : NavSignal
+
+    /**
+     * 로그인 화면에서 "게스트로 돌아가기". 로그인 바로 앞이 온보딩/스플래시면(온보딩 건너뛰기·로그인하기로
+     * 올라온 경로) 돌아갈 게스트 홈이 없어, 단순 Back 은 온보딩→로그인 무한 루프가 된다. 그 경우 홈(게스트)으로
+     * 교체하고, 게스트 홈에서 올라온 경우엔 그 화면으로 복귀한다.
+     */
+    data object GuestBrowsingContinued : NavSignal
 }
 
 /** 사용자가 누른 컨트롤의 고정 식별자. 입력값·닉네임·URL을 담지 않는다. */
