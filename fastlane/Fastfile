@@ -66,4 +66,110 @@ platform :android do
       skip_upload_screenshots: true,
     )
   end
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # 소프트 업데이트 안내용 Remote Config 게시.
+  # 앱(RemoteConfigAppVersionRepository)은 latest_version_code > 설치본 versionCode 이면
+  # 업데이트 안내를 띄운다. 이 lane 이 그 두 값(latest_version_code/latest_version_name)을
+  # Firebase Remote Config 에 올린다.
+  #
+  # ⚠️ 타이밍: 새 버전이 Play 에서 실제로 "라이브"된 뒤 실행할 것. 아직 심사 중인 버전으로
+  #   올리면 사용자가 받을 수 없는 버전으로 업데이트 안내가 뜬다. 그래서 deploy 와 분리된
+  #   수동 트리거(.github/workflows/remote-config.yml, workflow_dispatch)로 돌린다.
+  #
+  # 🔑 인증(둘 중 하나):
+  #   FIREBASE_JSON_KEY_FILE : Remote Config 수정 권한이 있는 Firebase 서비스계정 JSON 경로.
+  #                            CD 는 secret FIREBASE_SERVICE_ACCOUNT_JSON 을 파일로 복원해 넘긴다.
+  #   없으면 PLAY_JSON_KEY_FILE 로 폴백한다 — Play SA 에 Remote Config 권한을 준 경우에만 동작.
+  #   FIREBASE_PROJECT_ID : 미설정 시 courmy-qa732.
+  #
+  # 인자(선택): version_code, version_name. 주지 않으면 Play 프로덕션 트랙의 최고 versionCode 로
+  #   산정한다. 단 그 값에는 심사 중(미출시) 릴리스가 포함될 수 있으니, 정확히 하려면
+  #   라이브된 versionCode 를 version_code 로 직접 넘기는 것을 권장한다.
+  desc "출시 버전으로 Remote Config(latest_version_code/name)를 게시한다"
+  lane :bump_remote_config do |options|
+    project_id = ENV["FIREBASE_PROJECT_ID"].to_s.strip
+    project_id = "courmy-qa732" if project_id.empty?
+
+    version_code =
+      if options[:version_code]
+        options[:version_code].to_i
+      else
+        codes = google_play_track_version_codes(track: "production")
+        UI.user_error!("Play 프로덕션 트랙에서 versionCode 를 찾지 못했습니다.") if codes.nil? || codes.empty?
+        codes.max
+      end
+    UI.user_error!("version_code 가 올바르지 않습니다: #{version_code}") unless version_code.to_i > 0
+
+    version_name =
+      if options[:version_name]
+        options[:version_name].to_s.strip
+      else
+        # deploy lane 과 같은 규칙: versionCode 12 == 1.2.0, 이후 +1 마다 패치 +1.
+        patch_base_code = 12
+        "1.2.#{[version_code.to_i - patch_base_code, 0].max}"
+      end
+
+    key_file = ENV["FIREBASE_JSON_KEY_FILE"].to_s.strip
+    key_file = ENV["PLAY_JSON_KEY_FILE"].to_s.strip if key_file.empty?
+    if key_file.empty? || !File.exist?(key_file)
+      UI.user_error!(
+        "Remote Config 서비스계정 키가 없습니다. Firebase 콘솔에서 Remote Config 수정 권한이 있는 " \
+        "서비스계정 JSON 을 받아 secret FIREBASE_SERVICE_ACCOUNT_JSON 으로 등록하세요 " \
+        "(또는 Play SA 에 Remote Config 권한 부여 후 PLAY_JSON_KEY_FILE 사용).",
+      )
+    end
+
+    publish_remote_config(project_id, key_file, version_code.to_i, version_name)
+    UI.success("Remote Config 게시 완료: latest_version_code=#{version_code}, latest_version_name=#{version_name}")
+  end
+end
+
+# Remote Config REST 게시 헬퍼. 현재 템플릿을 GET(ETag 확보)해서 두 파라미터만 덮어쓰고
+# If-Match 로 PUT 한다. 조건부 값·다른 파라미터는 그대로 보존한다.
+# googleauth 는 fastlane 의존성으로 이미 설치돼 있어 별도 gem 추가가 필요 없다.
+def publish_remote_config(project_id, key_file, version_code, version_name)
+  require "googleauth"
+  require "net/http"
+  require "json"
+
+  authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
+    json_key_io: File.open(key_file),
+    scope: "https://www.googleapis.com/auth/firebase.remoteconfig",
+  )
+  token = authorizer.fetch_access_token!["access_token"]
+
+  uri = URI("https://firebaseremoteconfig.googleapis.com/v1/projects/#{project_id}/remoteConfig")
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
+
+  get = Net::HTTP::Get.new(uri)
+  get["Authorization"] = "Bearer #{token}"
+  get_resp = http.request(get)
+  unless get_resp.code.to_i.between?(200, 299)
+    UI.user_error!("Remote Config 조회 실패: #{get_resp.code} #{get_resp.body}")
+  end
+  etag = get_resp["etag"]
+  UI.user_error!("Remote Config ETag 를 받지 못했습니다.") if etag.nil? || etag.empty?
+
+  template = JSON.parse(get_resp.body)
+  template["parameters"] ||= {}
+  template["parameters"]["latest_version_code"] = {
+    "defaultValue" => { "value" => version_code.to_s },
+    "valueType" => "NUMBER",
+  }
+  template["parameters"]["latest_version_name"] = {
+    "defaultValue" => { "value" => version_name },
+    "valueType" => "STRING",
+  }
+
+  put = Net::HTTP::Put.new(uri)
+  put["Authorization"] = "Bearer #{token}"
+  put["Content-Type"] = "application/json; UTF-8"
+  put["If-Match"] = etag
+  put.body = JSON.generate(template)
+  put_resp = http.request(put)
+  return if put_resp.code.to_i.between?(200, 299)
+
+  UI.user_error!("Remote Config 게시 실패: #{put_resp.code} #{put_resp.body}")
 end
