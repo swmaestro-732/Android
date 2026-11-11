@@ -32,6 +32,31 @@ class MapPlaceSearchDtoMappingTest {
     }
 
     @Test
+    fun `상세 주소를 받아 VO에 보존하고 없거나 공백이면 빈 문자열로 둔다`() {
+        val withAddress =
+            Json.decodeFromString<MapPlaceSearchEnvelope>(
+                """{"data":{"places":[{"id":1,"name":"빵집","address":"서울 강남구 논현로149길 67-7"}]}}""",
+            )
+        assertEquals(
+            "서울 강남구 논현로149길 67-7",
+            requireNotNull(withAddress.data)
+                .toPageVO()
+                .items
+                .single()
+                .address,
+        )
+
+        listOf(null, "", "  ").forEach { addr ->
+            val place =
+                MapPlaceSearchDTO(places = listOf(MapPlaceSearchItemDTO(id = 1, address = addr)))
+                    .toPageVO()
+                    .items
+                    .single()
+            assertEquals("", place.address)
+        }
+    }
+
+    @Test
     fun `id 누락 항목과 중복 id를 제외한다`() {
         val page =
             MapPlaceSearchDTO(
