@@ -344,20 +344,30 @@ private fun UserMessageRow(message: AiChatMessage) {
 }
 
 @Composable
-private fun AiAvatar() {
-    val transition = rememberInfiniteTransition(label = "avatarFloat")
-    val offset by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = -3f,
-        animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "avatarOffset",
-    )
+private fun AiAvatar(isResponding: Boolean = false) {
+    val shape =
+        if (isResponding) {
+            val transition = rememberInfiniteTransition(label = "avatarSurface")
+            val deformation by transition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                label = "avatarDeformation",
+            )
+            RoundedCornerShape(
+                topStart = (16 + 8 * deformation).dp,
+                topEnd = (24 - 8 * deformation).dp,
+                bottomEnd = (18 + 4 * deformation).dp,
+                bottomStart = (22 - 4 * deformation).dp,
+            )
+        } else {
+            CircleShape
+        }
     Box(
         modifier =
             Modifier
                 .size(AvatarSize)
-                .graphicsLayer { translationY = offset.dp.toPx() }
-                .clip(CircleShape)
+                .clip(shape)
                 .background(AiChatPalette.accentGradient),
         contentAlignment = Alignment.Center,
     ) {
@@ -499,7 +509,7 @@ private fun ChatCourseCard(
 @Composable
 private fun TypingRow() {
     Row(verticalAlignment = Alignment.Top) {
-        AiAvatar()
+        AiAvatar(isResponding = true)
         Spacer(Modifier.width(11.dp))
         Box(
             modifier =
