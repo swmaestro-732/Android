@@ -94,11 +94,12 @@ fun PlaceSearchOverlay(
     // 이미 담긴 장소까지 합쳐 최대 [maxPlaces]곳. 이 오버레이에서 더 고를 수 있는 수.
     val remaining = (maxPlaces - existingCount).coerceAtLeast(0)
     val context = LocalContext.current
+    val limitMessage = stringResource(CourseR.string.course_place_search_limit_alert, maxPlaces)
     val showLimitAlert = {
         Toast
             .makeText(
                 context,
-                context.getString(CourseR.string.course_place_search_limit_alert, maxPlaces),
+                limitMessage,
                 Toast.LENGTH_SHORT,
             ).show()
     }
