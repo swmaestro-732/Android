@@ -88,6 +88,7 @@ fun MapScreen(
     // 첫 진입은 지도 전체 화면이다(사용자 결정, 2026-10-19). 시트는 핀을 고르거나
     // 카테고리로 거르기 시작했을 때만 띄운다.
     val sheetVisible = uiState.selectedPlaceId != null || uiState.category != MapCategory.ALL
+    val categoryLabels = remember { MapCategory.entries.map { it.label() }.toImmutableList() }
 
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         MapCanvas(
@@ -113,16 +114,20 @@ fun MapScreen(
             },
         )
 
-        Column(
-            modifier = Modifier.fillMaxWidth().statusBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()) {
             MapSearchEntryBar(
                 placeholder = "장소 검색",
                 onClick = actions.onSearchClick,
+                // 검색 바와 칩 사이 간격은 이 아래 패딩(8dp)만으로 둔다 — Column spacedBy 를 더하면 너무 벌어진다.
                 modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 8.dp),
             )
-            // 카테고리 칩(필터)은 필터 기획이 확정될 때까지 숨긴다(2026-10-31, 동작 코드는 유지).
+            // 검색 바 아래 대분류 카테고리 칩(10종 + 전체). 고르면 그 카테고리로 지도를 다시 조회한다.
+            MapChipRow(
+                labels = categoryLabels,
+                selectedIndex = MapCategory.entries.indexOf(uiState.category),
+                onSelect = { index -> actions.onCategorySelect(MapCategory.entries[index]) },
+                horizontalPadding = ScreenHorizontalPadding,
+            )
         }
 
         // 컨트롤을 시트와 같은 Column 에 묶는다 — 시트보다 먼저(BottomEnd) 그리면
