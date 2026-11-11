@@ -91,7 +91,9 @@ fun ProfileEditPage(
     val myState by myViewModel.uiState.collectAsStateWithLifecycle()
     // MyViewModel 은 init 에서 로드하지 않는다. 여기서 부르지 않으면 편집 원본이 빈 값이 된다.
     RefreshOnResume { myViewModel.onIntent(MyProfileIntent.Retry) }
-    val profile = myState.profile
+    // 복귀 재조회가 실패해 profile 이 잠시 null 이 되어도 편집 기준(원본)이 빈 값으로 무너지지 않도록
+    // 마지막 성공 원본(lastLoadedProfile, VM 보존)을 쓴다. 입력 잠금·에러 표시는 아래 myState 로 판단한다.
+    val profile = myState.lastLoadedProfile
     val originalNickname = profile?.nickname.orEmpty()
     val originalHandle = profile?.handle.orEmpty()
     val originalBio = profile?.bio.orEmpty()
@@ -102,6 +104,8 @@ fun ProfileEditPage(
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     val checkState by handleCheckViewModel.uiState.collectAsStateWithLifecycle()
     val editState by editViewModel.uiState.collectAsStateWithLifecycle()
+    // 프로필을 아직 못 받았거나 조회 실패·저장 중이면 입력을 잠가 빈 값 저장·충돌을 막는다.
+    val canEdit = canEditProfile(myState, editState.isSaving)
     val context = LocalContext.current
     // 확인 후 입력이 바뀌었으면 이전 판정을 쓰지 않는다.
     val idResult = checkState.result?.takeIf { checkState.checkedHandle == handle }
@@ -152,11 +156,13 @@ fun ProfileEditPage(
                 // 새로 고른 게 없으면 현재 프로필 사진을 그대로 보여준다.
                 imageUri = profileImageUri?.toString() ?: profile?.profileImageUrl.orEmpty(),
                 onImagePicked = { profileImageUri = it },
+                enabled = canEdit,
                 modifier = Modifier.padding(top = 28.dp, bottom = 12.dp),
             )
 
             LabeledField(
                 label = "닉네임",
+                enabled = canEdit,
                 value = nickname,
                 // 카운터가 광고하는 한도를 입력 단계에서 지킨다(넘겨 입력하면 서버가 저장을 거부한다).
                 onValueChange = { if (it.length <= NICKNAME_MAX_LENGTH) nickname = it },
@@ -164,6 +170,7 @@ fun ProfileEditPage(
             )
             HandleField(
                 value = handle,
+                enabled = canEdit,
                 changed = handleChanged,
                 isChecking = checkState.isChecking,
                 result = idResult,
@@ -176,6 +183,7 @@ fun ProfileEditPage(
             )
             LabeledField(
                 label = "소개",
+                enabled = canEdit,
                 value = bio,
                 onValueChange = { if (it.length <= BIO_MAX_LENGTH) bio = it },
                 counter = "${bio.length}/$BIO_MAX_LENGTH",
@@ -183,6 +191,8 @@ fun ProfileEditPage(
             )
             InterestSummary(
                 title = "관심 테마",
+                enabled = canEdit,
+                loaded = profile != null,
                 // 저장된 값은 서버 코드라 라벨로 바꿔 보여준다(모르는 코드는 그대로 노출).
                 chips =
                     profile?.interestThemes.orEmpty().map { code ->
@@ -197,6 +207,8 @@ fun ProfileEditPage(
             )
             InterestSummary(
                 title = "관심 지역",
+                enabled = canEdit,
+                loaded = profile != null,
                 chips = profile?.interestRegions.orEmpty().map { it.shortName },
                 onEdit = {
                     navigationHelper.navigateTo(
@@ -215,6 +227,7 @@ fun ProfileEditPage(
         InterestLoadFeedback(
             isLoading = myState.isLoading && myState.profile == null,
             loadError = myState.errorMessage != null,
+            loadingMessage = "프로필을 확인하고 있어요",
         ) {
             myViewModel.onIntent(MyProfileIntent.Retry)
         }
@@ -223,7 +236,7 @@ fun ProfileEditPage(
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
                 text = "변경 사항 저장",
-                enabled = profile != null && hasChanges && !editState.isSaving,
+                enabled = canEdit && hasChanges,
                 loading = editState.isSaving,
                 onClick = {
                     // 바뀐 항목만 넘긴다(아이디를 그대로 다시 보내면 중복으로 거부될 수 있다).
@@ -246,10 +259,17 @@ fun ProfileEditPage(
     }
 }
 
+/** 프로필을 받았고 조회 실패·저장 중이 아닐 때만 편집을 허용한다. */
+private fun canEditProfile(
+    state: MyProfileUIState,
+    isSaving: Boolean,
+): Boolean = state.profile != null && !state.isLoading && state.errorMessage == null && !isSaving
+
 @Composable
 private fun AvatarEditor(
     imageUri: String,
     onImagePicked: (Uri) -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -292,7 +312,7 @@ private fun AvatarEditor(
                         .size(30.dp)
                         .clip(CircleShape)
                         .background(color.bgAccent)
-                        .clickable {
+                        .clickable(enabled = enabled) {
                             pickImage.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                             )
@@ -318,6 +338,7 @@ private fun AvatarEditor(
 @Composable
 private fun HandleField(
     value: String,
+    enabled: Boolean,
     changed: Boolean,
     isChecking: Boolean,
     result: HandleCheckResult?,
@@ -327,6 +348,7 @@ private fun HandleField(
     val color = DesignSystemThemeImpl.designSystemColor
     LabeledField(
         label = "아이디",
+        enabled = enabled,
         value = value,
         onValueChange = onValueChange,
         // "@"는 항상 붙는 기본값이라 입력창 앞 고정 프리픽스로 표시(회원가입 FS-05 와 동일).
@@ -341,7 +363,7 @@ private fun HandleField(
         isError = result != null && !result.isAvailable,
         inputTrailing = {
             // 값을 바꾼 적이 없으면 확인할 것도 없다.
-            CheckButton(enabled = changed && !isChecking, onClick = onCheck)
+            CheckButton(enabled = enabled && changed && !isChecking, onClick = onCheck)
         },
         belowField = {
             if (result != null) {
@@ -373,6 +395,7 @@ private fun HandleField(
 @Composable
 private fun LabeledField(
     label: String,
+    enabled: Boolean,
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -413,6 +436,7 @@ private fun LabeledField(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 DsTextField(
+                    enabled = enabled,
                     value = value,
                     onValueChange = onValueChange,
                     modifier = Modifier.weight(1f).alignTextFieldBorder(),
@@ -424,6 +448,7 @@ private fun LabeledField(
             }
         } else {
             DsTextField(
+                enabled = enabled,
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.fillMaxWidth().alignTextFieldBorder(),
@@ -475,6 +500,8 @@ private fun CheckButton(
 @Composable
 private fun InterestSummary(
     title: String,
+    enabled: Boolean,
+    loaded: Boolean,
     chips: List<String>,
     onEdit: () -> Unit,
     region: Boolean = false,
@@ -491,11 +518,12 @@ private fun InterestSummary(
             DsText(
                 text = "편집",
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                color = color.contentAccent,
-                modifier = Modifier.clickable(onClick = onEdit),
+                color = if (enabled) color.contentAccent else color.contentDefaultLevel3,
+                modifier = Modifier.clickable(enabled = enabled, onClick = onEdit),
             )
         }
-        if (chips.isEmpty()) {
+        // 아직 프로필을 못 받았을 땐 "비었다"로 단정하지 않는다(로딩 중 빈 안내 깜빡임 방지).
+        if (chips.isEmpty() && loaded) {
             // 아직 고른 적이 없으면 빈 줄 대신 무엇을 하면 되는지 알려 준다.
             DsText(
                 text = "아직 고른 $title 가 없어요. 편집에서 골라 보세요.",
