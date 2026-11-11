@@ -7,8 +7,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -46,17 +48,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -341,8 +345,20 @@ private fun UserMessageRow(message: AiChatMessage) {
 
 @Composable
 private fun AiAvatar() {
+    val transition = rememberInfiniteTransition(label = "avatarFloat")
+    val offset by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = -3f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "avatarOffset",
+    )
     Box(
-        modifier = Modifier.size(AvatarSize).clip(CircleShape).background(AiChatPalette.accentGradient),
+        modifier =
+            Modifier
+                .size(AvatarSize)
+                .graphicsLayer { translationY = offset.dp.toPx() }
+                .clip(CircleShape)
+                .background(AiChatPalette.accentGradient),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -492,15 +508,10 @@ private fun TypingRow() {
                     .padding(horizontal = 18.dp, vertical = 15.dp),
         ) {
             Row(
+                modifier = Modifier.height(14.dp).semantics { contentDescription = "응답 준비 중" },
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                DsText(
-                    text = "답변을 준비하고 있어요",
-                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                    color = AiChatPalette.inkSoft,
-                )
-                Spacer(Modifier.width(4.dp))
                 repeat(3) { index -> TypingDot(index) }
             }
         }
@@ -510,17 +521,27 @@ private fun TypingRow() {
 @Composable
 private fun TypingDot(index: Int) {
     val transition = rememberInfiniteTransition(label = "typing")
-    val alpha by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(600, delayMillis = index * 150), RepeatMode.Reverse),
+    val offset by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 0f,
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    keyframes {
+                        durationMillis = 900
+                        0f at 0 using FastOutSlowInEasing
+                        -4f at 250 using FastOutSlowInEasing
+                        0f at 500
+                    },
+                initialStartOffset = StartOffset(index * 150),
+            ),
         label = "dot$index",
     )
     Box(
         modifier =
             Modifier
                 .size(6.dp)
-                .alpha(alpha)
+                .graphicsLayer { translationY = offset.dp.toPx() }
                 .clip(CircleShape)
                 .background(AiChatPalette.inkSoft),
     )
