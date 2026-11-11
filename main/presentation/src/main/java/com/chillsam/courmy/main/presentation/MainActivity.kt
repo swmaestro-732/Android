@@ -22,6 +22,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.metrics.performance.JankStats
+import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
 import com.chillsam.courmy.common.domain.push.NotificationConsentStore
@@ -82,6 +83,9 @@ class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var languageRepository: LanguageRepository
+
+    @Inject
+    lateinit var isLoggedInUseCase: IsLoggedInUseCase
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -199,6 +203,8 @@ class MainActivity : FragmentActivity() {
                     pendingPush = pendingPush,
                     onPushConsumed = { pendingPush = null },
                     onStartupReady = ::requestStartupNotificationPermission,
+                    // 언어 변경 등으로 Activity 가 재생성돼도 토큰 기준으로 세션을 복원한다(스플래시 미경유).
+                    initialLoggedIn = isLoggedInUseCase(),
                 )
             }
         }

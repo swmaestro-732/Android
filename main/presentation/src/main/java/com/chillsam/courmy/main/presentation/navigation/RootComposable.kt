@@ -71,6 +71,8 @@ fun RootComposable(
     pendingPush: PushTarget? = null,
     onPushConsumed: () -> Unit = {},
     onStartupReady: () -> Unit = {},
+    // 생성 시점의 실제 로그인 여부(토큰). Activity 재생성(언어 변경 등)에도 세션이 유지되게 시딩한다.
+    initialLoggedIn: Boolean = false,
 ) {
     val sessionExpiredMessage = stringResource(MainR.string.main_session_expired)
     val snackBarHostState = remember { SnackbarHostState() }
@@ -82,7 +84,7 @@ fun RootComposable(
         val backStack = rememberNavBackStack(*startStack.toTypedArray())
         val messageHelper = LocalMessageHelper.current
         val navigationHelper = LocalNavigationHelper.current
-        val sessionState = remember { SessionUiState() }
+        val sessionState = remember { SessionUiState(initialLoggedIn) }
         val statusBarState = remember { StatusBarState() }
 
         // 세션 만료(refresh 재발급 실패) → 세션 해제 + 안내 후 로그인 화면으로 교체(백스택 초기화).
