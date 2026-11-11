@@ -148,6 +148,7 @@ private fun CourseCover(
             color = color.contentOnAccent,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            autoTranslate = true,
         )
     }
 }

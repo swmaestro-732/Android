@@ -186,12 +186,13 @@ fun CourseDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
                     StatsRow(detail = detail)
-                    // 설명도 공통 DsText 라 선택 언어가 한국어가 아니면 자동 번역된다(해시태그는 아래에서 제외).
+                    // 코스 설명은 서버 게시글이라 번역 대상(언어가 한국어가 아니면 AI 번역). 해시태그는 아래에서 제외.
                     DsText(
                         text = detail.description,
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel1,
                         maxLines = Int.MAX_VALUE,
+                        autoTranslate = true,
                     )
                     // 작성자가 직접 단 해시태그. 서버가 파생한 카테고리(themeLabels)와 달리 소개 아래에 둔다.
                     if (detail.tags.isNotEmpty()) {
@@ -367,6 +368,7 @@ private fun DetailPinnedBar(
                         color = color.contentDefaultLevel0,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        autoTranslate = true,
                     )
                     val meta =
                         (listOf(detail.placeCountText) + detail.themeLabels)
@@ -513,6 +515,7 @@ private fun DetailHero(
                 color = color.contentOnAccent,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                autoTranslate = true,
             )
         }
     }
@@ -1361,6 +1364,7 @@ private fun DetailPlaceItem(
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel1,
                         maxLines = Int.MAX_VALUE,
+                        autoTranslate = true,
                     )
                 }
             }

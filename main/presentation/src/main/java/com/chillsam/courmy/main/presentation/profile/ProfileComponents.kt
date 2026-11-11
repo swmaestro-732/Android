@@ -159,6 +159,8 @@ fun ProfileHeader(
                 color = if (hasBio) color.contentDefaultLevel1 else color.contentDefaultLevel3,
                 maxLines = 2,
                 modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                // 실제 소개(사용자 작성)만 번역하고, 빈 상태 안내는 고정 문구라 번역하지 않는다.
+                autoTranslate = hasBio,
             )
         }
 

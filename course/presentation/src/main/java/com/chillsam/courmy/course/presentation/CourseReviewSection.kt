@@ -196,6 +196,7 @@ internal fun ReviewCard(
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel1,
                 maxLines = Int.MAX_VALUE,
+                autoTranslate = true,
             )
         }
         if (showTags && review.tags.isNotEmpty()) {

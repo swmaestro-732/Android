@@ -27,11 +27,12 @@ fun DsText(
     minLines: Int = 1,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
+    // 서버 게시글 등 **동적 콘텐츠**에서만 true 로 켜 온디바이스 AI 번역을 돌린다.
+    // 기본 false — 앱 고정 UI 문자열은 번역하지 않아 오번역을 막는다(고정 문구는 strings.xml 로 번역).
+    autoTranslate: Boolean = false,
 ) {
-    // 선택 언어가 한국어가 아니면 화면의 모든 한국어 텍스트를 온디바이스로 자동 번역한다
-    // (해시태그·숫자·핸들 등은 원문 유지, 전역 캐시로 중복 번역 방지).
     Text(
-        text = rememberAutoTranslated(text),
+        text = rememberAutoTranslated(text, enabled = autoTranslate),
         modifier = modifier,
         color = color,
         textDecoration = textDecoration,

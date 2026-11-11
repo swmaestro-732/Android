@@ -746,6 +746,7 @@ private fun RecommendedCourseCard(
                 // 제목이 한 줄이어도 두 줄 높이를 확보한다 — 가로 카드끼리 높이가 들쭉날쭉하지 않게.
                 minLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                autoTranslate = true,
             )
             Row(
                 modifier = Modifier.padding(top = 4.dp),
@@ -1140,6 +1141,7 @@ private fun InProgressCourseSection(
                 color = color.contentOnAccent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                autoTranslate = true,
             )
             // 진행 현황: 막대 + "N / M곳 방문"을 한 줄에(줄바꿈 없이). 진행도 정보가 없으면 지역·장소 수 요약으로 폴백.
             if (course.hasProgress) {

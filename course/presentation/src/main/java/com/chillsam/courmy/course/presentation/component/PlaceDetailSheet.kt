@@ -492,6 +492,7 @@ private fun CompactCourseSummary(
             color = color.contentDefaultLevel0,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            autoTranslate = true,
         )
         DsText(
             text = course.summary.ifBlank { "${course.places.size}곳" },
@@ -499,6 +500,7 @@ private fun CompactCourseSummary(
             color = color.contentDefaultLevel2,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            autoTranslate = true,
         )
     }
 }

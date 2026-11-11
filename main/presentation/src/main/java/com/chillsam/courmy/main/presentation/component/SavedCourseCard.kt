@@ -108,6 +108,7 @@ fun SavedCourseCard(
                 color = color.contentDefaultLevel0,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                autoTranslate = true,
             )
             DsText(
                 text =
