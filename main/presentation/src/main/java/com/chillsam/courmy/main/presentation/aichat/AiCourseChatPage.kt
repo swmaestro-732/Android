@@ -491,7 +491,16 @@ private fun TypingRow() {
                     .glass(RoundedCornerShape(topStart = 6.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 20.dp))
                     .padding(horizontal = 18.dp, vertical = 15.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DsText(
+                    text = "답변을 준비하고 있어요",
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = AiChatPalette.inkSoft,
+                )
+                Spacer(Modifier.width(4.dp))
                 repeat(3) { index -> TypingDot(index) }
             }
         }

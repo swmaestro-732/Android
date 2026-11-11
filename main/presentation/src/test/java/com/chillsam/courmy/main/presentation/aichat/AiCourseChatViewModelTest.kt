@@ -17,6 +17,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -51,7 +53,7 @@ class AiCourseChatViewModelTest {
         runTest(dispatcher) {
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.RegionChipTap("종로구"))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(listOf(AiChatAnswer(null, AiChatAnswerType.TEXT, text = "종로구")), repository.answers)
         }
 
@@ -61,7 +63,7 @@ class AiCourseChatViewModelTest {
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.Start)
             vm.onIntent(AiCourseChatIntent.SendText("   "))
-            runCurrent()
+            advanceUntilIdle()
 
             assertEquals(1, vm.uiState.value.messages.size)
             assertEquals(AiChatStep.REGION, vm.uiState.value.step)
@@ -82,7 +84,7 @@ class AiCourseChatViewModelTest {
             repository.respond = { turn(AiChatStep.THEME, replies = listOf(theme)) }
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("  성수  "))
-            runCurrent()
+            advanceUntilIdle()
             assertNull(repository.answers.single().sessionId)
             assertEquals("성수", repository.answers.single().text)
             assertEquals(listOf(theme), vm.uiState.value.quickReplies)
@@ -90,7 +92,7 @@ class AiCourseChatViewModelTest {
 
             repository.respond = { turn(AiChatStep.PLACE, replies = listOf(noPlace)) }
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(theme))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals("session-1", repository.answers.last().sessionId)
             assertEquals(AiChatAnswerType.CHIP, repository.answers.last().type)
             assertEquals("CAFETOUR", repository.answers.last().value)
@@ -99,7 +101,7 @@ class AiCourseChatViewModelTest {
                 turn(AiChatStep.RESULT).copy(messages = listOf("추천을 찾았어요", "이 코스는 어때요?"), courses = listOf(course))
             }
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(noPlace))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(AiChatStep.RESULT, vm.uiState.value.step)
             assertEquals(
                 listOf(course),
@@ -122,14 +124,14 @@ class AiCourseChatViewModelTest {
             repository.respond = { turn(AiChatStep.PLACE_CONFIRM, enabled = false, replies = listOf(candidate)) }
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수 카페"))
-            runCurrent()
+            advanceUntilIdle()
             vm.onIntent(AiCourseChatIntent.SendText("직접 입력 금지"))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(1, repository.answers.size)
 
             repository.respond = { turn(AiChatStep.RESULT) }
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(candidate))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(2, repository.answers.size)
             assertEquals("PLACE_42", repository.answers.last().value)
             assertEquals(AiChatStep.RESULT, vm.uiState.value.step)
@@ -142,14 +144,14 @@ class AiCourseChatViewModelTest {
             repository.respond = { turn(AiChatStep.RESULT, enabled = false, replies = listOf(restart)) }
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수 추천"))
-            runCurrent()
+            advanceUntilIdle()
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(restart))
             assertEquals(AiChatStep.REGION, vm.uiState.value.step)
             assertEquals(1, vm.uiState.value.messages.size)
             assertEquals(1, repository.answers.size)
 
             vm.onIntent(AiCourseChatIntent.SendText("홍대"))
-            runCurrent()
+            advanceUntilIdle()
             assertNull(repository.answers.last().sessionId)
         }
 
@@ -160,13 +162,13 @@ class AiCourseChatViewModelTest {
             repository.respond = { pending.await() }
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수"))
-            runCurrent()
+            advanceUntilIdle()
             assertTrue(vm.uiState.value.isAiTyping)
             assertFalse(vm.uiState.value.inputEnabled)
             vm.onIntent(AiCourseChatIntent.SendText("홍대"))
             vm.onIntent(AiCourseChatIntent.RegionChipTap("강남"))
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(QuickReplyVO("테마", "DATE")))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(1, repository.answers.size)
             assertEquals(
                 listOf("성수"),
@@ -175,7 +177,7 @@ class AiCourseChatViewModelTest {
                     .map { it.text },
             )
             pending.complete(turn())
-            runCurrent()
+            advanceUntilIdle()
             assertFalse(vm.uiState.value.isAiTyping)
         }
 
@@ -185,7 +187,7 @@ class AiCourseChatViewModelTest {
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수"))
             vm.onIntent(AiCourseChatIntent.SendText("홍대"))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(listOf("성수"), repository.answers.map { it.text })
             assertEquals(
                 listOf("성수"),
@@ -200,10 +202,10 @@ class AiCourseChatViewModelTest {
         runTest(dispatcher) {
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수"))
-            runCurrent()
+            advanceUntilIdle()
             repository.respond = { throw IOException("offline") }
             vm.onIntent(AiCourseChatIntent.SendText("카페"))
-            runCurrent()
+            advanceUntilIdle()
             assertFalse(vm.uiState.value.isAiTyping)
             assertTrue(vm.uiState.value.inputEnabled)
             assertTrue(
@@ -215,7 +217,7 @@ class AiCourseChatViewModelTest {
 
             repository.respond = { turn(AiChatStep.RESULT) }
             vm.onIntent(AiCourseChatIntent.SendText("카페"))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals("session-1", repository.answers.last().sessionId)
             assertEquals(AiChatStep.RESULT, vm.uiState.value.step)
         }
@@ -225,10 +227,10 @@ class AiCourseChatViewModelTest {
         runTest(dispatcher) {
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수"))
-            runCurrent()
+            advanceUntilIdle()
             repository.respond = { throw HttpResponseException(HttpResponseStatus.NotFound, 404, "/ai-chat/messages") }
             vm.onIntent(AiCourseChatIntent.SendText("카페"))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(AiChatStep.REGION, vm.uiState.value.step)
             assertEquals(2, vm.uiState.value.messages.size)
             assertTrue(
@@ -242,7 +244,7 @@ class AiCourseChatViewModelTest {
 
             repository.respond = { turn() }
             vm.onIntent(AiCourseChatIntent.SendText("홍대"))
-            runCurrent()
+            advanceUntilIdle()
             assertNull(repository.answers.last().sessionId)
         }
 
@@ -253,10 +255,10 @@ class AiCourseChatViewModelTest {
             repository.respond = { pending.await() }
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수"))
-            runCurrent()
+            advanceUntilIdle()
             vm.onIntent(AiCourseChatIntent.Restart)
             pending.complete(turn(AiChatStep.RESULT))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(AiChatStep.REGION, vm.uiState.value.step)
             assertEquals(1, vm.uiState.value.messages.size)
             assertFalse(vm.uiState.value.isAiTyping)
@@ -270,7 +272,7 @@ class AiCourseChatViewModelTest {
             repository.respond = { turn(AiChatStep.RESULT).copy(messages = emptyList(), courses = listOf(course)) }
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수 추천"))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(AiChatStep.RESULT, vm.uiState.value.step)
             assertEquals(
                 listOf(course),
@@ -286,22 +288,22 @@ class AiCourseChatViewModelTest {
             repository.respond = { turn(AiChatStep.PLACE_CONFIRM, enabled = false, replies = listOf(candidate)) }
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수 카페"))
-            runCurrent()
+            advanceUntilIdle()
             repository.respond = { throw IOException("offline") }
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(candidate))
-            runCurrent()
+            advanceUntilIdle()
 
             assertEquals(AiChatStep.PLACE_CONFIRM, vm.uiState.value.step)
             assertFalse(vm.uiState.value.isAiTyping)
             assertFalse(vm.uiState.value.inputEnabled)
             assertEquals(listOf(candidate), vm.uiState.value.quickReplies)
             vm.onIntent(AiCourseChatIntent.SendText("금지된 입력"))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(2, repository.answers.size)
 
             repository.respond = { turn(AiChatStep.RESULT) }
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(candidate))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(3, repository.answers.size)
             assertEquals(repository.answers[1], repository.answers[2])
             assertEquals(AiChatStep.RESULT, vm.uiState.value.step)
@@ -318,12 +320,12 @@ class AiCourseChatViewModelTest {
             }
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수 추천"))
-            runCurrent()
+            advanceUntilIdle()
             repository.respond = {
                 turn(AiChatStep.RESULT, enabled = false, replies = listOf(more)).copy(courses = listOf(next))
             }
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(more))
-            runCurrent()
+            advanceUntilIdle()
 
             assertEquals(2, repository.answers.size)
             assertEquals(AiChatAnswer("session-1", AiChatAnswerType.CHIP, value = "MORE"), repository.answers.last())
@@ -344,18 +346,79 @@ class AiCourseChatViewModelTest {
             repository.respond = { turn(AiChatStep.THEME, replies = listOf(old)) }
             val vm = viewModel()
             vm.onIntent(AiCourseChatIntent.SendText("성수"))
-            runCurrent()
+            advanceUntilIdle()
             repository.respond = { turn(AiChatStep.PLACE, replies = listOf(current)) }
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(old))
-            runCurrent()
+            advanceUntilIdle()
             val state = vm.uiState.value
 
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(old))
             vm.onIntent(AiCourseChatIntent.RegionChipTap("종로구"))
             vm.onIntent(AiCourseChatIntent.QuickReplyTap(QuickReplyVO("처음부터", "RESTART")))
-            runCurrent()
+            advanceUntilIdle()
             assertEquals(2, repository.answers.size)
             assertEquals(state, vm.uiState.value)
+        }
+
+    @Test
+    fun `빠른 응답도 900ms 동안 생각 중 표시를 유지한다`() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.onIntent(AiCourseChatIntent.SendText("종로구"))
+            runCurrent()
+            assertTrue(vm.uiState.value.isAiTyping)
+            assertEquals(AiChatStep.REGION, vm.uiState.value.step)
+            advanceTimeBy(899)
+            runCurrent()
+            assertTrue(vm.uiState.value.isAiTyping)
+            advanceTimeBy(1)
+            runCurrent()
+            assertFalse(vm.uiState.value.isAiTyping)
+            assertEquals(AiChatStep.THEME, vm.uiState.value.step)
+        }
+
+    @Test
+    fun `느린 응답에는 생각 중 최소 시간 이후 추가 지연이 없다`() =
+        runTest(dispatcher) {
+            val pending = CompletableDeferred<AiChatTurnVO>()
+            repository.respond = { pending.await() }
+            val vm = viewModel()
+            vm.onIntent(AiCourseChatIntent.SendText("종로구"))
+            advanceTimeBy(2000)
+            pending.complete(turn())
+            runCurrent()
+            assertFalse(vm.uiState.value.isAiTyping)
+        }
+
+    @Test
+    fun `생각 중 초기화하면 늦은 응답이 첫 화면을 덮지 않는다`() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.onIntent(AiCourseChatIntent.SendText("종로구"))
+            runCurrent()
+            vm.onIntent(AiCourseChatIntent.Restart)
+            advanceUntilIdle()
+            assertEquals(AiChatStep.REGION, vm.uiState.value.step)
+            assertEquals(1, vm.uiState.value.messages.size)
+            assertFalse(vm.uiState.value.isAiTyping)
+        }
+
+    @Test
+    fun `오류는 생각 중 최소 시간을 기다리지 않고 안내한다`() =
+        runTest(dispatcher) {
+            repository.respond = { throw IOException("offline") }
+            val vm = viewModel()
+            vm.onIntent(AiCourseChatIntent.SendText("종로구"))
+            runCurrent()
+            assertFalse(vm.uiState.value.isAiTyping)
+            assertTrue(vm.uiState.value.inputEnabled)
+            assertTrue(
+                vm.uiState.value.messages
+                    .last()
+                    .text
+                    .contains("다시 시도"),
+            )
+            assertEquals(0L, testScheduler.currentTime)
         }
 
     private class FakeRepository : AiChatRepository {

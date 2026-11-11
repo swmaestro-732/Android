@@ -6,12 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -20,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -99,32 +98,23 @@ fun CourmyAiCard(
                 maxLines = 2,
             )
 
-            // CTA: 흰 알약 + 초록 화살표 원. 파스텔 카드 위에서 흰색이 또렷한 포인트가 된다.
+            // 우측 텍스트 링크. 클릭 영역은 배너 전체를 유지한다.
             Row(
-                modifier =
-                    Modifier
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .padding(start = 16.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             ) {
                 DsText(
                     text = "코스 추천받기",
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
-                    color = DesignSystemThemeImpl.designSystemColor.bgAccent,
+                    color = DesignSystemThemeImpl.designSystemColor.contentAccent,
                 )
-                Spacer(Modifier.width(10.dp))
-                Box(
-                    modifier = Modifier.size(28.dp).clip(CircleShape).background(AiChatPalette.accentGradient),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_chevron_right_24),
-                        contentDescription = null,
-                        tint = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
-                        modifier = Modifier.size(17.dp),
-                    )
-                }
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_up_24),
+                    contentDescription = null,
+                    tint = DesignSystemThemeImpl.designSystemColor.contentAccent,
+                    modifier = Modifier.size(20.dp).rotate(45f),
+                )
             }
         }
     }

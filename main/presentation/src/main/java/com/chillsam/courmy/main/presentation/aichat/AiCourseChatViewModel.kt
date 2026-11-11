@@ -17,6 +17,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -170,8 +172,15 @@ class AiCourseChatViewModel
             beginTurn()
             replyJob =
                 viewModelScope.launch {
-                    runCatching { sendMessage(answer) }
-                        .onSuccess { applyTurn(it) }
+                    runCatching {
+                        coroutineScope {
+                            // 서버 요청과 동시에 시작하여 느린 응답에 추가 지연을 붙이지 않는다.
+                            val thinking = launch { delay(MIN_THINKING_MILLIS) }
+                            val turn = sendMessage(answer)
+                            thinking.join()
+                            turn
+                        }
+                    }.onSuccess { applyTurn(it) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             handleError(e, inputEnabled)
@@ -252,6 +261,7 @@ class AiCourseChatViewModel
         )
 
         private companion object {
+            const val MIN_THINKING_MILLIS = 900L
             const val TAG = "AiChat"
             const val HTTP_NOT_FOUND = 404
 
