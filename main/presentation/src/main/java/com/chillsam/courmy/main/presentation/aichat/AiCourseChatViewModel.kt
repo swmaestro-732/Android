@@ -59,7 +59,9 @@ class AiCourseChatViewModel
                 }
 
                 is AiCourseChatIntent.RegionChipTap -> {
-                    onRegionChip(intent.label)
+                    if (currentState.isAiTyping || !currentState.showRegionChips) return
+                    appendMessage(intent.label, role = ChatRole.USER)
+                    send(AiChatAnswer(sessionId, AiChatAnswerType.TEXT, text = intent.label))
                 }
 
                 is AiCourseChatIntent.QuickReplyTap -> {
@@ -69,7 +71,7 @@ class AiCourseChatViewModel
                 is AiCourseChatIntent.SendText -> {
                     val text = intent.text.trim()
                     if (text.isNotEmpty() && currentState.inputEnabled) {
-                        appendUser(text)
+                        appendMessage(text, role = ChatRole.USER)
                         send(AiChatAnswer(sessionId, AiChatAnswerType.TEXT, text = text))
                     }
                 }
@@ -119,11 +121,11 @@ class AiCourseChatViewModel
 
         /** 앱 소유 첫 화면 — 인사말 + 지역 질문 + 지역 칩(현재 위치 기준). */
         private fun showGreeting() {
-            appendAi(GREETING)
+            appendMessage(GREETING)
             dispatch(AiCourseChatReducerEvent.SetStep(AiChatStep.REGION))
             dispatch(AiCourseChatReducerEvent.SetInput(enabled = true, placeholder = REGION_PLACEHOLDER))
             dispatch(AiCourseChatReducerEvent.SetQuickReplies(emptyList()))
-            dispatch(AiCourseChatReducerEvent.SetRegionChips(regionChips(), show = true))
+            dispatch(AiCourseChatReducerEvent.SetRegionChips(regionNames, show = true))
         }
 
         private fun onLocation(
@@ -136,16 +138,10 @@ class AiCourseChatViewModel
                 viewModelScope.launch {
                     regionNames = reverseGeocodeRegionNames(appContext, lat, lng)
                     if (currentState.showRegionChips) {
-                        dispatch(AiCourseChatReducerEvent.SetRegionChips(regionChips(), show = true))
+                        dispatch(AiCourseChatReducerEvent.SetRegionChips(regionNames, show = true))
                     }
                 }
             }
-        }
-
-        private fun onRegionChip(label: String) {
-            if (currentState.isAiTyping || !currentState.showRegionChips) return
-            appendUser(label)
-            send(AiChatAnswer(sessionId, AiChatAnswerType.TEXT, text = label))
         }
 
         private fun onQuickReply(reply: QuickReplyVO) {
@@ -154,7 +150,7 @@ class AiCourseChatViewModel
                 restart()
                 return
             }
-            appendUser(reply.label)
+            appendMessage(reply.label, role = ChatRole.USER)
             send(
                 AiChatAnswer(
                     sessionId = sessionId,
@@ -169,7 +165,8 @@ class AiCourseChatViewModel
         private fun send(answer: AiChatAnswer) {
             replyJob?.cancel()
             val inputEnabled = currentState.inputEnabled
-            beginTurn()
+            dispatch(AiCourseChatReducerEvent.SetInput(enabled = false, placeholder = currentState.inputPlaceholder))
+            dispatch(AiCourseChatReducerEvent.SetTyping(true))
             replyJob =
                 viewModelScope.launch {
                     runCatching {
@@ -196,11 +193,11 @@ class AiCourseChatViewModel
             val lastIndex = turn.messages.lastIndex
             turn.messages.forEachIndexed { index, text ->
                 // 코스는 마지막 말풍선에만 붙인다(RESULT 턴).
-                appendAi(text, if (index == lastIndex) turn.courses else emptyList())
+                appendMessage(text, if (index == lastIndex) turn.courses else emptyList())
             }
 
             if (turn.messages.isEmpty() && turn.courses.isNotEmpty()) {
-                appendAi("", turn.courses)
+                appendMessage("", turn.courses)
             }
 
             dispatch(AiCourseChatReducerEvent.SetStep(turn.step))
@@ -209,7 +206,7 @@ class AiCourseChatViewModel
 
             // REGION 재질문(서버 칩 없음)이면 앱 지역 칩을 다시 보여 준다.
             val showRegion = turn.step == AiChatStep.REGION && turn.quickReplies.isEmpty()
-            dispatch(AiCourseChatReducerEvent.SetRegionChips(regionChips(), show = showRegion))
+            dispatch(AiCourseChatReducerEvent.SetRegionChips(regionNames, show = showRegion))
         }
 
         private fun handleError(
@@ -224,16 +221,10 @@ class AiCourseChatViewModel
                 return
             }
             Log.w(TAG, "커미 AI 전송 실패", e)
-            appendAi(ERROR_NOTICE)
+            appendMessage(ERROR_NOTICE)
             dispatch(
                 AiCourseChatReducerEvent.SetInput(enabled = inputEnabled, placeholder = currentState.inputPlaceholder),
             )
-        }
-
-        /** 턴 시작 — 입력 잠금 + "입력 중". 칩은 유지하고 isAiTyping으로 중복 선택을 막는다. */
-        private fun beginTurn() {
-            dispatch(AiCourseChatReducerEvent.SetInput(enabled = false, placeholder = currentState.inputPlaceholder))
-            dispatch(AiCourseChatReducerEvent.SetTyping(true))
         }
 
         private fun restart(notice: String? = null) {
@@ -242,21 +233,17 @@ class AiCourseChatViewModel
             sessionId = null
             messageId = 0L
             dispatch(AiCourseChatReducerEvent.Reset)
-            notice?.let { appendAi(it) }
+            notice?.let { appendMessage(it) }
             showGreeting()
         }
 
-        private fun regionChips(): List<String> = regionNames
-
-        private fun appendUser(text: String) =
-            dispatch(AiCourseChatReducerEvent.Append(AiChatMessage(messageId++, ChatRole.USER, text)))
-
-        private fun appendAi(
+        private fun appendMessage(
             text: String,
             courses: List<com.chillsam.courmy.main.entity.home.HomeCourseVO> = emptyList(),
+            role: ChatRole = ChatRole.AI,
         ) = dispatch(
             AiCourseChatReducerEvent.Append(
-                AiChatMessage(messageId++, ChatRole.AI, text, courses.toImmutableList()),
+                AiChatMessage(messageId++, role, text, courses.toImmutableList()),
             ),
         )
 

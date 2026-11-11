@@ -42,7 +42,7 @@ internal suspend fun nearbyAiChatRegionNames(
     longitude: Double,
     lookup: suspend (Double, Double) -> String?,
 ): List<String> {
-    if (!latitude.isFinite() || !longitude.isFinite() || latitude !in -90.0..90.0 || longitude !in -180.0..180.0) {
+    if (latitude !in -90.0..90.0 || longitude !in -180.0..180.0) {
         return emptyList()
     }
     // 한국의 동네 단위 탐색용 근사 오프셋. 행정 경계나 거리순 주변 지역 목록을 뜻하지 않는다.
@@ -57,9 +57,8 @@ internal suspend fun nearbyAiChatRegionNames(
             latitude to longitude - longitudeOffset,
         )
     val names = linkedSetOf<String>()
-    for ((lat, lng) in points) {
+    for ((lat, lng) in points.filter { (lat, lng) -> lat in -90.0..90.0 && lng in -180.0..180.0 }) {
         currentCoroutineContext().ensureActive()
-        if (lat !in -90.0..90.0 || lng !in -180.0..180.0) continue
         val name =
             try {
                 lookup(lat, lng)?.trim()?.takeIf(String::isNotEmpty)

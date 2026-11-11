@@ -280,16 +280,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
             )
 
-            // 커미 AI 코스 추천 배너(FS-09). 게스트에서도 둘러보는 진입점이라 세션 분기 없이 노출한다.
-            // 배너 노출과 라우트 등록을 같은 FeatureFlags로 제어한다.
-            if (FeatureFlags.AI_COURSE_CHAT_ENABLED) {
-                item {
-                    CourmyAiCard(
-                        onClick = { navigationHelper.navigateTo(AiCourseChatPage) },
-                        modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
-                    )
-                }
-            }
+            aiCourseChatBanner { navigationHelper.navigateTo(AiCourseChatPage) }
 
             item {
                 RecommendedCoursesSection(
@@ -437,6 +428,17 @@ fun HomePage(modifier: Modifier = Modifier) {
  * 홈 최초 진입 시 알림 수신 동의 시트(SCRUM-725). 기기 단위 1회 노출이라 게스트에게도 띄운다.
  * 동의 상태·노출 여부는 [NotificationConsentViewModel] 이 가지므로 홈 본문과 분리해 둔다.
  */
+private fun LazyListScope.aiCourseChatBanner(onClick: () -> Unit) {
+    if (FeatureFlags.AI_COURSE_CHAT_ENABLED) {
+        item {
+            CourmyAiCard(
+                onClick = onClick,
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+            )
+        }
+    }
+}
+
 @Composable
 private fun HomeNotificationConsent() {
     val consentViewModel: NotificationConsentViewModel = hiltViewModel()
