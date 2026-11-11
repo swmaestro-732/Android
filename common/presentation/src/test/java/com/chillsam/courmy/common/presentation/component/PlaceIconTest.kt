@@ -22,10 +22,13 @@ class PlaceIconTest {
 
     @Test
     fun `카테고리 코드와 라벨은 일치하며 주소 일부를 분류로 추측하지 않는다`() {
-        com.chillsam.courmy.common.entity.category.PlaceCategoryVO.entries.forEach {
-            assertEquals(placeIcon(it.code), placeIcon(it.label))
-            assertNotEquals(R.drawable.ic_place_detail_default_pin_24, placeIcon(it.code))
-        }
+        com.chillsam.courmy.common.entity.category.PlaceCategoryVO.entries
+            // ETC(기타)는 상세·상위 모두 매칭되지 않는 폴백 핀 전용이라 전용 아이콘이 없다.
+            .filter { it != com.chillsam.courmy.common.entity.category.PlaceCategoryVO.ETC }
+            .forEach {
+                assertEquals(placeIcon(it.code), placeIcon(it.label))
+                assertNotEquals(R.drawable.ic_place_detail_default_pin_24, placeIcon(it.code))
+            }
         assertEquals(R.drawable.ic_place_detail_default_pin_24, placeIcon("서울특별시 공원로 10"))
         assertEquals(R.drawable.ic_place_cafe_24, placeIcon("카페·디저트 · 문화·전시"))
     }

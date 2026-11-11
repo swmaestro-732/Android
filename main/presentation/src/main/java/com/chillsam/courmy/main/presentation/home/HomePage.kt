@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -59,6 +62,7 @@ import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.entity.category.CourseTagVO
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
@@ -223,7 +227,11 @@ fun HomePage(modifier: Modifier = Modifier) {
             contentPadding =
                 PaddingValues(
                     top = 12.dp,
-                    bottom = BottomBarHeight + 40.dp,
+                    // 바텀바는 BottomBarHeight 위에 navigationBarsPadding 을 더해 그려진다. 콘텐츠도
+                    // 같은 네비게이션 바 인셋을 빼줘야 3버튼 네비 기기에서 마지막 줄이 바텀바에 가리지 않는다.
+                    bottom =
+                        BottomBarHeight + 40.dp +
+                            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
                 ),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
@@ -841,7 +849,7 @@ private fun NearbyPlaceCard(
                 )
                 if (hasAddress && hasCategory) {
                     DsText(
-                        text = place.categoryLabel,
+                        text = place.detailCategory.orCategoryLabel(place.categoryLabel),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,
@@ -860,7 +868,7 @@ private fun NearbyPlaceCard(
                 ) {
                     if (showCategoryBelow) {
                         DsText(
-                            text = place.categoryLabel,
+                            text = place.detailCategory.orCategoryLabel(place.categoryLabel),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
                             color = color.contentDefaultLevel2,
                             maxLines = 1,

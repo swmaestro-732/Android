@@ -1,0 +1,406 @@
+<!doctype html><html lang="ko"><head><title>장소 상세 아이콘 · 최종 확정 · 2026-11-03</title><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  [hidden]{display:none!important}
+  button,select,textarea{font:inherit}
+  button,select{cursor:pointer}
+  button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .review-toolbar{position:sticky;top:12px;z-index:5;padding:18px;margin-bottom:28px;border:1px solid var(--hairline);border-radius:12px;background:#fff;box-shadow:0 6px 24px #14211d0c}
+  .review-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .review-summary{font-weight:600;margin-right:auto}
+  .review-toolbar select,.copy-review{padding:8px 12px;border:1px solid var(--hairline);border-radius:8px;background:white;color:var(--ink)}
+  .copy-review{background:var(--ink);color:white;border-color:var(--ink)}
+  .review-help{font-size:12px;color:var(--muted);margin-top:10px}
+  .review-actions{display:flex;gap:6px;margin-top:2px}
+  .review-button{flex:1;padding:8px 4px;border:1px solid var(--hairline);border-radius:7px;background:white;color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
+  .review-button[data-choice="like"][aria-pressed="true"]{background:#E6F3EE;border-color:#0F8A6B;color:#0A5E49}
+  .review-button[data-choice="revise"][aria-pressed="true"]{background:#FFF1EB;border-color:#C06540;color:#994323}
+  .card[data-review="like"]{border-color:#75B59D}
+  .card[data-review="revise"]{border-color:#D59980}
+  .review-note{resize:vertical;min-height:52px;width:100%;padding:8px;border:1px solid var(--hairline);border-radius:7px;background:#FAFBFA;color:var(--ink);font-size:12px;line-height:1.5}
+  .review-empty{padding:28px;text-align:center;color:var(--muted)}
+  .copy-fallback{display:block;width:100%;height:180px;margin-top:12px;padding:12px;border:1px solid var(--hairline);border-radius:8px}
+.revision-note{font-size:12px;line-height:1.6;color:#805732;background:#FFF6E8;border-radius:7px;padding:9px;margin:0}
+</style></head><body>
+<style>
+  :root{
+    --ground:#F6F8F7;
+    --surface:#FFFFFF;
+    --ink:#14211D;
+    --muted:#5C6B64;
+    --faint:#8A978F;
+    --hairline:#E3EAE6;
+    --accent:#0F8A6B;
+    --accent-weak:#E6F3EE;
+    --accent-ink:#0A5E49;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+  }
+  *{box-sizing:border-box}
+  body,h1,h2,h3,p,ul,li{margin:0;padding:0}
+  .page{background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100%}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 80px}
+
+  .mast{display:flex;flex-direction:column;gap:18px;padding-bottom:28px;margin-bottom:34px;border-bottom:1px solid var(--hairline)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);font-weight:600}
+  h1{font-size:clamp(28px,4vw,40px);line-height:1.08;letter-spacing:-.02em;text-wrap:balance;font-weight:700}
+  .lede{max-width:62ch;color:var(--muted);font-size:16px}
+  .lede b{color:var(--ink);font-weight:600}
+  .stats{display:flex;flex-wrap:wrap;gap:0;margin-top:4px;border:1px solid var(--hairline);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .stat{flex:1 1 150px;padding:14px 18px;border-right:1px solid var(--hairline)}
+  .stat:last-child{border-right:0}
+  .stat .n{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .stat .k{font-size:12.5px;color:var(--faint);margin-top:2px}
+
+  .note{display:flex;gap:14px;align-items:flex-start;background:var(--accent-weak);border:1px solid #CFE7DD;border-radius:12px;padding:16px 18px;margin-bottom:38px}
+  .note .tag{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:#fff;background:var(--accent);border-radius:6px;padding:4px 8px;white-space:nowrap;margin-top:1px}
+  .note p{font-size:13.5px;color:#235043}
+  .note code{font-family:var(--mono);font-size:12.5px;background:#fff;border:1px solid #CFE7DD;border-radius:5px;padding:1px 5px;color:var(--accent-ink)}
+
+  .cat{margin-bottom:40px}
+  .cat-head{display:flex;align-items:baseline;gap:12px;padding:0 2px 12px;margin-bottom:16px;border-bottom:1px solid var(--hairline)}
+  .cat-head .label{font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .cat-head .enum{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.04em}
+  .cat-head .count{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--accent-ink);background:var(--accent-weak);border-radius:20px;padding:3px 10px;font-weight:600}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .card{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease}
+  .card:hover{border-color:#BBD9CE;box-shadow:0 6px 20px -12px rgba(15,138,107,.4);transform:translateY(-1px)}
+  .card .top{display:flex;align-items:center;gap:12px}
+  .glyph{width:48px;height:48px;flex:none;border-radius:11px;background:#F4F5F4;display:grid;place-items:center}
+  .ic{width:30px;height:30px;stroke:#202522;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+  .ic .dot{fill:#202522;stroke:none}
+  .ic .fx{fill:var(--accent-ink);stroke:none;font-family:var(--sans);font-weight:700}
+  .names{min-width:0}
+  .ko{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+  .code{font-family:var(--mono);font-size:11.5px;color:var(--accent-ink);margin-top:1px;word-break:break-all}
+  .kakao{font-size:11.5px;color:var(--faint);border-top:1px dashed var(--hairline);padding-top:9px;line-height:1.45}
+  .kakao b{color:var(--muted);font-weight:600}
+
+  .foot{margin-top:46px;padding-top:22px;border-top:1px solid var(--hairline);color:var(--faint);font-size:12.5px;display:flex;flex-direction:column;gap:6px}
+  .foot code{font-family:var(--mono);color:var(--muted)}
+</style>
+
+<style>
+  .pair{display:flex;gap:8px;margin-top:6px}
+  .opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 6px;border:1px solid var(--hairline);border-radius:9px;cursor:pointer;background:#FAFBFA;transition:border-color .12s,background .12s}
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .opt .glyph{width:44px;height:44px;background:#F4F5F4}
+  .opt .glyph.alt{background:#EFF1F0}
+  .opt-k{font-size:11px;color:var(--muted);text-align:center;line-height:1.3}
+  .opt-k code{font-family:var(--mono);font-size:10.5px;color:var(--accent-ink);word-break:break-all}
+  .opt:has(input:checked){border-color:var(--accent);background:var(--accent-weak);box-shadow:0 0 0 1px var(--accent) inset}
+  .opt:has(input:checked) .opt-k{color:var(--accent-ink);font-weight:600}
+  .card .names{margin-bottom:2px}
+  .ko{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.02em;padding:2px 7px;border-radius:20px;white-space:nowrap}
+  .chip.ok{background:var(--accent-weak);color:var(--accent-ink)}
+  .chip.rev{background:#FFF1EB;color:#994323}
+  .chip.reuse{background:#EEF1F5;color:#3B5168}
+  .chip.tbd{background:#F0F1F0;color:var(--faint)}
+  .glyph[data-revised]{position:relative}
+  .glyph[data-revised]::after{content:"수정";position:absolute;top:-6px;right:-6px;font-family:var(--mono);font-size:8.5px;font-weight:700;color:#fff;background:#C06540;border-radius:20px;padding:1px 5px}
+</style>
+
+<div class="page"><div class="wrap">
+  <header class="mast">
+    <div class="eyebrow">장소 아이콘 확장 · 신규 상세값 25종 · 4차 시안(레퍼런스 반영) · 2026-11-07</div>
+    <h1>상세값 추가 25종 라인 아이콘 · 4차</h1>
+    <p class="lede">첨부 레퍼런스를 반영했습니다. 이번 수정 <b>3종</b> — 꽃(5잎 매화형)·배(쌍돛)·미용(립스틱). 육교는 확정했습니다.
+    <b>확정</b>은 좋아요한 아이콘, <b>기존 채택</b>은 재사용 선택입니다. 남은 수정만 알려주시면 바로 변환에 들어갑니다.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">+25</div><div class="k">신규 상세값</div></div>
+      <div class="stat"><div class="n">73</div><div class="k">상세값 총합 (48+25)</div></div>
+      <div class="stat"><div class="n">11</div><div class="k">상위 카테고리 (ETC=기타 추가)</div></div>
+      <div class="stat"><div class="n">24dp</div><div class="k">벡터 드로어블 규격</div></div>
+    </div>
+  </header>
+  <div class="note">
+    <span class="tag">코드 가정</span>
+    <p>각 카드의 <code>code</code>는 기존 convention(소문자 snake_case)에 맞춰 <b>제안</b>한 값입니다.
+    서버가 <code>detailCategory</code>로 내려주는 실제 값과 일치해야 하므로 <b>백엔드 실제 코드로 확정</b>이 필요합니다.
+    하단은 매핑 근거가 되는 카카오 원본 경로입니다.</p>
+  </div>
+  <div class="review-toolbar">
+    <div class="review-row">
+      <span class="review-summary">신규 25종 검토</span>
+      <button class="copy-review">리뷰 복사</button>
+    </div>
+    <p class="review-help">각 카드에서 <b>신규 제안</b> 또는 <b>기존 재사용</b>을 고르고 확정/수정요청 후 <b>리뷰 복사</b>를 눌러 저에게 붙여넣어 주세요.</p>
+    <textarea class="copy-fallback" hidden></textarea>
+  </div>
+  <section class="cat">
+  <div class="cat-head"><span class="label">쇼핑·상점</span><span class="enum">SHOPPING</span><span class="count">+11</span></div>
+  <div class="grid">
+<div class="card" data-code="stationery" data-chip="ok"><div class="names"><div class="ko">문구·사무용품<span class="chip ok">확정</span></div><div class="code">stationery</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-stationery" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M14 6l4 4"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-stationery" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M12 6c-3-2-6-2-9-1v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1ZM12 6v14"/></svg></span><span class="opt-k">기존 · <code>bookstore</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 문구,사무용품</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="toy" data-chip="reuse"><div class="names"><div class="ko">장난감·완구<span class="chip reuse">기존 채택</span></div><div class="code">toy</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-toy" value="new"><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="6"/><circle cx="6.5" cy="7.8" r="2.3"/><circle cx="17.5" cy="7.8" r="2.3"/><circle class="dot" cx="9.7" cy="12.5" r="0.9"/><circle class="dot" cx="14.3" cy="12.5" r="0.9"/><circle cx="12" cy="15.6" r="1.6"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-toy" value="reuse" checked><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8M12 8v13"/><path d="M12 8H8a2.5 2.5 0 1 1 2.4-3.2ZM12 8h4a2.5 2.5 0 1 0-2.4-3.2Z"/></svg></span><span class="opt-k">기존 · <code>souvenir</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 유아 &gt; 장난감,완구</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="art_craft" data-chip="ok"><div class="names"><div class="ko">미술·공예<span class="chip ok">확정</span></div><div class="code">art_craft</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-art_craft" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3C6.8 3 3 6.6 3 11.2c0 2.9 2 4.8 4.7 4.8H9a1.5 1.5 0 0 1 1.4 2.1A1.5 1.5 0 0 0 11.8 20C17 20 21 16.2 21 11.6 21 6.8 17 3 12 3Z"/><circle class="dot" cx="8" cy="9" r="1"/><circle class="dot" cx="12" cy="7" r="1"/><circle class="dot" cx="16" cy="9" r="1"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-art_craft" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></span><span class="opt-k">기존 · <code>gallery</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 문화,예술 &gt; 미술,공예 (화랑·도자기·수예는 기존 유지)</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="record_store" data-chip="ok"><div class="names"><div class="ko">음반·레코드샵<span class="chip ok">확정</span></div><div class="code">record_store</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-record_store" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M9 17V6"/><path d="M19 15V4"/><path d="M9 6 19 4"/><circle class="dot" cx="6.5" cy="17" r="2.4"/><circle class="dot" cx="16.5" cy="15" r="2.4"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-record_store" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M4 3h16v7c0 5-4 9-8 11-4-2-8-6-8-11Z"/><path d="M7 9h2M15 9h2M8 14a5 5 0 0 0 8 0"/></svg></span><span class="opt-k">기존 · <code>performance</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 문화,예술 &gt; 음악 &gt; 음반,레코드샵</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="florist" data-chip="rev"><div class="names"><div class="ko">꽃집·꽃배달<span class="chip rev">수정 반영</span></div><div class="code">florist</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-florist" value="new" checked><span class="glyph" data-revised="1"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5.5 10 8 12 3.5 14 8 16 5.5c1.6 1.7 2 3.5 2 5.3 0 2.4-2.7 4.2-6 4.2s-6-1.8-6-4.2c0-1.8.4-3.6 2-5.3Z"/><path d="M12 15v6"/><path d="M12 16c-4-.2-7 1-8 3 2.5 1 6 .5 8-1Z"/><path d="M12 16c4-.2 7 1 8 3-2.5 1-6 .5-8-1Z"/></svg></span><span class="opt-k">신규 (수정)</span></label>
+    <label class="opt"><input type="radio" name="pick-florist" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M5 20C2 8 9 3 21 3c0 12-7 17-16 17ZM5 20l10-10M11 14l-1-5"/></svg></span><span class="opt-k">기존 · <code>botanical_garden</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 꽃집,꽃배달</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="furniture" data-chip="ok"><div class="names"><div class="ko">가구판매<span class="chip ok">확정</span></div><div class="code">furniture</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-furniture" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="1.5"/><path d="M5 12h14"/><path d="M10 8h4M10 16h4"/><path d="M6 20v1.5M18 20v1.5"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-furniture" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6V3h8M13 3v3M9 6h6v4l2 3v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-7l2-3ZM7 15h10"/></svg></span><span class="opt-k">기존 · <code>household_goods</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 가구판매</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="hobby_supplies" data-chip="reuse"><div class="names"><div class="ko">취미용품점<span class="chip reuse">기존 채택</span></div><div class="code">hobby_supplies</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-hobby_supplies" value="new"><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M9.5 3.5a2.2 2.2 0 0 1 4.3 0c.1.6-.2 1.2-.6 1.6a1 1 0 0 0 .7 1.7h3a1.5 1.5 0 0 1 1.5 1.5v3a1 1 0 0 0 1.7.7c.4-.4 1-.7 1.6-.6a2.2 2.2 0 0 1 0 4.3c-.6.1-1.2-.2-1.6-.6a1 1 0 0 0-1.7.7v3a1.5 1.5 0 0 1-1.5 1.5h-3a1 1 0 0 1-.7-1.7c.4-.4.7-1 .6-1.6a2.2 2.2 0 0 0-4.3 0c-.1.6.2 1.2.6 1.6a1 1 0 0 1-.7 1.7h-3A1.5 1.5 0 0 1 4 19v-3a1 1 0 0 0-1.7-.7c-.4.4-1 .7-1.6.6"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-hobby_supplies" value="reuse" checked><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M8 5.75h8c3 0 4 3 5 8 1 5-2 6-5 2H8c-3 4-6 3-5-2 1-5 2-8 5-8ZM7 8.75v4M5 10.75h4"/><circle cx="16" cy="9.75" r="0.6"/><circle cx="18" cy="12.75" r="0.6"/></svg></span><span class="opt-k">기존 · <code>leisure_facility</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 취미 &gt; 취미용품점</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="drugstore" data-chip="reuse"><div class="names"><div class="ko">드럭스토어<span class="chip reuse">기존 채택</span></div><div class="code">drugstore</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-drugstore" value="new"><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M10 7V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V7"/><path d="M8.5 7h7v12a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2Z"/><path d="M12 11.5v4M10 13.5h4"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-drugstore" value="reuse" checked><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9 5 3h14l2 6"/><path d="M3 9v1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9"/><path d="M5 13v7h14v-7M5 17h14"/></svg></span><span class="opt-k">기존 · <code>convenience_store</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 드럭스토어</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="electronics" data-chip="ok"><div class="names"><div class="ko">전자제품판매<span class="chip ok">확정</span></div><div class="code">electronics</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-electronics" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-electronics" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6V3h8M13 3v3M9 6h6v4l2 3v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-7l2-3ZM7 15h10"/></svg></span><span class="opt-k">기존 · <code>household_goods</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 전자제품 &gt; 전자제품판매</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="food_store" data-chip="reuse"><div class="names"><div class="ko">식품판매<span class="chip reuse">기존 채택</span></div><div class="code">food_store</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-food_store" value="new"><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M6 8h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M12 12.5a2 2 0 0 1 2 2c0 1.3-2 3-2 3s-2-1.7-2-3a2 2 0 0 1 2-2Z"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-food_store" value="reuse" checked><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M2 3h3l3 13h10l3-10H6"/><path d="M8 12h11"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg></span><span class="opt-k">기존 · <code>supermarket</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 식품판매</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="shopping_arcade" data-chip="reuse"><div class="names"><div class="ko">상가·아케이드<span class="chip reuse">기존 채택</span></div><div class="code">shopping_arcade</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-shopping_arcade" value="new"><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 8l2-3.5h14L21 8"/><path d="M3 8h18"/><path d="M5 8v12h14V8"/><path d="M9 20v-5a3 3 0 0 1 6 0v5"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-shopping_arcade" value="reuse" checked><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M5 8h14l1 11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg></span><span class="opt-k">기존 · <code>shopping_mall</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 상가,아케이드</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+  </div>
+</section>
+  <section class="cat">
+  <div class="cat-head"><span class="label">체험·클래스</span><span class="enum">EXPERIENCE</span><span class="count">+2</span></div>
+  <div class="grid">
+<div class="card" data-code="learning_center" data-chip="ok"><div class="names"><div class="ko">체험학습장<span class="chip ok">확정</span></div><div class="code">learning_center</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-learning_center" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.2 2.7 3 6 3s6-1.8 6-3v-5"/><path d="M22 10v5"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-learning_center" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="8" y="4" width="5" height="16" rx="1"/><path d="m15 5 4-1 3 15-4 1ZM3 8h5M8 16h5"/></svg></span><span class="opt-k">기존 · <code>library</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 교육,학문 &gt; 교육단체 &gt; 체험학습장</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="farm" data-chip="reuse"><div class="names"><div class="ko">농장·목장<span class="chip reuse">기존 채택</span></div><div class="code">farm</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-farm" value="new"><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10l9-6 9 6v10H3Z"/><path d="M9 20v-6h6v6"/><path d="M12 14v6M9 17h6"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-farm" value="reuse" checked><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M5 20C2 8 9 3 21 3c0 12-7 17-16 17ZM5 20l10-10M11 14l-1-5"/></svg></span><span class="opt-k">기존 · <code>ecology_reserve</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 서비스,산업 &gt; 축산업 &gt; 농장,목장</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+  </div>
+</section>
+  <section class="cat">
+  <div class="cat-head"><span class="label">자연·아웃도어</span><span class="enum">NATURE</span><span class="count">+1</span></div>
+  <div class="grid">
+<div class="card" data-code="park_facility" data-chip="reuse"><div class="names"><div class="ko">공원시설물<span class="chip reuse">기존 채택</span></div><div class="code">park_facility</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-park_facility" value="new"><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 13h18"/><path d="M4 10h16"/><path d="M7 10v3M12 10v3M17 10v3"/><path d="M5 13l-1 7M19 13l1 7M5 17h14"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-park_facility" value="reuse" checked><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M8 16a5 5 0 0 1-3-9 4 4 0 0 1 3-5 4 4 0 0 1 3 5 5 5 0 0 1-3 9ZM8 13v8M15 14h6M15 18h6M16 18v3M20 18v3"/></svg></span><span class="opt-k">기존 · <code>park</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 여행 &gt; 공원시설물</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+  </div>
+</section>
+  <section class="cat">
+  <div class="cat-head"><span class="label">역사·명소</span><span class="enum">LANDMARK</span><span class="count">+6</span></div>
+  <div class="grid">
+<div class="card" data-code="tourist_facility" data-chip="reuse"><div class="names"><div class="ko">관광지부속시설<span class="chip reuse">기존 채택</span></div><div class="code">tourist_facility</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-tourist_facility" value="new"><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4Z"/><path d="M12 7.5v1M12 11v1M12 14.5v1"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-tourist_facility" value="reuse" checked><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="m3 9 14-5 3 7-14 5ZM7 7.6l3 6.9M14 5l3 7M19 7l2-.7 1 2-2 1M12 15v3M8 22l4-4 4 4"/></svg></span><span class="opt-k">기존 · <code>tourist_attraction</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 여행 &gt; 관광지부속시설</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="harbor" data-chip="ok"><div class="names"><div class="ko">항구·포구<span class="chip ok">확정</span></div><div class="code">harbor</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-harbor" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.3"/><path d="M12 7.3V21"/><path d="M5.5 12.5H3a9 9 0 0 0 18 0h-2.5"/><path d="M8.5 11h7"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-harbor" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M2 21c3-4 6-4 9-2 4-5 8-4 11 2Z"/><path d="M13 17c1-4 1-7 0-10M13 7C8 1 5 4 4 7c4-2 6-1 9 0ZM13 7c4-5 7-3 9 0-4-1-6-1-9 0ZM13 7c-5 0-6 3-6 6 2-3 4-4 6-6Z"/></svg></span><span class="opt-k">기존 · <code>island</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 교통,수송 &gt; 교통시설 &gt; 항구,포구</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="pier" data-chip="rev"><div class="names"><div class="ko">선착장·항만시설<span class="chip rev">수정 반영</span></div><div class="code">pier</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-pier" value="new" checked><span class="glyph" data-revised="1"><svg class="ic" viewBox="0 0 24 24"><path d="M11 3.5 17.5 12H11Z"/><path d="M11 3.5V12"/><path d="M4 14h16l-2 3.5a3 3 0 0 1-2.6 1.5H8.6A3 3 0 0 1 6 17.5Z"/><path d="M3 21c1.5 0 2-1.3 3.5-1.3S9 21 10.5 21s2-1.3 3.5-1.3S18 21 19.5 21"/></svg></span><span class="opt-k">신규 (수정)</span></label>
+    <label class="opt"><input type="radio" name="pick-pier" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M2 7c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M2 12c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M2 17c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/></svg></span><span class="opt-k">기존 · <code>lake</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 교통,수송 &gt; 교통시설 &gt; 선착장,항만시설</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="overpass" data-chip="ok"><div class="names"><div class="ko">육교<span class="chip ok">확정</span></div><div class="code">overpass</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-overpass" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 21v-4h4v-4h4v-4h4v-4h5"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-overpass" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M2 20v-7c6-3 14-3 20 0v7h-5a5 5 0 0 0-10 0ZM2 10c6-3 14-3 20 0M2 10v3M6 8.6v2.8M10 7.8v3M14 7.8v3M18 8.6v2.8M22 10v3"/></svg></span><span class="opt-k">기존 · <code>bridge</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 교통,수송 &gt; 도로시설 &gt; 육교</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="protestant_church" data-chip="ok"><div class="names"><div class="ko">기독교<span class="chip ok">확정</span></div><div class="code">protestant_church</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-protestant_church" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2v4M10 4h4"/><path d="M6 11l6-5 6 5"/><path d="M7 11v9h10v-9"/><path d="M10 20v-4a2 2 0 0 1 4 0v4"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-protestant_church" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20C5 16 7 8 12 3c5 5 7 13 0 17Z"/><path d="M12 20C5 20 3 14 4 7c1.8 0 3.2.6 4.5 1.6M12 20c7 0 9-6 8-13-1.8 0-3.2.6-4.5 1.6"/><path d="M4.4 14H2c0 5 5 8 10 6 5 2 10-1 10-6h-2.4"/></svg></span><span class="opt-k">기존 · <code>buddhist_temple</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 문화,예술 &gt; 종교 &gt; 기독교</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="catholic_church" data-chip="ok"><div class="names"><div class="ko">천주교<span class="chip ok">확정</span></div><div class="code">catholic_church</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-catholic_church" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 21V10l3-2.5 3 2.5v11"/><path d="M15 21V10l3-2.5 3 2.5v11"/><path d="M9 21v-5a3 3 0 0 1 6 0v5"/><path d="M12 11V7M10.3 8.5h3.4"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-catholic_church" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20C5 16 7 8 12 3c5 5 7 13 0 17Z"/><path d="M12 20C5 20 3 14 4 7c1.8 0 3.2.6 4.5 1.6M12 20c7 0 9-6 8-13-1.8 0-3.2.6-4.5 1.6"/><path d="M4.4 14H2c0 5 5 8 10 6 5 2 10-1 10-6h-2.4"/></svg></span><span class="opt-k">기존 · <code>buddhist_temple</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 문화,예술 &gt; 종교 &gt; 천주교</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+  </div>
+</section>
+  <section class="cat">
+  <div class="cat-head"><span class="label">여가·놀거리</span><span class="enum">ENTERTAINMENT</span><span class="count">+1</span></div>
+  <div class="grid">
+<div class="card" data-code="photo_studio" data-chip="ok"><div class="names"><div class="ko">사진관·포토스튜디오<span class="chip ok">확정</span></div><div class="code">photo_studio</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-photo_studio" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h3l1.5-2.2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.4"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-photo_studio" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></span><span class="opt-k">기존 · <code>gallery</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 문화,예술 &gt; 사진 &gt; 사진관,포토스튜디오</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+  </div>
+</section>
+  <section class="cat">
+  <div class="cat-head"><span class="label">웰니스·힐링</span><span class="enum">WELLNESS</span><span class="count">+4</span></div>
+  <div class="grid">
+<div class="card" data-code="accommodation" data-chip="ok"><div class="names"><div class="ko">숙박<span class="chip ok">확정</span></div><div class="code">accommodation</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-accommodation" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 20V7"/><path d="M3 12h13a5 5 0 0 1 5 5v3"/><path d="M3 16h18"/><path d="M21 20v-3"/><path d="M6 12V9.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 12 9.5V12"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-accommodation" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="m3 21 9-17 9 17ZM8 21l4-8 4 8M10 2l4 5M14 2l-4 5"/></svg></span><span class="opt-k">기존 · <code>camping</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 여행 &gt; 숙박 (야영·캠핑장은 NATURE 유지)</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="accommodation_facility" data-chip="ok"><div class="names"><div class="ko">숙박부속시설<span class="chip ok">확정</span></div><div class="code">accommodation_facility</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-accommodation_facility" value="new" checked><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><path d="M3 20V7"/><path d="M3 12h13a5 5 0 0 1 5 5v3"/><path d="M3 16h18"/><path d="M21 20v-3"/><path d="M6 12V9.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 12 9.5V12"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-accommodation_facility" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="m3 21 9-17 9 17ZM8 21l4-8 4 8M10 2l4 5M14 2l-4 5"/></svg></span><span class="opt-k">기존 · <code>camping</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 여행 &gt; 숙박부속시설</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="beauty_salon" data-chip="rev"><div class="names"><div class="ko">미용<span class="chip rev">수정 반영</span></div><div class="code">beauty_salon</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-beauty_salon" value="new" checked><span class="glyph" data-revised="1"><svg class="ic" viewBox="0 0 24 24"><path d="M9.5 10V3c2.9 .2 4.5 2.8 4.5 5.8V10H9.5Z"/><rect x="9" y="10" width="6" height="1.6"/><rect x="8" y="11.6" width="8" height="7" rx="1"/></svg></span><span class="opt-k">신규 (수정)</span></label>
+    <label class="opt"><input type="radio" name="pick-beauty_salon" value="reuse"><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><path d="M3 13h18l-2 7H5ZM7 10c-3-3 3-4 0-7M12 10c-3-3 3-4 0-7M17 10c-3-3 3-4 0-7"/></svg></span><span class="opt-k">기존 · <code>bathhouse_sauna</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 가정,생활 &gt; 미용</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+<div class="card" data-code="space_rental" data-chip="reuse"><div class="names"><div class="ko">공간대여<span class="chip reuse">기존 채택</span></div><div class="code">space_rental</div></div>
+  <div class="pair">
+    <label class="opt"><input type="radio" name="pick-space_rental" value="new"><span class="glyph"><svg class="ic" viewBox="0 0 24 24"><circle cx="8" cy="16" r="4"/><path d="M10.9 13.1 20 4"/><path d="M17 7l2 2M15 9l1.7 1.7"/></svg></span><span class="opt-k">신규</span></label>
+    <label class="opt"><input type="radio" name="pick-space_rental" value="reuse" checked><span class="glyph alt"><svg class="ic" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="1"/><path d="M3 21h18M10 7h4M10 11h4M10 15h4M12 18v3"/></svg></span><span class="opt-k">기존 · <code>building</code></span></label>
+  </div>
+  <div class="kakao"><b>카카오</b> 서비스,산업 &gt; 전문대행 &gt; 공간대여</div>
+  <div class="review-actions"><button class="review-button" data-choice="like" aria-pressed="false">확정</button><button class="review-button" data-choice="revise" aria-pressed="false">수정요청</button></div>
+  <textarea class="review-note" placeholder="수정 메모 (선택)" hidden></textarea></div>
+  </div>
+</section>
+  <div class="foot">
+    <span>신규 상세값 25종 · 2026-11-07 시안</span>
+    <span>변환: <code>scripts/generate_place_detail_icons.py</code> (승인 후 approved.html 통합)</span>
+  </div>
+</div></div>
+
+<script>
+(function(){
+  const cards=[...document.querySelectorAll('.card')];
+  function refresh(){
+    const like=cards.filter(c=>c.dataset.review==='like').length;
+    const rev=cards.filter(c=>c.dataset.review==='revise').length;
+    document.querySelector('.review-summary').textContent=
+      `신규 25종 · 확정 ${like} · 수정요청 ${rev} · 미정 ${cards.length-like-rev}`;
+  }
+  cards.forEach(card=>{
+    const note=card.querySelector('.review-note');
+    card.querySelectorAll('.review-button').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const choice=btn.dataset.choice;
+        const on=card.dataset.review===choice;
+        card.dataset.review=on?'':choice;
+        card.querySelectorAll('.review-button').forEach(b=>b.setAttribute('aria-pressed',
+          (!on && b.dataset.choice===choice)?'true':'false'));
+        note.hidden=!(card.dataset.review==='revise');
+        refresh();
+      });
+    });
+  });
+  document.querySelector('.copy-review').addEventListener('click',async()=>{
+    const lines=cards.map(c=>{
+      const code=c.dataset.code, ko=c.querySelector('.ko').textContent;
+      const r=c.dataset.review||'미정';
+      const pick=c.querySelector('input:checked').value==='reuse'?'기존재사용':'신규';
+      const n=c.querySelector('.review-note').value.trim();
+      return `- ${code} (${ko}): ${r} · ${pick}${n?' — '+n:''}`;
+    }).join('\n');
+    const text='[상세 아이콘 신규 25종 리뷰]\n'+lines;
+    try{await navigator.clipboard.writeText(text);document.querySelector('.copy-review').textContent='복사됨 ✓';}
+    catch(e){const ta=document.querySelector('.copy-fallback');ta.hidden=false;ta.value=text;ta.select();}
+  });
+  refresh();
+})();
+</script>
+
+</body></html>

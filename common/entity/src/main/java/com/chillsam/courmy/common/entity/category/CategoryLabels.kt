@@ -3,6 +3,13 @@ package com.chillsam.courmy.common.entity.category
 // 서버 카테고리 코드 → 화면 라벨. 정본은 `.ai/taxonomy.md` 다.
 // 변환은 표시용이며 서버로 되돌려 보내는 값에는 사용하지 않는다.
 
+/**
+ * 장소 카테고리 텍스트 표시용. 상세 분류가 있으면 그 라벨(예: "제과·베이커리"), 없으면 상위 카테고리 라벨을 쓴다.
+ * 분류 로직에 쓰이는 원본 category 문자열은 그대로 두고 표시만 상세로 대체한다.
+ */
+fun PlaceDetailCategoryVO?.orCategoryLabel(categoryLabel: String): String =
+    this?.label?.takeIf { it.isNotBlank() } ?: categoryLabel
+
 /** 장소 카테고리 코드(`cafe`, `restaurant` …) → 한글 라벨. */
 fun String?.toPlaceCategoryLabel(): String {
     val raw = this?.trim().orEmpty()

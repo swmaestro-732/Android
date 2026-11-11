@@ -4,6 +4,7 @@ import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** `GET /api/v1/places/search?query=...` 응답. 검색 결과에는 내부 장소 ID와 평면 좌표가 포함된다. */
@@ -29,6 +30,7 @@ data class ExternalMapPlaceSearchItemDTO(
     val latitude: Double? = null,
     val longitude: Double? = null,
     /** 선택 필드 선연동: 서버 지원 전에는 누락될 수 있다. */
+    @SerialName("categoryDetail")
     val detailCategory: String? = null,
 )
 
@@ -44,7 +46,7 @@ internal fun ExternalMapPlaceSearchDTO.toPageVO(): CursorPageVO<MapPlaceVO> =
                     MapPlaceVO(
                         id = requireNotNull(place.id),
                         name = place.name.orEmpty(),
-                        detailCategory = PlaceDetailCategoryVO.fromCode(place.detailCategory),
+                        detailCategory = PlaceDetailCategoryVO.fromServerValue(place.detailCategory),
                         category = place.category.toPlaceCategoryLabel(),
                         address = address?.takeIf { it.isNotBlank() }.orEmpty(),
                         latitude = place.latitude?.takeIf { place.longitude != null },
