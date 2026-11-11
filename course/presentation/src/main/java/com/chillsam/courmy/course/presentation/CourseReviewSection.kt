@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
@@ -30,6 +31,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CourseReviewTagVO
 import com.chillsam.courmy.course.entity.CourseReviewVO
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /**
  * 코스 상세 리뷰 섹션(Figma FS-11 하단). 헤더(평균 별점·리뷰 수·전체보기) + 리뷰 미리보기 카드.
@@ -54,7 +56,7 @@ internal fun CourseReviewSection(
         if (detail.reviews.isEmpty()) {
             // 리뷰 0개도 정상 상태다 — 섹션을 통째로 감추면 "리뷰를 남길 수 있는 코스" 라는 사실이 사라진다.
             DsText(
-                text = "아직 후기가 없어요. 코스를 다녀온 경험을 나눠 주세요.",
+                text = stringResource(CourseR.string.course_review_empty),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
                 maxLines = Int.MAX_VALUE,
@@ -83,7 +85,7 @@ private fun ReviewSectionHeader(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             DsText(
-                text = "후기",
+                text = stringResource(CourseR.string.course_review_header_title),
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
             )
@@ -104,7 +106,7 @@ private fun ReviewSectionHeader(
         }
         if (hasReviews) {
             DsText(
-                text = "전체보기",
+                text = stringResource(CourseR.string.course_review_see_all),
                 modifier =
                     Modifier
                         .clickable(onClick = onSeeAll)
@@ -183,7 +185,7 @@ internal fun ReviewCard(
                 IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                     Icon(
                         painter = painterResource(R.drawable.ic_trash_24),
-                        contentDescription = "내 후기 삭제",
+                        contentDescription = stringResource(CourseR.string.course_review_delete),
                         tint = color.contentDefaultLevel3,
                         modifier = Modifier.size(20.dp),
                     )

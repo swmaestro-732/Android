@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -25,6 +26,7 @@ import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
+import com.chillsam.courmy.course.presentation.R
 
 /** 한마디 메모 최대 글자 수(Figma FS-34 인터랙션 "카드에서 바로 입력" 기준). */
 private const val NOTE_MAX_LENGTH = 40
@@ -190,7 +192,7 @@ private fun EditableNoteRow(
             decorationBox = { innerTextField ->
                 if (note.isEmpty()) {
                     DsText(
-                        text = "이곳에 한마디 남기기…",
+                        text = stringResource(R.string.course_place_card_note_placeholder),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = placeholderColor,
                     )

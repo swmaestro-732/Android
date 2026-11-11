@@ -63,6 +63,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -91,6 +92,7 @@ import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
 import com.chillsam.courmy.course.presentation.component.PlaceSheetCourse
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.chillsam.courmy.course.presentation.component.toRoutePoints
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /**
  * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(커버·카테고리·제목·설정) → 요약 스탯 → 소개 →
@@ -352,7 +354,7 @@ private fun DetailPinnedBar(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_chevron_left_24),
-                    contentDescription = "뒤로",
+                    contentDescription = stringResource(CourseR.string.course_detail_back),
                     tint = color.contentDefaultLevel0,
                     modifier =
                         Modifier
@@ -449,7 +451,7 @@ private fun DetailHero(
         ) {
             HeroCircleButton(
                 iconRes = R.drawable.ic_chevron_left_24,
-                contentDescription = "뒤로가기",
+                contentDescription = stringResource(CourseR.string.course_detail_hero_back),
                 onClick = onBack,
             )
             Spacer(Modifier.weight(1f))
@@ -462,7 +464,12 @@ private fun DetailHero(
                 HeroCircleButton(
                     iconRes =
                         if (detail.isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
-                    contentDescription = if (detail.isSaved) "저장 취소" else "코스 저장",
+                    contentDescription =
+                        if (detail.isSaved) {
+                            stringResource(CourseR.string.course_detail_unsave)
+                        } else {
+                            stringResource(CourseR.string.course_detail_save)
+                        },
                     tint = if (detail.isSaved) color.contentAccent else color.contentDefaultLevel0,
                     enabled = !isSaving,
                     onClick = actions.onSaveCourse,
@@ -471,7 +478,7 @@ private fun DetailHero(
             if (FeatureFlags.SHARE_ENABLED) {
                 HeroCircleButton(
                     iconRes = R.drawable.ic_share_24,
-                    contentDescription = "공유",
+                    contentDescription = stringResource(CourseR.string.course_detail_share),
                     onClick = actions.onShare,
                 )
             }
@@ -506,7 +513,7 @@ private fun DetailHero(
                 }
             }
             if (detail.forkedFromId != null) {
-                CopyOriginBadge(text = "복제한 코스")
+                CopyOriginBadge(text = stringResource(CourseR.string.course_detail_forked_badge))
                 Spacer(Modifier.height(8.dp))
             }
             DsText(
@@ -537,7 +544,7 @@ private fun CourseSettingsMenu(
     Box {
         HeroCircleButton(
             iconRes = R.drawable.ic_more_vert_24,
-            contentDescription = "코스 설정",
+            contentDescription = stringResource(CourseR.string.course_detail_settings),
             onClick = { expanded = true },
         )
         DropdownMenu(
@@ -546,7 +553,7 @@ private fun CourseSettingsMenu(
             containerColor = color.bgDefaultLevel1,
         ) {
             CourseSettingsMenuItem(
-                text = "코스 편집",
+                text = stringResource(CourseR.string.course_detail_menu_edit),
                 iconRes = R.drawable.ic_notes_24,
                 contentColor = color.contentDefaultLevel0,
                 enabled = !isDeleting,
@@ -556,7 +563,12 @@ private fun CourseSettingsMenu(
                 },
             )
             CourseSettingsMenuItem(
-                text = if (isDeleting) "삭제 중…" else "코스 삭제",
+                text =
+                    if (isDeleting) {
+                        stringResource(CourseR.string.course_detail_menu_deleting)
+                    } else {
+                        stringResource(CourseR.string.course_detail_menu_delete)
+                    },
                 iconRes = R.drawable.ic_trash_24,
                 contentColor = color.contentDanger,
                 enabled = !isDeleting,
@@ -609,7 +621,12 @@ private fun HeroLikeButton(
 ) {
     HeroCircleButton(
         iconRes = if (isLiked) R.drawable.ic_like_on_24 else R.drawable.ic_like_off_24,
-        contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
+        contentDescription =
+            if (isLiked) {
+                stringResource(CourseR.string.course_detail_unlike)
+            } else {
+                stringResource(CourseR.string.course_detail_like)
+            },
         tint =
             if (isLiked) {
                 DesignSystemThemeImpl.designSystemColor.contentAccent
@@ -816,7 +833,12 @@ private fun AuthorFollowButton(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         DsText(
-            text = if (isFollowing) "팔로잉" else "팔로우",
+            text =
+                if (isFollowing) {
+                    stringResource(CourseR.string.course_detail_following)
+                } else {
+                    stringResource(CourseR.string.course_detail_follow_author)
+                },
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = contentColor,
         )
@@ -902,7 +924,7 @@ private val CourseMapHeight = 220.dp
 internal fun CourseMapSection(
     places: List<CourseDetailPlaceVO>,
     onOpenDetail: (CourseDetailPlaceVO) -> Unit,
-    title: String = "코스 한눈에 보기",
+    title: String = stringResource(CourseR.string.course_detail_map_section),
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val points = remember(places) { places.toRoutePoints() }
@@ -953,7 +975,7 @@ internal fun PlacesSection(
     places: List<CourseDetailPlaceVO>,
     authorName: String,
     onPlaceClick: (CourseDetailPlaceVO) -> Unit,
-    title: String = "코스 속 장소",
+    title: String = stringResource(CourseR.string.course_detail_places_section),
     expandedPlaceContent: (@Composable (CourseDetailPlaceVO) -> Unit)? = null,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -975,7 +997,7 @@ internal fun PlacesSection(
                     color = color.contentDefaultLevel0,
                 )
                 DsText(
-                    text = "${places.size}곳",
+                    text = stringResource(CourseR.string.course_detail_place_count, places.size),
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentAccent,
                 )
@@ -1024,7 +1046,12 @@ private fun ExpandToggleChip(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         DsText(
-            text = if (expanded) "접기" else "펼치기",
+            text =
+                if (expanded) {
+                    stringResource(CourseR.string.course_detail_collapse)
+                } else {
+                    stringResource(CourseR.string.course_detail_expand)
+                },
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentAccent,
         )
@@ -1179,7 +1206,7 @@ private fun PlaceDetailChevron() {
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_chevron_right_24),
-            contentDescription = "장소 상세",
+            contentDescription = stringResource(CourseR.string.course_detail_place_detail),
             tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
             modifier = Modifier.size(20.dp),
         )
@@ -1219,7 +1246,7 @@ private fun MorePlacesRow(
         }
         Box {
             DsText(
-                text = "나머지 ${remaining}곳 더보기",
+                text = stringResource(CourseR.string.course_detail_more_places, remaining),
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentAccent,
             )
@@ -1355,7 +1382,7 @@ private fun DetailPlaceItem(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     DsText(
-                        text = "Tip.$authorName",
+                        text = stringResource(CourseR.string.course_detail_tip_prefix, authorName),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentAccent,
                     )
@@ -1425,7 +1452,7 @@ private fun PhotoViewerDialog(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.close_small_24),
-                    contentDescription = "닫기",
+                    contentDescription = stringResource(CourseR.string.course_detail_close),
                     tint = color.contentDefaultLevel0,
                     modifier = Modifier.size(20.dp),
                 )
@@ -1529,21 +1556,21 @@ private fun DetailBottomBar(
                 )
             BottomBarIconButton(
                 iconRes = R.drawable.ic_tab_chat_24,
-                contentDescription = "댓글",
+                contentDescription = stringResource(CourseR.string.course_detail_comments),
                 colors = idle,
                 onClick = onCommentClick,
             )
             if (!isMine) {
                 BottomBarIconButton(
                     iconRes = R.drawable.ic_fork_24,
-                    contentDescription = "코스 복제",
+                    contentDescription = stringResource(CourseR.string.course_detail_fork),
                     colors = idle,
                     onClick = onForkClick,
                 )
             }
             // 이 화면의 주행동이라 연한 배경이 아닌 꽉 찬 강조색으로 세운다.
             BottomBarButton(
-                text = "따라가기",
+                text = stringResource(CourseR.string.course_detail_follow),
                 shape = BOTTOM_BAR_BUTTON_SHAPE,
                 background = color.bgAccent,
                 contentColor = color.contentOnAccent,

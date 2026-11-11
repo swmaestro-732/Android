@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 日本語翻訳(ドラフト)。UI文言は要確認。 -->
+<resources>
+    <string name="course_review_header_title">レビュー</string>
+    <string name="course_review_see_all">すべて見る</string>
+    <string name="course_review_empty">まだレビューがありません。このコースの体験をシェアしてください。</string>
+    <string name="course_review_delete">自分のレビューを削除</string>
+
+    <!-- 場所詳細ボトムシート(FS-11 Sheet) -->
+    <string name="course_place_sheet_close_map">地図を閉じる</string>
+    <string name="course_place_sheet_close_detail">場所の詳細を閉じる</string>
+    <string name="course_place_sheet_place_count">%1$dか所</string>
+    <string name="course_place_sheet_review_count">レビュー %1$s</string>
+    <string name="course_place_sheet_review_title">レビュー</string>
+    <string name="course_place_sheet_review_load_failed">レビューを読み込めませんでした</string>
+    <string name="course_place_sheet_review_delete_title">レビューを削除しますか?</string>
+    <string name="course_place_sheet_review_delete_desc">削除したレビューは元に戻せません。</string>
+    <string name="course_place_sheet_save">保存</string>
+    <string name="course_place_sheet_saved">保存済み</string>
+    <string name="course_place_sheet_directions">ルート案内</string>
+    <string name="course_place_sheet_opening_hours">営業時間</string>
+    <string name="course_place_sheet_opening_hours_expand">曜日別の営業時間を表示</string>
+    <string name="course_place_sheet_opening_hours_collapse">営業時間を閉じる</string>
+    <string name="course_place_sheet_overview_open">コース全体を見る</string>
+    <string name="course_place_sheet_overview_back">現在の場所に戻る</string>
+    <string name="course_place_sheet_tip_author">Tip.%1$s</string>
+    <string name="course_place_sheet_step_previous">前へ</string>
+    <string name="course_place_sheet_step_next">次へ</string>
+    <string name="course_place_sheet_no_location">位置情報がありません</string>
+
+    <!-- course 화면 고정 문구(SCRUM-813 i18n) -->
+    <!-- 코스 상세 화면(FS-11) 고정 문구 -->
+    <string name="course_detail_back">戻る</string>
+    <string name="course_detail_hero_back">戻る</string>
+    <string name="course_detail_unsave">保存を解除</string>
+    <string name="course_detail_save">コースを保存</string>
+    <string name="course_detail_share">共有</string>
+    <string name="course_detail_forked_badge">複製したコース</string>
+    <string name="course_detail_settings">コース設定</string>
+    <string name="course_detail_menu_edit">コースを編集</string>
+    <string name="course_detail_menu_deleting">削除中…</string>
+    <string name="course_detail_menu_delete">コースを削除</string>
+    <string name="course_detail_unlike">いいねを取り消す</string>
+    <string name="course_detail_like">いいね</string>
+    <string name="course_detail_following">フォロー中</string>
+    <string name="course_detail_follow_author">フォロー</string>
+    <string name="course_detail_map_section">コースをひと目で</string>
+    <string name="course_detail_places_section">コース内のスポット</string>
+    <string name="course_detail_place_count">%1$dか所</string>
+    <string name="course_detail_collapse">折りたたむ</string>
+    <string name="course_detail_expand">開く</string>
+    <string name="course_detail_place_detail">スポットの詳細</string>
+    <string name="course_detail_more_places">残り%1$dか所を見る</string>
+    <string name="course_detail_tip_prefix">Tip.%1$s</string>
+    <string name="course_detail_close">閉じる</string>
+    <string name="course_detail_comments">コメント</string>
+    <string name="course_detail_fork">コースを複製</string>
+    <string name="course_detail_follow">コースをたどる</string>
+
+    <!-- 코스 장소 카드 -->
+    <string name="course_place_card_note_placeholder">ひとことメモを残す…</string>
+
+    <!-- 코스 정보 입력(이름·설명·썸네일) -->
+    <string name="course_info_name_label">コース名</string>
+    <string name="course_info_name_placeholder">コース名を入力してください</string>
+    <string name="course_info_description_label">コースの説明</string>
+    <string name="course_info_description_placeholder">コースの説明を入力してください</string>
+    <string name="course_info_thumbnail_label">サムネイル画像</string>
+
+    <!-- 코스 계획(제목·메모·날짜) -->
+    <string name="course_plan_title_label">プランのタイトル（任意・%1$d/200）</string>
+    <string name="course_plan_title_placeholder">プランのタイトルを入力してください</string>
+    <string name="course_plan_memo_label">メモ（任意・%1$d/500）</string>
+    <string name="course_plan_memo_placeholder">覚えておきたいことを残しましょう</string>
+    <string name="course_plan_date_label">訪問予定日（任意）</string>
+    <string name="course_plan_date_unset">未定・日付を選択</string>
+    <string name="course_plan_date_clear">日付を未定にする</string>
+</resources>

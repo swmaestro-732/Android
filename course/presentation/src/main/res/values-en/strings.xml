@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 영어 번역(초안). UI 문구 번역은 검토 필요. -->
+<resources>
+    <string name="course_review_header_title">Reviews</string>
+    <string name="course_review_see_all">See all</string>
+    <string name="course_review_empty">No reviews yet. Share your experience on this course.</string>
+    <string name="course_review_delete">Delete my review</string>
+
+    <!-- Place detail bottom sheet (FS-11 Sheet) -->
+    <string name="course_place_sheet_close_map">Close map</string>
+    <string name="course_place_sheet_close_detail">Close place details</string>
+    <string name="course_place_sheet_place_count">%1$d places</string>
+    <string name="course_place_sheet_review_count">Reviews %1$s</string>
+    <string name="course_place_sheet_review_title">Reviews</string>
+    <string name="course_place_sheet_review_load_failed">Couldn\'t load reviews</string>
+    <string name="course_place_sheet_review_delete_title">Delete this review?</string>
+    <string name="course_place_sheet_review_delete_desc">Deleted reviews can\'t be restored.</string>
+    <string name="course_place_sheet_save">Save</string>
+    <string name="course_place_sheet_saved">Saved</string>
+    <string name="course_place_sheet_directions">Directions</string>
+    <string name="course_place_sheet_opening_hours">Opening hours</string>
+    <string name="course_place_sheet_opening_hours_expand">Show hours by day</string>
+    <string name="course_place_sheet_opening_hours_collapse">Collapse hours</string>
+    <string name="course_place_sheet_overview_open">View whole course</string>
+    <string name="course_place_sheet_overview_back">Back to current place</string>
+    <string name="course_place_sheet_tip_author">Tip.%1$s</string>
+    <string name="course_place_sheet_step_previous">Previous</string>
+    <string name="course_place_sheet_step_next">Next</string>
+    <string name="course_place_sheet_no_location">No location info</string>
+
+    <!-- course 화면 고정 문구(SCRUM-813 i18n) -->
+    <!-- 코스 상세 화면(FS-11) 고정 문구 -->
+    <string name="course_detail_back">Back</string>
+    <string name="course_detail_hero_back">Back</string>
+    <string name="course_detail_unsave">Remove from saved</string>
+    <string name="course_detail_save">Save course</string>
+    <string name="course_detail_share">Share</string>
+    <string name="course_detail_forked_badge">Copied course</string>
+    <string name="course_detail_settings">Course settings</string>
+    <string name="course_detail_menu_edit">Edit course</string>
+    <string name="course_detail_menu_deleting">Deleting…</string>
+    <string name="course_detail_menu_delete">Delete course</string>
+    <string name="course_detail_unlike">Unlike</string>
+    <string name="course_detail_like">Like</string>
+    <string name="course_detail_following">Following</string>
+    <string name="course_detail_follow_author">Follow</string>
+    <string name="course_detail_map_section">Course at a glance</string>
+    <string name="course_detail_places_section">Places in course</string>
+    <string name="course_detail_place_count">%1$d places</string>
+    <string name="course_detail_collapse">Collapse</string>
+    <string name="course_detail_expand">Expand</string>
+    <string name="course_detail_place_detail">Place details</string>
+    <string name="course_detail_more_places">See %1$d more places</string>
+    <string name="course_detail_tip_prefix">Tip.%1$s</string>
+    <string name="course_detail_close">Close</string>
+    <string name="course_detail_comments">Comments</string>
+    <string name="course_detail_fork">Copy course</string>
+    <string name="course_detail_follow">Follow course</string>
+
+    <!-- 코스 장소 카드 -->
+    <string name="course_place_card_note_placeholder">Add a quick note…</string>
+
+    <!-- 코스 정보 입력(이름·설명·썸네일) -->
+    <string name="course_info_name_label">Course name</string>
+    <string name="course_info_name_placeholder">Enter a course name</string>
+    <string name="course_info_description_label">Course description</string>
+    <string name="course_info_description_placeholder">Enter a course description</string>
+    <string name="course_info_thumbnail_label">Thumbnail image</string>
+
+    <!-- 코스 계획(제목·메모·날짜) -->
+    <string name="course_plan_title_label">Plan title (optional · %1$d/200)</string>
+    <string name="course_plan_title_placeholder">Enter a plan title</string>
+    <string name="course_plan_memo_label">Memo (optional · %1$d/500)</string>
+    <string name="course_plan_memo_placeholder">Jot down anything to remember</string>
+    <string name="course_plan_date_label">Planned date (optional)</string>
+    <string name="course_plan_date_unset">Not set · Pick a date</string>
+    <string name="course_plan_date_clear">Clear date</string>
+</resources>

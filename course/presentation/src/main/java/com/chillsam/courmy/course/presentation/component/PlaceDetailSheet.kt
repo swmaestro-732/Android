@@ -66,6 +66,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -101,6 +102,7 @@ import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlin.math.roundToInt
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 private val SHEET_TOP_SHAPE = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
 
@@ -371,7 +373,7 @@ private fun FullCourseMapDialog(
                 ) {
                     Icon(
                         painterResource(R.drawable.close_small_24),
-                        contentDescription = "지도 닫기",
+                        contentDescription = stringResource(CourseR.string.course_place_sheet_close_map),
                         tint = color.contentDefaultLevel0,
                     )
                 }
@@ -495,7 +497,13 @@ private fun CompactCourseSummary(
             autoTranslate = true,
         )
         DsText(
-            text = course.summary.ifBlank { "${course.places.size}곳" },
+            text =
+                course.summary.ifBlank {
+                    stringResource(
+                        CourseR.string.course_place_sheet_place_count,
+                        course.places.size,
+                    )
+                },
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel2,
             maxLines = 1,
@@ -580,7 +588,7 @@ private fun ColumnScope.PlaceInfoLayout(
                 // 저장 수는 서버가 아직 주지 않아 리뷰 수만 보인다.
                 // TODO-API-SPEC: 저장 수가 응답에 생기면 "· 저장 1.2k" 를 덧붙인다.
                 DsText(
-                    text = "리뷰 ${reviews.totalCountText}",
+                    text = stringResource(CourseR.string.course_place_sheet_review_count, reviews.totalCountText),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
                 )
@@ -595,7 +603,7 @@ private fun ColumnScope.PlaceInfoLayout(
         Spacer(Modifier.height(20.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             DsText(
-                text = "후기",
+                text = stringResource(CourseR.string.course_place_sheet_review_title),
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
             )
@@ -612,7 +620,7 @@ private fun ColumnScope.PlaceInfoLayout(
             PlaceReviewEmptyState(enabled = coursePlace.placeId > 0, onWriteReview = onWriteReview)
         } else if (reviews == null) {
             DsText(
-                text = "후기 정보를 불러오지 못했어요",
+                text = stringResource(CourseR.string.course_place_sheet_review_load_failed),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel3,
                 maxLines = Int.MAX_VALUE,
@@ -643,8 +651,8 @@ private fun ColumnScope.PlaceInfoLayout(
     }
     pendingDeleteId?.let { reviewId ->
         DsConfirmDialog(
-            title = "후기를 삭제할까요?",
-            description = "삭제한 후기는 되돌릴 수 없어요.",
+            title = stringResource(CourseR.string.course_place_sheet_review_delete_title),
+            description = stringResource(CourseR.string.course_place_sheet_review_delete_desc),
             destructive = true,
             onConfirm = {
                 onDeleteReview(reviewId)
@@ -692,7 +700,12 @@ private fun PlaceInfoActions(
     val context = LocalContext.current
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         InfoActionButton(
-            text = if (isSaved) "저장됨" else "저장",
+            text =
+                if (isSaved) {
+                    stringResource(CourseR.string.course_place_sheet_saved)
+                } else {
+                    stringResource(CourseR.string.course_place_sheet_save)
+                },
             iconRes = if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
             background = if (isSaved) color.bgAccentSubtle else color.bgDefaultLevel1,
             contentColor = if (isSaved) color.contentAccent else color.contentDefaultLevel0,
@@ -702,7 +715,7 @@ private fun PlaceInfoActions(
         // 좌표가 없으면 보낼 목적지가 없어 길찾기를 빼고 저장 버튼이 전체 폭을 쓴다.
         if (coursePlace.latLngOrNull() != null) {
             InfoActionButton(
-                text = "길찾기",
+                text = stringResource(CourseR.string.course_place_sheet_directions),
                 iconRes = R.drawable.ic_location_24,
                 background = color.bgDefaultLevel1,
                 contentColor = color.contentDefaultLevel0,
@@ -825,7 +838,7 @@ private fun OpeningHoursCard(lines: List<String>) {
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_clock_24),
-            contentDescription = "운영시간",
+            contentDescription = stringResource(CourseR.string.course_place_sheet_opening_hours),
             tint = color.contentDefaultLevel2,
             modifier = Modifier.size(20.dp),
         )
@@ -865,7 +878,12 @@ private fun OpeningHoursCard(lines: List<String>) {
         if (expandable) {
             Icon(
                 painter = painterResource(R.drawable.ic_chevron_down_24),
-                contentDescription = if (expanded) "운영시간 접기" else "요일별 운영시간 펼치기",
+                contentDescription =
+                    if (expanded) {
+                        stringResource(CourseR.string.course_place_sheet_opening_hours_collapse)
+                    } else {
+                        stringResource(CourseR.string.course_place_sheet_opening_hours_expand)
+                    },
                 tint = color.contentDefaultLevel2,
                 modifier = Modifier.size(20.dp).rotate(if (expanded) 180f else 0f),
             )
@@ -1154,7 +1172,12 @@ private fun OverviewButton(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_route_24),
-            contentDescription = if (active) "현재 장소로 돌아가기" else "코스 전체 보기",
+            contentDescription =
+                if (active) {
+                    stringResource(CourseR.string.course_place_sheet_overview_back)
+                } else {
+                    stringResource(CourseR.string.course_place_sheet_overview_open)
+                },
             tint = if (active) color.contentOnAccent else color.contentDefaultLevel0,
             modifier = Modifier.size(22.dp),
         )
@@ -1236,7 +1259,7 @@ private fun PlaceTipCard(
         )
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             DsText(
-                text = "Tip.$authorName",
+                text = stringResource(CourseR.string.course_place_sheet_tip_author, authorName),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentAccent,
             )
@@ -1276,13 +1299,13 @@ private fun PlaceStepBar(
         ) {
             StepButton(
                 iconRes = R.drawable.ic_chevron_left_24,
-                text = "이전",
+                text = stringResource(CourseR.string.course_place_sheet_step_previous),
                 onClick = onPrevious,
                 iconFirst = true,
             )
             StepButton(
                 iconRes = R.drawable.ic_chevron_right_24,
-                text = "다음",
+                text = stringResource(CourseR.string.course_place_sheet_step_next),
                 onClick = onNext,
                 iconFirst = false,
             )
@@ -1352,7 +1375,7 @@ private fun NoLocationPlaceholder() {
         contentAlignment = Alignment.Center,
     ) {
         DsText(
-            text = "위치 정보가 없어요",
+            text = stringResource(CourseR.string.course_place_sheet_no_location),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel2,
         )
@@ -1388,7 +1411,7 @@ private fun PlaceInfoHeader(
         }
         SheetCircleIconButton(
             iconRes = R.drawable.ic_chevron_down_24,
-            contentDescription = "장소 상세 닫기",
+            contentDescription = stringResource(CourseR.string.course_place_sheet_close_detail),
             onClick = onDismiss,
         )
     }

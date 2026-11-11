@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  course:presentation 화면 전용 UI 문구. 하드코딩 대신 stringResource 로 참조한다.
+  공통 재사용 문구는 common:presentation 의 strings.xml 에 둔다. en/ja 는 values-en/values-ja 로 추가.
+-->
+<resources>
+    <!-- 코스 상세 리뷰 섹션(FS-11) -->
+    <string name="course_review_header_title">후기</string>
+    <string name="course_review_see_all">전체보기</string>
+    <string name="course_review_empty">아직 후기가 없어요. 코스를 다녀온 경험을 나눠 주세요.</string>
+    <string name="course_review_delete">내 후기 삭제</string>
+
+    <!-- 장소 상세 바텀시트(FS-11 Sheet) -->
+    <string name="course_place_sheet_close_map">지도 닫기</string>
+    <string name="course_place_sheet_close_detail">장소 상세 닫기</string>
+    <string name="course_place_sheet_place_count">%1$d곳</string>
+    <string name="course_place_sheet_review_count">리뷰 %1$s</string>
+    <string name="course_place_sheet_review_title">후기</string>
+    <string name="course_place_sheet_review_load_failed">후기 정보를 불러오지 못했어요</string>
+    <string name="course_place_sheet_review_delete_title">후기를 삭제할까요?</string>
+    <string name="course_place_sheet_review_delete_desc">삭제한 후기는 되돌릴 수 없어요.</string>
+    <string name="course_place_sheet_save">저장</string>
+    <string name="course_place_sheet_saved">저장됨</string>
+    <string name="course_place_sheet_directions">길찾기</string>
+    <string name="course_place_sheet_opening_hours">운영시간</string>
+    <string name="course_place_sheet_opening_hours_expand">요일별 운영시간 펼치기</string>
+    <string name="course_place_sheet_opening_hours_collapse">운영시간 접기</string>
+    <string name="course_place_sheet_overview_open">코스 전체 보기</string>
+    <string name="course_place_sheet_overview_back">현재 장소로 돌아가기</string>
+    <string name="course_place_sheet_tip_author">Tip.%1$s</string>
+    <string name="course_place_sheet_step_previous">이전</string>
+    <string name="course_place_sheet_step_next">다음</string>
+    <string name="course_place_sheet_no_location">위치 정보가 없어요</string>
+
+    <!-- course 화면 고정 문구(SCRUM-813 i18n) -->
+    <!-- 코스 상세 화면(FS-11) 고정 문구 -->
+    <string name="course_detail_back">뒤로</string>
+    <string name="course_detail_hero_back">뒤로가기</string>
+    <string name="course_detail_unsave">저장 취소</string>
+    <string name="course_detail_save">코스 저장</string>
+    <string name="course_detail_share">공유</string>
+    <string name="course_detail_forked_badge">복제한 코스</string>
+    <string name="course_detail_settings">코스 설정</string>
+    <string name="course_detail_menu_edit">코스 편집</string>
+    <string name="course_detail_menu_deleting">삭제 중…</string>
+    <string name="course_detail_menu_delete">코스 삭제</string>
+    <string name="course_detail_unlike">좋아요 취소</string>
+    <string name="course_detail_like">좋아요</string>
+    <string name="course_detail_following">팔로잉</string>
+    <string name="course_detail_follow_author">팔로우</string>
+    <string name="course_detail_map_section">코스 한눈에 보기</string>
+    <string name="course_detail_places_section">코스 속 장소</string>
+    <string name="course_detail_place_count">%1$d곳</string>
+    <string name="course_detail_collapse">접기</string>
+    <string name="course_detail_expand">펼치기</string>
+    <string name="course_detail_place_detail">장소 상세</string>
+    <string name="course_detail_more_places">나머지 %1$d곳 더보기</string>
+    <string name="course_detail_tip_prefix">Tip.%1$s</string>
+    <string name="course_detail_close">닫기</string>
+    <string name="course_detail_comments">댓글</string>
+    <string name="course_detail_fork">코스 복제</string>
+    <string name="course_detail_follow">따라가기</string>
+
+    <!-- 코스 장소 카드 -->
+    <string name="course_place_card_note_placeholder">이곳에 한마디 남기기…</string>
+
+    <!-- 코스 정보 입력(이름·설명·썸네일) -->
+    <string name="course_info_name_label">코스 이름</string>
+    <string name="course_info_name_placeholder">코스 이름을 입력하세요</string>
+    <string name="course_info_description_label">코스 설명</string>
+    <string name="course_info_description_placeholder">코스 설명을 입력하세요</string>
+    <string name="course_info_thumbnail_label">썸네일 이미지</string>
+
+    <!-- 코스 계획(제목·메모·날짜) -->
+    <string name="course_plan_title_label">계획 제목 (선택 · %1$d/200)</string>
+    <string name="course_plan_title_placeholder">계획 제목을 입력하세요</string>
+    <string name="course_plan_memo_label">전체 메모 (선택 · %1$d/500)</string>
+    <string name="course_plan_memo_placeholder">기억할 내용을 남겨 보세요</string>
+    <string name="course_plan_date_label">가려는 날 (선택)</string>
+    <string name="course_plan_date_unset">미정 · 날짜 선택</string>
+    <string name="course_plan_date_clear">날짜 미정으로 변경</string>
+</resources>
