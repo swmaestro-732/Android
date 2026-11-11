@@ -1,23 +1,22 @@
 package com.chillsam.courmy.main.presentation
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
-import androidx.core.os.LocaleListCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -45,7 +44,14 @@ import com.chillsam.courmy.main.presentation.deeplink.resolveRoute
 import com.chillsam.courmy.main.presentation.deeplink.resolveStartStack
 import com.chillsam.courmy.main.presentation.navigation.RootComposable
 import com.chillsam.courmy.tti.TTIHelper
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import java.util.Locale
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -85,6 +91,37 @@ class MainActivity : FragmentActivity() {
     private var pendingPush by mutableStateOf<PushTarget?>(null)
 
     private var jankStats: JankStats? = null
+
+    /** attachBaseContext 가 이번 생성에서 실제 적용한 언어 코드. 재생성 판단의 기준(설정 변경 시 1회만 재생성). */
+    private var appliedLanguageCode: String = AppLanguage.KOREAN.code
+
+    /**
+     * 선택 언어를 리소스 locale 로 적용한다. 리소스(strings.xml values-en/ja)는 Context 의 locale 로 해석되므로,
+     * Activity 가 base context 를 붙일 때 선택 언어로 Context 를 래핑해야 한다
+     * (앱 내 언어 선택을 기기 시스템 언어보다 우선시킨다 — 시스템이 영어라도 한국어 선택이면 한국어로).
+     *
+     * Hilt 필드 주입은 super.onCreate 에서 일어나 이 시점엔 아직 null 이므로, EntryPoint 로 저장소를 직접 얻는다.
+     * DataStore 는 비동기지만 locale 은 화면을 그리기 전에 확정돼야 해 한 번만 blocking 으로 읽는다.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        val language =
+            runBlocking {
+                EntryPointAccessors
+                    .fromApplication(newBase.applicationContext, LocaleEntryPoint::class.java)
+                    .languageRepository()
+                    .language
+                    .first()
+            }
+        appliedLanguageCode = language.code
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(Locale.forLanguageTag(language.code))
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
+
+    /** 선택 언어가 이번 생성에 적용된 것과 다르면 재생성한다(attachBaseContext 가 새 locale 로 다시 붙는다). */
+    private fun applyLanguageIfChanged(language: AppLanguage) {
+        if (language.code != appliedLanguageCode) recreate()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -135,10 +172,12 @@ class MainActivity : FragmentActivity() {
         // 상태바 영역의 색과 아이콘 밝기는 화면마다 달라 RootComposable 이 맡는다.
         enableEdgeToEdge()
         setContent {
-            val appLanguage by languageRepository.language.collectAsStateWithLifecycle(AppLanguage.KOREAN)
-            // 선택 언어를 앱 locale 로도 반영해 strings.xml(en/ja) 리소스가 해석되게 한다.
-            // (한국어는 기본 리소스라 빈 목록=시스템 기본으로 둔다.) 적용 시 Activity 가 재생성된다.
-            ApplyAppLocale(appLanguage)
+            // 초기값은 attachBaseContext 가 이미 적용한 언어로 시드한다. 하드코딩 기본값(KOREAN)으로 두면
+            // 실제 값이 흘러오기 전 첫 조합에서 어긋나 recreate 가 무한 반복된다(초기값≠적용값 → 재생성 루프).
+            val appLanguage by languageRepository.language
+                .collectAsStateWithLifecycle(AppLanguage.fromCode(appliedLanguageCode))
+            // 설정에서 언어를 바꾸면 재생성해 attachBaseContext 가 새 locale 로 Context 를 다시 붙인다.
+            LaunchedEffect(appLanguage) { applyLanguageIfChanged(appLanguage) }
             CompositionLocalProvider(
                 LocalNavigationHelper provides navigationHelper,
                 LocalMessageHelper provides messageHelper,
@@ -236,24 +275,11 @@ class MainActivity : FragmentActivity() {
     }
 }
 
-/**
- * 선택 언어를 앱 locale 로 적용한다. strings.xml 의 values-en/values-ja 가 이 locale 로 해석된다.
- * 한국어는 기본 리소스라 빈 목록(시스템 기본)으로 둔다. 이미 같은 locale 이면 다시 적용하지 않는다
- * (setApplicationLocales 는 Activity 를 재생성하므로 불필요한 재생성을 막는다).
- */
-@Composable
-private fun ApplyAppLocale(language: AppLanguage) {
-    LaunchedEffect(language) {
-        val desired =
-            if (language == AppLanguage.KOREAN) {
-                LocaleListCompat.getEmptyLocaleList()
-            } else {
-                LocaleListCompat.forLanguageTags(language.code)
-            }
-        if (AppCompatDelegate.getApplicationLocales() != desired) {
-            AppCompatDelegate.setApplicationLocales(desired)
-        }
-    }
+/** [MainActivity.attachBaseContext] 가 Hilt 주입 전에 선택 언어를 읽기 위한 진입점. */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface LocaleEntryPoint {
+    fun languageRepository(): LanguageRepository
 }
 
 /**
