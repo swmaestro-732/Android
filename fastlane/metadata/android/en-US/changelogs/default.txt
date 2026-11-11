@@ -1,2 +1,2 @@
-Fixed an issue where continuing as a guest could loop back to the intro screen.
-Fixed the home screen's bottom theme list being hidden behind the navigation bar.
+Your login session now stays active when you change the app language.
+The map now opens centered on your current location.

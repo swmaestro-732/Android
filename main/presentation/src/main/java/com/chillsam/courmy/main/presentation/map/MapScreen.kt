@@ -24,7 +24,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
@@ -33,7 +32,6 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapCategory
-import com.chillsam.courmy.main.presentation.component.hasLocationPermission
 import com.chillsam.courmy.main.presentation.home.FeedMessage
 import com.chillsam.courmy.main.presentation.map.component.MapBottomSheet
 import com.chillsam.courmy.main.presentation.map.component.MapCanvas
@@ -76,16 +74,14 @@ fun MapScreen(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
 
-    // 현위치 추적(SCRUM-634). 권한 요청·위치 구독은 FusedLocationSource 가 담당하고,
-    // 버튼은 추적 모드만 켠다. 지도를 끌면 카메라 추적(Follow)만 풀고 오버레이는 유지한다(NoFollow).
-    // 권한이 이미 있으면 첫 진입부터 기기 위치에서 시작한다. 없으면 기본 좌표(성수)에 두고,
-    // 첫 진입에 권한 다이얼로그부터 들이밀지 않는다 — 요청은 내 위치 버튼을 눌렀을 때만.
-    val context = LocalContext.current
+    // 현위치 추적(SCRUM-634). 위치 구독·권한 요청은 FusedLocationSource 가 담당하고, 버튼은 추적 모드만 켠다.
+    // 지도를 끌면 카메라 추적(Follow)만 풀고 오버레이는 유지한다(NoFollow).
+    // 지도를 열면 바로 현위치로 이동한다 — 그래서 권한 유무와 무관하게 Follow 로 시작한다.
+    // 권한이 없으면 FusedLocationSource 가 활성화되며 권한을 요청하고, 허용하면 그때 기기 위치로 간다.
+    // (거부 시에는 OS 가 반복 요청을 억제하고, 지도는 기본 좌표(성수)에 머문다.)
     val locationSource = rememberFusedLocationSource()
     var trackingModeName by rememberSaveable {
-        mutableStateOf(
-            if (context.hasLocationPermission()) LocationTrackingMode.Follow.name else LocationTrackingMode.None.name,
-        )
+        mutableStateOf(LocationTrackingMode.Follow.name)
     }
     val trackingMode = remember(trackingModeName) { LocationTrackingMode.valueOf(trackingModeName) }
 
