@@ -4,7 +4,7 @@ package com.chillsam.courmy.main.entity.aichat
  * 사용자가 커미에게 보내는 답변 한 건.
  *
  * - 첫 답변(지역)에서는 [sessionId] 가 null 이고 서버가 새 세션을 만들어 응답에 실어 준다.
- * - 지역 칩 "내 근처"는 CHIP `NEAR_ME` + [location], 그 밖 지역 칩은 문구를 [text] 로 보낸다.
+ * - 앱이 생성한 구·시·군 지역 칩은 문구를 [text]로 보낸다.
  * - 이후 칩은 [value] 를 그대로, requiresLocation 칩은 [location] 을 붙인다.
  */
 data class AiChatAnswer(

@@ -40,10 +40,10 @@ class AiCourseChatViewModel
         private var replyJob: Job? = null
         private var messageId = 0L
 
-        /** 화면이 전달한 현재 좌표(권한 없으면 null). 내 근처·requiresLocation 칩에 싣는다. */
+        /** 화면이 전달한 현재 좌표(권한 없으면 null). requiresLocation 칩에 싣는다. */
         private var location: LatLng? = null
 
-        /** 역지오코딩으로 뽑은 근처 지역 이름(동·구). 지역 칩은 "내 근처" + 이 목록. */
+        /** 현재 위치의 구·시·군부터 조회한 중복 없는 주변 지역 이름 최대 3개. */
         private var regionNames: List<String> = emptyList()
 
         override fun onIntent(intent: AiCourseChatIntent) {
@@ -141,19 +141,13 @@ class AiCourseChatViewModel
         }
 
         private fun onRegionChip(label: String) {
-            if (!currentState.inputEnabled) return
+            if (currentState.isAiTyping || !currentState.showRegionChips) return
             appendUser(label)
-            val answer =
-                if (label == NEAR_ME_LABEL) {
-                    AiChatAnswer(sessionId, AiChatAnswerType.CHIP, value = NEAR_ME_VALUE, location = location)
-                } else {
-                    AiChatAnswer(sessionId, AiChatAnswerType.TEXT, text = label)
-                }
-            send(answer)
+            send(AiChatAnswer(sessionId, AiChatAnswerType.TEXT, text = label))
         }
 
         private fun onQuickReply(reply: QuickReplyVO) {
-            if (!currentState.inputEnabled) return
+            if (currentState.isAiTyping || reply !in currentState.quickReplies) return
             if (reply.value == QuickReplyVO.VALUE_RESTART) {
                 restart()
                 return
@@ -172,14 +166,15 @@ class AiCourseChatViewModel
         /** 답변을 보내고 다음 턴을 반영한다. */
         private fun send(answer: AiChatAnswer) {
             replyJob?.cancel()
+            val inputEnabled = currentState.inputEnabled
+            beginTurn()
             replyJob =
                 viewModelScope.launch {
-                    beginTurn()
                     runCatching { sendMessage(answer) }
                         .onSuccess { applyTurn(it) }
                         .onFailure { e ->
                             if (e is CancellationException) throw e
-                            handleError(e)
+                            handleError(e, inputEnabled)
                         }
                 }
         }
@@ -195,6 +190,10 @@ class AiCourseChatViewModel
                 appendAi(text, if (index == lastIndex) turn.courses else emptyList())
             }
 
+            if (turn.messages.isEmpty() && turn.courses.isNotEmpty()) {
+                appendAi("", turn.courses)
+            }
+
             dispatch(AiCourseChatReducerEvent.SetStep(turn.step))
             dispatch(AiCourseChatReducerEvent.SetQuickReplies(turn.quickReplies))
             dispatch(AiCourseChatReducerEvent.SetInput(turn.input.enabled, turn.input.placeholder))
@@ -204,7 +203,10 @@ class AiCourseChatViewModel
             dispatch(AiCourseChatReducerEvent.SetRegionChips(regionChips(), show = showRegion))
         }
 
-        private fun handleError(e: Throwable) {
+        private fun handleError(
+            e: Throwable,
+            inputEnabled: Boolean,
+        ) {
             dispatch(AiCourseChatReducerEvent.SetTyping(false))
             // 4400(세션 만료)은 HTTP 404 로 온다 — 첫 화면으로 되돌린다.
             if (e is HttpResponseException && e.rawCode == HTTP_NOT_FOUND) {
@@ -214,10 +216,12 @@ class AiCourseChatViewModel
             }
             Log.w(TAG, "커미 AI 전송 실패", e)
             appendAi(ERROR_NOTICE)
-            dispatch(AiCourseChatReducerEvent.SetInput(enabled = true, placeholder = currentState.inputPlaceholder))
+            dispatch(
+                AiCourseChatReducerEvent.SetInput(enabled = inputEnabled, placeholder = currentState.inputPlaceholder),
+            )
         }
 
-        /** 턴 시작 — 입력 잠금 + "입력 중". 칩은 그대로 두되 입력 비활성으로 눌리지 않게 한다. */
+        /** 턴 시작 — 입력 잠금 + "입력 중". 칩은 유지하고 isAiTyping으로 중복 선택을 막는다. */
         private fun beginTurn() {
             dispatch(AiCourseChatReducerEvent.SetInput(enabled = false, placeholder = currentState.inputPlaceholder))
             dispatch(AiCourseChatReducerEvent.SetTyping(true))
@@ -233,7 +237,7 @@ class AiCourseChatViewModel
             showGreeting()
         }
 
-        private fun regionChips(): List<String> = listOf(NEAR_ME_LABEL) + regionNames
+        private fun regionChips(): List<String> = regionNames
 
         private fun appendUser(text: String) =
             dispatch(AiCourseChatReducerEvent.Append(AiChatMessage(messageId++, ChatRole.USER, text)))

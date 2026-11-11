@@ -20,6 +20,9 @@ internal object AiChatPalette {
     /** 홈 배너 카드 전용 베이스 — 흰 피드 위에서 카드가 묻히지 않게 베이스를 민트로 더 올린다. */
     val cardBase = Color(0xFFE4F3EB)
 
+    /** 홈 배너 테두리 — 사용자 지정 색상. */
+    val cardBorder = Color(0xFF9EBEB8)
+
     /** 오로라 블롭 4색 — 민트·하늘·틸·라벤더. 알파로 번지게 깐다. */
     val blobMint = Color(0xFFA9E9C9)
     val blobSky = Color(0xFFBFE0F5)

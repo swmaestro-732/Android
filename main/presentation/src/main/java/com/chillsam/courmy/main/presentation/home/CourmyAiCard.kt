@@ -54,12 +54,11 @@ fun CourmyAiCard(
                 .shadow(
                     elevation = 12.dp,
                     shape = CardShape,
-                    spotColor = AiChatPalette.ink.copy(alpha = 0.18f),
-                    ambientColor = AiChatPalette.ink.copy(alpha = 0.14f),
+                    spotColor = DesignSystemThemeImpl.designSystemColor.borderAccent.copy(alpha = 0.35f),
+                    ambientColor = DesignSystemThemeImpl.designSystemColor.borderAccent.copy(alpha = 0.20f),
                 ).clip(CardShape)
                 .drawBehind { drawCardAurora() }
-                // 흰 피드와 경계를 또렷하게 — 글래스 느낌의 흰 테두리로 카드 가장자리를 세운다.
-                .border(1.dp, Color.White.copy(alpha = 0.6f), CardShape)
+                .border(1.dp, AiChatPalette.cardBorder, CardShape)
                 .clickable(onClick = onClick)
                 .padding(20.dp),
     ) {

@@ -169,7 +169,7 @@ private val themeTiles = CourseTagVO.entries
  * 세로 피드 전체는 [RecommendedCoursesPage] 로 옮겼다(`GET /service/v1/home` 페이지네이션 유지)
  * — 홈은 앞쪽 몇 건만 미리 보여준다.
  * "커미 AI" 배너는 [CourmyAiCard] 로 추가했다(탭 → [AiCourseChatPage], SCRUM-745).
- * 추천 API 미연동(목업)이라 [FeatureFlags.AI_COURSE_CHAT_ENABLED] 로 감춰 두고, repo 기본값은 false 다.
+ * [FeatureFlags.AI_COURSE_CHAT_ENABLED]로 배너와 서버 연동 채팅 라우트의 노출을 함께 제어한다.
  * "진행 중인 코스" 띠는 아직 범위에서 제외했다. [wiki-needed]
  */
 @Composable
@@ -281,7 +281,7 @@ fun HomePage(modifier: Modifier = Modifier) {
             )
 
             // 커미 AI 코스 추천 배너(FS-09). 게스트에서도 둘러보는 진입점이라 세션 분기 없이 노출한다.
-            // 추천 API 미연동(목업)이라 FeatureFlags 로 감춘다 — 라우트 등록도 같은 플래그로 묶는다.
+            // 배너 노출과 라우트 등록을 같은 FeatureFlags로 제어한다.
             if (FeatureFlags.AI_COURSE_CHAT_ENABLED) {
                 item {
                     CourmyAiCard(

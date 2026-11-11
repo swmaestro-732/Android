@@ -223,7 +223,7 @@ val appRoutes: List<AppRoute> =
             path = HomeRoute.PATH,
             render = { HomePage() },
         ),
-        // 커미 AI 코스 추천 채팅(FS-09 "커미 AI" 배너 진입). 현재는 스크립트 기반 목업 대화.
+        // 커미 AI 코스 추천 채팅(FS-09 "커미 AI" 배너 진입). 서버 응답 기반 대화.
         AppRoute(
             path = AiCourseChatRoute.PATH,
             render = {

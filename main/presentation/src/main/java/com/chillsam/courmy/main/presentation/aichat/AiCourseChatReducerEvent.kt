@@ -32,7 +32,7 @@ sealed interface AiCourseChatReducerEvent : ReducerEvent {
         val step: AiChatStep,
     ) : AiCourseChatReducerEvent
 
-    /** REGION 단계에서 앱이 보여줄 지역 칩(동/구 이름) 교체. [show] 가 true 면 노출. */
+    /** REGION 단계에서 앱이 보여줄 지역 칩(구·시·군 이름) 교체. [show] 가 true 면 노출. */
     data class SetRegionChips(
         val chips: List<String>,
         val show: Boolean,

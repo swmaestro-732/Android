@@ -16,7 +16,7 @@ data class AiCourseChatUIState(
     val messages: ImmutableList<AiChatMessage> = persistentListOf(),
     /** 서버가 내려준 칩(THEME 이후). */
     val quickReplies: ImmutableList<QuickReplyVO> = persistentListOf(),
-    /** 앱이 위치 기준으로 만든 지역 칩 라벨(첫 항목은 "내 근처"). */
+    /** 앱이 위치 기준으로 만든 구·시·군 지역 칩 라벨. */
     val regionChips: ImmutableList<String> = persistentListOf(),
     /** true 면 서버 칩 대신 지역 칩을 그린다(REGION 단계). */
     val showRegionChips: Boolean = false,

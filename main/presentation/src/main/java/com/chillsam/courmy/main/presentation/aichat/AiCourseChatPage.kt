@@ -56,7 +56,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,13 +78,12 @@ import com.google.android.gms.location.LocationServices
 private val ScreenPadding = 16.dp
 private val BubbleMaxWidth = 272.dp
 private val AvatarSize = 40.dp
-private val CardRadius = RoundedCornerShape(20.dp)
 
 /**
  * 커미 AI 코스 추천 채팅 화면(파스텔 + 글래스). 서버 주도 대화([AiCourseChatViewModel]).
  *
  * 로그인 전용이라 비로그인은 로그인 안내로 막는다. 진입 시 위치 권한을 확인해 좌표를 ViewModel 에 전달하고
- * (지역 칩·내 근처), 서버 턴의 말풍선·칩·입력창·코스를 그대로 그린다. 코스 카드를 누르면 상세로 간다.
+ * (지역 칩·좌표가 필요한 서버 칩), 서버 턴의 말풍선·칩·입력창·코스를 그대로 그린다. 코스 카드를 누르면 상세로 간다.
  */
 @Composable
 fun AiCourseChatPage(
@@ -111,7 +112,7 @@ fun AiCourseChatPage(
     )
 }
 
-/** 위치 권한을 확인·요청하고, 있으면 마지막 좌표를 [onLocation] 으로 넘긴다(지역 칩·내 근처용). */
+/** 위치 권한을 확인·요청하고, 있으면 마지막 좌표를 [onLocation] 으로 넘긴다(지역 칩·좌표가 필요한 서버 칩용). */
 @Composable
 private fun LocationEffect(onLocation: (Double, Double) -> Unit) {
     val context = LocalContext.current
@@ -178,11 +179,11 @@ private fun AiCourseChatScreen(
                 }
                 if (showRegion) {
                     item(key = "regionChips") {
-                        ChipRow(state.regionChips.map { it to true }, state.inputEnabled) { onRegionChip(it) }
+                        ChipRow(state.regionChips.map { it to true }, !state.isAiTyping) { onRegionChip(it) }
                     }
                 } else if (showServer) {
                     item(key = "serverChips") {
-                        ServerChipRow(state.quickReplies, state.inputEnabled, onQuickReply)
+                        ServerChipRow(state.quickReplies, !state.isAiTyping, onQuickReply)
                     }
                 }
                 if (state.isAiTyping) {
@@ -279,11 +280,11 @@ private fun AiMessageRow(
         AiAvatar()
         Spacer(Modifier.width(11.dp))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            GlassBubble(message.text)
+            if (message.text.isNotBlank()) GlassBubble(message.text)
             if (message.courses.isNotEmpty()) {
                 Column(
                     modifier = Modifier.widthIn(max = BubbleMaxWidth),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     message.courses.forEach { course ->
                         ChatCourseCard(course = course, onClick = { onCourseClick(course.id) })
@@ -419,14 +420,30 @@ private fun ChipPill(
 
 // ---------------- course card ----------------
 
-/** 추천 코스 카드(글래스). 커버 이미지 + 카테고리 태그 + 제목 + 저장 수. 누르면 코스 상세로. */
+/** 작은 썸네일·테마·제목의 가로형 카드. 카드 전체를 누르면 코스 상세로 이동한다. */
 @Composable
 private fun ChatCourseCard(
     course: HomeCourseVO,
     onClick: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().glass(CardRadius).clickable(onClick = onClick)) {
-        Box(modifier = Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(14.dp))) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(AiChatPalette.glassTop)
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(10.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(DesignSystemThemeImpl.designSystemColor.imagePlaceholder),
+        ) {
             if (course.coverImageUrl.isNotBlank()) {
                 AsyncImage(
                     model = course.coverImageUrl,
@@ -434,46 +451,24 @@ private fun ChatCourseCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
-            } else {
-                Box(
-                    modifier =
-                        Modifier.fillMaxSize().background(
-                            DesignSystemThemeImpl.designSystemColor.imagePlaceholder,
-                        ),
-                )
-            }
-            if (course.categoryLabel.isNotBlank()) {
-                Box(
-                    modifier =
-                        Modifier
-                            .padding(8.dp)
-                            .clip(CircleShape)
-                            .background(AiChatPalette.glassTop)
-                            .padding(horizontal = 9.dp, vertical = 3.dp),
-                ) {
-                    DsText(
-                        course.categoryLabel,
-                        style = DesignSystemThemeImpl.typeScale.textRegularXS,
-                        color = AiChatPalette.ink,
-                    )
-                }
             }
         }
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (course.categoryLabel.isNotBlank()) {
+                DsText(
+                    course.categoryLabel,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = DesignSystemThemeImpl.designSystemColor.contentAccent,
+                    maxLines = 1,
+                )
+            }
             DsText(
                 course.title,
-                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = AiChatPalette.ink,
                 maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
-            val meta =
-                buildList {
-                    if (course.saveCountText.isNotBlank()) add("저장 ${course.saveCountText}")
-                    if (course.likeCountText.isNotBlank()) add("좋아요 ${course.likeCountText}")
-                }.joinToString(" · ")
-            if (meta.isNotBlank()) {
-                DsText(meta, style = DesignSystemThemeImpl.typeScale.textRegularXS, color = AiChatPalette.inkSoft)
-            }
         }
     }
 }

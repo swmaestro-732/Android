@@ -8,13 +8,13 @@ sealed interface AiCourseChatIntent : MviIntent {
     /** 최초 진입. 대화가 비어 있을 때만 앱 소유 인사말 + 지역 질문을 띄운다. */
     data object Start : AiCourseChatIntent
 
-    /** 현재 좌표 확보(화면이 위치 권한 확인 후 전달). 지역 칩 생성·내 근처 전송에 쓴다. */
+    /** 현재 좌표 확보(화면이 위치 권한 확인 후 전달). 지역 칩 생성·requiresLocation 칩 전송에 쓴다. */
     data class ProvideLocation(
         val latitude: Double,
         val longitude: Double,
     ) : AiCourseChatIntent
 
-    /** REGION 단계에서 앱이 그린 지역 칩을 눌렀을 때. "내 근처"는 CHIP NEAR_ME, 그 외는 문구를 TEXT 로. */
+    /** REGION 단계에서 앱이 그린 지역 칩을 눌렀을 때. 지역 이름을 TEXT로 전송한다. */
     data class RegionChipTap(
         val label: String,
     ) : AiCourseChatIntent
