@@ -70,6 +70,7 @@ import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.entity.aichat.AiChatStep
 import com.chillsam.courmy.main.entity.aichat.QuickReplyVO
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.presentation.component.hasLocationPermission
@@ -191,11 +192,15 @@ private fun AiCourseChatScreen(
                 }
             }
 
-            ChatInputBar(
-                enabled = state.inputEnabled,
-                placeholder = state.inputPlaceholder,
-                onSend = onSend,
-            )
+            if (state.step == AiChatStep.RESULT) {
+                Spacer(Modifier.navigationBarsPadding())
+            } else {
+                ChatInputBar(
+                    enabled = state.inputEnabled,
+                    placeholder = state.inputPlaceholder,
+                    onSend = onSend,
+                )
+            }
         }
     }
 }
