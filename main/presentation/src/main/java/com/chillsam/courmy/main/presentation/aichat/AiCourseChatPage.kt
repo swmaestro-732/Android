@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.animateFloat
@@ -53,6 +54,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -79,6 +81,9 @@ import com.chillsam.courmy.main.entity.aichat.QuickReplyVO
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.presentation.component.hasLocationPermission
 import com.google.android.gms.location.LocationServices
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 private val ScreenPadding = 16.dp
 private val BubbleMaxWidth = 272.dp
@@ -345,30 +350,33 @@ private fun UserMessageRow(message: AiChatMessage) {
 
 @Composable
 private fun AiAvatar(isResponding: Boolean = false) {
-    val shape =
+    val surface =
         if (isResponding) {
             val transition = rememberInfiniteTransition(label = "avatarSurface")
-            val deformation by transition.animateFloat(
+            val phase by transition.animateFloat(
                 initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-                label = "avatarDeformation",
+                targetValue = (2 * PI).toFloat(),
+                animationSpec = infiniteRepeatable(tween(2200, easing = LinearEasing)),
+                label = "waterSurface",
             )
-            RoundedCornerShape(
-                topStart = (16 + 8 * deformation).dp,
-                topEnd = (24 - 8 * deformation).dp,
-                bottomEnd = (18 + 4 * deformation).dp,
-                bottomStart = (22 - 4 * deformation).dp,
-            )
+            Modifier.drawBehind {
+                val radius = size.minDimension * 0.45f
+                val path = Path()
+                repeat(65) { index ->
+                    val angle = (2 * PI * index / 64).toFloat()
+                    val ripple = 1f + 0.08f * sin(2 * angle + phase) + 0.04f * sin(3 * angle - phase)
+                    val x = center.x + radius * ripple * cos(angle)
+                    val y = center.y + radius * ripple * sin(angle)
+                    if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                path.close()
+                drawPath(path, AiChatPalette.accentGradient)
+            }
         } else {
-            CircleShape
+            Modifier.background(AiChatPalette.accentGradient, CircleShape)
         }
     Box(
-        modifier =
-            Modifier
-                .size(AvatarSize)
-                .clip(shape)
-                .background(AiChatPalette.accentGradient),
+        modifier = Modifier.size(AvatarSize).then(surface),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
