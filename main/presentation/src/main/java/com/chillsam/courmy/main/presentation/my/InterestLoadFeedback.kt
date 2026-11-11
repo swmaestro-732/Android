@@ -28,6 +28,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 internal fun InterestLoadFeedback(
     isLoading: Boolean,
     loadError: Boolean,
+    loadingMessage: String = "저장된 선택을 확인하고 있어요",
     onRetry: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -39,7 +40,7 @@ internal fun InterestLoadFeedback(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CircularProgressIndicator(modifier = Modifier.size(16.dp), color = color.contentAccent, strokeWidth = 2.dp)
-            DsText("저장된 선택을 확인하고 있어요", style = type.textRegularXS, color = color.contentDefaultLevel2)
+            DsText(loadingMessage, style = type.textRegularXS, color = color.contentDefaultLevel2)
         }
     } else if (loadError) {
         Surface(
