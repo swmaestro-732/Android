@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,11 +29,13 @@ import com.chillsam.courmy.common.presentation.component.SkeletonBlock
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /** 실제 상세의 232dp 커버, 작성자, 본문, 장소 순서에 맞춘다. */
 @Composable
 internal fun CourseDetailSkeleton() {
-    LazyColumn(Modifier.fillMaxSize().semantics { contentDescription = "코스를 불러오는 중" }) {
+    val loadingDescription = stringResource(CourseR.string.course_loading_detail)
+    LazyColumn(Modifier.fillMaxSize().semantics { contentDescription = loadingDescription }) {
         item { SkeletonBlock(Modifier.fillMaxWidth().height(232.dp), RoundedCornerShape(0.dp)) }
         item {
             Row(
@@ -62,8 +65,9 @@ internal fun CourseDetailSkeleton() {
 /** 계획 화면의 장소 타임라인과 하단 지도 자리. 상단바는 호출부에서 유지한다. */
 @Composable
 internal fun PlanDetailSkeleton() {
+    val loadingDescription = stringResource(CourseR.string.course_loading_content)
     LazyColumn(
-        modifier = Modifier.fillMaxSize().semantics { contentDescription = "콘텐츠를 불러오는 중" },
+        modifier = Modifier.fillMaxSize().semantics { contentDescription = loadingDescription },
         contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
@@ -93,7 +97,8 @@ private fun PlaceTimelineSkeletonRow() {
 /** 평균/별점 분포와 실제 리뷰 카드 크기를 따른다. */
 @Composable
 internal fun CourseReviewListSkeleton(onBack: () -> Unit) {
-    Column(Modifier.fillMaxSize().semantics { contentDescription = "후기를 불러오는 중" }) {
+    val loadingDescription = stringResource(CourseR.string.course_loading_reviews)
+    Column(Modifier.fillMaxSize().semantics { contentDescription = loadingDescription }) {
         ReviewListTopBar(onBack = onBack)
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -142,8 +147,9 @@ private fun ReviewCardSkeleton() {
 /** 초안 목록에는 이미지가 없으므로 제목/날짜/삭제 자리만 그린다. */
 @Composable
 internal fun DraftListSkeleton() {
+    val loadingDescription = stringResource(CourseR.string.course_loading_drafts)
     LazyColumn(
-        modifier = Modifier.semantics { contentDescription = "임시저장한 코스를 불러오는 중" },
+        modifier = Modifier.semantics { contentDescription = loadingDescription },
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(4) {
@@ -170,8 +176,9 @@ internal fun DraftListSkeleton() {
 /** 검색 결과 행의 44dp 이미지, 두 줄 텍스트, 선택 표시 자리. */
 @Composable
 internal fun PlaceSearchSkeleton(modifier: Modifier = Modifier) {
+    val loadingDescription = stringResource(CourseR.string.course_loading_list)
     LazyColumn(
-        modifier = modifier.fillMaxWidth().semantics { contentDescription = "목록을 불러오는 중" },
+        modifier = modifier.fillMaxWidth().semantics { contentDescription = loadingDescription },
         contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -194,8 +201,9 @@ internal fun PlaceSearchSkeleton(modifier: Modifier = Modifier) {
 
 @Composable
 internal fun CourseEditSkeleton() {
+    val loadingDescription = stringResource(CourseR.string.course_loading_content)
     LazyColumn(
-        modifier = Modifier.fillMaxSize().semantics { contentDescription = "콘텐츠를 불러오는 중" },
+        modifier = Modifier.fillMaxSize().semantics { contentDescription = loadingDescription },
         contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
@@ -213,8 +221,9 @@ internal fun CourseEditSkeleton() {
 
 @Composable
 internal fun CourseCreateSkeleton() {
+    val loadingDescription = stringResource(CourseR.string.course_loading_create)
     Column(
-        Modifier.fillMaxSize().statusBarsPadding().semantics { contentDescription = "코스 작성 화면을 불러오는 중" },
+        Modifier.fillMaxSize().statusBarsPadding().semantics { contentDescription = loadingDescription },
     ) {
         SkeletonBlock(
             Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp).height(48.dp),
@@ -253,8 +262,9 @@ internal fun CourseCreateSkeleton() {
 
 @Composable
 internal fun CommentListSkeleton(modifier: Modifier = Modifier) {
+    val loadingDescription = stringResource(CourseR.string.course_loading_list)
     LazyColumn(
-        modifier = modifier.fillMaxWidth().semantics { contentDescription = "목록을 불러오는 중" },
+        modifier = modifier.fillMaxWidth().semantics { contentDescription = loadingDescription },
         contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
         reverseLayout = true,
@@ -275,8 +285,9 @@ internal fun CommentListSkeleton(modifier: Modifier = Modifier) {
 /** 코스 데이터 도착 전의 따라가기 미리보기. 이미 받은 지도는 호출부가 그대로 유지한다. */
 @Composable
 internal fun CourseFollowSkeleton() {
+    val loadingDescription = stringResource(CourseR.string.course_loading_follow)
     Column(
-        Modifier.fillMaxSize().statusBarsPadding().semantics { contentDescription = "따라갈 코스를 불러오는 중" },
+        Modifier.fillMaxSize().statusBarsPadding().semantics { contentDescription = loadingDescription },
     ) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),

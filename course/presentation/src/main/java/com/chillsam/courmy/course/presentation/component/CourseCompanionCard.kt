@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.course.entity.CourseCompanionVO
+import com.chillsam.courmy.course.presentation.R
 
 /**
  * ③ 코스 설정 — 동행 카드. 누구와 함께했는지(혼자·연인·가족·친구)를 칩으로 고른다.
@@ -35,7 +37,7 @@ fun CourseCompanionCard(
                 .padding(17.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        FieldLabel("누구와 함께했나요? (선택)")
+        FieldLabel(stringResource(R.string.course_companion_card_label))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CourseCompanionVO.entries.forEach { companion ->
                 DsChip(

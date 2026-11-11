@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,6 +57,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /** 하단 패널·버튼 모서리. 코스 상세 하단바와 같은 곡률로 맞춘다. */
 private val FOLLOW_BUTTON_SHAPE = RoundedCornerShape(15.dp)
@@ -151,7 +153,7 @@ private fun ColumnScope.PreviewPhase(
                 .navigationBarsPadding(),
     ) {
         DsText(
-            text = "코스 동선 ${detail.places.size}",
+            text = stringResource(CourseR.string.course_follow_route_count, detail.places.size),
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
         )
@@ -167,14 +169,26 @@ private fun ColumnScope.PreviewPhase(
             detail.places.forEachIndexed { index, place ->
                 RoutePlaceRow(
                     place = place,
-                    stateText = if (index < resumeVisitedCount) "방문함" else "",
+                    stateText =
+                        if (index <
+                            resumeVisitedCount
+                        ) {
+                            stringResource(CourseR.string.course_follow_visited)
+                        } else {
+                            ""
+                        },
                     highlighted = resumeVisitedCount > 0 && index == resumeVisitedCount,
                 )
             }
         }
         Spacer(Modifier.height(14.dp))
         FollowPrimaryButton(
-            text = if (resumeVisitedCount > 0) "이어가기" else "이 코스 따라가기",
+            text =
+                if (resumeVisitedCount > 0) {
+                    stringResource(CourseR.string.course_follow_resume)
+                } else {
+                    stringResource(CourseR.string.course_follow_start)
+                },
             iconRes = R.drawable.ic_footprint_24,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -194,7 +208,13 @@ private fun ColumnScope.TrackingPhase(
     val color = DesignSystemThemeImpl.designSystemColor
     var showEndConfirm by remember { mutableStateOf(false) }
     FollowTopBar(
-        title = "${detail.title} · ${state.visitedCount + 1}/${detail.places.size} 진행 중",
+        title =
+            stringResource(
+                CourseR.string.course_follow_tracking_title,
+                detail.title,
+                state.visitedCount + 1,
+                detail.places.size,
+            ),
         subtitle = "",
         onBack = onBack,
     )
@@ -217,14 +237,21 @@ private fun ColumnScope.TrackingPhase(
         val current = state.currentPlace
         if (current != null) {
             DsText(
-                text = "다음 스팟",
+                text = stringResource(CourseR.string.course_follow_next_spot),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
             )
             // 도보 시간은 아래 요약 줄에서 보여 주므로 카드에서는 빼고, 첫 스팟만 "여기서 출발" 표시.
             RoutePlaceRow(
                 place = current,
-                stateText = if (state.previousPlace == null) "여기서 출발" else "",
+                stateText =
+                    if (state.previousPlace ==
+                        null
+                    ) {
+                        stringResource(CourseR.string.course_follow_start_here)
+                    } else {
+                        ""
+                    },
                 highlighted = true,
             )
             WalkingRouteSection(
@@ -239,7 +266,12 @@ private fun ColumnScope.TrackingPhase(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             FollowPrimaryButton(
-                text = if (state.isRecording) "방문 기록 저장 중…" else "도착",
+                text =
+                    if (state.isRecording) {
+                        stringResource(CourseR.string.course_follow_recording)
+                    } else {
+                        stringResource(CourseR.string.course_follow_arrive)
+                    },
                 iconRes = R.drawable.ic_check_24,
                 modifier = Modifier.weight(1f),
                 enabled = !state.isRecording,
@@ -251,8 +283,8 @@ private fun ColumnScope.TrackingPhase(
     }
     if (showEndConfirm) {
         DsConfirmDialog(
-            title = "따라가기를 종료할까요?",
-            description = "지금 종료하면 진행 화면을 나가요. 나중에 코스에서 다시 이어갈 수 있어요.",
+            title = stringResource(CourseR.string.course_follow_end_confirm_title),
+            description = stringResource(CourseR.string.course_follow_end_confirm_desc),
             onConfirm = {
                 showEndConfirm = false
                 onBack()
@@ -298,7 +330,7 @@ private fun ColumnScope.DonePhase(
         }
         Spacer(Modifier.height(20.dp))
         DsText(
-            text = "코스 완주!\n수고했어요",
+            text = stringResource(CourseR.string.course_follow_done_title),
             style = DesignSystemThemeImpl.typeScale.titleExtraL,
             color = color.contentDefaultLevel0,
             maxLines = 2,
@@ -311,14 +343,23 @@ private fun ColumnScope.DonePhase(
         )
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            FollowStatCard(value = "${state.visitedCount}", label = "방문 스팟")
-            FollowStatCard(value = elapsedText(state), label = "소요 시간")
-            FollowStatCard(value = distanceText(detail.places), label = "이동 거리")
+            FollowStatCard(
+                value = "${state.visitedCount}",
+                label = stringResource(CourseR.string.course_follow_stat_visited),
+            )
+            FollowStatCard(
+                value = elapsedText(state),
+                label = stringResource(CourseR.string.course_follow_stat_elapsed),
+            )
+            FollowStatCard(
+                value = distanceText(detail.places),
+                label = stringResource(CourseR.string.course_follow_stat_distance),
+            )
         }
         Spacer(Modifier.height(24.dp))
         // 완주한 전체 스팟을 순서대로 — 마지막 한 곳만이 아니라 다녀온 코스 여정을 돌아보게 한다.
         DsText(
-            text = "다녀온 코스",
+            text = stringResource(CourseR.string.course_follow_visited_course),
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start,
             style = DesignSystemThemeImpl.typeScale.textStrongM,
@@ -338,13 +379,13 @@ private fun ColumnScope.DonePhase(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         FollowPrimaryButton(
-            text = "리뷰 남기기",
+            text = stringResource(CourseR.string.course_follow_leave_review),
             iconRes = null,
             modifier = Modifier.fillMaxWidth(),
             onClick = onLeaveReview,
         )
         DsText(
-            text = "건너뛰기",
+            text = stringResource(CourseR.string.course_follow_skip),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel3,
             modifier =
@@ -372,7 +413,7 @@ private fun FollowTopBar(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_chevron_left_24),
-            contentDescription = "뒤로",
+            contentDescription = stringResource(CourseR.string.course_follow_back),
             tint = color.contentDefaultLevel0,
             modifier =
                 Modifier
@@ -461,7 +502,7 @@ private fun WalkingRouteSection(
     val color = DesignSystemThemeImpl.designSystemColor
     if (isFirstSpot) {
         DsText(
-            text = "여기서 코스를 시작해요",
+            text = stringResource(CourseR.string.course_follow_route_start),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel3,
         )
@@ -470,7 +511,7 @@ private fun WalkingRouteSection(
     when (status) {
         FollowRouteStatus.Loading -> {
             DsText(
-                text = "도보 경로 불러오는 중…",
+                text = stringResource(CourseR.string.course_follow_route_loading),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
             )
@@ -499,12 +540,14 @@ private fun WalkingRouteSummary(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         val summary =
             listOfNotNull(
-                destName.takeIf { it.isNotBlank() }?.let { "$it 까지" },
+                destName
+                    .takeIf { it.isNotBlank() }
+                    ?.let { stringResource(CourseR.string.course_follow_route_to_dest, it) },
                 routeDistanceText(route.distanceMeters),
-                route.durationMinutes?.let { "도보 ${it}분" },
+                route.durationMinutes?.let { stringResource(CourseR.string.course_follow_route_walk_minutes, it) },
             ).joinToString(" · ")
         DsText(
-            text = summary.ifBlank { "상세 도보 경로" },
+            text = summary.ifBlank { stringResource(CourseR.string.course_follow_route_detail) },
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel0,
         )
@@ -519,7 +562,12 @@ private fun WalkingRouteSummary(
                         .padding(vertical = 2.dp),
             ) {
                 DsText(
-                    text = if (guidesOpen) "가는 길 설명 접기" else "가는 길 설명",
+                    text =
+                        if (guidesOpen) {
+                            stringResource(CourseR.string.course_follow_guide_collapse)
+                        } else {
+                            stringResource(CourseR.string.course_follow_guide_expand)
+                        },
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentAccent,
                 )
@@ -765,7 +813,7 @@ private fun CompletedSpotRow(
                 modifier = Modifier.size(14.dp),
             )
             DsText(
-                text = "방문 완료",
+                text = stringResource(CourseR.string.course_follow_visit_done),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentAccent,
             )
@@ -855,7 +903,7 @@ private fun FollowEndButton(onClick: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         DsText(
-            text = "종료",
+            text = stringResource(CourseR.string.course_follow_end),
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel1,
         )

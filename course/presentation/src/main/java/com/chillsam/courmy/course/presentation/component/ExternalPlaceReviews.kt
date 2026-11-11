@@ -25,12 +25,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseReviewListVO
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 // 네이버 브랜드 고정색: 사용자 지정 로고 색상을 테마와 무관하게 유지한다.
 private val NaverLogoGreen = Color(0xFF03C75A)
@@ -45,13 +47,14 @@ internal fun ExternalPlaceReviews(
     if (reviews?.shouldSuggestExternalReviews != true || name.isBlank()) return
     val color = DesignSystemThemeImpl.designSystemColor
     val context = LocalContext.current
+    val mapOpenFailedMessage = stringResource(CourseR.string.course_external_reviews_map_open_failed)
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         HorizontalDivider(color = color.borderDefaultLevel0, modifier = Modifier.padding(bottom = 8.dp))
         DsText(
-            text = "다른 방문자의 후기도 궁금하다면",
+            text = stringResource(CourseR.string.course_external_reviews_prompt),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel3,
         )
@@ -79,7 +82,7 @@ internal fun ExternalPlaceReviews(
                                 .appendPath(query)
                                 .build()
                         if (!context.openReviewSearch(appUri) && !context.openReviewSearch(webUri)) {
-                            Toast.makeText(context, "네이버 지도를 열 수 없어요", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, mapOpenFailedMessage, Toast.LENGTH_SHORT).show()
                         }
                     }.padding(vertical = 8.dp),
         ) {
@@ -95,7 +98,7 @@ internal fun ExternalPlaceReviews(
                 )
             }
             DsText(
-                text = "네이버 지도에서 찾아보기",
+                text = stringResource(CourseR.string.course_external_reviews_open_naver),
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = color.contentDefaultLevel0,
                 modifier = Modifier.weight(1f),

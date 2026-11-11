@@ -35,6 +35,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,7 @@ import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberUpdatedMarkerState
 import com.naver.maps.map.overlay.OverlayImage
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 // 코스 경로 지도. 코스 상세의 "코스 한눈에 보기" 구역과 장소 상세 시트가 같이 쓴다.
 
@@ -277,7 +279,7 @@ private fun BoxScope.MyLocationButton(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_my_location_24),
-            contentDescription = "내 위치",
+            contentDescription = stringResource(CourseR.string.course_route_map_my_location),
             tint = color.contentDefaultLevel0,
             modifier = Modifier.size(22.dp),
         )

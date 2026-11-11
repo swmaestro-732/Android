@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -41,6 +42,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseStopVO
+import com.chillsam.courmy.course.presentation.R
 
 /**
  * 코스 완성(저장 성공) 화면(Figma FS-34-Done). 완료 체크·안내 → 코스 요약 카드 →
@@ -76,7 +78,7 @@ fun CourseCompleteScreen(
             SummaryCard(course = course)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DsText(
-                    text = "코스 동선",
+                    text = stringResource(R.string.course_complete_timeline_title),
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                 )
@@ -100,7 +102,10 @@ fun CourseCompleteScreen(
                     .navigationBarsPadding()
                     .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
         ) {
-            DsButton(text = "내 코스에서 보기", onClick = onViewMyCourses)
+            DsButton(
+                text = stringResource(R.string.course_complete_view_my_courses),
+                onClick = onViewMyCourses,
+            )
         }
     }
 }
@@ -125,13 +130,13 @@ private fun CompleteHeader() {
             )
         }
         DsText(
-            text = "코스가 완성됐어요!",
+            text = stringResource(R.string.course_complete_header_title),
             style = DesignSystemThemeImpl.typeScale.titleExtraL,
             color = color.contentDefaultLevel0,
             textAlign = TextAlign.Center,
         )
         DsText(
-            text = "내 코스에 저장되었어요.",
+            text = stringResource(R.string.course_complete_header_desc),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel2,
             textAlign = TextAlign.Center,
