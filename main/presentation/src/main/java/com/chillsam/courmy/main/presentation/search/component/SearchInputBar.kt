@@ -23,11 +23,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val BarShape = RoundedCornerShape(percent = 50)
 private val IconSize = 18.dp
@@ -46,7 +48,7 @@ internal fun SearchInputBar(
     onClear: () -> Unit,
     modifier: Modifier = Modifier,
     autoFocus: Boolean = true,
-    placeholder: String = "코스 검색",
+    placeholder: String = stringResource(MainR.string.main_search_input_placeholder),
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val focusRequester = remember { FocusRequester() }
@@ -94,7 +96,7 @@ internal fun SearchInputBar(
         if (query.isNotEmpty()) {
             Icon(
                 painter = painterResource(R.drawable.close_small_24),
-                contentDescription = "검색어 지우기",
+                contentDescription = stringResource(MainR.string.main_search_input_clear),
                 tint = color.contentDefaultLevel2,
                 modifier =
                     Modifier

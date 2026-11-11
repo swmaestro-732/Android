@@ -16,4 +16,212 @@
 
     <string name="language_description">If the language isn\'t Korean, you can translate course descriptions and more. Translation runs on your device.</string>
     <string name="language_selected">Selected</string>
+
+    <string name="main_region_map_inset_separate_scale">Not to scale</string>
+
+    <string name="main_region_map_country_name">Korea</string>
+    <string name="main_region_map_content_description">Administrative district map of %1$s. You can also select from the region list below.</string>
+
+    <string name="main_my_create_course_title">Create your own course</string>
+    <string name="main_my_create_course_subtitle">Link the places you\'ve been into your first course</string>
+    <string name="main_my_create_plan_title">Create a plan</string>
+    <string name="main_my_create_plan_subtitle">Gather places you want to visit and make a plan</string>
+    <string name="main_my_share_description">Share</string>
+    <string name="main_my_settings_description">Settings</string>
+
+    <string name="main_interest_theme_title">Interests</string>
+    <string name="main_interest_theme_headline">What kind of places\ndo you like?</string>
+    <string name="main_interest_theme_min_count">At least %1$d · </string>
+    <string name="main_interest_theme_selected_count">%1$d selected</string>
+    <string name="main_interest_theme_select_min">Pick at least %1$d</string>
+    <string name="main_interest_theme_save_error">Couldn\'t save. We kept your picks, so please try again.</string>
+    <string name="main_interest_theme_save">Save</string>
+    <string name="main_interest_theme_next">Next</string>
+
+    <string name="main_follow_list_title">Follows</string>
+    <string name="main_follow_list_back">Back</string>
+    <string name="main_follow_list_tab_follower">Followers</string>
+    <string name="main_follow_list_tab_following">Following</string>
+    <string name="main_follow_list_empty_follower">No followers yet.</string>
+    <string name="main_follow_list_empty_following">Not following anyone yet.</string>
+    <string name="main_follow_list_retry">Try again</string>
+    <string name="main_follow_list_remove">Remove %1$s</string>
+    <string name="main_follow_list_unfollow_dialog_title">Unfollow?</string>
+    <string name="main_follow_list_unfollow_dialog_description">You\'ll unfollow %1$s.</string>
+
+    <string name="main_recommended_title">Today\'s picks</string>
+    <string name="main_recommended_region_title">%1$s courses</string>
+    <string name="main_recommended_back">Back</string>
+    <string name="main_recommended_sort_default">Recommended</string>
+    <string name="main_recommended_empty">No public courses yet.</string>
+    <string name="main_recommended_empty_theme">No courses in this theme yet.</string>
+    <string name="main_recommended_retry">Retry</string>
+
+    <!-- Search result screen: empty states, category all chip -->
+    <string name="main_search_result_empty_filtered">No courses match these filters. Try adjusting them.</string>
+    <string name="main_search_result_empty_query">No courses match \'%1$s\'</string>
+    <string name="main_search_result_category_all">All</string>
+    <string name="main_search_result_save_toggle_add">Save</string>
+    <string name="main_search_result_save_toggle_remove">Remove from saved</string>
+
+    <!-- Search input screen (FS-17) search box placeholder -->
+    <string name="main_search_placeholder_place">Search places</string>
+    <string name="main_search_placeholder_course">Search courses</string>
+
+    <!-- Profile edit (FS-26) -->
+    <string name="main_profile_edit_title">Edit profile</string>
+    <string name="main_profile_edit_save">Save changes</string>
+    <string name="main_profile_edit_toast_saved">Saved</string>
+    <string name="main_profile_edit_avatar_image_desc">Profile photo</string>
+    <string name="main_profile_edit_avatar_change_desc">Change photo</string>
+    <string name="main_profile_edit_label_nickname">Nickname</string>
+    <string name="main_profile_edit_label_handle">ID</string>
+    <string name="main_profile_edit_label_bio">Bio</string>
+    <string name="main_profile_edit_handle_check">Check</string>
+    <string name="main_profile_edit_interest_themes">Interests</string>
+    <string name="main_profile_edit_interest_regions">Favorite areas</string>
+    <string name="main_profile_edit_interest_edit">Edit</string>
+    <string name="main_profile_edit_interest_empty">No %1$s selected yet. Tap Edit to choose.</string>
+
+    <!-- 관심 지역 선택 화면(InterestRegionPage) -->
+    <string name="main_interest_region_title">Favorite Areas</string>
+    <string name="main_interest_region_heading">Pick the areas you visit often</string>
+    <string name="main_interest_region_subheading">At least 1 · Whole province or city/district</string>
+    <string name="main_interest_region_view_all">‹ View all</string>
+    <string name="main_interest_region_selected_count">%1$d selected ·</string>
+    <string name="main_interest_region_sido_all">All of %1$s</string>
+    <string name="main_interest_region_chip_remove">%1$s ×</string>
+    <string name="main_interest_region_chip_deselect_a11y">Remove %1$s</string>
+    <string name="main_interest_region_sido_all_desc">Select all of %1$s, including every sub-area</string>
+    <string name="main_interest_region_zoom_desc">Zoom into %1$s</string>
+    <string name="main_interest_region_save_error">Couldn\'t save. Your selected areas were kept, so please try again.</string>
+    <string name="main_interest_region_cta_empty">Please select at least one area</string>
+    <string name="main_interest_region_cta_next">Next</string>
+    <string name="main_interest_region_cta_save">Save</string>
+
+    <!-- Search result top bar / map preview card -->
+    <string name="main_search_result_chrome_back">Back</string>
+    <string name="main_search_result_chrome_clear_query">Clear search</string>
+    <string name="main_search_result_chrome_map_preview_title">See them all on the map</string>
+    <string name="main_search_result_chrome_map_preview_place_count">%1$d places</string>
+    <string name="main_search_result_chrome_map_open">View map</string>
+
+    <!-- Home screen (FS-09) -->
+    <string name="main_home_greeting_user">%1$s,\nwhere to today?</string>
+    <string name="main_home_greeting_guest">Where to today?</string>
+    <string name="main_home_profile_click_label">Go to My page</string>
+    <string name="main_home_profile_description">My profile</string>
+    <string name="main_home_see_all">See all</string>
+    <string name="main_home_save_label">Saves</string>
+    <string name="main_home_nearby_title">Saved nearby</string>
+    <string name="main_home_nearby_see_on_map">View on map</string>
+    <string name="main_home_nearby_permission_message">Allow location to see places you\'ve saved nearby</string>
+    <string name="main_home_nearby_gps_message">Location (GPS) is off, so we can\'t find nearby places</string>
+    <string name="main_home_nearby_allow_location">Allow location</string>
+    <string name="main_home_nearby_enable_location">Turn on location</string>
+    <string name="main_home_nearby_empty_message">No saved places nearby</string>
+    <string name="main_home_nearby_find_on_map">Find places on the map</string>
+    <string name="main_home_place_visited">Visited</string>
+    <string name="main_home_place_not_visited">Not visited</string>
+    <string name="main_home_theme_browse_title">Browse by theme</string>
+    <string name="main_home_region_browse_title">Browse by region</string>
+    <string name="main_home_in_progress_label">In progress</string>
+    <string name="main_home_in_progress_private_label">Private course</string>
+    <string name="main_home_in_progress_dismiss">Dismiss course in progress</string>
+    <string name="main_home_in_progress_end_title">End this course?</string>
+    <string name="main_home_in_progress_end_description">Ended courses are completed and saved to your library.</string>
+
+    <!-- 프로필 공용 구성요소(FS-15 마이·타유저) -->
+    <string name="main_profile_header_back">Back</string>
+    <string name="main_profile_bio_empty">No bio yet</string>
+    <string name="main_profile_follower">Followers</string>
+    <string name="main_profile_following">Following</string>
+    <string name="main_profile_avatar_image_desc">Profile image</string>
+    <string name="main_profile_avatar_empty_desc">No profile image</string>
+    <string name="main_profile_error_message">Couldn\'t load the profile.</string>
+    <string name="main_profile_error_retry">Try again</string>
+    <string name="main_profile_error_go_home">Back to home</string>
+
+    <!-- 코스 요약 카드(SavedCourseCard) -->
+    <string name="main_saved_course_card_unsave">Remove from saved</string>
+    <string name="main_saved_course_card_mine">My course</string>
+    <string name="main_saved_course_card_completed">Completed %1$s</string>
+
+    <!-- 코스 좋아요 집계(CourseLikeCount) 접근성 설명 -->
+    <string name="main_course_like_count_description">%1$s likes</string>
+
+
+    <!-- Saved courses filter (SavedCourseFilters) -->
+    <string name="main_saved_filter_all">All %1$d</string>
+    <string name="main_saved_filter_add_folder">Add folder</string>
+    <string name="main_saved_filter_uncompleted">To go %1$d</string>
+    <string name="main_saved_filter_completed">Done %1$d</string>
+    <string name="main_saved_create_folder_title">Add folder</string>
+    <string name="main_saved_create_folder_description">Group courses under a name you like. (up to %1$d characters)</string>
+    <string name="main_saved_create_folder_placeholder">e.g. Weekend outings</string>
+    <string name="main_saved_create_folder_cancel">Cancel</string>
+    <string name="main_saved_create_folder_confirm">Add</string>
+    <string name="main_saved_place_card_visited">Visited</string>
+    <string name="main_saved_place_card_remove_bookmark">Remove bookmark</string>
+
+    <!-- 저장함 화면(SavedPage) 빈 상태·저장 취소 다이얼로그·게스트 안내 -->
+    <string name="main_saved_courses_empty">No saved courses match your filters.</string>
+    <string name="main_saved_places_empty">No saved places match your filters.</string>
+    <string name="main_saved_places_load_more">Load more places</string>
+    <string name="main_saved_retry">Try again</string>
+    <string name="main_saved_unsave_dialog_title">Remove from saved?</string>
+    <string name="main_saved_unsave_course_dialog_description">This course will be removed from your saved list.</string>
+    <string name="main_saved_unsave_place_dialog_description">This place will be removed from your saved list.</string>
+    <string name="main_saved_guest_title">Collect the places\nyou love right here</string>
+    <string name="main_saved_guest_subtitle">Sign in to see your saved places on the map\nand turn them into your own course.</string>
+    <string name="main_saved_guest_login">Log in / Sign up</string>
+
+    <!-- Saved screen: course/place tabs, place category chip, notice, visit status tabs -->
+    <string name="main_saved_tab_courses">Courses</string>
+    <string name="main_saved_tab_places">Places</string>
+    <string name="main_saved_filter_chip_label">%1$s %2$d</string>
+    <string name="main_saved_places_loaded_notice">Among loaded places</string>
+    <string name="main_saved_status_not_visited">Not visited %1$d</string>
+    <string name="main_saved_status_visited">Visited %1$d</string>
+
+    <!-- i18n merge: main:presentation 추가 문구 (자동 병합) -->
+    <string name="main_interest_load_feedback_loading">Checking your saved selections</string>
+    <string name="main_interest_load_feedback_error">Please try again in a moment.</string>
+    <string name="main_interest_load_feedback_retry">Refresh</string>
+    <string name="main_guest_my_title">My</string>
+    <string name="main_guest_my_settings_cd">Settings</string>
+    <string name="main_guest_my_welcome_title">Welcome, guest</string>
+    <string name="main_guest_my_welcome_subtitle">Log in to get courses made for you</string>
+    <string name="main_guest_my_login_button">Log in / Sign up</string>
+    <string name="main_guest_my_benefits_header">Sign up to unlock these</string>
+    <string name="main_guest_my_benefit_saved_title">Save places &amp; courses</string>
+    <string name="main_guest_my_benefit_saved_subtitle">Collect places and courses you want to visit</string>
+    <string name="main_guest_my_benefit_plan_title">Trip planning</string>
+    <string name="main_guest_my_benefit_plan_subtitle">Build your own itinerary from the places you want</string>
+    <string name="main_guest_my_benefit_review_title">Reviews</string>
+    <string name="main_guest_my_benefit_review_subtitle">Share your experience of places you\'ve been</string>
+    <string name="main_guest_my_benefit_follow_title">Follow friends</string>
+    <string name="main_guest_my_benefit_follow_subtitle">Discover courses from people who share your taste</string>
+    <string name="main_guest_my_benefit_click_label">Go to login screen</string>
+    <string name="main_search_placeholder">Search courses</string>
+    <string name="main_search_recent_title">Recent searches</string>
+    <string name="main_search_clear_all">Clear all</string>
+    <string name="main_search_back">Back</string>
+    <string name="main_search_trending_title">Trending searches</string>
+    <string name="main_search_theme_find_title">Browse by theme</string>
+    <string name="main_search_places_loading">Finding places…</string>
+    <string name="main_search_places_empty">No matching places</string>
+    <string name="main_trending_keyword_rank_up">Up %1$d places</string>
+    <string name="main_trending_keyword_rank_down">Down %1$d places</string>
+    <string name="main_recent_keyword_chip_remove_description">Remove search history for %1$s</string>
+    <string name="main_search_input_placeholder">Search courses</string>
+    <string name="main_search_input_clear">Clear search</string>
+    <string name="main_home_course_card_bookmark_remove">Remove bookmark</string>
+    <string name="main_home_course_card_bookmark_add">Save</string>
+    <string name="main_skeleton_courses_loading">Loading courses</string>
+    <string name="main_skeleton_recommended_loading">Loading recommended courses</string>
+    <string name="main_skeleton_places_loading">Loading places</string>
+    <string name="main_skeleton_profile_loading">Loading profile</string>
+    <string name="main_skeleton_follow_loading">Loading follow list</string>
+    <string name="main_back_top_bar_back">Back</string>
 </resources>

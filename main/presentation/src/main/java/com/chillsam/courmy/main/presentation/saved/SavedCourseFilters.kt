@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -27,6 +28,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseFolderVO
+import com.chillsam.courmy.main.presentation.R as MainR
 
 @Composable
 internal fun SavedCourseFilters(
@@ -39,7 +41,10 @@ internal fun SavedCourseFilters(
             Modifier.weight(1f).horizontalScroll(rememberScrollState()).selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SavedFilterChip("전체 ${state.totalCount}", state.selectedFolderId == null) {
+            SavedFilterChip(
+                stringResource(MainR.string.main_saved_filter_all, state.totalCount),
+                state.selectedFolderId == null,
+            ) {
                 onIntent(SavedCoursesIntent.SelectFolder(null))
             }
             state.folders.forEach { folder ->
@@ -49,13 +54,17 @@ internal fun SavedCourseFilters(
             }
         }
         IconButton(onClick = { onIntent(SavedCoursesIntent.ShowCreateFolder) }) {
-            Icon(painterResource(R.drawable.ic_add_24), contentDescription = "폴더 추가", tint = color.contentDefaultLevel0)
+            Icon(
+                painterResource(R.drawable.ic_add_24),
+                contentDescription = stringResource(MainR.string.main_saved_filter_add_folder),
+                tint = color.contentDefaultLevel0,
+            )
         }
     }
     SavedStatusTabs(
         selectedSecond = state.completed,
-        firstLabel = "안 가봄 ${state.uncompletedCount}",
-        secondLabel = "완주 ${state.completedCount}",
+        firstLabel = stringResource(MainR.string.main_saved_filter_uncompleted, state.uncompletedCount),
+        secondLabel = stringResource(MainR.string.main_saved_filter_completed, state.completedCount),
         onSelect = { onIntent(SavedCoursesIntent.SelectCompleted(it)) },
     )
     if (state.showCreateFolder) CreateFolderDialog(state, onIntent)
@@ -68,14 +77,18 @@ private fun CreateFolderDialog(
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     DsDialogScaffold(
-        title = "폴더 추가",
-        description = "원하는 이름으로 코스를 모아보세요. (최대 ${CourseFolderVO.NAME_MAX_LENGTH}자)",
+        title = stringResource(MainR.string.main_saved_create_folder_title),
+        description =
+            stringResource(
+                MainR.string.main_saved_create_folder_description,
+                CourseFolderVO.NAME_MAX_LENGTH,
+            ),
         onDismiss = { onIntent(SavedCoursesIntent.DismissCreateFolder) },
         actions = {
             DsTextField(
                 value = name,
                 onValueChange = { if (it.length <= CourseFolderVO.NAME_MAX_LENGTH) name = it },
-                placeholder = "예: 주말 나들이",
+                placeholder = stringResource(MainR.string.main_saved_create_folder_placeholder),
                 enabled = !state.isCreatingFolder,
                 isError = state.folderError != null,
                 modifier = Modifier.fillMaxWidth(),
@@ -91,14 +104,14 @@ private fun CreateFolderDialog(
             }
             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DsButton(
-                    "취소",
+                    stringResource(MainR.string.main_saved_create_folder_cancel),
                     Modifier.weight(1f),
                     variant = DsButtonVariant.Secondary,
                     enabled = !state.isCreatingFolder,
                     onClick = { onIntent(SavedCoursesIntent.DismissCreateFolder) },
                 )
                 DsButton(
-                    "추가",
+                    stringResource(MainR.string.main_saved_create_folder_confirm),
                     Modifier.weight(1f),
                     enabled = name.isNotBlank() && !state.isCreatingFolder,
                     loading = state.isCreatingFolder,

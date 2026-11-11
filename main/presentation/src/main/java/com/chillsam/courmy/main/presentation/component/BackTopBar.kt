@@ -17,11 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 편집·설정 화면 공용 상단바: 뒤로가기 셰브론 + 제목.
@@ -62,7 +64,7 @@ fun BackTopBar(
             Box(modifier = Modifier.size(38.dp).then(boxStyle), contentAlignment = Alignment.Center) {
                 Icon(
                     painter = painterResource(R.drawable.ic_chevron_left_24),
-                    contentDescription = "뒤로 가기",
+                    contentDescription = stringResource(MainR.string.main_back_top_bar_back),
                     tint = color.contentDefaultLevel0,
                     modifier = Modifier.size(24.dp),
                 )

@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,6 +34,7 @@ import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 선택지는 코스 태그 12종이다([CourseTagVO]). 장소 카테고리 10종과 별개 체계다.
@@ -86,7 +88,10 @@ fun InterestThemePage(
             )
         } else {
             Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
-                BackTopBar(title = "관심 테마", onBack = { navigationHelper.navigateToBack() })
+                BackTopBar(
+                    title = stringResource(MainR.string.main_interest_theme_title),
+                    onBack = { navigationHelper.navigateToBack() },
+                )
             }
         }
 
@@ -99,7 +104,7 @@ fun InterestThemePage(
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
             DsText(
-                text = "어떤 곳을\n좋아하세요?",
+                text = stringResource(MainR.string.main_interest_theme_headline),
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = color.contentDefaultLevel0,
                 maxLines = 2,
@@ -108,12 +113,12 @@ fun InterestThemePage(
             // "N개 선택됨" 부분만 강조색(Figma FS-06).
             Row(modifier = Modifier.padding(bottom = 20.dp)) {
                 DsText(
-                    text = "최소 ${MIN_THEME_COUNT}개 이상 · ",
+                    text = stringResource(MainR.string.main_interest_theme_min_count, MIN_THEME_COUNT),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )
                 DsText(
-                    text = "${selected.size}개 선택됨",
+                    text = stringResource(MainR.string.main_interest_theme_selected_count, selected.size),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentAccent,
                 )
@@ -156,7 +161,7 @@ private fun ThemeSaveButton(
 ) {
     if (editing && state.saveError) {
         DsText(
-            text = "저장하지 못했어요. 선택한 테마를 유지했으니 다시 시도해 주세요.",
+            text = stringResource(MainR.string.main_interest_theme_save_error),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             maxLines = 2,
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
@@ -165,9 +170,17 @@ private fun ThemeSaveButton(
     DsButton(
         text =
             when {
-                selectedCount < MIN_THEME_COUNT -> "최소 ${MIN_THEME_COUNT}개 이상 선택"
-                editing -> "저장"
-                else -> "다음"
+                selectedCount < MIN_THEME_COUNT -> {
+                    stringResource(MainR.string.main_interest_theme_select_min, MIN_THEME_COUNT)
+                }
+
+                editing -> {
+                    stringResource(MainR.string.main_interest_theme_save)
+                }
+
+                else -> {
+                    stringResource(MainR.string.main_interest_theme_next)
+                }
             },
         enabled = canEdit && selectedCount >= MIN_THEME_COUNT,
         loading = editing && state.isSaving,

@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,7 @@ import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 홈(FS-09) 공개 코스 카드: 커버(카테고리 칩·북마크·제목) + 저장 수.
@@ -135,7 +137,12 @@ private fun CourseCover(
                         painterResource(
                             if (isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
                         ),
-                    contentDescription = if (isSaved) "저장 취소" else "저장",
+                    contentDescription =
+                        if (isSaved) {
+                            stringResource(MainR.string.main_home_course_card_bookmark_remove)
+                        } else {
+                            stringResource(MainR.string.main_home_course_card_bookmark_add)
+                        },
                     tint = color.contentAccent,
                     modifier = Modifier.size(18.dp),
                 )

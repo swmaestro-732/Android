@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +63,7 @@ import com.chillsam.courmy.main.presentation.component.CourseCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 import com.chillsam.courmy.main.presentation.my.RegionMapIntent
 import com.chillsam.courmy.main.presentation.my.RegionMapViewModel
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 진입·복귀 시 1회성 효과 모음. 복귀 재컴포지션에서 다시 실행돼 무한 스크롤 위치·칩 선택을
@@ -162,7 +164,9 @@ fun RecommendedCoursesPage(
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
         RecommendedTopBar(
-            title = regionName?.let { "$it 코스" } ?: "오늘의 추천 코스",
+            title =
+                regionName?.let { stringResource(MainR.string.main_recommended_region_title, it) }
+                    ?: stringResource(MainR.string.main_recommended_title),
             selectedCategory = feedState.selectedCategory,
             onSelectCategory = {
                 telemetry.selectionChange("/home/recommended", "theme", it?.code)
@@ -227,9 +231,9 @@ fun RecommendedCoursesPage(
                             message =
                                 feedState.errorMessage
                                     ?: if (feedState.selectedCategory == null) {
-                                        "아직 공개된 코스가 없어요."
+                                        stringResource(MainR.string.main_recommended_empty)
                                     } else {
-                                        "해당 테마의 코스가 아직 없어요."
+                                        stringResource(MainR.string.main_recommended_empty_theme)
                                     },
                             onRetry = feedState.errorMessage?.let { { feedViewModel.onIntent(HomeFeedIntent.Retry) } },
                         )
@@ -267,7 +271,7 @@ private fun RecommendedTopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     painter = painterResource(R.drawable.ic_chevron_left_24),
-                    contentDescription = "뒤로가기",
+                    contentDescription = stringResource(MainR.string.main_recommended_back),
                     tint = color.contentDefaultLevel0,
                 )
             }
@@ -298,7 +302,7 @@ private fun RecommendedTopBar(
                 // 지역 진입: 세부 지역(구·군) 칩만. 첫 칩 "추천순"이 그 시·도 전체다(카테고리 칩은 두지 않는다).
                 item {
                     DsChip(
-                        text = "추천순",
+                        text = stringResource(MainR.string.main_recommended_sort_default),
                         selected = regionFilter.selected == null,
                         onClick = { regionFilter.onSelect(null) },
                     )
@@ -383,7 +387,7 @@ internal fun FeedMessage(
         )
         if (onRetry != null) {
             DsText(
-                text = "다시 시도",
+                text = stringResource(MainR.string.main_recommended_retry),
                 style = DesignSystemThemeImpl.typeScale.textRegularM,
                 color = color.contentAccent,
                 modifier = Modifier.clickable(onClick = onRetry),

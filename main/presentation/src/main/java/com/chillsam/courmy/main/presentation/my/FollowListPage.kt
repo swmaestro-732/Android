@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -54,6 +55,7 @@ import com.chillsam.courmy.main.entity.my.FollowUserVO
 import com.chillsam.courmy.main.presentation.component.FollowRowsSkeleton
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.chillsam.courmy.main.domain.my.MyPage as MyRoute
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 팔로우 목록 화면(FS-15 O). 팔로워/팔로잉 탭 전환 + 사용자 목록(제거 ✕).
@@ -108,9 +110,9 @@ fun FollowListPage(
                             message =
                                 loadErrorMessage
                                     ?: if (selectedTab == FollowTab.FOLLOWER) {
-                                        "아직 팔로워가 없어요."
+                                        stringResource(MainR.string.main_follow_list_empty_follower)
                                     } else {
-                                        "아직 팔로우한 사람이 없어요."
+                                        stringResource(MainR.string.main_follow_list_empty_following)
                                     },
                             onRetry =
                                 loadErrorMessage?.let {
@@ -151,8 +153,8 @@ fun FollowListPage(
         pendingRemoval?.let { user ->
             // 팔로잉 탭에서만 열리므로 해제 한 가지만 묻는다.
             DsConfirmDialog(
-                title = "팔로잉을 해제할까요?",
-                description = "${user.name} 님 팔로잉을 해제해요.",
+                title = stringResource(MainR.string.main_follow_list_unfollow_dialog_title),
+                description = stringResource(MainR.string.main_follow_list_unfollow_dialog_description, user.name),
                 destructive = true,
                 onConfirm = {
                     viewModel.onIntent(FollowListIntent.Unfollow(user.id))
@@ -182,13 +184,13 @@ private fun FollowTopBar(onBack: () -> Unit) {
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_chevron_left_24),
-                contentDescription = "뒤로가기",
+                contentDescription = stringResource(MainR.string.main_follow_list_back),
                 tint = color.contentDefaultLevel0,
                 modifier = Modifier.size(24.dp),
             )
         }
         DsText(
-            text = "팔로우 목록",
+            text = stringResource(MainR.string.main_follow_list_title),
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
         )
@@ -202,13 +204,13 @@ private fun FollowTabs(
 ) {
     Row(modifier = Modifier.fillMaxWidth()) {
         FollowTabItem(
-            label = "팔로워",
+            label = stringResource(MainR.string.main_follow_list_tab_follower),
             active = selected == FollowTab.FOLLOWER,
             onClick = { onSelect(FollowTab.FOLLOWER) },
             modifier = Modifier.weight(1f),
         )
         FollowTabItem(
-            label = "팔로잉",
+            label = stringResource(MainR.string.main_follow_list_tab_following),
             active = selected == FollowTab.FOLLOWING,
             onClick = { onSelect(FollowTab.FOLLOWING) },
             modifier = Modifier.weight(1f),
@@ -290,7 +292,7 @@ private fun FollowUserRow(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.close_small_24),
-                    contentDescription = "${user.name} 제거",
+                    contentDescription = stringResource(MainR.string.main_follow_list_remove, user.name),
                     tint = color.contentDefaultLevel2,
                     modifier = Modifier.size(14.dp),
                 )
@@ -327,7 +329,7 @@ private fun FollowListMessage(
             )
             if (onRetry != null) {
                 DsText(
-                    text = "다시 시도",
+                    text = stringResource(MainR.string.main_follow_list_retry),
                     style = DesignSystemThemeImpl.typeScale.textRegularM,
                     color = color.contentAccent,
                     modifier = Modifier.clickable(onClick = onRetry),

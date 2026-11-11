@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -31,6 +32,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.area.AreaMapVO
 import com.chillsam.courmy.main.entity.area.AreaPolygonVO
+import com.chillsam.courmy.main.presentation.R
 
 /** 원본 좌표/지역 코드는 유지하며, 먼 도서의 표시 위치와 축척만 분리한다. */
 internal enum class IslandInset(
@@ -80,7 +82,10 @@ internal fun BoxScope.RegionMapInsets(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            DsText("별도 축척", style = DesignSystemThemeImpl.typeScale.textRegularXS)
+            DsText(
+                stringResource(R.string.main_region_map_inset_separate_scale),
+                style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            )
             Column(
                 Modifier
                     .fillMaxWidth()

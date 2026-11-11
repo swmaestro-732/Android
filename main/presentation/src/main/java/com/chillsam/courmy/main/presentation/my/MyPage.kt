@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -64,6 +65,7 @@ import com.chillsam.courmy.main.presentation.profile.ProfileTabItem
 import com.chillsam.courmy.main.presentation.profile.ProfileTabRow
 import kotlinx.collections.immutable.toImmutableList
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 마이·프로필 화면(FS-15). [MyViewModel] 이 로드한 프로필 상태에 따라
@@ -152,13 +154,13 @@ private fun CreateFirstCourseCard(onClick: () -> Unit) {
         )
         Spacer(Modifier.height(8.dp))
         DsText(
-            text = "나만의 코스 만들기",
+            text = stringResource(MainR.string.main_my_create_course_title),
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentAccent,
         )
         Spacer(Modifier.height(4.dp))
         DsText(
-            text = "가 본 곳을 이어 첫 코스를 남겨 보세요",
+            text = stringResource(MainR.string.main_my_create_course_subtitle),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel2,
         )
@@ -189,13 +191,13 @@ private fun CreateFirstPlanCard(onClick: () -> Unit) {
         )
         Spacer(Modifier.height(8.dp))
         DsText(
-            text = "계획 생성하기",
+            text = stringResource(MainR.string.main_my_create_plan_title),
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentAccent,
         )
         Spacer(Modifier.height(4.dp))
         DsText(
-            text = "가 보고 싶은 곳을 모아 계획을 세워 보세요",
+            text = stringResource(MainR.string.main_my_create_plan_subtitle),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel2,
         )
@@ -255,7 +257,7 @@ fun MyContent(
                 if (FeatureFlags.SHARE_ENABLED) {
                     ProfileHeaderIconButton(
                         iconRes = R.drawable.ic_share_24,
-                        contentDescription = "공유",
+                        contentDescription = stringResource(MainR.string.main_my_share_description),
                         onClick = shareProfile,
                     )
                 }
@@ -267,7 +269,7 @@ fun MyContent(
                 }
                 ProfileHeaderIconButton(
                     iconRes = R.drawable.ic_settings_24,
-                    contentDescription = "설정",
+                    contentDescription = stringResource(MainR.string.main_my_settings_description),
                     onClick = {
                         navigationHelper.navigateTo(
                             SettingsPage,

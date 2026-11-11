@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.orCategoryLabel
@@ -26,6 +27,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 장소 카드: 썸네일 + 이름 + "카테고리 · 지역"(+ 방문함 표시) + 저장(북마크) 버튼.
@@ -109,7 +111,7 @@ fun SavedPlaceCard(
                     }
                     if (place.visited) {
                         DsText(
-                            text = "방문함",
+                            text = stringResource(MainR.string.main_saved_place_card_visited),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
                             color = color.contentAccent,
                             maxLines = 1,
@@ -134,7 +136,7 @@ fun SavedPlaceCard(
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_bookmark_filled_24),
-                contentDescription = "저장 취소",
+                contentDescription = stringResource(MainR.string.main_saved_place_card_remove_bookmark),
                 tint = color.contentAccent,
                 modifier = Modifier.size(18.dp),
             )

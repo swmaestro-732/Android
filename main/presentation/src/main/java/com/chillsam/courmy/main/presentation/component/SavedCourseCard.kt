@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -26,6 +27,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 코스 카드: 썸네일(태그 칩 + 북마크 배지) + 제목 + "장소 N곳 · @handle".
@@ -95,7 +97,7 @@ fun SavedCourseCard(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_bookmark_filled_24),
-                    contentDescription = "저장 취소",
+                    contentDescription = stringResource(MainR.string.main_saved_course_card_unsave),
                     tint = color.contentOnAccent,
                     modifier = Modifier.size(20.dp),
                 )
@@ -113,11 +115,11 @@ fun SavedCourseCard(
             DsText(
                 text =
                     listOf(
-                        if (course.isMine) "내가 만든 코스" else "",
+                        if (course.isMine) stringResource(MainR.string.main_saved_course_card_mine) else "",
                         course.placeLabel,
                         course.durationText,
                         if (course.completedAt.isNotBlank()) {
-                            "${course.completedAt} 완주"
+                            stringResource(MainR.string.main_saved_course_card_completed, course.completedAt)
                         } else {
                             course.authorHandle
                                 .takeIf { it.isNotBlank() }

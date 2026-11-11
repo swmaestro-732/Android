@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -73,6 +74,7 @@ import com.chillsam.courmy.main.presentation.component.SavedCourseCard
 import com.chillsam.courmy.main.presentation.component.SavedPlaceCard
 import com.chillsam.courmy.main.presentation.component.navigateToMainTab
 import com.chillsam.courmy.main.presentation.map.MapPlaceDetailSheet
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 저장함의 콘텐츠 탭 인덱스. 화면 이탈 후 복귀에도 유지되도록 rememberSaveable 로 든다. */
 internal const val SAVED_TAB_COURSES = 0
@@ -186,7 +188,7 @@ private fun SavedCourseList(
 
                 else -> {
                     SavedListMessage(
-                        message = uiState.loadErrorMessage ?: "조건에 맞는 저장 코스가 없어요.",
+                        message = uiState.loadErrorMessage ?: stringResource(MainR.string.main_saved_courses_empty),
                         onRetry =
                             uiState.loadErrorMessage?.let {
                                 { viewModel.onIntent(SavedCoursesIntent.Retry) }
@@ -204,8 +206,8 @@ private fun SavedCourseList(
 
     pendingRemoval?.let { course ->
         DsConfirmDialog(
-            title = "저장을 취소할까요?",
-            description = "저장을 취소하면 이 코스가 저장 목록에서 사라져요.",
+            title = stringResource(MainR.string.main_saved_unsave_dialog_title),
+            description = stringResource(MainR.string.main_saved_unsave_course_dialog_description),
             destructive = true,
             onConfirm = {
                 viewModel.onIntent(SavedCoursesIntent.Unsave(course.id))
@@ -279,7 +281,7 @@ private fun SavedPlaceList(
 
                 else -> {
                     SavedListMessage(
-                        message = uiState.loadErrorMessage ?: "조건에 맞는 저장 장소가 없어요.",
+                        message = uiState.loadErrorMessage ?: stringResource(MainR.string.main_saved_places_empty),
                         onRetry =
                             uiState.loadErrorMessage?.let {
                                 { viewModel.onIntent(SavedPlacesIntent.Retry) }
@@ -316,8 +318,8 @@ private fun SavedPlaceList(
 
     pendingRemoval?.let { place ->
         DsConfirmDialog(
-            title = "저장을 취소할까요?",
-            description = "저장을 취소하면 이 장소가 저장 목록에서 사라져요.",
+            title = stringResource(MainR.string.main_saved_unsave_dialog_title),
+            description = stringResource(MainR.string.main_saved_unsave_place_dialog_description),
             destructive = true,
             onConfirm = {
                 viewModel.onIntent(SavedPlacesIntent.Unsave(place.placeId))
@@ -337,7 +339,10 @@ private fun SavedPlacesFooter(
         LoadingMoreFooter()
     } else if (state.hasNext && !state.isLoading) {
         androidx.compose.material3.TextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth()) {
-            DsText(text = "장소 더 불러오기", style = DesignSystemThemeImpl.typeScale.textRegularS)
+            DsText(
+                text = stringResource(MainR.string.main_saved_places_load_more),
+                style = DesignSystemThemeImpl.typeScale.textRegularS,
+            )
         }
     }
 }
@@ -361,7 +366,7 @@ private fun SavedListMessage(
         )
         if (onRetry != null) {
             DsText(
-                text = "다시 시도",
+                text = stringResource(MainR.string.main_saved_retry),
                 style = DesignSystemThemeImpl.typeScale.textRegularM,
                 color = color.contentAccent,
                 modifier = Modifier.clickable(onClick = onRetry),
@@ -407,7 +412,7 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                     )
                 }
                 DsText(
-                    text = "마음에 든 장소를\n여기에 모아보세요",
+                    text = stringResource(MainR.string.main_saved_guest_title),
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                     textAlign = TextAlign.Center,
@@ -415,7 +420,7 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(top = 20.dp),
                 )
                 DsText(
-                    text = "로그인하면 저장한 장소가 지도 위에 모이고,\n바로 나만의 코스로 이어집니다.",
+                    text = stringResource(MainR.string.main_saved_guest_subtitle),
                     style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = color.contentDefaultLevel2,
                     textAlign = TextAlign.Center,
@@ -423,7 +428,7 @@ private fun GuestSaved(modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(top = 10.dp),
                 )
                 DsButton(
-                    text = "로그인 / 회원가입",
+                    text = stringResource(MainR.string.main_saved_guest_login),
                     onClick = {
                         navigationHelper.navigateTo(
                             LoginPage,

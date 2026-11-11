@@ -16,4 +16,212 @@
 
     <string name="language_description">韓国語以外では、コース説明などで翻訳を利用できます。翻訳は端末内で処理されます。</string>
     <string name="language_selected">選択中</string>
+
+    <string name="main_region_map_inset_separate_scale">縮尺は目安</string>
+
+    <string name="main_region_map_country_name">韓国</string>
+    <string name="main_region_map_content_description">%1$sの行政区域マップ。下の地域リストからも選択できます。</string>
+
+    <string name="main_my_create_course_title">自分だけのコースを作成</string>
+    <string name="main_my_create_course_subtitle">訪れた場所をつないで最初のコースを残しましょう</string>
+    <string name="main_my_create_plan_title">プランを作成</string>
+    <string name="main_my_create_plan_subtitle">行きたい場所を集めてプランを立てましょう</string>
+    <string name="main_my_share_description">共有</string>
+    <string name="main_my_settings_description">設定</string>
+
+    <string name="main_interest_theme_title">興味のあるテーマ</string>
+    <string name="main_interest_theme_headline">どんな場所が\nお好きですか？</string>
+    <string name="main_interest_theme_min_count">%1$d個以上 · </string>
+    <string name="main_interest_theme_selected_count">%1$d個選択中</string>
+    <string name="main_interest_theme_select_min">%1$d個以上選んでください</string>
+    <string name="main_interest_theme_save_error">保存できませんでした。選んだテーマは残してあるので、もう一度お試しください。</string>
+    <string name="main_interest_theme_save">保存</string>
+    <string name="main_interest_theme_next">次へ</string>
+
+    <string name="main_follow_list_title">フォロー一覧</string>
+    <string name="main_follow_list_back">戻る</string>
+    <string name="main_follow_list_tab_follower">フォロワー</string>
+    <string name="main_follow_list_tab_following">フォロー中</string>
+    <string name="main_follow_list_empty_follower">まだフォロワーがいません。</string>
+    <string name="main_follow_list_empty_following">まだ誰もフォローしていません。</string>
+    <string name="main_follow_list_retry">再試行</string>
+    <string name="main_follow_list_remove">%1$sを削除</string>
+    <string name="main_follow_list_unfollow_dialog_title">フォローを解除しますか？</string>
+    <string name="main_follow_list_unfollow_dialog_description">%1$sさんのフォローを解除します。</string>
+
+    <string name="main_recommended_title">今日のおすすめコース</string>
+    <string name="main_recommended_region_title">%1$sのコース</string>
+    <string name="main_recommended_back">戻る</string>
+    <string name="main_recommended_sort_default">おすすめ順</string>
+    <string name="main_recommended_empty">公開されたコースはまだありません。</string>
+    <string name="main_recommended_empty_theme">このテーマのコースはまだありません。</string>
+    <string name="main_recommended_retry">再試行</string>
+
+    <!-- 検索結果画面: 空の状態、カテゴリ「すべて」チップ -->
+    <string name="main_search_result_empty_filtered">条件に合うコースがありません。フィルターを調整してください。</string>
+    <string name="main_search_result_empty_query">\'%1$s\' に合うコースがありません</string>
+    <string name="main_search_result_category_all">すべて</string>
+    <string name="main_search_result_save_toggle_add">保存</string>
+    <string name="main_search_result_save_toggle_remove">保存を解除</string>
+
+    <!-- 検索入力画面(FS-17)の検索ボックス placeholder -->
+    <string name="main_search_placeholder_place">スポットを検索</string>
+    <string name="main_search_placeholder_course">コースを検索</string>
+
+    <!-- プロフィール編集(FS-26) -->
+    <string name="main_profile_edit_title">プロフィール編集</string>
+    <string name="main_profile_edit_save">変更を保存</string>
+    <string name="main_profile_edit_toast_saved">保存しました</string>
+    <string name="main_profile_edit_avatar_image_desc">プロフィール画像</string>
+    <string name="main_profile_edit_avatar_change_desc">写真を変更</string>
+    <string name="main_profile_edit_label_nickname">ニックネーム</string>
+    <string name="main_profile_edit_label_handle">ID</string>
+    <string name="main_profile_edit_label_bio">自己紹介</string>
+    <string name="main_profile_edit_handle_check">重複確認</string>
+    <string name="main_profile_edit_interest_themes">興味のあるテーマ</string>
+    <string name="main_profile_edit_interest_regions">興味のある地域</string>
+    <string name="main_profile_edit_interest_edit">編集</string>
+    <string name="main_profile_edit_interest_empty">%1$s がまだ選ばれていません。編集から選んでみましょう。</string>
+
+    <!-- 관심 지역 선택 화면(InterestRegionPage) -->
+    <string name="main_interest_region_title">関心エリア</string>
+    <string name="main_interest_region_heading">よく行くエリアを選んでください</string>
+    <string name="main_interest_region_subheading">1つ以上 · 都道府県全体または市区町村を選択</string>
+    <string name="main_interest_region_view_all">‹ 全国を表示</string>
+    <string name="main_interest_region_selected_count">%1$d件選択 ·</string>
+    <string name="main_interest_region_sido_all">%1$s全体</string>
+    <string name="main_interest_region_chip_remove">%1$s ×</string>
+    <string name="main_interest_region_chip_deselect_a11y">%1$s の選択を解除</string>
+    <string name="main_interest_region_sido_all_desc">%1$s全体を選択、下位エリアもすべて含む</string>
+    <string name="main_interest_region_zoom_desc">%1$s を拡大</string>
+    <string name="main_interest_region_save_error">保存できませんでした。選択したエリアは保持したので、もう一度お試しください。</string>
+    <string name="main_interest_region_cta_empty">エリアを1つ以上選択してください</string>
+    <string name="main_interest_region_cta_next">次へ</string>
+    <string name="main_interest_region_cta_save">保存</string>
+
+    <!-- 検索結果の上部バー・地図プレビューカード -->
+    <string name="main_search_result_chrome_back">戻る</string>
+    <string name="main_search_result_chrome_clear_query">検索ワードを消す</string>
+    <string name="main_search_result_chrome_map_preview_title">地図でまとめて見る</string>
+    <string name="main_search_result_chrome_map_preview_place_count">スポット%1$d件</string>
+    <string name="main_search_result_chrome_map_open">地図を見る</string>
+
+    <!-- ホーム画面(FS-09) -->
+    <string name="main_home_greeting_user">%1$sさん、今日は\nどこへ行きましょう?</string>
+    <string name="main_home_greeting_guest">今日はどこへ行きましょう?</string>
+    <string name="main_home_profile_click_label">マイページへ移動</string>
+    <string name="main_home_profile_description">マイプロフィール</string>
+    <string name="main_home_see_all">すべて見る</string>
+    <string name="main_home_save_label">保存</string>
+    <string name="main_home_nearby_title">近くの保存スポット</string>
+    <string name="main_home_nearby_see_on_map">地図で見る</string>
+    <string name="main_home_nearby_permission_message">位置情報を許可すると、近くの保存スポットがここに表示されます</string>
+    <string name="main_home_nearby_gps_message">位置情報(GPS)がオフのため、近くのスポットを探せません</string>
+    <string name="main_home_nearby_allow_location">位置情報を許可</string>
+    <string name="main_home_nearby_enable_location">位置情報をオン</string>
+    <string name="main_home_nearby_empty_message">近くに保存したスポットがありません</string>
+    <string name="main_home_nearby_find_on_map">地図でスポットを探す</string>
+    <string name="main_home_place_visited">訪問済み</string>
+    <string name="main_home_place_not_visited">未訪問</string>
+    <string name="main_home_theme_browse_title">テーマで探す</string>
+    <string name="main_home_region_browse_title">エリアで探す</string>
+    <string name="main_home_in_progress_label">進行中のコース</string>
+    <string name="main_home_in_progress_private_label">非公開のコース</string>
+    <string name="main_home_in_progress_dismiss">進行中のコースを消す</string>
+    <string name="main_home_in_progress_end_title">進行中のコースを終了しますか?</string>
+    <string name="main_home_in_progress_end_description">終了したコースは完走として保存箱で見られます。</string>
+
+    <!-- 프로필 공용 구성요소(FS-15 마이·타유저) -->
+    <string name="main_profile_header_back">戻る</string>
+    <string name="main_profile_bio_empty">まだ自己紹介がありません</string>
+    <string name="main_profile_follower">フォロワー</string>
+    <string name="main_profile_following">フォロー中</string>
+    <string name="main_profile_avatar_image_desc">プロフィール画像</string>
+    <string name="main_profile_avatar_empty_desc">プロフィール画像なし</string>
+    <string name="main_profile_error_message">プロフィールを読み込めませんでした。</string>
+    <string name="main_profile_error_retry">再試行</string>
+    <string name="main_profile_error_go_home">ホームに戻る</string>
+
+    <!-- 코스 요약 카드(SavedCourseCard) -->
+    <string name="main_saved_course_card_unsave">保存を解除</string>
+    <string name="main_saved_course_card_mine">自分のコース</string>
+    <string name="main_saved_course_card_completed">%1$s 完走</string>
+
+    <!-- 코스 좋아요 집계(CourseLikeCount) 접근성 설명 -->
+    <string name="main_course_like_count_description">いいね %1$s</string>
+
+
+    <!-- 保存コースのフィルター(SavedCourseFilters) -->
+    <string name="main_saved_filter_all">すべて %1$d</string>
+    <string name="main_saved_filter_add_folder">フォルダを追加</string>
+    <string name="main_saved_filter_uncompleted">未訪問 %1$d</string>
+    <string name="main_saved_filter_completed">踏破 %1$d</string>
+    <string name="main_saved_create_folder_title">フォルダを追加</string>
+    <string name="main_saved_create_folder_description">好きな名前でコースをまとめましょう。(最大 %1$d 文字)</string>
+    <string name="main_saved_create_folder_placeholder">例:週末のおでかけ</string>
+    <string name="main_saved_create_folder_cancel">キャンセル</string>
+    <string name="main_saved_create_folder_confirm">追加</string>
+    <string name="main_saved_place_card_visited">訪問済み</string>
+    <string name="main_saved_place_card_remove_bookmark">保存を解除</string>
+
+    <!-- 保存一覧: コース/スポットのタブ、スポットのカテゴリチップ・案内・訪問状態タブ -->
+    <string name="main_saved_tab_courses">コース</string>
+    <string name="main_saved_tab_places">スポット</string>
+    <string name="main_saved_filter_chip_label">%1$s %2$d</string>
+    <string name="main_saved_places_loaded_notice">読み込んだスポットが対象</string>
+    <string name="main_saved_status_not_visited">未訪問 %1$d</string>
+    <string name="main_saved_status_visited">訪問済み %1$d</string>
+
+    <!-- 저장함 화면(SavedPage) 빈 상태·저장 취소 다이얼로그·게스트 안내 -->
+    <string name="main_saved_courses_empty">条件に合う保存済みコースがありません。</string>
+    <string name="main_saved_places_empty">条件に合う保存済みスポットがありません。</string>
+    <string name="main_saved_places_load_more">スポットをもっと見る</string>
+    <string name="main_saved_retry">再試行</string>
+    <string name="main_saved_unsave_dialog_title">保存を解除しますか？</string>
+    <string name="main_saved_unsave_course_dialog_description">解除すると、このコースが保存リストから消えます。</string>
+    <string name="main_saved_unsave_place_dialog_description">解除すると、このスポットが保存リストから消えます。</string>
+    <string name="main_saved_guest_title">お気に入りのスポットを\nここにまとめましょう</string>
+    <string name="main_saved_guest_subtitle">ログインすると保存したスポットが地図に集まり、\nそのまま自分だけのコースに繋がります。</string>
+    <string name="main_saved_guest_login">ログイン / 新規登録</string>
+
+    <!-- i18n merge: main:presentation 추가 문구 (자동 병합) -->
+    <string name="main_interest_load_feedback_loading">保存した選択を確認しています</string>
+    <string name="main_interest_load_feedback_error">しばらくしてからもう一度お試しください。</string>
+    <string name="main_interest_load_feedback_retry">更新</string>
+    <string name="main_guest_my_title">マイ</string>
+    <string name="main_guest_my_settings_cd">設定</string>
+    <string name="main_guest_my_welcome_title">ゲストさん、ようこそ</string>
+    <string name="main_guest_my_welcome_subtitle">ログインして好みのコースを受け取りましょう</string>
+    <string name="main_guest_my_login_button">ログイン / 新規登録</string>
+    <string name="main_guest_my_benefits_header">登録するとできること</string>
+    <string name="main_guest_my_benefit_saved_title">スポット・コース保存</string>
+    <string name="main_guest_my_benefit_saved_subtitle">行きたいスポットやコースを集めましょう</string>
+    <string name="main_guest_my_benefit_plan_title">旅行プラン</string>
+    <string name="main_guest_my_benefit_plan_subtitle">好きなスポットで自分だけの日程を作りましょう</string>
+    <string name="main_guest_my_benefit_review_title">訪問レビュー</string>
+    <string name="main_guest_my_benefit_review_subtitle">訪れたスポットの体験をシェアしましょう</string>
+    <string name="main_guest_my_benefit_follow_title">友達をフォロー</string>
+    <string name="main_guest_my_benefit_follow_subtitle">好みの合う人のコースに出会いましょう</string>
+    <string name="main_guest_my_benefit_click_label">ログイン画面へ移動</string>
+    <string name="main_search_placeholder">コース検索</string>
+    <string name="main_search_recent_title">最近の検索</string>
+    <string name="main_search_clear_all">すべて削除</string>
+    <string name="main_search_back">戻る</string>
+    <string name="main_search_trending_title">急上昇ワード</string>
+    <string name="main_search_theme_find_title">テーマで探す</string>
+    <string name="main_search_places_loading">場所を検索中…</string>
+    <string name="main_search_places_empty">一致する場所がありません</string>
+    <string name="main_trending_keyword_rank_up">%1$dランク上昇</string>
+    <string name="main_trending_keyword_rank_down">%1$dランク下降</string>
+    <string name="main_recent_keyword_chip_remove_description">%1$sの検索履歴を削除</string>
+    <string name="main_search_input_placeholder">コースを検索</string>
+    <string name="main_search_input_clear">検索語を消去</string>
+    <string name="main_home_course_card_bookmark_remove">保存を解除</string>
+    <string name="main_home_course_card_bookmark_add">保存</string>
+    <string name="main_skeleton_courses_loading">コースを読み込み中</string>
+    <string name="main_skeleton_recommended_loading">おすすめコースを読み込み中</string>
+    <string name="main_skeleton_places_loading">場所を読み込み中</string>
+    <string name="main_skeleton_profile_loading">プロフィールを読み込み中</string>
+    <string name="main_skeleton_follow_loading">フォローリストを読み込み中</string>
+    <string name="main_back_top_bar_back">戻る</string>
 </resources>

@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
@@ -23,6 +24,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.search.RankChange
 import com.chillsam.courmy.main.entity.search.TrendingKeywordVO
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val RankColumnWidth = 22.dp
 
@@ -118,7 +120,12 @@ private fun RankArrow(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_chevron_down_24),
-            contentDescription = if (up) "${places}계단 상승" else "${places}계단 하락",
+            contentDescription =
+                if (up) {
+                    stringResource(MainR.string.main_trending_keyword_rank_up, places)
+                } else {
+                    stringResource(MainR.string.main_trending_keyword_rank_down, places)
+                },
             tint = tint,
             // 아래 화살표 하나만 두고 상승은 뒤집어 쓴다. 같은 모양이라 자산을 늘릴 이유가 없다.
             modifier = Modifier.size(12.dp).rotate(if (up) 180f else 0f),
