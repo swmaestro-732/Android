@@ -6,6 +6,8 @@ import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
 import com.chillsam.courmy.common.domain.error.HttpResponseException
 import com.chillsam.courmy.common.domain.helper.ResourceHelper
 import com.chillsam.courmy.common.domain.helper.StringResource
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.telemetry.contentView
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.DeleteCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
@@ -35,6 +37,7 @@ class CourseDetailViewModel
         private val deleteCourseUseCase: DeleteCourseUseCase,
         private val isLoggedInUseCase: IsLoggedInUseCase,
         private val resources: ResourceHelper,
+        private val telemetry: Telemetry,
     ) : MviViewModel<CourseDetailIntent, CourseDetailUIState, CourseDetailReducerEvent>(
             CourseDetailUIState.empty,
         ) {
@@ -438,6 +441,8 @@ class CourseDetailViewModel
                                     "커버=${detail.coverImageUrl.ifBlank { "(없음)" }}",
                             )
                             dispatch(CourseDetailReducerEvent.Loaded(detail))
+                            // 조회 집계: 어떤 코스를 봤는지 course_id 와 함께 남긴다(setScreen 은 경로만 남아 식별 불가).
+                            telemetry.contentView(contentType = "course", id = id, screen = "/course/detail")
                         }.onFailure { e ->
                             // 협력적 취소(ViewModel clear·재요청 등)는 실패가 아니므로 그대로 전파한다.
                             if (e is CancellationException) throw e
