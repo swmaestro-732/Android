@@ -30,6 +30,7 @@ class SharedCategoryMappingTest {
             "landmark" to "역사·명소",
             "entertainment" to "여가·놀거리",
             "wellness" to "웰니스·힐링",
+            "etc" to "기타",
         )
 
     private val expectedCourseTags =
@@ -49,7 +50,7 @@ class SharedCategoryMappingTest {
         )
 
     @Test
-    fun `장소 카테고리 10종 코드가 같은 라벨로 표시된다`() {
+    fun `장소 카테고리 11종 코드가 같은 라벨로 표시된다`() {
         assertEquals(expectedPlaceCategories, PlaceCategoryVO.entries.map { it.code to it.label })
         expectedPlaceCategories.forEach { (code, label) ->
             assertEquals(code, PlaceCategoryVO.fromCode(" ${code.uppercase()} ")?.code)

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="course_remaining_new_course">New course</string>
+    <string name="course_remaining_untitled_course">Untitled course</string>
+    <string name="course_remaining_my_plan">My plan</string>
+    <string name="course_remaining_place_unavailable">Unable to load place information</string>
+    <string name="course_remaining_map_unavailable">Unable to open the map</string>
+    <string name="course_remaining_rating_1">Poor</string>
+    <string name="course_remaining_rating_2">Disappointing</string>
+    <string name="course_remaining_rating_3">Average</string>
+    <string name="course_remaining_rating_4">Good</string>
+    <string name="course_remaining_rating_5">Excellent</string>
+    <string name="course_remaining_other">Other</string>
+    <string name="course_remaining_followers">%1$s followed</string>
+    <plurals name="course_remaining_spots">
+        <item quantity="one">%1$d spot</item>
+        <item quantity="other">%1$d spots</item>
+    </plurals>
+    <plurals name="course_remaining_reviews">
+        <item quantity="one">%1$d review</item>
+        <item quantity="other">%1$d reviews</item>
+    </plurals>
+    <plurals name="course_remaining_minutes">
+        <item quantity="one">%1$d min</item>
+        <item quantity="other">%1$d min</item>
+    </plurals>
+    <plurals name="course_remaining_places">
+        <item quantity="one">%1$d place</item>
+        <item quantity="other">%1$d places</item>
+    </plurals>
+    <string name="course_remaining_anonymous">Anonymous</string>
+</resources>

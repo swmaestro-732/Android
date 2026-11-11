@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.domain.media.MediaRepository
 import com.chillsam.courmy.common.domain.media.UploadPurpose
 import com.chillsam.courmy.common.domain.telemetry.AppFlow
@@ -31,18 +34,26 @@ class CreatePlaceReviewUseCase
             placeId: Long,
             draft: CourseReviewDraftVO,
         ): Long {
-            require(placeId > 0) { "후기를 남길 장소 id 가 없습니다." }
-            require(draft.rating in CourseReviewLimits.MIN_RATING..CourseReviewLimits.MAX_RATING) {
-                "별점은 ${CourseReviewLimits.MIN_RATING}~${CourseReviewLimits.MAX_RATING} 만 보낼 수 있습니다: ${draft.rating}"
+            requireLocalized(placeId > 0) { LocalizedValidationException(StringResource.VALIDATION_REVIEW_PLACE) }
+            requireLocalized(draft.rating in CourseReviewLimits.MIN_RATING..CourseReviewLimits.MAX_RATING) {
+                LocalizedValidationException(
+                    StringResource.VALIDATION_RATING_RANGE,
+                    CourseReviewLimits.MIN_RATING,
+                    CourseReviewLimits.MAX_RATING,
+                    draft.rating,
+                )
             }
-            require(draft.content.orEmpty().length <= CourseReviewLimits.MAX_CONTENT_LENGTH) {
-                "후기는 ${CourseReviewLimits.MAX_CONTENT_LENGTH}자까지 쓸 수 있습니다."
+            requireLocalized(draft.content.orEmpty().length <= CourseReviewLimits.MAX_CONTENT_LENGTH) {
+                LocalizedValidationException(
+                    StringResource.VALIDATION_REVIEW_LENGTH,
+                    CourseReviewLimits.MAX_CONTENT_LENGTH,
+                )
             }
-            require(draft.photoUrls.size <= CourseReviewLimits.MAX_PHOTOS) {
-                "사진은 ${CourseReviewLimits.MAX_PHOTOS}장까지 올릴 수 있습니다."
+            requireLocalized(draft.photoUrls.size <= CourseReviewLimits.MAX_PHOTOS) {
+                LocalizedValidationException(StringResource.VALIDATION_REVIEW_PHOTOS, CourseReviewLimits.MAX_PHOTOS)
             }
-            require(draft.tagCodes.size <= CourseReviewLimits.MAX_TAGS) {
-                "태그는 ${CourseReviewLimits.MAX_TAGS}개까지 고를 수 있습니다."
+            requireLocalized(draft.tagCodes.size <= CourseReviewLimits.MAX_TAGS) {
+                LocalizedValidationException(StringResource.VALIDATION_REVIEW_TAGS, CourseReviewLimits.MAX_TAGS)
             }
 
             return telemetry.track(AppFlow.ReviewWrite) {

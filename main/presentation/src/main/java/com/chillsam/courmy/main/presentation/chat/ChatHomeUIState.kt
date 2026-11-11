@@ -21,7 +21,7 @@ data class ConversationUi(
     val name: String,
     val regionTag: String?,
     val lastMessage: String,
-    val time: String,
+    val time: ChatTime,
     val unreadCount: Int,
 )
 

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="relative_just_now">방금 전</string>
+    <plurals name="relative_minute">
+        <item quantity="one">%1$d분 전</item>
+        <item quantity="other">%1$d분 전</item>
+    </plurals>
+    <plurals name="relative_hour">
+        <item quantity="one">%1$d시간 전</item>
+        <item quantity="other">%1$d시간 전</item>
+    </plurals>
+    <plurals name="relative_day">
+        <item quantity="one">%1$d일 전</item>
+        <item quantity="other">%1$d일 전</item>
+    </plurals>
+    <plurals name="relative_week">
+        <item quantity="one">%1$d주 전</item>
+        <item quantity="other">%1$d주 전</item>
+    </plurals>
+    <plurals name="relative_month">
+        <item quantity="one">%1$d개월 전</item>
+        <item quantity="other">%1$d개월 전</item>
+    </plurals>
+    <plurals name="relative_year">
+        <item quantity="one">%1$d년 전</item>
+        <item quantity="other">%1$d년 전</item>
+    </plurals>
+</resources>

@@ -17,11 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.collections.immutable.ImmutableList
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val ChipShape = RoundedCornerShape(percent = 50)
 
@@ -81,7 +83,7 @@ private fun RecentKeywordChip(
         )
         Icon(
             painter = painterResource(R.drawable.close_small_24),
-            contentDescription = "$keyword 검색 기록 삭제",
+            contentDescription = stringResource(MainR.string.main_recent_keyword_chip_remove_description, keyword),
             tint = color.contentDefaultLevel3,
             modifier =
                 Modifier

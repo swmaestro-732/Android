@@ -18,6 +18,7 @@ import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.rememberLoginGate
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.main.domain.search.SearchPage
 import com.chillsam.courmy.main.entity.map.MapBounds
@@ -39,6 +40,7 @@ fun MapSearchResultPage(
     modifier: Modifier = Modifier,
     viewModel: MapSearchResultViewModel = hiltViewModel(),
 ) {
+    val requireLogin = rememberLoginGate()
     val telemetry = LocalTelemetry.current
     val navigationHelper = LocalNavigationHelper.current
     val context = LocalContext.current
@@ -121,7 +123,7 @@ fun MapSearchResultPage(
                 },
                 onSaveToggle = {
                     telemetry.buttonClick("/map/search", "bookmark", mapOf("place_id" to it.toString()))
-                    viewModel.onIntent(MapSearchResultIntent.ToggleSave(it))
+                    requireLogin { viewModel.onIntent(MapSearchResultIntent.ToggleSave(it)) }
                 },
                 onRetry = {
                     telemetry.buttonClick("/map/search", "retry")

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
@@ -33,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -41,7 +44,9 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.chillsam.courmy.common.domain.message.MessageEffect
 import com.chillsam.courmy.common.domain.push.PushTarget
+import com.chillsam.courmy.common.presentation.component.AiTranslationBadge
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.component.LoginRequiredDialog
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
@@ -57,6 +62,7 @@ import com.chillsam.courmy.main.presentation.update.AppUpdateViewModel
 import com.chillsam.courmy.main.presentation.update.OptionalAppUpdateDialog
 import kotlinx.coroutines.flow.Flow
 import com.chillsam.courmy.main.domain.login.LoginPage as LoginRoute
+import com.chillsam.courmy.main.presentation.R as MainR
 
 @Composable
 fun RootComposable(
@@ -66,6 +72,7 @@ fun RootComposable(
     onPushConsumed: () -> Unit = {},
     onStartupReady: () -> Unit = {},
 ) {
+    val sessionExpiredMessage = stringResource(MainR.string.main_session_expired)
     val snackBarHostState = remember { SnackbarHostState() }
     var oneButtonDialogEffect by remember {
         mutableStateOf<MessageEffect.ShowOneButtonDialog?>(null)
@@ -83,7 +90,7 @@ fun RootComposable(
         LaunchedEffect(Unit) {
             sessionExpiryViewModel.expirations.collect {
                 sessionState.logout()
-                messageHelper.showToast("세션이 만료되었어요. 다시 로그인해 주세요.")
+                messageHelper.showToast(sessionExpiredMessage)
                 navigationHelper.navigateReplace(LoginRoute)
             }
         }
@@ -104,6 +111,15 @@ fun RootComposable(
             blocked = updateRequired,
             onConsumed = onPushConsumed,
         )
+        if (sessionState.loginRequired && !updateRequired) {
+            LoginRequiredDialog(
+                onConfirm = {
+                    sessionState.dismissLoginRequired()
+                    navigationHelper.navigateTo(LoginRoute)
+                },
+                onDismiss = sessionState::dismissLoginRequired,
+            )
+        }
         val canShowOptionalUpdate = !isSplash && !updateRequired && oneButtonDialogEffect == null
         StartupNotificationPermissionEffect(
             canShowDialog = canShowOptionalUpdate,
@@ -131,51 +147,7 @@ fun RootComposable(
 
         // 강제 업데이트 중에는 띄우지 않는다. 이 다이얼로그도 별도 Window 라 안내 화면 위에 남는데,
         // 어차피 모든 요청이 426 이라 여기서 안내할 수 있는 건 "업데이트하라" 말고 없다.
-        oneButtonDialogEffect?.takeUnless { updateRequired }?.let { dialog ->
-            AlertDialog(
-                onDismissRequest = {
-                    if (!dialog.cantIgnore) oneButtonDialogEffect = null
-                },
-                title =
-                    dialog.titleText?.let { titleText ->
-                        {
-                            DsText(
-                                text = titleText,
-                                style = DesignSystemThemeImpl.typeScale.textStrongM,
-                                color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
-                                maxLines = Int.MAX_VALUE,
-                            )
-                        }
-                    },
-                text = {
-                    DsText(
-                        text = dialog.descText,
-                        style = DesignSystemThemeImpl.typeScale.textRegularS,
-                        color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
-                        maxLines = Int.MAX_VALUE,
-                    )
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            dialog.onClickButton?.invoke()
-                            oneButtonDialogEffect = null
-                        },
-                    ) {
-                        DsText(
-                            text = dialog.buttonText,
-                            style = DesignSystemThemeImpl.typeScale.textStrongM,
-                            color = DesignSystemThemeImpl.designSystemColor.contentAccent,
-                        )
-                    }
-                },
-                properties =
-                    DialogProperties(
-                        dismissOnBackPress = !dialog.cantIgnore,
-                        dismissOnClickOutside = !dialog.cantIgnore,
-                    ),
-            )
-        }
+        RootMessageDialog(oneButtonDialogEffect, updateRequired) { oneButtonDialogEffect = null }
 
         Box(modifier = modifier.fillMaxSize()) {
             // 강제 업데이트(426)는 특정 화면의 에러가 아니라 앱 전체가 못 쓰게 된 상태다.
@@ -208,6 +180,18 @@ fun RootComposable(
                         )
                     }
                 }
+            }
+
+            // 언어가 한국어가 아니면 화면 전체가 AI(온디바이스 MT)로 번역되므로, 그 사실을 상단에 알린다.
+            // 강제 업데이트 화면에서는 띄우지 않는다(그 화면은 번역 대상이 아니다).
+            if (!updateRequired) {
+                AiTranslationBadge(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(WindowInsets.statusBars.asPaddingValues())
+                            .padding(top = 6.dp, end = 12.dp),
+                )
             }
 
             // statusBarState 에는 직전 화면이 남긴 색이 그대로 있다. 코스 상세처럼 어두운 커버를 쓰던
@@ -303,5 +287,58 @@ private fun MessageEffect(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun RootMessageDialog(
+    effect: MessageEffect.ShowOneButtonDialog?,
+    blocked: Boolean,
+    onDismiss: () -> Unit,
+) {
+    effect?.takeUnless { blocked }?.let { dialog ->
+        AlertDialog(
+            onDismissRequest = {
+                if (!dialog.cantIgnore) onDismiss()
+            },
+            title =
+                dialog.titleText?.let { titleText ->
+                    {
+                        DsText(
+                            text = titleText,
+                            style = DesignSystemThemeImpl.typeScale.textStrongM,
+                            color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel1,
+                            maxLines = Int.MAX_VALUE,
+                        )
+                    }
+                },
+            text = {
+                DsText(
+                    text = dialog.descText,
+                    style = DesignSystemThemeImpl.typeScale.textRegularS,
+                    color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
+                    maxLines = Int.MAX_VALUE,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        dialog.onClickButton?.invoke()
+                        onDismiss()
+                    },
+                ) {
+                    DsText(
+                        text = dialog.buttonText,
+                        style = DesignSystemThemeImpl.typeScale.textStrongM,
+                        color = DesignSystemThemeImpl.designSystemColor.contentAccent,
+                    )
+                }
+            },
+            properties =
+                DialogProperties(
+                    dismissOnBackPress = !dialog.cantIgnore,
+                    dismissOnClickOutside = !dialog.cantIgnore,
+                ),
+        )
     }
 }

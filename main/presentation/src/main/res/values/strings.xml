@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  main:presentation 화면 전용 UI 문구. 하드코딩 대신 stringResource 로 참조한다.
+  공통 재사용 문구는 common:presentation 의 strings.xml 에 둔다. en/ja 는 values-en/values-ja 로 추가.
+-->
+<resources>
+    <!-- 설정 화면(목록) -->
+    <string name="settings_title">설정</string>
+    <string name="settings_profile_edit">프로필 수정</string>
+    <string name="settings_account">계정 관리</string>
+    <string name="settings_notice">공지</string>
+    <string name="settings_notification">알림</string>
+    <string name="settings_language">언어</string>
+    <string name="settings_contact">문의하기</string>
+    <string name="settings_privacy">개인정보 보호</string>
+    <string name="settings_app_version">앱 버전</string>
+    <string name="settings_hint_not_ready">(준비 중)</string>
+    <string name="settings_toast_not_ready">준비 중이에요</string>
+    <string name="settings_toast_no_browser">브라우저를 열 수 없어요</string>
+
+    <!-- 설정 > 언어 -->
+    <string name="language_description">한국어가 아니면 코스 설명 등에서 번역 보기를 사용할 수 있어요. 번역은 기기에서 처리돼요.</string>
+    <string name="language_selected">선택됨</string>
+
+    <!-- 지역 지도 별도 축척 인셋 -->
+    <string name="main_region_map_inset_separate_scale">별도 축척</string>
+
+    <!-- 마이 > 지역 지도 캔버스 -->
+    <string name="main_region_map_country_name">대한민국</string>
+    <string name="main_region_map_content_description">%1$s 행정구역 지도. 아래 지역 목록에서도 선택할 수 있습니다.</string>
+
+    <!-- 마이 화면 빈 코스/계획 만들기 진입 카드, 헤더 아이콘 -->
+    <string name="main_my_create_course_title">나만의 코스 만들기</string>
+    <string name="main_my_create_course_subtitle">가 본 곳을 이어 첫 코스를 남겨 보세요</string>
+    <string name="main_my_create_plan_title">계획 생성하기</string>
+    <string name="main_my_create_plan_subtitle">가 보고 싶은 곳을 모아 계획을 세워 보세요</string>
+    <string name="main_my_share_description">공유</string>
+    <string name="main_my_settings_description">설정</string>
+
+    <!-- 관심 테마 편집(FS-06) -->
+    <string name="main_interest_theme_title">관심 테마</string>
+    <string name="main_interest_theme_headline">어떤 곳을\n좋아하세요?</string>
+    <string name="main_interest_theme_min_count">최소 %1$d개 이상 · </string>
+    <string name="main_interest_theme_selected_count">%1$d개 선택됨</string>
+    <string name="main_interest_theme_select_min">최소 %1$d개 이상 선택</string>
+    <string name="main_interest_theme_save_error">저장하지 못했어요. 선택한 테마를 유지했으니 다시 시도해 주세요.</string>
+    <string name="main_interest_theme_save">저장</string>
+    <string name="main_interest_theme_next">다음</string>
+
+    <!-- 팔로우 목록 화면(FS-15) -->
+    <string name="main_follow_list_title">팔로우 목록</string>
+    <string name="main_follow_list_back">뒤로가기</string>
+    <string name="main_follow_list_tab_follower">팔로워</string>
+    <string name="main_follow_list_tab_following">팔로잉</string>
+    <string name="main_follow_list_empty_follower">아직 팔로워가 없어요.</string>
+    <string name="main_follow_list_empty_following">아직 팔로우한 사람이 없어요.</string>
+    <string name="main_follow_list_retry">다시 시도</string>
+    <string name="main_follow_list_remove">%1$s 제거</string>
+    <string name="main_follow_list_unfollow_dialog_title">팔로잉을 해제할까요?</string>
+    <string name="main_follow_list_unfollow_dialog_description">%1$s 님 팔로잉을 해제해요.</string>
+
+    <!-- 검색어 입력 화면(FS-17) 검색창 placeholder -->
+    <string name="main_search_placeholder_place">장소 검색</string>
+    <string name="main_search_placeholder_course">코스 검색</string>
+
+    <!-- 오늘의 추천 코스(RecommendedCoursesPage) -->
+    <string name="main_recommended_title">오늘의 추천 코스</string>
+    <string name="main_recommended_region_title">%1$s 코스</string>
+    <string name="main_recommended_back">뒤로가기</string>
+    <string name="main_recommended_sort_default">추천순</string>
+    <string name="main_recommended_empty">아직 공개된 코스가 없어요.</string>
+    <string name="main_recommended_empty_theme">해당 테마의 코스가 아직 없어요.</string>
+    <string name="main_recommended_retry">다시 시도</string>
+
+    <!-- 관심 지역 선택 화면(InterestRegionPage) -->
+    <string name="main_interest_region_title">관심 지역</string>
+    <string name="main_interest_region_heading">자주 가는 지역을 골라주세요</string>
+    <string name="main_interest_region_subheading">최소 1개 · 시·도 전체 또는 시·군·구 선택</string>
+    <string name="main_interest_region_view_all">‹ 전국 보기</string>
+    <string name="main_interest_region_selected_count">선택 %1$d ·</string>
+    <string name="main_interest_region_sido_all">%1$s 전체</string>
+    <string name="main_interest_region_chip_remove">%1$s ×</string>
+    <string name="main_interest_region_chip_deselect_a11y">%1$s 선택 해제</string>
+    <string name="main_interest_region_sido_all_desc">%1$s 전체 선택, 하위 지역 모두 포함</string>
+    <string name="main_interest_region_zoom_desc">%1$s 확대</string>
+    <string name="main_interest_region_save_error">저장하지 못했어요. 선택한 지역을 유지했으니 다시 시도해 주세요.</string>
+    <string name="main_interest_region_cta_empty">지역을 1개 이상 선택해 주세요</string>
+    <string name="main_interest_region_cta_next">다음</string>
+    <string name="main_interest_region_cta_save">저장</string>
+
+    <!-- 검색 결과 화면: 빈 결과 문구, 카테고리 전체 칩 -->
+    <string name="main_search_result_empty_filtered">조건에 맞는 코스가 없어요. 필터를 조정해 보세요.</string>
+    <string name="main_search_result_empty_query">\'%1$s\'에 맞는 코스가 없어요</string>
+    <string name="main_search_result_category_all">전체</string>
+    <string name="main_search_result_save_toggle_add">저장</string>
+    <string name="main_search_result_save_toggle_remove">저장 해제</string>
+
+    <!-- 검색 결과 상단바·지도 미리보기 카드 -->
+    <string name="main_search_result_chrome_back">뒤로</string>
+    <string name="main_search_result_chrome_clear_query">검색어 지우기</string>
+    <string name="main_search_result_chrome_map_preview_title">지도에서 한눈에 보기</string>
+    <string name="main_search_result_chrome_map_preview_place_count">장소 %1$d곳</string>
+    <string name="main_search_result_chrome_map_open">지도 보기</string>
+
+    <!-- 프로필 편집(FS-26) -->
+    <string name="main_profile_edit_title">프로필 편집</string>
+    <string name="main_profile_edit_save">변경 사항 저장</string>
+    <string name="main_profile_edit_toast_saved">저장했어요</string>
+    <string name="main_profile_edit_avatar_image_desc">프로필 이미지</string>
+    <string name="main_profile_edit_avatar_change_desc">사진 변경</string>
+    <string name="main_profile_edit_label_nickname">닉네임</string>
+    <string name="main_profile_edit_label_handle">아이디</string>
+    <string name="main_profile_edit_label_bio">소개</string>
+    <string name="main_profile_edit_handle_check">중복 확인</string>
+    <string name="main_profile_edit_interest_themes">관심 테마</string>
+    <string name="main_profile_edit_interest_regions">관심 지역</string>
+    <string name="main_profile_edit_interest_edit">편집</string>
+    <string name="main_profile_edit_interest_empty">아직 고른 %1$s 가 없어요. 편집에서 골라 보세요.</string>
+
+    <!-- 홈 화면(FS-09) -->
+    <string name="main_home_greeting_user">%1$s님, 오늘은\n어디로 떠나볼까요?</string>
+    <string name="main_home_greeting_guest">어디로 떠나볼까요?</string>
+    <string name="main_home_profile_click_label">마이로 이동</string>
+    <string name="main_home_profile_description">내 프로필</string>
+    <string name="main_home_see_all">전체보기</string>
+    <string name="main_home_save_label">저장</string>
+    <string name="main_home_nearby_title">근처 저장 장소</string>
+    <string name="main_home_nearby_see_on_map">지도에서 보기</string>
+    <string name="main_home_nearby_permission_message">위치를 허용하면 근처에 저장한 장소가 여기에 보여요</string>
+    <string name="main_home_nearby_gps_message">기기 위치(GPS)가 꺼져 있어 근처 장소를 찾을 수 없어요</string>
+    <string name="main_home_nearby_allow_location">위치 허용</string>
+    <string name="main_home_nearby_enable_location">위치 켜기</string>
+    <string name="main_home_nearby_empty_message">근처에 저장한 장소가 없어요</string>
+    <string name="main_home_nearby_find_on_map">지도에서 장소 찾기</string>
+    <string name="main_home_place_visited">방문</string>
+    <string name="main_home_place_not_visited">미방문</string>
+    <string name="main_home_theme_browse_title">테마별 둘러보기</string>
+    <string name="main_home_region_browse_title">지역별 둘러보기</string>
+    <string name="main_home_in_progress_label">진행 중인 코스</string>
+    <string name="main_home_in_progress_private_label">비공개된 코스</string>
+    <string name="main_home_in_progress_dismiss">진행 중인 코스 지우기</string>
+    <string name="main_home_in_progress_end_title">진행 중인 코스를 종료할까요?</string>
+    <string name="main_home_in_progress_end_description">종료된 코스는 완주되어 저장함에서 볼 수 있어요.</string>
+
+    <!-- 프로필 공용 구성요소(FS-15 마이·타유저) -->
+    <string name="main_profile_header_back">뒤로 가기</string>
+    <string name="main_profile_bio_empty">아직 소개가 없어요</string>
+    <string name="main_profile_follower">팔로워</string>
+    <string name="main_profile_following">팔로잉</string>
+    <string name="main_profile_avatar_image_desc">프로필 이미지</string>
+    <string name="main_profile_avatar_empty_desc">프로필 이미지 없음</string>
+    <string name="main_profile_error_message">프로필을 불러오지 못했습니다.</string>
+    <string name="main_profile_error_retry">다시 시도</string>
+    <string name="main_profile_error_go_home">홈으로 돌아가기</string>
+
+    <!-- 코스 좋아요 집계(CourseLikeCount) 접근성 설명 -->
+    <string name="main_course_like_count_description">좋아요 %1$s</string>
+
+    <!-- 코스 요약 카드(SavedCourseCard) -->
+    <string name="main_saved_course_card_unsave">저장 취소</string>
+    <string name="main_saved_course_card_mine">내가 만든 코스</string>
+    <string name="main_saved_course_card_completed">%1$s 완주</string>
+    <string name="main_saved_place_card_visited">방문함</string>
+    <string name="main_saved_place_card_remove_bookmark">저장 취소</string>
+
+    <!-- 저장함 코스 필터(SavedCourseFilters) -->
+    <string name="main_saved_filter_all">전체 %1$d</string>
+    <string name="main_saved_filter_add_folder">폴더 추가</string>
+    <string name="main_saved_filter_uncompleted">안 가봄 %1$d</string>
+    <string name="main_saved_filter_completed">완주 %1$d</string>
+    <string name="main_saved_create_folder_title">폴더 추가</string>
+    <string name="main_saved_create_folder_description">원하는 이름으로 코스를 모아보세요. (최대 %1$d자)</string>
+    <string name="main_saved_create_folder_placeholder">예: 주말 나들이</string>
+    <string name="main_saved_create_folder_cancel">취소</string>
+    <string name="main_saved_create_folder_confirm">추가</string>
+
+    <!-- 저장함 화면(SavedPage) 빈 상태·저장 취소 다이얼로그·게스트 안내 -->
+    <string name="main_saved_courses_empty">조건에 맞는 저장 코스가 없어요.</string>
+    <string name="main_saved_places_empty">조건에 맞는 저장 장소가 없어요.</string>
+    <string name="main_saved_places_load_more">장소 더 불러오기</string>
+    <string name="main_saved_retry">다시 시도</string>
+    <string name="main_saved_unsave_dialog_title">저장을 취소할까요?</string>
+    <string name="main_saved_unsave_course_dialog_description">저장을 취소하면 이 코스가 저장 목록에서 사라져요.</string>
+    <string name="main_saved_unsave_place_dialog_description">저장을 취소하면 이 장소가 저장 목록에서 사라져요.</string>
+    <string name="main_saved_guest_title">마음에 든 장소를\n여기에 모아보세요</string>
+    <string name="main_saved_guest_subtitle">로그인하면 저장한 장소가 지도 위에 모이고,\n바로 나만의 코스로 이어집니다.</string>
+    <string name="main_saved_guest_login">로그인 / 회원가입</string>
+
+    <!-- 저장함 코스/장소 탭, 장소 카테고리 칩·안내·방문 상태 탭 -->
+    <string name="main_saved_tab_courses">코스</string>
+    <string name="main_saved_tab_places">장소</string>
+    <string name="main_saved_filter_chip_label">%1$s %2$d</string>
+    <string name="main_saved_places_loaded_notice">불러온 장소 기준</string>
+    <string name="main_saved_status_not_visited">미방문 %1$d</string>
+    <string name="main_saved_status_visited">방문 %1$d</string>
+
+    <!-- i18n merge: main:presentation 추가 문구 (자동 병합) -->
+    <string name="main_interest_load_feedback_loading">저장된 선택을 확인하고 있어요</string>
+    <string name="main_interest_load_feedback_error">잠시 후 다시 시도해 주세요.</string>
+    <string name="main_interest_load_feedback_retry">새로고침</string>
+    <string name="main_guest_my_title">마이</string>
+    <string name="main_guest_my_settings_cd">설정</string>
+    <string name="main_guest_my_welcome_title">게스트님, 반가워요</string>
+    <string name="main_guest_my_welcome_subtitle">로그인하고 취향 코스를 받아보세요</string>
+    <string name="main_guest_my_login_button">로그인 / 회원가입</string>
+    <string name="main_guest_my_benefits_header">가입하면 할 수 있어요</string>
+    <string name="main_guest_my_benefit_saved_title">장소·코스 저장</string>
+    <string name="main_guest_my_benefit_saved_subtitle">가고 싶은 장소와 코스를 모아보세요</string>
+    <string name="main_guest_my_benefit_plan_title">여행 계획</string>
+    <string name="main_guest_my_benefit_plan_subtitle">원하는 장소로 나만의 일정을 짜보세요</string>
+    <string name="main_guest_my_benefit_review_title">방문 후기</string>
+    <string name="main_guest_my_benefit_review_subtitle">다녀온 장소의 경험을 나눠보세요</string>
+    <string name="main_guest_my_benefit_follow_title">친구 팔로우</string>
+    <string name="main_guest_my_benefit_follow_subtitle">취향이 맞는 사람의 코스를 만나보세요</string>
+    <string name="main_guest_my_benefit_click_label">로그인 화면으로 이동</string>
+    <string name="main_search_placeholder">코스 검색</string>
+    <string name="main_search_recent_title">최근 검색</string>
+    <string name="main_search_clear_all">전체 삭제</string>
+    <string name="main_search_back">뒤로</string>
+    <string name="main_search_trending_title">지금 뜨는 검색어</string>
+    <string name="main_search_theme_find_title">테마로 찾기</string>
+    <string name="main_search_places_loading">장소를 찾고 있어요</string>
+    <string name="main_search_places_empty">일치하는 장소가 없어요</string>
+    <string name="main_trending_keyword_rank_up">%1$d계단 상승</string>
+    <string name="main_trending_keyword_rank_down">%1$d계단 하락</string>
+    <string name="main_recent_keyword_chip_remove_description">%1$s 검색 기록 삭제</string>
+    <string name="main_search_input_placeholder">코스 검색</string>
+    <string name="main_search_input_clear">검색어 지우기</string>
+    <string name="main_home_course_card_bookmark_remove">저장 취소</string>
+    <string name="main_home_course_card_bookmark_add">저장</string>
+    <string name="main_skeleton_courses_loading">코스를 불러오는 중</string>
+    <string name="main_skeleton_recommended_loading">추천 코스를 불러오는 중</string>
+    <string name="main_skeleton_places_loading">장소를 불러오는 중</string>
+    <string name="main_skeleton_profile_loading">프로필을 불러오는 중</string>
+    <string name="main_skeleton_follow_loading">팔로우 목록을 불러오는 중</string>
+    <string name="main_back_top_bar_back">뒤로 가기</string>
+
+    <!-- 알림 권한 사전 안내(프라이밍) 다이얼로그 -->
+    <string name="main_notification_priming_title">알림을 받아볼까요?</string>
+    <string name="main_notification_priming_description">내 코스의 좋아요·댓글 같은 활동 소식을 알림으로 알려드려요.</string>
+    <string name="main_notification_priming_allow">허용</string>
+    <string name="main_notification_priming_later">나중에</string>
+
+    <!-- 알림 벨 버튼 접근성 설명 -->
+    <string name="main_notification_bell_description">알림</string>
+    <string name="main_notification_bell_unread_description">알림, 안 읽은 알림 %1$d개</string>
+
+    <!-- 알림함 화면 -->
+    <string name="main_notification_inbox_title">알림</string>
+    <string name="main_notification_inbox_error_title">알림을 불러오지 못했어요</string>
+    <string name="main_notification_inbox_empty_title">아직 도착한 알림이 없어요</string>
+    <string name="main_notification_inbox_empty_description">내 코스에 남겨진 반응과\n새로운 팔로우 소식을 여기서 확인해요.</string>
+    <string name="main_notification_inbox_unread_count">안 읽은 알림 %1$d개</string>
+    <string name="main_notification_inbox_all_read">모든 알림을 읽었어요</string>
+    <string name="main_notification_inbox_recent">최근 알림</string>
+    <string name="main_notification_inbox_marking_all">읽는 중…</string>
+    <string name="main_notification_inbox_mark_all_read">모두 읽음</string>
+    <string name="main_notification_inbox_retry">다시 시도</string>
+    <string name="main_notification_inbox_refresh">새로고침</string>
+    <string name="main_notification_inbox_load_more">이전 알림 더 보기</string>
+
+    <!-- 알림 항목 읽음 상태 접근성 설명 -->
+    <string name="main_notification_state_read">읽음</string>
+    <string name="main_notification_state_unread">안 읽음</string>
+
+    <!-- 지도 탭 메인 탐색(FS-10) -->
+    <string name="main_map_my_location_description">내 위치</string>
+    <string name="main_map_visible_place_count">보이는 장소 %1$d곳</string>
+    <string name="main_map_empty_loading">주변 장소를 찾는 중이에요</string>
+    <string name="main_map_empty_no_result">조건에 맞는 장소가 없어요</string>
+
+    <!-- 계정 관리 화면 -->
+    <string name="main_account_manage_title">계정 관리</string>
+    <string name="main_account_manage_logout">로그아웃</string>
+    <string name="main_account_manage_withdraw">회원 탈퇴</string>
+    <string name="main_account_manage_withdraw_dialog_title">정말 탈퇴할까요?</string>
+    <string name="main_account_manage_withdraw_dialog_description">탈퇴하면 계정과 코스 정보가 삭제되고 되돌릴 수 없어요.</string>
+
+    <!-- 온보딩 화면(FS-02) 3컷 인트로 헤딩/버튼 -->
+    <string name="main_onboarding_heading_1">저장만 해둔 장소,\n그대로 두고 계신가요?</string>
+    <string name="main_onboarding_heading_2">저장한 장소들이\n걷고 싶은 코스가 돼요</string>
+    <string name="main_onboarding_heading_3">함께 나누는\n로컬 큐레이션</string>
+    <string name="main_onboarding_login">로그인 하기</string>
+    <string name="main_onboarding_browse">로그인 없이 둘러보기</string>
+    <string name="main_onboarding_skip">건너뛰기</string>
+    <string name="main_onboarding_next">다음</string>
+    <string name="main_notification_settings_title">알림</string>
+    <string name="main_notification_settings_activity_title">활동 알림</string>
+    <string name="main_notification_settings_activity_description">내 코스의 좋아요와 댓글 소식을 받아요</string>
+    <string name="main_notification_settings_marketing_title">광고 알림</string>
+    <string name="main_notification_settings_marketing_description">추천 코스와 이벤트 소식을 받아요</string>
+    <string name="main_notification_settings_night_title">야간에도 받기</string>
+    <string name="main_notification_settings_night_description">밤 9시부터 오전 8시까지도 받아요</string>
+    <string name="main_notification_settings_dialog_error_title">알림 설정을 완료하지 못했어요</string>
+    <string name="main_notification_settings_dialog_error_description">네트워크 연결을 확인하고 다시 시도해 주세요. 알림을 바로 차단하려면 기기 설정에서 꺼 주세요.</string>
+    <string name="main_notification_settings_dialog_permission_title">기기 알림을 허용해 주세요</string>
+    <string name="main_notification_settings_dialog_permission_description">활동 알림을 받으려면 기기 설정에서 Courmy 알림을 허용해 주세요.</string>
+    <string name="main_notification_settings_dialog_confirm">기기 설정</string>
+    <string name="main_notification_settings_dialog_dismiss">닫기</string>
+
+    <!-- 채팅홈 화면 -->
+    <string name="main_chat_home_title">채팅</string>
+    <string name="main_chat_home_tab_participating">참여 중</string>
+    <string name="main_chat_home_tab_neighborhood">%1$s 채팅방</string>
+    <string name="main_chat_home_enter">입장</string>
+
+    <!-- 약관 동의 화면(FS-04) -->
+    <string name="main_terms_headline">약관에\n동의해 주세요</string>
+    <string name="main_terms_subtitle">서비스 이용을 위해 아래 약관 동의가 필요해요.</string>
+    <string name="main_terms_agree_all">전체 동의</string>
+    <string name="main_terms_age14">[필수] 만 14세 이상입니다</string>
+    <string name="main_terms_service_terms">[필수] 서비스 이용약관 동의</string>
+    <string name="main_terms_privacy_policy">[필수] 개인정보 처리방침 동의</string>
+    <string name="main_terms_agree_continue">동의하고 계속하기</string>
+    <string name="main_terms_social_verified_badge">소셜 계정 확인 완료</string>
+    <string name="main_terms_view_document">보기 ›</string>
+    <string name="main_terms_open_document_error">문서를 열 수 없어요. 잠시 후 다시 시도해 주세요.</string>
+
+    <!-- 로그인·시작하기 화면(FS-03) -->
+
+    <!-- 온보딩 완료 화면(FS-08) -->
+    <string name="main_onboarding_complete_default_name">회원</string>
+    <string name="main_onboarding_complete_greeting">가입 완료!\n%1$s님, 환영합니다!</string>
+    <string name="main_onboarding_complete_guide_heading">이제 이런 걸 할 수 있어요</string>
+    <string name="main_onboarding_complete_guide_create_title">나만의 코스 만들기</string>
+    <string name="main_onboarding_complete_guide_create_desc">가 본 장소를 순서대로 엮어 코스로 남겨요.</string>
+    <string name="main_onboarding_complete_guide_save_title">마음에 든 코스 저장</string>
+    <string name="main_onboarding_complete_guide_save_desc">저장한 코스는 저장 탭에서 다시 볼 수 있어요.</string>
+    <string name="main_onboarding_complete_guide_follow_title">취향 맞는 유저 팔로우</string>
+    <string name="main_onboarding_complete_guide_follow_desc">관심 있는 사람의 새 코스를 놓치지 않아요.</string>
+    <string name="main_onboarding_complete_start_button">Courmy 시작하기</string>
+
+    <!-- 스플래시 화면(FS-01) 로고 서브타이틀·오프라인 차단 다이얼로그 -->
+    <string name="main_splash_subtitle">나만의 코스, 나만의 동네</string>
+    <string name="main_splash_offline_dialog_title">인터넷 연결이 필요해요</string>
+    <string name="main_splash_offline_dialog_description">Wi-Fi 나 데이터가 켜져 있는지 확인하고 다시 시도해 주세요.</string>
+    <string name="main_splash_offline_dialog_retry">다시 시도</string>
+
+    <!-- 채팅방 화면 -->
+    <string name="main_chat_room_back">뒤로 가기</string>
+    <string name="main_chat_room_input_placeholder">메시지 보내기</string>
+    <string name="main_chat_room_send">전송</string>
+
+    <!-- 지도 장소 카드·리스트(FS-10) 저장 토글·영업 상태 -->
+    <string name="main_map_place_save_toggle_add">저장</string>
+    <string name="main_map_place_save_toggle_remove">저장 해제</string>
+    <string name="main_map_place_open_now">영업 중</string>
+    <string name="main_map_place_closed">영업 종료</string>
+    <string name="main_map_place_open_until">영업 중 · %1$s 종료</string>
+    <string name="main_map_sort_saved">저장순</string>
+    <string name="main_map_sort_distance">거리순</string>
+    <string name="main_map_sort_rating">평점순</string>
+
+    <!-- 지도 검색바(FS-10) -->
+    <string name="main_map_search_bar_back">뒤로</string>
+    <string name="main_map_search_bar_clear_query">검색어 지우기</string>
+    <string name="main_notification_settings_consent_caption">%1$s 동의</string>
+    <string name="main_notification_settings_dialog_grant_title">기기 알림을 허용해 주세요</string>
+    <string name="main_notification_settings_dialog_grant_description">활동 알림을 받으려면 기기 설정에서 Courmy 알림을 허용해 주세요.</string>
+
+    <!-- 프로필·아이디 설정 화면(FS-05, ProfileSetupPage) -->
+    <string name="main_profile_setup_title">프로필을\n만들어 주세요</string>
+    <string name="main_profile_setup_label_nickname">닉네임</string>
+    <string name="main_profile_setup_nickname_placeholder">닉네임을 입력해 주세요</string>
+    <string name="main_profile_setup_label_handle">아이디</string>
+    <string name="main_profile_setup_handle_placeholder">아이디</string>
+    <string name="main_profile_setup_handle_check">중복 확인</string>
+    <string name="main_profile_setup_next">다음</string>
+    <string name="main_profile_setup_avatar_image_desc">프로필 이미지</string>
+    <string name="main_profile_setup_avatar_add_desc">사진 추가</string>
+    <string name="main_login_title">Courmy와\n함께 시작해요</string>
+    <string name="main_login_subtitle">계정으로 3초 만에 자동 연결돼요.\n처음이면 바로 가입돼요.</string>
+    <string name="main_login_google_account_guide">Google 계정을 선택해 주세요.\n선택창이 열리지 않으면 취소 후 다시 시도해 주세요.</string>
+    <string name="main_login_google_cancel">Google 로그인 취소</string>
+    <string name="main_login_kakao_start">카카오로 시작하기</string>
+    <string name="main_login_naver_start">네이버로 시작하기</string>
+    <string name="main_login_google_start">Google로 시작하기</string>
+    <string name="main_login_back_to_guest">게스트로 돌아가기</string>
+    <string name="main_login_profile_setup_hint">처음이라면 프로필 설정이 이어져요.</string>
+
+    <!-- i18n merge wave: 알림 동의/앱버전/프로필 설정/팔로우/지도 추가 문구 -->
+    <string name="main_notification_consent_guide_title">기기 알림을 허용해 주세요</string>
+    <string name="main_notification_consent_guide_description">활동 알림을 받으려면 기기 설정에서 Courmy 알림을 허용해 주세요.</string>
+    <string name="main_notification_consent_guide_confirm">기기 설정</string>
+    <string name="main_notification_consent_guide_dismiss">닫기</string>
+    <string name="main_notification_consent_title">추천 코스 알림을 받아볼까요?</string>
+    <string name="main_notification_consent_subtitle">나중에 설정에서 바꿀 수 있어요.</string>
+    <string name="main_notification_consent_service_title">활동 알림</string>
+    <string name="main_notification_consent_service_description">내 코스의 좋아요와 댓글 소식을 받아요</string>
+    <string name="main_notification_consent_marketing_title">광고 알림</string>
+    <string name="main_notification_consent_marketing_description">추천 코스와 이벤트 소식을 받아요</string>
+    <string name="main_notification_consent_night_title">야간에도 받기</string>
+    <string name="main_notification_consent_night_description">밤 9시부터 오전 8시까지도 받아요</string>
+    <string name="main_notification_consent_tag_required">(필수)</string>
+    <string name="main_notification_consent_tag_optional">(선택)</string>
+    <string name="main_notification_consent_confirm">동의하고 계속하기</string>
+    <string name="main_app_version_title">앱 버전</string>
+    <string name="main_app_version_unknown">버전 정보를 확인할 수 없어요</string>
+    <string name="main_app_version_current_label">현재 버전</string>
+    <string name="main_app_version_latest_label">최신 버전</string>
+    <string name="main_app_version_status_loading">업데이트 확인 중…</string>
+    <string name="main_app_version_status_latest">최신 버전이에요.</string>
+    <string name="main_app_version_status_update_available">새 버전이 있어요.</string>
+    <string name="main_app_version_status_unavailable">버전을 확인하지 못했어요.</string>
+    <string name="main_app_version_recheck">버전 다시 확인</string>
+    <string name="main_app_version_go_update">업데이트하러 가기</string>
+    <string name="main_profile_setup_nickname_label">닉네임</string>
+    <string name="main_profile_setup_handle_label">아이디</string>
+    <string name="main_profile_setup_avatar_description">프로필 이미지</string>
+    <string name="main_profile_setup_add_photo">사진 추가</string>
+    <string name="main_profile_setup_check_duplicate">중복 확인</string>
+    <string name="main_login_start_kakao">카카오로 시작하기</string>
+    <string name="main_login_start_naver">네이버로 시작하기</string>
+    <string name="main_login_start_google">Google로 시작하기</string>
+    <string name="main_login_profile_hint">처음이라면 프로필 설정이 이어져요.</string>
+    <string name="main_map_search_result_zoom_in">지도를 확대해 장소를 확인해 주세요</string>
+    <string name="main_map_search_result_empty">검색 결과가 없어요</string>
+    <string name="main_map_search_result_my_location">내 위치</string>
+    <string name="main_map_search_result_count_label">검색 결과</string>
+    <string name="main_map_search_result_loading">검색 결과를 불러오는 중이에요</string>
+    <string name="main_map_sheet_collapse_list">목록 접기</string>
+    <string name="main_map_sheet_expand_list">목록 펼치기</string>
+    <string name="main_optional_app_update_title">새 버전이 있어요</string>
+    <string name="main_optional_app_update_description">더 나아진 Courmy를 만나보세요.\n마이 &gt; 설정 &gt; 앱 버전에서도 확인할 수 있어요.</string>
+    <string name="main_optional_app_update_confirm">업데이트</string>
+    <string name="main_optional_app_update_dismiss">나중에</string>
+    <string name="main_app_update_required_title">새 버전으로 업데이트해 주세요</string>
+    <string name="main_app_update_required_message">스토어에서 최신 버전으로 업데이트해 주세요.</string>
+    <string name="main_app_update_required_cta">업데이트하러 가기</string>
+    <string name="main_app_update_store_open_failed">스토어를 열 수 없어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="main_follow_button_follow">팔로우</string>
+    <string name="main_follow_button_follow_back">맞팔로우</string>
+    <string name="main_follow_button_following">팔로잉</string>
+    <string name="main_follow_button_mutual_following">서로 팔로잉</string>
+    <string name="main_user_profile_share">공유</string>
+    <string name="main_region_map_inset_west_islands">백령·대청·연평</string>
+    <string name="main_region_map_inset_east_islands">울릉도·독도</string>
+    <!-- i18n merge: 알림 동의 확인 버튼·약관·프로필 설정·스플래시 추가 문구 (자동 병합) -->
+    <string name="main_notification_consent_confirm_button">동의하고 계속하기</string>
+    <string name="main_terms_title">약관에\n동의해 주세요</string>
+    <string name="main_terms_age_14">[필수] 만 14세 이상입니다</string>
+    <string name="main_terms_social_verified">소셜 계정 확인 완료</string>
+    <string name="main_onboarding_complete_default_nickname">회원</string>
+    <string name="main_onboarding_complete_guide_header">이제 이런 걸 할 수 있어요</string>
+    <string name="main_onboarding_browse_without_login">로그인 없이 둘러보기</string>
+    <string name="main_splash_tagline">나만의 코스, 나만의 동네</string>
+    <string name="main_splash_offline_title">인터넷 연결이 필요해요</string>
+    <string name="main_splash_offline_description">Wi-Fi 나 데이터가 켜져 있는지 확인하고 다시 시도해 주세요.</string>
+    <string name="main_splash_offline_retry">다시 시도</string>
+    <string name="main_my_tab_plan">계획</string>
+    <string name="main_chat_region_rooms">%1$s 채팅방</string>
+    <string name="main_notification_settings_open_failed">기기 알림 설정을 열 수 없어요.</string>
+    <string name="main_notification_unread_description">알림, 안 읽은 알림 %1$d개</string>
+    <string name="main_session_expired">세션이 만료되었어요. 다시 로그인해 주세요.</string>
+    <string name="main_copy_course_title">어떻게 복제할까요?</string>
+    <string name="main_copy_course_description">계획은 나만 볼 수 있고, 방문할 장소와 메모를 담을 수 있어요.</string>
+    <string name="main_copy_course_plan">계획하기</string>
+    <string name="main_copy_course_review">후기 작성</string>
+    <string name="main_copy_link_failed">링크를 복사하지 못했어요</string>
+    <string name="main_copy_link_success">링크를 복사했어요</string>
+    <string name="main_copy_link_label">Courmy 링크</string>
+    <string name="main_remaining_actor_unknown">누군가</string>
+    <string name="main_remaining_notification_liked">%1$s님이 내 코스를 좋아해요</string>
+    <string name="main_remaining_notification_commented">%1$s님이 내 코스에 댓글을 남겼어요</string>
+    <string name="main_remaining_notification_reviewed">%1$s님이 내 코스에 후기를 남겼어요</string>
+    <string name="main_remaining_notification_followed">%1$s님이 나를 팔로우해요</string>
+    <string name="main_remaining_notification_unknown">새로운 소식이 도착했어요</string>
+    <string name="main_remaining_notification_now">방금 전</string>
+    <string name="main_remaining_notification_date_pattern">M월 d일</string>
+    <plurals name="main_remaining_place_count">
+        <item quantity="other">%1$d곳</item>
+    </plurals>
+    <string name="main_remaining_brand_wordmark">Courmy</string>
+    <string name="main_remaining_brand_morph">my course</string>
+    <string name="main_remaining_keyword_new">NEW</string>
+    <plurals name="main_remaining_notification_minutes">
+        <item quantity="other">%d분 전</item>
+    </plurals>
+    <plurals name="main_remaining_notification_hours">
+        <item quantity="other">%d시간 전</item>
+    </plurals>
+    <string name="main_remaining_chat_now">방금</string>
+    <string name="main_remaining_chat_yesterday">어제</string>
+    <plurals name="main_remaining_chat_days">
+        <item quantity="other">%d일 전</item>
+    </plurals>
+    <string name="main_profile_edit_loading">프로필을 확인하고 있어요</string>
+</resources>

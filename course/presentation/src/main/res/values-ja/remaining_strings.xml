@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="course_remaining_new_course">新しいコース</string>
+    <string name="course_remaining_untitled_course">無題のコース</string>
+    <string name="course_remaining_my_plan">マイプラン</string>
+    <string name="course_remaining_place_unavailable">場所の情報を読み込めませんでした</string>
+    <string name="course_remaining_map_unavailable">地図を開けませんでした</string>
+    <string name="course_remaining_rating_1">よくなかったです</string>
+    <string name="course_remaining_rating_2">少し残念でした</string>
+    <string name="course_remaining_rating_3">普通でした</string>
+    <string name="course_remaining_rating_4">よかったです</string>
+    <string name="course_remaining_rating_5">最高でした</string>
+    <string name="course_remaining_other">その他</string>
+    <string name="course_remaining_followers">%1$s人が利用</string>
+    <plurals name="course_remaining_spots">
+        <item quantity="one">%1$dスポット</item>
+        <item quantity="other">%1$dスポット</item>
+    </plurals>
+    <plurals name="course_remaining_reviews">
+        <item quantity="one">%1$d件</item>
+        <item quantity="other">%1$d件</item>
+    </plurals>
+    <plurals name="course_remaining_minutes">
+        <item quantity="one">%1$d分</item>
+        <item quantity="other">%1$d分</item>
+    </plurals>
+    <plurals name="course_remaining_places">
+        <item quantity="one">%1$dか所</item>
+        <item quantity="other">%1$dか所</item>
+    </plurals>
+    <string name="course_remaining_anonymous">匿名</string>
+</resources>

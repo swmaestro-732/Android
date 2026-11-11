@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import javax.inject.Inject
 
 /** 코스 댓글 삭제 UseCase. */
@@ -12,7 +15,9 @@ class DeleteCourseCommentUseCase
             courseId: Long,
             commentId: Long,
         ) {
-            require(courseId > 0 && commentId > 0) { "댓글을 확인해 주세요." }
+            requireLocalized(courseId > 0 && commentId > 0) {
+                LocalizedValidationException(StringResource.VALIDATION_COMMENT_TARGET)
+            }
             repository.deleteComment(courseId, commentId)
         }
     }

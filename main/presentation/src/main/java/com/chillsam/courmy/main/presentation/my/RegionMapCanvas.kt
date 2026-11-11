@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.area.AreaCoordinateVO
 import com.chillsam.courmy.main.entity.area.AreaLevel
 import com.chillsam.courmy.main.entity.area.AreaMapVO
+import com.chillsam.courmy.main.presentation.R
 import kotlin.math.PI
 import kotlin.math.ln
 import kotlin.math.tan
@@ -47,9 +49,15 @@ internal fun RegionMapCanvas(
     modifier: Modifier = Modifier,
 ) {
     val colors = DesignSystemThemeImpl.designSystemColor
+    val countryName = stringResource(R.string.main_region_map_country_name)
     val shapes = remember(state.regions) { state.regions.mapNotNull { it.mainMapRegion() }.map(::RegionShape) }
     val provinceShapes = remember(shapes) { shapes.filter { it.region.area.level == AreaLevel.SIDO } }
     val focused = shapes.firstOrNull { it.region.area.code == state.provinceCode }
+    val mapContentDescription =
+        stringResource(
+            R.string.main_region_map_content_description,
+            focused?.region?.area?.shortName ?: countryName,
+        )
     val backgroundShapes = focused?.let(::listOf) ?: provinceShapes
     val visible =
         remember(shapes, state.provinceCode) {
@@ -106,8 +114,7 @@ internal fun RegionMapCanvas(
             Modifier
                 .fillMaxSize()
                 .semantics {
-                    contentDescription =
-                        "${focused?.region?.area?.shortName ?: "대한민국"} 행정구역 지도. 아래 지역 목록에서도 선택할 수 있습니다."
+                    contentDescription = mapContentDescription
                 }.pointerInput(Unit) { detectTapGestures { tap(it) } }
                 .pointerInput(state.provinceCode, width, height) {
                     detectTransformGestures { _, delta, zoomChange, _ ->

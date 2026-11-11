@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_region_filter_all">전체 지역</string>
+    <string name="main_region_filter_label">시·구·군 선택</string>
+    <string name="main_region_filter_expanded">지역 목록 펼쳐짐</string>
+    <string name="main_region_filter_collapsed">지역 목록 접힘</string>
+    <string name="main_region_filter_loading">지역 목록을 불러오는 중이에요</string>
+    <string name="main_region_filter_error">지역 목록을 불러오지 못했어요</string>
+    <string name="main_region_filter_empty">선택할 세부 지역이 없어요</string>
+</resources>

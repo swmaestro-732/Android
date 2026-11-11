@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.presentation.settings
 
 import com.chillsam.courmy.main.domain.update.CheckAppVersionUseCase
 import com.chillsam.courmy.main.entity.update.AppVersionCheckVO
+import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -38,7 +39,7 @@ class AppVersionViewModelTest {
     @Test
     fun `ViewModel 생성만으로 조회하지 않고 화면의 진입 신호를 기다린다`() =
         runTest(dispatcher) {
-            val viewModel = AppVersionViewModel(checker)
+            val viewModel = AppVersionViewModel(checker, resources = testResources())
             advanceUntilIdle()
 
             assertEquals(AppVersionStatus.Loading, viewModel.uiState.value.status)
@@ -51,7 +52,7 @@ class AppVersionViewModelTest {
         runTest(dispatcher) {
             val pending = CompletableDeferred<AppVersionCheckVO>()
             coEvery { checker(forceRefresh = true) } coAnswers { pending.await() }
-            val viewModel = AppVersionViewModel(checker)
+            val viewModel = AppVersionViewModel(checker, resources = testResources())
             viewModel.onIntent(AppVersionIntent.Check)
             runCurrent()
             assertEquals(AppVersionStatus.Loading, viewModel.uiState.value.status)
@@ -68,7 +69,7 @@ class AppVersionViewModelTest {
     fun `새 버전이 있으면 업데이트 가능으로 표시한다`() =
         runTest(dispatcher) {
             coEvery { checker(forceRefresh = true) } returns AppVersionCheckVO.Checked(12, 13, "1.0.1")
-            val viewModel = AppVersionViewModel(checker)
+            val viewModel = AppVersionViewModel(checker, resources = testResources())
             viewModel.onIntent(AppVersionIntent.Check)
             advanceUntilIdle()
             assertEquals(AppVersionStatus.UpdateAvailable, viewModel.uiState.value.status)
@@ -79,7 +80,7 @@ class AppVersionViewModelTest {
     fun `설정 미제공은 최신으로 표시하지 않고 재확인으로 복구한다`() =
         runTest(dispatcher) {
             coEvery { checker(forceRefresh = true) } returns AppVersionCheckVO.Unavailable
-            val viewModel = AppVersionViewModel(checker)
+            val viewModel = AppVersionViewModel(checker, resources = testResources())
             viewModel.onIntent(AppVersionIntent.Check)
             advanceUntilIdle()
             assertEquals(AppVersionStatus.Unavailable, viewModel.uiState.value.status)
@@ -97,7 +98,7 @@ class AppVersionViewModelTest {
     fun `조회 예외는 실패 상태로 표시한다`() =
         runTest(dispatcher) {
             coEvery { checker(forceRefresh = true) } throws IllegalStateException("offline")
-            val viewModel = AppVersionViewModel(checker)
+            val viewModel = AppVersionViewModel(checker, resources = testResources())
             viewModel.onIntent(AppVersionIntent.Check)
             advanceUntilIdle()
             assertEquals(AppVersionStatus.Unavailable, viewModel.uiState.value.status)
@@ -108,7 +109,7 @@ class AppVersionViewModelTest {
     fun `응답이 없으면 시간 제한 후 재확인할 수 있다`() =
         runTest(dispatcher) {
             coEvery { checker(forceRefresh = true) } coAnswers { CompletableDeferred<AppVersionCheckVO>().await() }
-            val viewModel = AppVersionViewModel(checker)
+            val viewModel = AppVersionViewModel(checker, resources = testResources())
             viewModel.onIntent(AppVersionIntent.Check)
             advanceUntilIdle()
             assertEquals(AppVersionStatus.Unavailable, viewModel.uiState.value.status)
@@ -124,7 +125,7 @@ class AppVersionViewModelTest {
         runTest(dispatcher) {
             coEvery { checker(forceRefresh = true) } returnsMany
                 listOf(AppVersionCheckVO.Checked(12, 12, "1.0.0"), AppVersionCheckVO.Checked(12, 15, "1.0.3"))
-            val viewModel = AppVersionViewModel(checker)
+            val viewModel = AppVersionViewModel(checker, resources = testResources())
             viewModel.onIntent(AppVersionIntent.Check)
             advanceUntilIdle()
             assertEquals("1.0.0", viewModel.uiState.value.latestVersion)
@@ -142,7 +143,7 @@ class AppVersionViewModelTest {
     fun `원격 이름이 공백이면 최신 버전 코드를 표시한다`() =
         runTest(dispatcher) {
             coEvery { checker(forceRefresh = true) } returns AppVersionCheckVO.Checked(12, 15, "  ")
-            val viewModel = AppVersionViewModel(checker)
+            val viewModel = AppVersionViewModel(checker, resources = testResources())
             viewModel.onIntent(AppVersionIntent.Check)
             advanceUntilIdle()
             assertEquals("빌드 15", viewModel.uiState.value.latestVersion)
@@ -152,7 +153,7 @@ class AppVersionViewModelTest {
     fun `새로고침 실패나 시간 초과에는 이전 최신 버전 이름이 남지 않는다`() =
         runTest(dispatcher) {
             coEvery { checker(forceRefresh = true) } returns AppVersionCheckVO.Checked(12, 13, "1.0.1")
-            val viewModel = AppVersionViewModel(checker)
+            val viewModel = AppVersionViewModel(checker, resources = testResources())
             viewModel.onIntent(AppVersionIntent.Check)
             advanceUntilIdle()
             assertEquals("1.0.1", viewModel.uiState.value.latestVersion)

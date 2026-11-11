@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.course.entity.CourseVisibility
+import com.chillsam.courmy.course.presentation.R
 
 /**
  * ③ 코스 설정 — 공개 설정 카드. [CourseVisibilitySegment] 를 태그·동행 카드와 같은
@@ -31,7 +33,7 @@ fun CourseVisibilityCard(
                 .padding(17.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        FieldLabel("공개 설정")
+        FieldLabel(stringResource(R.string.course_visibility_card_label))
         CourseVisibilitySegment(selected = selected, onSelect = onSelect)
     }
 }

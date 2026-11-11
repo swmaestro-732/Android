@@ -1,5 +1,6 @@
 package com.chillsam.courmy.main.presentation.map
 
+import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.main.domain.map.MapPlaceSearchRepository
 import com.chillsam.courmy.main.domain.map.SearchMapPlacesUseCase
 import com.chillsam.courmy.main.domain.map.SuggestMapPlacesUseCase
@@ -8,6 +9,7 @@ import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapPlacesVO
+import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +61,7 @@ class MapSearchResultViewModelTest {
             SearchMapPlacesUseCase(repository),
             mockk(),
             SuggestMapPlacesUseCase(repository),
+            resources = testResources(),
         )
     }
 
@@ -86,6 +89,33 @@ class MapSearchResultViewModelTest {
         }
 
     @Test
+    fun `검색 결과의 상세 분류가 상태 장소 목록까지 그대로 전달된다`() =
+        runTest(dispatcher) {
+            // 결과 카드·선택 카드·핀이 상위 카테고리로 폴백되던 회귀 방지:
+            // VM 이 result.places 를 재구성하며 detailCategory 를 떨어뜨리면 안 된다.
+            val place =
+                MapPlaceVO(
+                    id = 87,
+                    name = "갈릭보이",
+                    category = "카페·디저트",
+                    detailCategory = PlaceDetailCategoryVO.BAKERY,
+                    latitude = 35.15,
+                    longitude = 129.05,
+                )
+            val vm = viewModel { _, _ -> MapPlacesVO(places = listOf(place)) }
+            vm.onIntent(MapSearchResultIntent.Load("갈릭보이"))
+            vm.onIntent(MapSearchResultIntent.BoundsChanged(bounds))
+            advanceUntilIdle()
+
+            assertEquals(
+                PlaceDetailCategoryVO.BAKERY,
+                vm.uiState.value.places
+                    .single()
+                    .detailCategory,
+            )
+        }
+
+    @Test
     fun `카테고리 칩을 고르면 같은 영역을 그 카테고리로 다시 조회하고 같은 선택은 무시한다`() =
         runTest(dispatcher) {
             val categories = mutableListOf<MapCategory>()
@@ -109,6 +139,7 @@ class MapSearchResultViewModelTest {
                     SearchMapPlacesUseCase(repository),
                     mockk(),
                     SuggestMapPlacesUseCase(repository),
+                    resources = testResources(),
                 )
             vm.onIntent(MapSearchResultIntent.Load("카페"))
             vm.onIntent(MapSearchResultIntent.BoundsChanged(bounds))

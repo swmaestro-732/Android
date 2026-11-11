@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.compositionLocalOf
 import com.chillsam.courmy.common.domain.helper.MessageHelper
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.domain.message.IconType
 import com.chillsam.courmy.common.domain.message.MessageEffect
 import kotlinx.coroutines.channels.Channel
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 
 class MessageHelperImpl(
     val context: Context,
+    private val resources: ResourceHelper,
 ) : MessageHelper {
     private val _effect = Channel<MessageEffect>(Channel.BUFFERED)
     override val effect: Flow<MessageEffect> = _effect.receiveAsFlow()
@@ -42,7 +45,7 @@ class MessageHelperImpl(
         titleText: String?,
         descText: String,
         cantIgnore: Boolean,
-        buttonText: String,
+        buttonText: String?,
         onClickButton: (() -> Unit)?,
     ) {
         emit(
@@ -50,7 +53,7 @@ class MessageHelperImpl(
                 titleText = titleText,
                 descText = descText,
                 cantIgnore = cantIgnore,
-                buttonText = buttonText,
+                buttonText = buttonText ?: resources.getString(StringResource.DIALOG_OK),
                 onClickButton = onClickButton,
             ),
         )
@@ -60,9 +63,9 @@ class MessageHelperImpl(
         titleText: String?,
         descText: String,
         cantIgnore: Boolean,
-        leftButtonText: String,
+        leftButtonText: String?,
         onClickLeftButton: (() -> Unit)?,
-        rightButtonText: String,
+        rightButtonText: String?,
         onClickRightButton: (() -> Unit)?,
     ) {
         // TBD

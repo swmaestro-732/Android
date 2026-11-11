@@ -13,11 +13,24 @@ class SessionUiState {
     var isLoggedIn by mutableStateOf(false)
         private set
 
+    var loginRequired by mutableStateOf(false)
+        private set
+
+    fun requireLogin(action: () -> Unit) {
+        if (isLoggedIn) action() else loginRequired = true
+    }
+
+    fun dismissLoginRequired() {
+        loginRequired = false
+    }
+
     fun login() {
+        dismissLoginRequired()
         isLoggedIn = true
     }
 
     fun logout() {
+        dismissLoginRequired()
         isLoggedIn = false
     }
 }

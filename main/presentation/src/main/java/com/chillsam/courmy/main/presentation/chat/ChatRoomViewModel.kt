@@ -1,5 +1,7 @@
 package com.chillsam.courmy.main.presentation.chat
 
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
@@ -15,16 +17,25 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatRoomViewModel
     @Inject
-    constructor() :
-    MviViewModel<ChatRoomIntent, ChatRoomUIState, ChatRoomReducerEvent>(ChatRoomUIState.empty) {
+    constructor(
+        private val resources: ResourceHelper,
+    ) : MviViewModel<ChatRoomIntent, ChatRoomUIState, ChatRoomReducerEvent>(ChatRoomUIState.empty) {
         override fun onIntent(intent: ChatRoomIntent) {
             when (intent) {
                 is ChatRoomIntent.Load -> {
                     val room = ChatSampleData.find(intent.roomId)
                     dispatch(
                         ChatRoomReducerEvent.Loaded(
-                            roomTitle = room?.name ?: "채팅",
-                            subtitle = room?.subtitle.orEmpty(),
+                            roomTitle = room?.name ?: resources.getString(StringResource.CHAT_TITLE),
+                            subtitle =
+                                room
+                                    ?.memberCount
+                                    ?.let { count ->
+                                        listOfNotNull(
+                                            room.regionTag,
+                                            resources.getString(StringResource.CHAT_MEMBER_COUNT, count),
+                                        ).joinToString(" · ")
+                                    }.orEmpty(),
                             messages = room?.messages ?: persistentListOf(),
                         ),
                     )
@@ -40,7 +51,7 @@ class ChatRoomViewModel
                     val nextId = (currentState.messages.lastOrNull()?.id ?: 0L) + 1
                     dispatch(
                         ChatRoomReducerEvent.MessageSent(
-                            ChatMessageUi(id = nextId, content = text, fromMe = true, time = "방금"),
+                            ChatMessageUi(id = nextId, content = text, fromMe = true, time = ChatTime.Now),
                         ),
                     )
                 }

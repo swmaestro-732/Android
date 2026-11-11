@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
@@ -38,6 +39,7 @@ import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.login.ProfileSetupPage
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 약관 동의 화면(FS-04). 필수 3개 항목을 동의하고 프로필 설정으로 이어진다.
@@ -57,6 +59,7 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
     val tos = SignupSelectionStore.termsAgreed
     val privacy = SignupSelectionStore.privacyAgreed
     val requiredAll = SignupSelectionStore.requiredTermsAgreed
+    val openDocumentErrorMessage = stringResource(MainR.string.main_terms_open_document_error)
     val openDocument: (String) -> Unit = { url ->
         telemetry.buttonClick(
             "/login/terms",
@@ -70,7 +73,7 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
             mapOf("destination" to "external_browser"),
         )
         runCatching { uriHandler.openUri(url) }.onFailure {
-            Toast.makeText(context, "문서를 열 수 없어요. 잠시 후 다시 시도해 주세요.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, openDocumentErrorMessage, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -81,14 +84,14 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
             Spacer(Modifier.height(16.dp))
             LoggedInBadge()
             DsText(
-                text = "약관에\n동의해 주세요",
+                text = stringResource(MainR.string.main_terms_title),
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = color.contentDefaultLevel0,
                 maxLines = 2,
                 modifier = Modifier.padding(top = 16.dp),
             )
             DsText(
-                text = "서비스 이용을 위해 아래 약관 동의가 필요해요.",
+                text = stringResource(MainR.string.main_terms_subtitle),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel2,
                 modifier = Modifier.padding(top = 8.dp),
@@ -97,7 +100,7 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
             Spacer(Modifier.weight(1f))
 
             AgreeRow(
-                text = "전체 동의",
+                text = stringResource(MainR.string.main_terms_agree_all),
                 checked = requiredAll,
                 emphasize = true,
                 onToggle = {
@@ -113,11 +116,11 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(vertical = 4.dp),
             )
             AgreeRow(
-                text = "[필수] 만 14세 이상입니다",
+                text = stringResource(MainR.string.main_terms_age_14),
                 checked = age14,
                 onToggle = { SignupSelectionStore.ageConfirmed = !age14 },
             )
-            AgreeRow(text = "[필수] 서비스 이용약관 동의", checked = tos, onView = {
+            AgreeRow(text = stringResource(MainR.string.main_terms_service_terms), checked = tos, onView = {
                 openDocument(
                     SERVICE_TERMS_URL,
                 )
@@ -126,7 +129,7 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
                     !tos
             })
             AgreeRow(
-                text = "[필수] 개인정보 처리방침 동의",
+                text = stringResource(MainR.string.main_terms_privacy_policy),
                 checked = privacy,
                 onView = { openDocument(PRIVACY_POLICY_URL) },
                 onToggle = { SignupSelectionStore.privacyAgreed = !privacy },
@@ -135,7 +138,7 @@ fun TermsAgreementPage(modifier: Modifier = Modifier) {
         }
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
-                text = "동의하고 계속하기",
+                text = stringResource(MainR.string.main_terms_agree_continue),
                 enabled = requiredAll,
                 onClick = {
                     telemetry.buttonClick("/login/terms", "agree_continue")
@@ -169,7 +172,7 @@ private fun LoggedInBadge() {
     ) {
         Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color.contentAccent))
         DsText(
-            text = "소셜 계정 확인 완료",
+            text = stringResource(MainR.string.main_terms_social_verified),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel1,
         )
@@ -222,7 +225,7 @@ private fun AgreeRow(
         )
         if (onView != null) {
             DsText(
-                text = "보기 ›",
+                text = stringResource(MainR.string.main_terms_view_document),
                 modifier = Modifier.clickable(onClick = onView).padding(8.dp),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,

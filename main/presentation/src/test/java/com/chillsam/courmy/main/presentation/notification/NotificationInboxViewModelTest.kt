@@ -7,6 +7,7 @@ import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.notification.NotificationRepository
 import com.chillsam.courmy.main.entity.notification.NotificationItemVO
 import com.chillsam.courmy.main.entity.notification.NotificationPageVO
+import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -64,7 +65,8 @@ class NotificationInboxViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = NotificationInboxViewModel(repository, navigation, messages, events)
+    private fun viewModel() =
+        NotificationInboxViewModel(repository, navigation, messages, events, resources = testResources())
 
     @Test
     fun `read all does not treat affected rows as remaining unread count`() =

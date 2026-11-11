@@ -105,6 +105,7 @@ class PlaceDetailViewModelTest {
             GetPlaceReviewsUseCase(repository),
             SetPlaceSavedUseCase(repository, NoOpTelemetry),
             DeletePlaceReviewUseCase(repository),
+            resources = testResources(),
         )
 
     private class FakePlaceRepository :

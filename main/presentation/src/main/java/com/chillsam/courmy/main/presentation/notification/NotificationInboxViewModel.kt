@@ -3,6 +3,8 @@ package com.chillsam.courmy.main.presentation.notification
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.domain.push.NotificationEvents
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CourseDetailPage
@@ -25,6 +27,7 @@ class NotificationInboxViewModel
         private val navigation: NavigationHelper,
         private val messages: MessageHelper,
         events: NotificationEvents,
+        private val resources: ResourceHelper,
     ) : MviViewModel<NotificationInboxIntent, NotificationInboxUIState, NotificationInboxReducerEvent>(
             NotificationInboxUIState(),
         ) {
@@ -120,7 +123,11 @@ class NotificationInboxViewModel
                             .onSuccess { dispatch(NotificationInboxReducerEvent.Loaded(it)) }
                             .onFailure {
                                 rethrowCancellation(it)
-                                dispatch(NotificationInboxReducerEvent.Failed("알림을 불러오지 못했어요. 다시 시도해 주세요."))
+                                dispatch(
+                                    NotificationInboxReducerEvent.Failed(
+                                        resources.getString(StringResource.NOTIFICATIONS_LOAD_FAILED),
+                                    ),
+                                )
                             }
                         loadUnread()
                     }
@@ -136,13 +143,21 @@ class NotificationInboxViewModel
                 operations.withLock {
                     // 대기 중 새로고침이 커서를 바꿨으면 이전 페이지 요청은 버린다.
                     if (currentState.nextCursor != cursor) {
-                        dispatch(NotificationInboxReducerEvent.MoreFailed("목록이 변경되었어요. 다시 불러와 주세요."))
+                        dispatch(
+                            NotificationInboxReducerEvent.MoreFailed(
+                                resources.getString(StringResource.NOTIFICATIONS_LIST_CHANGED),
+                            ),
+                        )
                     } else {
                         runCatching { repository.getNotifications(cursor) }
                             .onSuccess { dispatch(NotificationInboxReducerEvent.MoreLoaded(it)) }
                             .onFailure {
                                 rethrowCancellation(it)
-                                dispatch(NotificationInboxReducerEvent.MoreFailed("다음 알림을 불러오지 못했어요."))
+                                dispatch(
+                                    NotificationInboxReducerEvent.MoreFailed(
+                                        resources.getString(StringResource.NOTIFICATIONS_LOAD_MORE_FAILED),
+                                    ),
+                                )
                             }
                     }
                 }
@@ -178,7 +193,9 @@ class NotificationInboxViewModel
                                 .onSuccess { dispatch(NotificationInboxReducerEvent.Read(item.id)) }
                                 .onFailure {
                                     rethrowCancellation(it)
-                                    messages.showToast("읽음 상태를 저장하지 못했어요.")
+                                    messages.showToast(
+                                        resources.getString(StringResource.NOTIFICATIONS_READ_STATE_FAILED),
+                                    )
                                 }
                             loadUnread()
                         }
@@ -199,7 +216,7 @@ class NotificationInboxViewModel
                         .onFailure {
                             rethrowCancellation(it)
                             dispatch(NotificationInboxReducerEvent.MarkAllFailed)
-                            messages.showToast("읽음 상태를 저장하지 못했어요.")
+                            messages.showToast(resources.getString(StringResource.NOTIFICATIONS_READ_STATE_FAILED))
                         }
                     // read-all의 count는 변경한 행 수다. 남은 미읽음 수로 사용하지 않는다.
                     loadUnread()

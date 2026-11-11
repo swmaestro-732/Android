@@ -41,6 +41,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -48,12 +49,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsBilingualText
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -62,6 +66,7 @@ import com.chillsam.courmy.course.presentation.PlaceSearchIntent
 import com.chillsam.courmy.course.presentation.PlaceSearchSkeleton
 import com.chillsam.courmy.course.presentation.PlaceSearchUiState
 import com.chillsam.courmy.course.presentation.PlaceSearchViewModel
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /**
  * 장소 검색 · 담기 오버레이(Figma FS-34 "+ 장소 더 담기 → 장소 검색").
@@ -89,8 +94,14 @@ fun PlaceSearchOverlay(
     // 이미 담긴 장소까지 합쳐 최대 [maxPlaces]곳. 이 오버레이에서 더 고를 수 있는 수.
     val remaining = (maxPlaces - existingCount).coerceAtLeast(0)
     val context = LocalContext.current
+    val limitMessage = stringResource(CourseR.string.course_place_search_limit_alert, maxPlaces)
     val showLimitAlert = {
-        Toast.makeText(context, "장소는 최대 ${maxPlaces}개만 담을 수 있습니다.", Toast.LENGTH_SHORT).show()
+        Toast
+            .makeText(
+                context,
+                limitMessage,
+                Toast.LENGTH_SHORT,
+            ).show()
     }
     // 기본은 결과 0(아무것도 안 보임). 키워드를 입력해야 서버에서 후보를 받아 온다.
     val results = uiState.results
@@ -130,15 +141,25 @@ fun PlaceSearchOverlay(
                 text =
                     when {
                         // 실패를 "결과 0" 으로 보여 주면 못 찾은 것과 구분되지 않는다.
-                        uiState.isSearching -> "장소를 찾고 있어요"
+                        uiState.isSearching -> {
+                            stringResource(CourseR.string.course_place_search_searching)
+                        }
 
-                        uiState.errorMessage != null -> ""
+                        uiState.errorMessage != null -> {
+                            ""
+                        }
 
-                        query.isBlank() && !uiState.fromMapSearch -> ""
+                        query.isBlank() && !uiState.fromMapSearch -> {
+                            ""
+                        }
 
-                        uiState.fromMapSearch -> "지도 검색 결과 ${results.size}"
+                        uiState.fromMapSearch -> {
+                            stringResource(CourseR.string.course_place_search_map_result_count, results.size)
+                        }
 
-                        else -> "검색 결과 ${results.size}"
+                        else -> {
+                            stringResource(CourseR.string.course_place_search_result_count, results.size)
+                        }
                     },
                 modifier = Modifier.weight(1f),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -256,7 +277,7 @@ private fun AddPlaceButton(
     onClick: () -> Unit,
 ) {
     DsChip(
-        text = "새로운 위치 추가",
+        text = stringResource(CourseR.string.course_place_search_add_new_place),
         selected = false,
         enabled = enabled,
         onClick = onClick,
@@ -306,7 +327,7 @@ private fun SearchTopBar(
                 decorationBox = { innerTextField ->
                     if (query.isEmpty()) {
                         DsText(
-                            text = "장소 · 주소 검색",
+                            text = stringResource(CourseR.string.course_place_search_input_hint),
                             style = DesignSystemThemeImpl.typeScale.textRegularS,
                             color = color.contentDefaultLevel3,
                         )
@@ -318,7 +339,7 @@ private fun SearchTopBar(
                 IconButton(onClick = { onQueryChange("") }, modifier = Modifier.size(48.dp)) {
                     Icon(
                         painter = painterResource(R.drawable.close_small_24),
-                        contentDescription = "검색어 지우기",
+                        contentDescription = stringResource(CourseR.string.course_place_search_clear_query),
                         tint = color.contentDefaultLevel3,
                         modifier = Modifier.size(20.dp),
                     )
@@ -326,7 +347,7 @@ private fun SearchTopBar(
             }
         }
         DsText(
-            text = "취소",
+            text = stringResource(CourseR.string.course_place_search_cancel),
             modifier = Modifier.clickable(onClick = onCancel).padding(vertical = 14.dp, horizontal = 4.dp),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentAccent,
@@ -340,6 +361,7 @@ private fun SearchResultRow(
     orderNumber: Int?,
     onToggle: () -> Unit,
 ) {
+    val selectionDescription = stringResource(CourseR.string.course_place_selected_order, orderNumber ?: 0)
     val color = DesignSystemThemeImpl.designSystemColor
     Row(
         modifier =
@@ -350,7 +372,7 @@ private fun SearchResultRow(
                 // 접근성: 선택 여부·선택 순서를 스크린리더에 노출.
                 .semantics {
                     selected = orderNumber != null
-                    if (orderNumber != null) stateDescription = "선택됨, ${orderNumber}번째"
+                    if (orderNumber != null) stateDescription = selectionDescription
                 }.padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -366,7 +388,7 @@ private fun SearchResultRow(
             // 장소명 옆에 카테고리를 나란히 둔다(장소 추가 시안). 둘 다 한 줄을 넘으면 말줄임하고,
             // 이름이 길어도 카테고리가 먼저 잘리지 않도록 이름 쪽에 남는 폭만 준다.
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DsText(
+                DsBilingualText(
                     text = candidate.name,
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
@@ -376,7 +398,7 @@ private fun SearchResultRow(
                 )
                 if (candidate.category.isNotBlank()) {
                     DsText(
-                        text = candidate.category,
+                        text = rememberTaxonomyLabel(candidate.detailCategory.orCategoryLabel(candidate.category)),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,
@@ -388,7 +410,7 @@ private fun SearchResultRow(
             // 같은 이름의 지점(스타벅스 ○○점 등)을 주소로 구분한다. 외부 지도 검색처럼
             // 카테고리 자리에 이미 주소가 들어간 경우는 같은 줄이 두 번 보이므로 생략한다.
             if (candidate.address.isNotBlank() && candidate.address != candidate.category) {
-                DsText(
+                DsBilingualText(
                     text = candidate.address,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
@@ -446,7 +468,7 @@ private fun ConfirmBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         DsText(
-            text = "${selectedCount}곳 선택됨",
+            text = stringResource(CourseR.string.course_place_search_selected_count, selectedCount),
             modifier = Modifier.weight(1f),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel1,
@@ -463,7 +485,7 @@ private fun ConfirmBar(
             contentAlignment = Alignment.Center,
         ) {
             DsText(
-                text = "담기 완료",
+                text = stringResource(CourseR.string.course_place_search_confirm),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = if (enabled) color.contentOnAccent else color.contentDefaultLevel2,
             )
@@ -482,7 +504,12 @@ private fun SearchEmptyState(
         contentAlignment = Alignment.Center,
     ) {
         DsText(
-            text = if (hasQuery) "검색 결과가 없어요" else "장소나 주소를 검색해 보세요",
+            text =
+                if (hasQuery) {
+                    stringResource(CourseR.string.course_place_search_empty_result)
+                } else {
+                    stringResource(CourseR.string.course_place_search_empty_prompt)
+                },
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
         )

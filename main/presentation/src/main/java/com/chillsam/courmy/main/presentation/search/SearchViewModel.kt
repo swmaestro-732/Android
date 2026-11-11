@@ -1,6 +1,8 @@
 package com.chillsam.courmy.main.presentation.search
 
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.map.SuggestMapPlacesUseCase
 import com.chillsam.courmy.main.domain.search.RecentSearchRepository
@@ -25,6 +27,7 @@ class SearchViewModel
     constructor(
         private val suggestPlaces: SuggestMapPlacesUseCase,
         private val recentSearchRepository: RecentSearchRepository,
+        private val resources: ResourceHelper,
     ) : MviViewModel<SearchIntent, SearchUIState, SearchReducerEvent>(SearchUIState.empty) {
         private var suggestionsJob: Job? = null
 
@@ -81,7 +84,7 @@ class SearchViewModel
                         dispatch(
                             SearchReducerEvent.SuggestionsFailed(
                                 error.searchErrorMessage(
-                                    "장소 제안을 불러오지 못했어요. 다시 입력해 주세요.",
+                                    resources.getString(StringResource.PLACE_SUGGESTIONS_LOAD_FAILED),
                                 ),
                             ),
                         )

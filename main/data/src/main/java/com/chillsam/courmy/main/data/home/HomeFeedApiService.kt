@@ -23,10 +23,10 @@ interface HomeFeedApiService {
          */
         @Query("category") category: String? = null,
         /**
-         * 코스를 특정 시·군·구로 좁히는 법정동코드(앞 5자리가 시군구). null 이면 전체.
-         * [wiki-needed] 백엔드 선행: 현재 서버는 이 파라미터를 받지 않아 무시(전체 반환)한다.
+         * 법정동코드 prefix(시도 2자리·구 있는 시 4자리·시군구 5자리). null 이면 전국.
+         * 광주·전남 전체는 서버 가상 시도 코드 29·46을 사용한다.
          */
-        @Query("sigungu") sigungu: String? = null,
+        @Query("region") region: String? = null,
     ): Response<CourseFeedEnvelope>
 
     /**

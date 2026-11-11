@@ -61,6 +61,33 @@ private val detailCategoryIcons =
         PlaceDetailCategoryVO.BATHHOUSE_SAUNA to R.drawable.ic_place_detail_bathhouse_sauna_24,
         PlaceDetailCategoryVO.YOGA_PILATES to R.drawable.ic_place_detail_yoga_pilates_24,
         PlaceDetailCategoryVO.HOT_SPRING to R.drawable.ic_place_detail_hot_spring_24,
+        // 신규 25종 (2026-11-07)
+        PlaceDetailCategoryVO.STATIONERY to R.drawable.ic_place_detail_stationery_24,
+        PlaceDetailCategoryVO.ART_CRAFT to R.drawable.ic_place_detail_art_craft_24,
+        PlaceDetailCategoryVO.RECORD_STORE to R.drawable.ic_place_detail_record_store_24,
+        PlaceDetailCategoryVO.FLORIST to R.drawable.ic_place_detail_florist_24,
+        PlaceDetailCategoryVO.FURNITURE to R.drawable.ic_place_detail_furniture_24,
+        PlaceDetailCategoryVO.ELECTRONICS to R.drawable.ic_place_detail_electronics_24,
+        PlaceDetailCategoryVO.LEARNING_CENTER to R.drawable.ic_place_detail_learning_center_24,
+        PlaceDetailCategoryVO.HARBOR to R.drawable.ic_place_detail_harbor_24,
+        PlaceDetailCategoryVO.PIER to R.drawable.ic_place_detail_pier_24,
+        PlaceDetailCategoryVO.OVERPASS to R.drawable.ic_place_detail_overpass_24,
+        PlaceDetailCategoryVO.PROTESTANT_CHURCH to R.drawable.ic_place_detail_protestant_church_24,
+        PlaceDetailCategoryVO.CATHOLIC_CHURCH to R.drawable.ic_place_detail_catholic_church_24,
+        PlaceDetailCategoryVO.PHOTO_STUDIO to R.drawable.ic_place_detail_photo_studio_24,
+        PlaceDetailCategoryVO.ACCOMMODATION to R.drawable.ic_place_detail_accommodation_24,
+        PlaceDetailCategoryVO.BEAUTY_SALON to R.drawable.ic_place_detail_beauty_salon_24,
+        // 아래 10종은 시안에서 기존 아이콘 재사용으로 확정 — 전용 drawable을 만들지 않는다.
+        PlaceDetailCategoryVO.TOY to R.drawable.ic_place_detail_souvenir_24,
+        PlaceDetailCategoryVO.HOBBY_SUPPLIES to R.drawable.ic_place_detail_leisure_facility_24,
+        PlaceDetailCategoryVO.DRUGSTORE to R.drawable.ic_place_detail_convenience_store_24,
+        PlaceDetailCategoryVO.FOOD_STORE to R.drawable.ic_place_detail_supermarket_24,
+        PlaceDetailCategoryVO.SHOPPING_ARCADE to R.drawable.ic_place_detail_shopping_mall_24,
+        PlaceDetailCategoryVO.FARM to R.drawable.ic_place_detail_ecology_reserve_24,
+        PlaceDetailCategoryVO.PARK_FACILITY to R.drawable.ic_place_detail_park_24,
+        PlaceDetailCategoryVO.TOURIST_FACILITY to R.drawable.ic_place_detail_tourist_attraction_24,
+        PlaceDetailCategoryVO.SPACE_RENTAL to R.drawable.ic_place_detail_building_24,
+        PlaceDetailCategoryVO.ACCOMMODATION_FACILITY to R.drawable.ic_place_detail_accommodation_24,
     )
 
 /** API enum과 검색 API·화면 라벨의 한글 카테고리를 같은 아이콘으로 표시한다. */

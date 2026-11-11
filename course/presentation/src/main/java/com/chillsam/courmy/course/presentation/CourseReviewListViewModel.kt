@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
 import com.chillsam.courmy.common.domain.error.HttpResponseException
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.DeleteCourseReviewUseCase
 import com.chillsam.courmy.course.domain.GetCourseReviewsUseCase
@@ -28,6 +30,7 @@ class CourseReviewListViewModel
         private val getCourseReviewsUseCase: GetCourseReviewsUseCase,
         private val deleteCourseReviewUseCase: DeleteCourseReviewUseCase,
         private val isLoggedInUseCase: IsLoggedInUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<CourseReviewListIntent, CourseReviewListUIState, CourseReviewListReducerEvent>(
             CourseReviewListUIState.empty,
         ) {
@@ -92,7 +95,11 @@ class CourseReviewListViewModel
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "후기 목록 조회 실패: courseId=$courseId", e)
-                            dispatch(CourseReviewListReducerEvent.LoadFailed("후기를 불러오지 못했어요."))
+                            dispatch(
+                                CourseReviewListReducerEvent.LoadFailed(
+                                    resources.getString(StringResource.REVIEWS_LOAD_FAILED),
+                                ),
+                            )
                         }
                 }
         }
@@ -115,7 +122,11 @@ class CourseReviewListViewModel
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "후기 다음 페이지 조회 실패: courseId=$courseId, cursor=$cursor", e)
-                            dispatch(CourseReviewListReducerEvent.LoadMoreFailed("후기를 더 불러오지 못했어요."))
+                            dispatch(
+                                CourseReviewListReducerEvent.LoadMoreFailed(
+                                    resources.getString(StringResource.REVIEWS_LOAD_MORE_FAILED),
+                                ),
+                            )
                         }
                 }
         }
@@ -143,9 +154,9 @@ class CourseReviewListViewModel
                             Log.w(TAG, "후기 삭제 실패: courseId=$courseId, reviewId=$reviewId", e)
                             val message =
                                 if ((e as? HttpResponseException)?.rawCode == NOT_FOUND) {
-                                    "이미 삭제된 후기예요."
+                                    resources.getString(StringResource.REVIEW_ALREADY_DELETED)
                                 } else {
-                                    "후기를 삭제하지 못했어요."
+                                    resources.getString(StringResource.REVIEW_DELETE_FAILED)
                                 }
                             dispatch(CourseReviewListReducerEvent.DeleteFailed(message))
                         }
@@ -216,7 +227,7 @@ class CourseReviewListViewModel
                     state.copy(
                         deletingReviewId = 0L,
                         reviews = state.reviews.filterNot { it.id == event.reviewId }.toImmutableList(),
-                        message = "후기를 삭제했어요.",
+                        message = resources.getString(StringResource.REVIEW_DELETED),
                     )
                 }
 

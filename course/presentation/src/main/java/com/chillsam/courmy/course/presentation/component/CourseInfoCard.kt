@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -29,6 +30,7 @@ import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.collections.immutable.ImmutableList
 import java.time.LocalDate
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /** ① 코스 정보 카드 — 이름/설명 인라인 입력 · 썸네일 사진. */
 @Composable
@@ -51,26 +53,26 @@ fun CourseInfoCard(
         var nameFocused by remember { mutableStateOf(false) }
         var descriptionFocused by remember { mutableStateOf(false) }
 
-        FieldLabel("코스 이름")
+        FieldLabel(stringResource(CourseR.string.course_info_name_label))
         InlineField(
             value = name,
             onValueChange = actions.onNameChange,
-            placeholder = "코스 이름을 입력하세요",
+            placeholder = stringResource(CourseR.string.course_info_name_placeholder),
             textStyle = DesignSystemThemeImpl.typeScale.textStrongM,
             onFocusChanged = { nameFocused = it },
         )
         Divider(focused = nameFocused)
-        FieldLabel("코스 설명")
+        FieldLabel(stringResource(CourseR.string.course_info_description_label))
         InlineField(
             value = description,
             onValueChange = actions.onDescriptionChange,
-            placeholder = "코스 설명을 입력하세요",
+            placeholder = stringResource(CourseR.string.course_info_description_placeholder),
             textStyle = DesignSystemThemeImpl.typeScale.textRegularS,
             singleLine = false,
             onFocusChanged = { descriptionFocused = it },
         )
         Divider(focused = descriptionFocused)
-        FieldLabel("썸네일 이미지")
+        FieldLabel(stringResource(CourseR.string.course_info_thumbnail_label))
         // 썸네일은 1장만 선택하므로 "n/max" 개수 표시를 숨긴다.
         CoursePhotoRow(
             photos = thumbnailPhotos,
@@ -142,24 +144,24 @@ fun PlanInfoCard(
         modifier = Modifier.fillMaxWidth().cardShadow(RoundedCornerShape(18.dp)).padding(17.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        FieldLabel("계획 제목 (선택 · ${title.length}/200)")
+        FieldLabel(stringResource(CourseR.string.course_plan_title_label, title.length))
         InlineField(
             value = title,
             onValueChange = { onTitleChange(it.take(200)) },
-            placeholder = "계획 제목을 입력하세요",
+            placeholder = stringResource(CourseR.string.course_plan_title_placeholder),
             textStyle = DesignSystemThemeImpl.typeScale.textStrongM,
         )
         Divider()
-        FieldLabel("전체 메모 (선택 · ${memo.length}/500)")
+        FieldLabel(stringResource(CourseR.string.course_plan_memo_label, memo.length))
         InlineField(
             value = memo,
             onValueChange = { onMemoChange(it.take(500)) },
-            placeholder = "기억할 내용을 남겨 보세요",
+            placeholder = stringResource(CourseR.string.course_plan_memo_placeholder),
             textStyle = DesignSystemThemeImpl.typeScale.textRegularS,
             singleLine = false,
         )
         Divider()
-        FieldLabel("가려는 날 (선택)")
+        FieldLabel(stringResource(CourseR.string.course_plan_date_label))
         PlannedDateField(plannedDate = plannedDate, onDateChange = onDateChange)
     }
 }
@@ -178,7 +180,7 @@ internal fun PlannedDateField(
     val context = LocalContext.current
     Column(modifier = modifier.fillMaxWidth()) {
         DsText(
-            text = plannedDate.ifEmpty { "미정 · 날짜 선택" },
+            text = plannedDate.ifEmpty { stringResource(CourseR.string.course_plan_date_unset) },
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = DesignSystemThemeImpl.designSystemColor.contentAccent,
             modifier =
@@ -197,7 +199,7 @@ internal fun PlannedDateField(
         )
         if (plannedDate.isNotEmpty()) {
             DsText(
-                text = "날짜 미정으로 변경",
+                text = stringResource(CourseR.string.course_plan_date_clear),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
                 modifier = Modifier.clickable { onDateChange("") }.padding(vertical = 12.dp),

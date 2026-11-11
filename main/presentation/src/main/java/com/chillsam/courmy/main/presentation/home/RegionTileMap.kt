@@ -18,6 +18,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.chillsam.courmy.common.presentation.translation.catalogLabel
 import com.chillsam.courmy.common.presentation.ui.color.RegionTileColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlin.math.hypot
@@ -44,6 +45,7 @@ internal fun RegionTileMap(
     val measurer = rememberTextMeasurer()
     val cardColor = color.bgDefaultLevel1
     // 외곽선 둥글림·분리선은 remember 로 셀→외곽선 계산을 캐시한다.
+    val labels = regionTiles.associate { it.code to catalogLabel(it.label) }
     val outlines = remember { regionTiles.associateWith { outlineLoops(it.cells) } }
 
     Canvas(
@@ -72,7 +74,7 @@ internal fun RegionTileMap(
         // 광역시(서울 등)도 알약 배경 없이 도 라벨과 같은 방식으로 글자만 올린다(SCRUM-791).
         regionTiles.forEach { region ->
             val center = Offset(region.labelCol * cell, region.labelRow * cell)
-            drawCenteredText(measurer, region.label, center, labelStyle)
+            drawCenteredText(measurer, labels.getValue(region.code), center, labelStyle, region.labelWidth() * cell)
         }
     }
 }
@@ -196,9 +198,22 @@ private fun DrawScope.drawCenteredText(
     text: String,
     center: Offset,
     style: TextStyle,
+    maxWidth: Float,
 ) {
-    val measured = measurer.measure(text, style)
+    val natural = measurer.measure(text, style)
+    val scale = (maxWidth / natural.size.width.coerceAtLeast(1)).coerceAtMost(1f)
+    val measured = if (scale < 1f) measurer.measure(text, style.copy(fontSize = style.fontSize * scale)) else natural
     drawText(measured, topLeft = Offset(center.x - measured.size.width / 2, center.y - measured.size.height / 2))
+}
+
+/** 라벨 중심을 포함하는 가로 셀 구간 안에 긴 번역도 들어가도록 폭을 제한한다. */
+private fun TileRegion.labelWidth(): Float {
+    val row = labelRow.toInt()
+    var left = labelCol.toInt()
+    var right = left + 1
+    while (cells.contains(TileRegion.packCell(left - 1, row))) left--
+    while (cells.contains(TileRegion.packCell(right, row))) right++
+    return (2f * minOf(labelCol - left, right - labelCol) - 0.4f).coerceAtLeast(1f)
 }
 
 /**

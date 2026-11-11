@@ -2,6 +2,9 @@ package com.chillsam.courmy.course.presentation
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.error.localizedValidationMessage
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
@@ -121,6 +124,7 @@ class CourseCommentsViewModel
         private val writeComment: WriteCourseCommentUseCase,
         private val editComment: EditCourseCommentUseCase,
         private val deleteComment: DeleteCourseCommentUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<CourseCommentsIntent, CourseCommentsUIState, CourseCommentsReducerEvent>(
             CourseCommentsUIState(),
         ) {
@@ -183,7 +187,11 @@ class CourseCommentsViewModel
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "댓글 목록 로드 실패: courseId=$courseId", e)
-                            dispatch(CourseCommentsReducerEvent.LoadFailed("댓글을 불러오지 못했어요."))
+                            dispatch(
+                                CourseCommentsReducerEvent.LoadFailed(
+                                    resources.getString(StringResource.COMMENTS_LOAD_FAILED),
+                                ),
+                            )
                         }
                 }
         }
@@ -202,7 +210,11 @@ class CourseCommentsViewModel
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "댓글 다음 페이지 로드 실패", e)
-                            dispatch(CourseCommentsReducerEvent.MoreFailed("더 불러오지 못했어요."))
+                            dispatch(
+                                CourseCommentsReducerEvent.MoreFailed(
+                                    resources.getString(StringResource.LOAD_MORE_FAILED),
+                                ),
+                            )
                         }
                 }
         }
@@ -222,8 +234,8 @@ class CourseCommentsViewModel
                         if (failure is CancellationException) throw failure
                         dispatch(
                             CourseCommentsReducerEvent.SubmitFailed(
-                                (failure as? IllegalArgumentException)?.message
-                                    ?: "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.",
+                                failure.localizedValidationMessage(resources)
+                                    ?: resources.getString(StringResource.REQUEST_RETRY_LATER),
                             ),
                         )
                         return@launch
@@ -243,7 +255,7 @@ class CourseCommentsViewModel
                             if (e is CancellationException) throw e
                             dispatch(
                                 CourseCommentsReducerEvent.SubmitFailed(
-                                    "변경은 저장했지만 댓글 목록을 새로 불러오지 못했어요. 목록을 새로고침해 주세요.",
+                                    resources.getString(StringResource.COMMENTS_SAVED_REFRESH_FAILED),
                                 ),
                             )
                         }

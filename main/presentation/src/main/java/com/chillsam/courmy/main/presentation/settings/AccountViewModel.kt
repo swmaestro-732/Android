@@ -2,6 +2,9 @@ package com.chillsam.courmy.main.presentation.settings
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.error.HttpResponseException
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
@@ -69,6 +72,7 @@ class AccountViewModel
     constructor(
         private val logoutUseCase: LogoutUseCase,
         private val withdrawUseCase: WithdrawUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<AccountIntent, AccountUiState, AccountReducerEvent>(AccountUiState.empty) {
         private var job: Job? = null
 
@@ -127,7 +131,12 @@ class AccountViewModel
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "회원 탈퇴 실패: ${e.message}", e)
-                            dispatch(AccountReducerEvent.Failed(e.message ?: "회원 탈퇴에 실패했어요."))
+                            dispatch(
+                                AccountReducerEvent.Failed(
+                                    (e as? HttpResponseException)?.message?.takeIf { it.isNotBlank() }
+                                        ?: resources.getString(StringResource.ACCOUNT_DELETE_FAILED),
+                                ),
+                            )
                         }
                 }
         }

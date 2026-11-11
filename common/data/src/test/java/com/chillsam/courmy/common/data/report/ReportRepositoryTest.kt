@@ -78,7 +78,7 @@ class ReportRepositoryTest {
         }
 
     @Test
-    fun `원시 오류나 안내 없는 JSON은 공통 실패 문구로 변환한다`() =
+    fun `원시 오류나 안내 없는 JSON은 문구 없이 UI의 번역된 기본 안내에 위임한다`() =
         runBlocking {
             listOf(
                 "<html>upstream error</html>",
@@ -99,7 +99,7 @@ class ReportRepositoryTest {
                     }.exceptionOrNull()
 
                 assertTrue(failure is ReportSubmissionException)
-                assertEquals("신고하지 못했어요. 다시 시도해 주세요.", failure?.message)
+                assertEquals(null, failure?.message)
             }
         }
 }

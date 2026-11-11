@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="opening_hours_weekdays">
+        <item>Mon</item>
+        <item>Tue</item>
+        <item>Wed</item>
+        <item>Thu</item>
+        <item>Fri</item>
+        <item>Sat</item>
+        <item>Sun</item>
+    </string-array>
+    <string name="opening_hours_closed">Closed</string>
+    <string name="opening_hours_regular_closed">Regular day off</string>
+    <string name="opening_hours_daily">Daily</string>
+    <string name="opening_hours_always_open">Open every day</string>
+</resources>

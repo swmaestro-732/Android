@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="opening_hours_weekdays">
+        <item>월</item>
+        <item>화</item>
+        <item>수</item>
+        <item>목</item>
+        <item>금</item>
+        <item>토</item>
+        <item>일</item>
+    </string-array>
+    <string name="opening_hours_closed">휴무</string>
+    <string name="opening_hours_regular_closed">정기휴무</string>
+    <string name="opening_hours_daily">매일</string>
+    <string name="opening_hours_always_open">연중무휴</string>
+</resources>

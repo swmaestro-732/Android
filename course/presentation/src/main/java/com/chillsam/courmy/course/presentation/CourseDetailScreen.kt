@@ -63,6 +63,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -72,13 +73,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.entity.report.ReportTargetType
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsBilingualText
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.report.ReportAction
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.modifier.cardElevation
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -90,6 +94,7 @@ import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
 import com.chillsam.courmy.course.presentation.component.PlaceSheetCourse
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 import com.chillsam.courmy.course.presentation.component.toRoutePoints
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /**
  * 코스 상세 화면(Figma FS-11, 펼친 버전). 히어로(커버·카테고리·제목·설정) → 요약 스탯 → 소개 →
@@ -185,11 +190,13 @@ fun CourseDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
                     StatsRow(detail = detail)
+                    // 코스 설명은 서버 게시글이라 번역 대상(언어가 한국어가 아니면 AI 번역). 해시태그는 아래에서 제외.
                     DsText(
                         text = detail.description,
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel1,
                         maxLines = Int.MAX_VALUE,
+                        autoTranslate = true,
                     )
                     // 작성자가 직접 단 해시태그. 서버가 파생한 카테고리(themeLabels)와 달리 소개 아래에 둔다.
                     if (detail.tags.isNotEmpty()) {
@@ -210,7 +217,12 @@ fun CourseDetailScreen(
                     )
                     PlacesSection(
                         places = detail.places,
-                        authorName = detail.authorName,
+                        authorName =
+                            detail.authorName.ifBlank {
+                                stringResource(
+                                    CourseR.string.course_remaining_anonymous,
+                                )
+                            },
                         onPlaceClick = { place ->
                             openSheetInOverview = false
                             selectedPlaceId = place.placeId
@@ -285,10 +297,15 @@ fun CourseDetailScreen(
                     category = detail.themeLabels.joinToString(" · "),
                     // 걸어갈 수 없는 구간이 섞이면 walkText 가 비므로 빈 값을 빼고 잇는다.
                     summary =
-                        listOf(detail.placeCountText, detail.walkText)
+                        listOf(placeCountText(detail.placeCount), walkingText(detail.walkingMinutes))
                             .filter { it.isNotBlank() }
                             .joinToString(" · "),
-                    authorName = detail.authorName,
+                    authorName =
+                        detail.authorName.ifBlank {
+                            stringResource(
+                                CourseR.string.course_remaining_anonymous,
+                            )
+                        },
                     places = detail.places,
                 ),
             address = placeDetailState.place?.address.orEmpty(),
@@ -349,7 +366,7 @@ private fun DetailPinnedBar(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_chevron_left_24),
-                    contentDescription = "뒤로",
+                    contentDescription = stringResource(CourseR.string.course_detail_back),
                     tint = color.contentDefaultLevel0,
                     modifier =
                         Modifier
@@ -365,14 +382,15 @@ private fun DetailPinnedBar(
                         color = color.contentDefaultLevel0,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        autoTranslate = true,
                     )
                     val meta =
-                        (listOf(detail.placeCountText) + detail.themeLabels)
+                        (listOf(placeCountText(detail.placeCount)) + detail.themeLabels)
                             .filter { it.isNotBlank() }
                             .joinToString(" · ")
                     if (meta.isNotBlank()) {
                         DsText(
-                            text = meta,
+                            text = rememberTaxonomyLabel(meta),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
                             color = color.contentDefaultLevel3,
                             maxLines = 1,
@@ -445,7 +463,7 @@ private fun DetailHero(
         ) {
             HeroCircleButton(
                 iconRes = R.drawable.ic_chevron_left_24,
-                contentDescription = "뒤로가기",
+                contentDescription = stringResource(CourseR.string.course_detail_hero_back),
                 onClick = onBack,
             )
             Spacer(Modifier.weight(1f))
@@ -458,7 +476,12 @@ private fun DetailHero(
                 HeroCircleButton(
                     iconRes =
                         if (detail.isSaved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
-                    contentDescription = if (detail.isSaved) "저장 취소" else "코스 저장",
+                    contentDescription =
+                        if (detail.isSaved) {
+                            stringResource(CourseR.string.course_detail_unsave)
+                        } else {
+                            stringResource(CourseR.string.course_detail_save)
+                        },
                     tint = if (detail.isSaved) color.contentAccent else color.contentDefaultLevel0,
                     enabled = !isSaving,
                     onClick = actions.onSaveCourse,
@@ -467,7 +490,7 @@ private fun DetailHero(
             if (FeatureFlags.SHARE_ENABLED) {
                 HeroCircleButton(
                     iconRes = R.drawable.ic_share_24,
-                    contentDescription = "공유",
+                    contentDescription = stringResource(CourseR.string.course_detail_share),
                     onClick = actions.onShare,
                 )
             }
@@ -495,14 +518,14 @@ private fun DetailHero(
                             .padding(horizontal = 10.dp, vertical = 5.dp),
                 ) {
                     DsText(
-                        text = category,
+                        text = rememberTaxonomyLabel(category),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel1,
                     )
                 }
             }
             if (detail.forkedFromId != null) {
-                CopyOriginBadge(text = "복제한 코스")
+                CopyOriginBadge(text = stringResource(CourseR.string.course_detail_forked_badge))
                 Spacer(Modifier.height(8.dp))
             }
             DsText(
@@ -511,6 +534,7 @@ private fun DetailHero(
                 color = color.contentOnAccent,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                autoTranslate = true,
             )
         }
     }
@@ -532,7 +556,7 @@ private fun CourseSettingsMenu(
     Box {
         HeroCircleButton(
             iconRes = R.drawable.ic_more_vert_24,
-            contentDescription = "코스 설정",
+            contentDescription = stringResource(CourseR.string.course_detail_settings),
             onClick = { expanded = true },
         )
         DropdownMenu(
@@ -541,7 +565,7 @@ private fun CourseSettingsMenu(
             containerColor = color.bgDefaultLevel1,
         ) {
             CourseSettingsMenuItem(
-                text = "코스 편집",
+                text = stringResource(CourseR.string.course_detail_menu_edit),
                 iconRes = R.drawable.ic_notes_24,
                 contentColor = color.contentDefaultLevel0,
                 enabled = !isDeleting,
@@ -551,7 +575,12 @@ private fun CourseSettingsMenu(
                 },
             )
             CourseSettingsMenuItem(
-                text = if (isDeleting) "삭제 중…" else "코스 삭제",
+                text =
+                    if (isDeleting) {
+                        stringResource(CourseR.string.course_detail_menu_deleting)
+                    } else {
+                        stringResource(CourseR.string.course_detail_menu_delete)
+                    },
                 iconRes = R.drawable.ic_trash_24,
                 contentColor = color.contentDanger,
                 enabled = !isDeleting,
@@ -604,7 +633,12 @@ private fun HeroLikeButton(
 ) {
     HeroCircleButton(
         iconRes = if (isLiked) R.drawable.ic_like_on_24 else R.drawable.ic_like_off_24,
-        contentDescription = if (isLiked) "좋아요 취소" else "좋아요",
+        contentDescription =
+            if (isLiked) {
+                stringResource(CourseR.string.course_detail_unlike)
+            } else {
+                stringResource(CourseR.string.course_detail_like)
+            },
         tint =
             if (isLiked) {
                 DesignSystemThemeImpl.designSystemColor.contentAccent
@@ -759,7 +793,7 @@ private fun RowScope.AuthorContent(
         )
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DsText(
-                text = detail.authorName,
+                text = detail.authorName.ifBlank { stringResource(CourseR.string.course_remaining_anonymous) },
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
             )
@@ -811,7 +845,12 @@ private fun AuthorFollowButton(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         DsText(
-            text = if (isFollowing) "팔로잉" else "팔로우",
+            text =
+                if (isFollowing) {
+                    stringResource(CourseR.string.course_detail_following)
+                } else {
+                    stringResource(CourseR.string.course_detail_follow_author)
+                },
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = contentColor,
         )
@@ -837,8 +876,8 @@ private fun StatsRow(detail: CourseDetailVO) {
     val color = DesignSystemThemeImpl.designSystemColor
     val stats =
         listOf(
-            CourseStat(R.drawable.ic_walk_24, detail.walkText),
-            CourseStat(R.drawable.ic_footprint_24, detail.followerText),
+            CourseStat(R.drawable.ic_walk_24, walkingText(detail.walkingMinutes)),
+            CourseStat(R.drawable.ic_footprint_24, followerText(detail.tracingCount)),
         ).filter { it.text.isNotBlank() }
     if (stats.isEmpty()) return
     Row(
@@ -897,7 +936,7 @@ private val CourseMapHeight = 220.dp
 internal fun CourseMapSection(
     places: List<CourseDetailPlaceVO>,
     onOpenDetail: (CourseDetailPlaceVO) -> Unit,
-    title: String = "코스 한눈에 보기",
+    title: String = stringResource(CourseR.string.course_detail_map_section),
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val points = remember(places) { places.toRoutePoints() }
@@ -948,7 +987,7 @@ internal fun PlacesSection(
     places: List<CourseDetailPlaceVO>,
     authorName: String,
     onPlaceClick: (CourseDetailPlaceVO) -> Unit,
-    title: String = "코스 속 장소",
+    title: String = stringResource(CourseR.string.course_detail_places_section),
     expandedPlaceContent: (@Composable (CourseDetailPlaceVO) -> Unit)? = null,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -970,7 +1009,7 @@ internal fun PlacesSection(
                     color = color.contentDefaultLevel0,
                 )
                 DsText(
-                    text = "${places.size}곳",
+                    text = stringResource(CourseR.string.course_detail_place_count, places.size),
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentAccent,
                 )
@@ -984,7 +1023,7 @@ internal fun PlacesSection(
                 } else {
                     DetailPlaceItem(place = place, authorName = authorName, onClick = { onPlaceClick(place) })
                 }
-                place.walkToNextText?.let { RouteConnector(text = it) }
+                place.walkingMinutesToNext?.let { RouteConnector(text = walkingText(it)) }
             }
         } else {
             CollapsedPlaces(
@@ -1019,7 +1058,12 @@ private fun ExpandToggleChip(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         DsText(
-            text = if (expanded) "접기" else "펼치기",
+            text =
+                if (expanded) {
+                    stringResource(CourseR.string.course_detail_collapse)
+                } else {
+                    stringResource(CourseR.string.course_detail_expand)
+                },
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentAccent,
         )
@@ -1147,13 +1191,13 @@ internal fun CompactPlaceRow(
             )
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            DsText(
+            DsBilingualText(
                 text = place.name,
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = place.category,
+                text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.category)),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -1174,7 +1218,7 @@ private fun PlaceDetailChevron() {
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_chevron_right_24),
-            contentDescription = "장소 상세",
+            contentDescription = stringResource(CourseR.string.course_detail_place_detail),
             tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
             modifier = Modifier.size(20.dp),
         )
@@ -1214,7 +1258,7 @@ private fun MorePlacesRow(
         }
         Box {
             DsText(
-                text = "나머지 ${remaining}곳 더보기",
+                text = stringResource(CourseR.string.course_detail_more_places, remaining),
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentAccent,
             )
@@ -1264,13 +1308,13 @@ private fun DetailPlaceItem(
                 )
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                DsText(
+                DsBilingualText(
                     text = place.name,
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                 )
                 DsText(
-                    text = place.category,
+                    text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.category)),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )
@@ -1350,7 +1394,7 @@ private fun DetailPlaceItem(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     DsText(
-                        text = "Tip.$authorName",
+                        text = stringResource(CourseR.string.course_detail_tip_prefix, authorName),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentAccent,
                     )
@@ -1359,6 +1403,7 @@ private fun DetailPlaceItem(
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel1,
                         maxLines = Int.MAX_VALUE,
+                        autoTranslate = true,
                     )
                 }
             }
@@ -1419,7 +1464,7 @@ private fun PhotoViewerDialog(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.close_small_24),
-                    contentDescription = "닫기",
+                    contentDescription = stringResource(CourseR.string.course_detail_close),
                     tint = color.contentDefaultLevel0,
                     modifier = Modifier.size(20.dp),
                 )
@@ -1523,21 +1568,21 @@ private fun DetailBottomBar(
                 )
             BottomBarIconButton(
                 iconRes = R.drawable.ic_tab_chat_24,
-                contentDescription = "댓글",
+                contentDescription = stringResource(CourseR.string.course_detail_comments),
                 colors = idle,
                 onClick = onCommentClick,
             )
             if (!isMine) {
                 BottomBarIconButton(
                     iconRes = R.drawable.ic_fork_24,
-                    contentDescription = "코스 복제",
+                    contentDescription = stringResource(CourseR.string.course_detail_fork),
                     colors = idle,
                     onClick = onForkClick,
                 )
             }
             // 이 화면의 주행동이라 연한 배경이 아닌 꽉 찬 강조색으로 세운다.
             BottomBarButton(
-                text = "따라가기",
+                text = stringResource(CourseR.string.course_detail_follow),
                 shape = BOTTOM_BAR_BUTTON_SHAPE,
                 background = color.bgAccent,
                 contentColor = color.contentOnAccent,
@@ -1670,9 +1715,9 @@ internal val courseDetailSample: CourseDetailVO =
         authorName = "지호님",
         authorHandle = "@jiho_routes",
         authorImageUrl = "",
-        placeCountText = "4곳",
-        walkText = "도보 20분",
-        followerText = "1.2k 따라감",
+        placeCount = 4,
+        walkingMinutes = 20,
+        tracingCount = 1200,
         description = "비가 오면 더 예쁜 성수 카페만 골라 담았어요. 전부 도보로 이어지고, 장소마다 제 팁을 남겨뒀으니 참고하세요 🌧",
         places =
             listOf(
@@ -1682,7 +1727,7 @@ internal val courseDetailSample: CourseDetailVO =
                     category = "카페·디저트",
                     photoCountText = "1/3",
                     tip = "통창 자리 꼭 앉으세요. 비 오는 날 이 뷰가 진짜 최고예요. 팡도르는 나오자마자!",
-                    walkToNextText = "도보 6분",
+                    walkingMinutesToNext = 6,
                     latitude = 37.5447,
                     longitude = 127.0561,
                 ),
@@ -1692,7 +1737,7 @@ internal val courseDetailSample: CourseDetailVO =
                     category = "문화·전시 · 카페·디저트",
                     photoCountText = "1/2",
                     tip = "천장 높은 공간이라 사진이 잘 나와요. 안쪽 전시도 꼭 보세요.",
-                    walkToNextText = "도보 5분",
+                    walkingMinutesToNext = 5,
                     latitude = 37.5410,
                     longitude = 127.0552,
                 ),
@@ -1702,7 +1747,7 @@ internal val courseDetailSample: CourseDetailVO =
                     category = "카페·디저트",
                     photoCountText = "1/2",
                     tip = "로스팅 향이 진해요. 핸드드립 한 잔 시켜서 잠깐 앉았다 가기 좋아요.",
-                    walkToNextText = "도보 4분",
+                    walkingMinutesToNext = 4,
                     latitude = 37.5433,
                     longitude = 127.0575,
                 ),
@@ -1712,12 +1757,12 @@ internal val courseDetailSample: CourseDetailVO =
                     category = "술집·바",
                     photoCountText = "1/1",
                     tip = "마무리로 와인 한 잔. 안주는 관자 카르파초 강추예요.",
-                    walkToNextText = null,
+                    walkingMinutesToNext = null,
                     latitude = 37.5428,
                     longitude = 127.0532,
                 ),
             ),
         rating = "4.8",
-        reviewCountText = "128개",
+        reviewCount = 128,
         reviews = emptyList(),
     )

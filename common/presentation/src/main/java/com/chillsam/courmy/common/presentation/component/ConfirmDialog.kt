@@ -23,10 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 /** 뒤 화면을 덮는 스크림 농도. */
@@ -55,8 +57,8 @@ fun DsConfirmDialog(
     description: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    confirmText: String = "네",
-    dismissText: String = "아니요",
+    confirmText: String = stringResource(R.string.common_yes),
+    dismissText: String = stringResource(R.string.common_no),
     destructive: Boolean = false,
 ) {
     DsDialogScaffold(title = title, description = description, onDismiss = onDismiss) {

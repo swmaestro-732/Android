@@ -70,13 +70,13 @@ class GetCourseForkSourceUseCaseTest {
             title = "성수 카페 코스",
             authorName = "작성자",
             authorHandle = "@author",
-            placeCountText = "${places.size}곳",
-            walkText = "도보 20분",
-            followerText = "1.2k 따라감",
+            placeCount = places.size,
+            walkingMinutes = 20,
+            tracingCount = 1200,
             description = "설명",
             places = places.toList(),
             rating = "4.8",
-            reviewCountText = "128개",
+            reviewCount = 128,
             reviews = emptyList(),
         )
 

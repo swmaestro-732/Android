@@ -1,12 +1,28 @@
 # 공통 장소 아이콘
 
-상태: 디자인 확정 · Android 상세 필드 선연동 (2026-11-03)
+상태: 디자인 확정 · Android 상세 필드 선연동 (2026-11-03, 신규 25종 추가 2026-11-07)
 
 ## 확정 디자인
 
 사용자 승인 원본은 [approved.html](approved.html)이다. 빵은 v12 바게트, 수예·자수는 v13 가위로 확정했다.
 여가시설 게임패드는 세로 도형 중심이 약 y=13.23이어서 전체를 1.25 위로 이동했다(2026-11-03). 형태·크기는 유지하고 공통 원본과 다운로드 확정본을 동기화했다.
-상세값 48종 + 알 수 없는 카테고리의 기본 핀 1종을 24×24 / stroke 1.65 / round cap·join으로 변환했다.
+상세값 73종 + 알 수 없는 카테고리의 기본 핀 1종을 24×24 / stroke 1.65 / round cap·join으로 변환했다.
+2026-11-07 신규 상세값 25종(쇼핑 11·체험 2·자연 1·명소 6·여가 1·웰니스 4)을 추가했다(시안: `proposed-2026-11-07.html`). 이 중 **15종은 전용 아이콘**을 새로 그렸고, **10종은 기존 아이콘을 재사용**한다(시안에서 확정). 재사용 10종은 전용 drawable·approved.html 카드를 두지 않는다(그래서 아이콘 drawable은 63 상세 + 폴백 핀 1 = 64):
+
+| 상세값(재사용) | 사용 아이콘 |
+|---|---|
+| 장난감·완구 | 기념품판매(`souvenir`) |
+| 취미용품점 | 여가시설(`leisure_facility`) |
+| 드럭스토어 | 편의점(`convenience_store`) |
+| 식품판매 | 슈퍼마켓(`supermarket`) |
+| 상가·아케이드 | 복합쇼핑몰(`shopping_mall`) |
+| 농장·목장 | 생태보존·서식지(`ecology_reserve`) |
+| 공원시설물 | 공원(`park`) |
+| 관광지부속시설 | 관광·명소(`tourist_attraction`) |
+| 공간대여 | 빌딩(`building`) |
+| 숙박부속시설 | 숙박(`accommodation`) |
+
+폴백 핀 전용 상위 카테고리로 `PlaceCategoryVO.ETC`("기타")를 추가했으며, 지도 10종 필터(`MapCategory`)는 그대로 둔다. 신규 25종의 code 는 기존 48종과 같이 **앱 디자인 제안값(서버 `categoryDetail` 한글 값 매칭으로 동작)** 이다.
 
 ```bash
 python3 scripts/generate_place_detail_icons.py
@@ -30,19 +46,23 @@ python3 scripts/generate_place_detail_icons.py
 - 상위 카테고리는 코드·공식 라벨·기존 별칭과 정확히 일치할 때만 매칭한다. 주소 일부가 카테고리 단어를 포함해도 아이콘을 추론하지 않는다.
 - 카테고리 필터 10종과 코스 태그 12종은 변경하지 않는다. 순서 번호를 표시하는 코스 경로 핀과 위치 권한·주소 등 동작용 아이콘은 분류 아이콘이 아니다.
 
-## 서버 선행 조건과 확인 범위
+## 서버 계약 (2026-11-08 실데이터 확인)
 
-`detailCategory`는 디자인 문서에서 가정한 선택 응답 필드의 **클라이언트 선연동**이며 서버 계약 확정으로 간주하지 않는다.
-2026-11-03 운영 지도 API를 읽기 전용 조회했을 때 개별 장소 응답은
-`id/name/category/latitude/longitude`였고 `detailCategory`는 없었다.
-현재 실데이터는 기존 카테고리 핀으로 표시된다. 서버가 상세 분류를 제공해야 실제 지도에서 48종을 구분한다.
-`/places`, `/places/search`의 동일 필드도 선택적으로 수신할 수 있게 준비했으며 서버 지원을 확인한 것은 아니다.
-지도 핀마다 상세 API를 추가로 호출하지 않는다.
+운영 서버가 상세 분류를 **`categoryDetail`** 필드로 내려준다(초기 가정 `detailCategory`가 아니다 — DTO는 `@SerialName("categoryDetail")`로 매핑). 값은 **한글 compound 문자열**이고 구분자는 쉼표다.
+`GET /api/v1/places?q=빵&size=10` 실응답 예:
+```json
+{"id":591,"name":"빵미숙","categories":["CAFE"],"categoryDetail":"제과,베이커리"}
+{"id":5083,"name":"만찐두빵","categories":["CAFE"],"categoryDetail":"카페"}
+```
+- `categoryDetail`: 한글 단일 값(쪼개지지 않음). 쉼표 구분자는 라벨 그대로다(예: `제과,베이커리`).
+- `categories`: 상위 카테고리는 **대문자 코드** 배열(`["CAFE"]`).
+- 매핑: `PlaceDetailCategoryVO.fromServerValue()`가 코드/enum 이름/한글 라벨(구분자 `,`·`·`·공백 무시, 조각 폴백)을 모두 받는다. 미지원·빈 값은 상위 카테고리 폴백.
+2026-11-03 시점엔 지도 응답에 상세 분류가 없었으나 이후 서버가 제공하기 시작했다. 지도 핀마다 상세 API를 추가로 호출하지는 않는다.
 
 ## 검증 화면
 
 `PlacePinPreviewActivity`는 debug 빌드에만 포함되며 운영 데이터가 아닌 예시 상세 분류를 사용한다.
-일반/선택 핀을 **실제 placePinBitmap 렌더러**로, 사진 대체 아이콘을 **실제 PlaceThumbnail**로 나란히 표시한다. page 0~4로 전체 49종을 확인한다.
+일반/선택 핀을 **실제 placePinBitmap 렌더러**로, 사진 대체 아이콘을 **실제 PlaceThumbnail**로 나란히 표시한다. page 0~7로 전체 74종(상세 73 + 폴백 핀 1)을 확인한다.
 로그인·서버·지도 SDK의 네트워크 응답 없이 벡터 변환과 핀 합성만 검증하는 화면이다.
 
 ```bash
@@ -129,4 +149,31 @@ adb shell am start -n com.chillsam.courmy/com.chillsam.courmy.main.presentation.
 | `BATHHOUSE_SAUNA` | 목욕탕·사우나 | `WELLNESS` |
 | `YOGA_PILATES` | 요가·필라테스 | `WELLNESS` |
 | `HOT_SPRING` | 온천 | `WELLNESS` |
+| `STATIONERY` | 문구·사무용품 | `SHOPPING` |
+| `TOY` | 장난감·완구 | `SHOPPING` |
+| `ART_CRAFT` | 미술·공예 | `SHOPPING` |
+| `RECORD_STORE` | 음반·레코드샵 | `SHOPPING` |
+| `FLORIST` | 꽃집·꽃배달 | `SHOPPING` |
+| `FURNITURE` | 가구판매 | `SHOPPING` |
+| `HOBBY_SUPPLIES` | 취미용품점 | `SHOPPING` |
+| `DRUGSTORE` | 드럭스토어 | `SHOPPING` |
+| `ELECTRONICS` | 전자제품판매 | `SHOPPING` |
+| `FOOD_STORE` | 식품판매 | `SHOPPING` |
+| `SHOPPING_ARCADE` | 상가·아케이드 | `SHOPPING` |
+| `LEARNING_CENTER` | 체험학습장 | `EXPERIENCE` |
+| `FARM` | 농장·목장 | `EXPERIENCE` |
+| `PARK_FACILITY` | 공원시설물 | `NATURE` |
+| `TOURIST_FACILITY` | 관광지부속시설 | `LANDMARK` |
+| `HARBOR` | 항구·포구 | `LANDMARK` |
+| `PIER` | 선착장·항만시설 | `LANDMARK` |
+| `OVERPASS` | 육교 | `LANDMARK` |
+| `PROTESTANT_CHURCH` | 기독교 | `LANDMARK` |
+| `CATHOLIC_CHURCH` | 천주교 | `LANDMARK` |
+| `PHOTO_STUDIO` | 사진관·포토스튜디오 | `ENTERTAINMENT` |
+| `ACCOMMODATION` | 숙박 | `WELLNESS` |
+| `ACCOMMODATION_FACILITY` | 숙박부속시설 | `WELLNESS` |
+| `BEAUTY_SALON` | 미용 | `WELLNESS` |
+| `SPACE_RENTAL` | 공간대여 | `WELLNESS` |
 | `DEFAULT_PIN` | 상세값 없음 | `ETC` |
+
+> 2026-11-07 신규 25종(`STATIONERY`~`SPACE_RENTAL`). `ETC`는 `PlaceCategoryVO`의 11번째 상위 카테고리("기타")로 승격했고, 상세값이 아니라 폴백 핀 전용이다.

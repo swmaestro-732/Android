@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.domain.coroutine.IoDispatcher
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
 import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.translation.LanguageRepository
 import com.chillsam.courmy.common.presentation.helper.MessageHelperImpl
 import com.chillsam.courmy.common.presentation.helper.NavigationHelperImpl
 import com.chillsam.courmy.common.presentation.helper.ResourceHelperImpl
@@ -31,7 +32,8 @@ object CommonPresentationModule {
     @Singleton
     fun provideMessageHelper(
         @ApplicationContext context: Context,
-    ): MessageHelper = MessageHelperImpl(context)
+        resources: ResourceHelper,
+    ): MessageHelper = MessageHelperImpl(context, resources)
 
     @Provides
     @Singleton
@@ -41,7 +43,8 @@ object CommonPresentationModule {
     @Singleton
     fun provideResourceHelper(
         @ApplicationContext context: Context,
-    ): ResourceHelper = ResourceHelperImpl(context)
+        languages: LanguageRepository,
+    ): ResourceHelper = ResourceHelperImpl(context, languages)
 
     @Provides
     @Singleton

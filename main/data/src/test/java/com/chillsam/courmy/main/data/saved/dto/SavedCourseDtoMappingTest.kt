@@ -44,7 +44,7 @@ class SavedCourseDtoMappingTest {
         val vo = SavedCourseScreenDTO(savedCourses = listOf(item())).toVOList().single()
 
         assertEquals("성수 · 문화", vo.tagLabel)
-        assertEquals("장소 4곳", vo.placeLabel)
+        assertEquals(4, vo.placeCount)
         assertEquals("jiho_routes", vo.authorHandle)
     }
 

@@ -2,6 +2,8 @@ package com.chillsam.courmy.course.presentation
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CheckInTracePlaceUseCase
 import com.chillsam.courmy.course.domain.EndCourseTraceUseCase
@@ -39,6 +41,7 @@ class CourseFollowViewModel
         private val checkInTracePlace: CheckInTracePlaceUseCase,
         private val endCourseTrace: EndCourseTraceUseCase,
         private val getTraceRoute: GetTraceRouteUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<CourseFollowIntent, CourseFollowUIState, CourseFollowReducerEvent>(
             CourseFollowUIState.empty,
         ) {
@@ -197,7 +200,11 @@ class CourseFollowViewModel
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "따라가기 코스 로드 실패: courseId=$id", e)
-                            dispatch(CourseFollowReducerEvent.LoadFailed("코스를 불러오지 못했어요."))
+                            dispatch(
+                                CourseFollowReducerEvent.LoadFailed(
+                                    resources.getString(StringResource.COURSE_LOAD_FAILED),
+                                ),
+                            )
                         }
                 }
         }

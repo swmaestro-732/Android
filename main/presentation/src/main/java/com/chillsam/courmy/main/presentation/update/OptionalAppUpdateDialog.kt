@@ -2,9 +2,11 @@ package com.chillsam.courmy.main.presentation.update
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
+import com.chillsam.courmy.main.presentation.R as MainR
 
 @Composable
 fun OptionalAppUpdateDialog(
@@ -13,10 +15,10 @@ fun OptionalAppUpdateDialog(
 ) {
     val context = LocalContext.current
     DsConfirmDialog(
-        title = "새 버전이 있어요",
-        description = "더 나아진 Courmy를 만나보세요.\n마이 > 설정 > 앱 버전에서도 확인할 수 있어요.",
-        confirmText = "업데이트",
-        dismissText = "나중에",
+        title = stringResource(MainR.string.main_optional_app_update_title),
+        description = stringResource(MainR.string.main_optional_app_update_description),
+        confirmText = stringResource(MainR.string.main_optional_app_update_confirm),
+        dismissText = stringResource(MainR.string.main_optional_app_update_dismiss),
         onConfirm = {
             onAccept()
             context.openStoreListing()

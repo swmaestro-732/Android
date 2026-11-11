@@ -4,6 +4,7 @@ import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.course.entity.PlanDetailPlaceVO
 import com.chillsam.courmy.course.entity.PlanDetailVO
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -40,6 +41,7 @@ data class PlanDetailPlaceDTO(
     val categories: List<String>? = null,
     val address: String? = null,
     val location: PlanPlaceLocationDTO? = null,
+    @SerialName("categoryDetail")
     val detailCategory: String? = null,
 )
 
@@ -52,7 +54,7 @@ data class PlanPlaceLocationDTO(
 fun PlanDetailDTO.toVO(): PlanDetailVO =
     PlanDetailVO(
         planId = requireNotNull(planId),
-        title = title.orEmpty().ifBlank { "나의 계획" },
+        title = title.orEmpty(),
         memo = memo.orEmpty(),
         plannedDate = plannedDate.orEmpty(),
         sourceCourseId = sourceCourseId?.takeIf { it > 0 },
@@ -64,7 +66,7 @@ fun PlanDetailDTO.toVO(): PlanDetailVO =
                     walkingMinutesToNext = place.walkingMinutesToNext,
                     name = place.name.orEmpty(),
                     categoryLabel = place.categories.toPlaceCategoryLabel(),
-                    detailCategory = PlaceDetailCategoryVO.fromCode(place.detailCategory),
+                    detailCategory = PlaceDetailCategoryVO.fromServerValue(place.detailCategory),
                     address = place.address.orEmpty(),
                     latitude = place.location?.latitude,
                     longitude = place.location?.longitude,

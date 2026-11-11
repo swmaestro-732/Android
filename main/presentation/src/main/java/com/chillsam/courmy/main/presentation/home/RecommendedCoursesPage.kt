@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -54,6 +55,8 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
+import com.chillsam.courmy.common.presentation.translation.catalogLabel
+import com.chillsam.courmy.common.presentation.translation.courseTagLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
@@ -62,6 +65,7 @@ import com.chillsam.courmy.main.presentation.component.CourseCardsSkeleton
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 import com.chillsam.courmy.main.presentation.my.RegionMapIntent
 import com.chillsam.courmy.main.presentation.my.RegionMapViewModel
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 진입·복귀 시 1회성 효과 모음. 복귀 재컴포지션에서 다시 실행돼 무한 스크롤 위치·칩 선택을
@@ -78,7 +82,7 @@ private fun FeedEntryEffects(
     feedState: HomeFeedUIState,
     listState: LazyListState,
     initialCategory: CourseTagVO?,
-    initialSigungu: String?,
+    initialRegion: String?,
     onIntent: (HomeFeedIntent) -> Unit,
 ) {
     var initialFilterApplied by rememberSaveable { mutableStateOf(false) }
@@ -87,8 +91,8 @@ private fun FeedEntryEffects(
         // 아래 Load 를 또 보내지 않는다(같은 요청 두 번 방지). 지역·테마는 진입 방식이 달라 동시 진입은 없다.
         if (!initialFilterApplied) {
             initialFilterApplied = true
-            if (initialSigungu != null) {
-                onIntent(HomeFeedIntent.SetRegion(initialSigungu))
+            if (initialRegion != null) {
+                onIntent(HomeFeedIntent.SetRegion(initialRegion))
                 return@LaunchedEffect
             }
             if (initialCategory != null) {
@@ -131,8 +135,7 @@ fun RecommendedCoursesPage(
     val feedState by feedViewModel.uiState.collectAsStateWithLifecycle()
 
     // 지역 진입이면 그 시·도의 세부 지역(구·군) 칩을 지도 데이터에서 뽑는다. "전체"는 시·도 전체.
-    val subRegions = rememberSubRegions(sidoCode)
-    var selectedSub by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedSub by rememberSaveable(sidoCode) { mutableStateOf<String?>(null) }
 
     val listState = rememberLazyListState()
     FeedEntryEffects(
@@ -140,9 +143,16 @@ fun RecommendedCoursesPage(
         listState = listState,
         // 홈 테마 타일은 코드("date")를 싣지만, 과거 라우트가 라벨("데이트")을 싣던 시기가 있어 둘 다 받는다.
         initialCategory = CourseTagVO.fromCodeOrLabel(initialCategory),
-        initialSigungu = sidoCode,
+        initialRegion = sidoCode,
         onIntent = feedViewModel::onIntent,
     )
+    var scrolledForRegion by rememberSaveable { mutableStateOf(selectedSub) }
+    LaunchedEffect(selectedSub) {
+        if (scrolledForRegion != selectedSub) {
+            scrolledForRegion = selectedSub
+            listState.scrollToItem(0)
+        }
+    }
     LoadMoreOnScrollEnd(listState) { feedViewModel.onIntent(HomeFeedIntent.LoadMore) }
 
     // 저장 실패는 화면을 바꾸지 않고 토스트로만 알린다.
@@ -162,7 +172,9 @@ fun RecommendedCoursesPage(
                 .background(DesignSystemThemeImpl.designSystemColor.bgDefaultLevel0),
     ) {
         RecommendedTopBar(
-            title = regionName?.let { "$it 코스" } ?: "오늘의 추천 코스",
+            title =
+                regionName?.let { stringResource(MainR.string.main_recommended_region_title, catalogLabel(it)) }
+                    ?: stringResource(MainR.string.main_recommended_title),
             selectedCategory = feedState.selectedCategory,
             onSelectCategory = {
                 telemetry.selectionChange("/home/recommended", "theme", it?.code)
@@ -171,18 +183,11 @@ fun RecommendedCoursesPage(
             onBack = { navigationHelper.navigateToBack() },
             // 지역 진입이면 세부 지역 필터를, 아니면 null(= 테마 칩)을 넘긴다.
             regionFilter =
-                sidoCode?.let {
-                    RegionFilter(
-                        subRegions = subRegions,
-                        selected = selectedSub,
-                        onSelect = { code ->
-                            telemetry.selectionChange("/home/recommended", "region", code ?: "all")
-                            selectedSub = code
-                            // 선택한 세부 지역(없으면 시·도 전체)으로 피드를 좁힌다. [wiki-needed] 백엔드 선행:
-                            // 서버가 아직 지역 필터를 안 받아 지금은 목록이 바뀌지 않는다(선택만 반영).
-                            feedViewModel.onIntent(HomeFeedIntent.SetRegion(code ?: sidoCode))
-                        },
-                    )
+                rememberRegionFilter(sidoCode, selectedSub) { code ->
+                    telemetry.selectionChange("/home/recommended", "region", code ?: "all")
+                    selectedSub = code
+                    // 전체는 시·도 코드, 개별 선택은 구·군 코드로 재조회한다.
+                    feedViewModel.onIntent(HomeFeedIntent.SetRegion(code ?: sidoCode))
                 },
         )
         LazyColumn(
@@ -227,9 +232,9 @@ fun RecommendedCoursesPage(
                             message =
                                 feedState.errorMessage
                                     ?: if (feedState.selectedCategory == null) {
-                                        "아직 공개된 코스가 없어요."
+                                        stringResource(MainR.string.main_recommended_empty)
                                     } else {
-                                        "해당 테마의 코스가 아직 없어요."
+                                        stringResource(MainR.string.main_recommended_empty_theme)
                                     },
                             onRetry = feedState.errorMessage?.let { { feedViewModel.onIntent(HomeFeedIntent.Retry) } },
                         )
@@ -247,8 +252,7 @@ fun RecommendedCoursesPage(
 }
 
 // 코스 피드 필터이므로 코스 태그 12종을 쓴다. null 은 전체(추천순)이고 서버에는 category 를 빼고 보낸다.
-private val recommendedCategories: List<Pair<CourseTagVO?, String>> =
-    listOf<Pair<CourseTagVO?, String>>(null to "추천순") + CourseTagVO.entries.map { it to it.label }
+private val recommendedCategories: List<CourseTagVO?> = listOf(null) + CourseTagVO.entries
 
 @Composable
 private fun RecommendedTopBar(
@@ -267,7 +271,7 @@ private fun RecommendedTopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     painter = painterResource(R.drawable.ic_chevron_left_24),
-                    contentDescription = "뒤로가기",
+                    contentDescription = stringResource(MainR.string.main_recommended_back),
                     tint = color.contentDefaultLevel0,
                 )
             }
@@ -277,44 +281,32 @@ private fun RecommendedTopBar(
                 color = color.contentDefaultLevel0,
             )
         }
-        // 선택된 칩이 오른쪽에 있어도 진입하자마자 보이도록 LazyRow 로 선택 위치까지 스크롤한다(SCRUM-793).
-        val chipListState = rememberLazyListState()
-        val selectedIndex =
-            if (regionFilter != null) {
-                regionFilter.subRegions.indexOfFirst { it.code == regionFilter.selected } + 1
-            } else {
-                recommendedCategories.indexOfFirst { (category, _) -> category == selectedCategory }
+        if (regionFilter != null) {
+            RegionFilterSelector(
+                subRegions = regionFilter.subRegions,
+                selected = regionFilter.selected,
+                onSelect = regionFilter.onSelect,
+                isLoading = regionFilter.isLoading,
+                loadError = regionFilter.loadError,
+                onRetry = regionFilter.onRetry,
+            )
+        } else {
+            val chipListState = rememberLazyListState()
+            val selectedIndex = recommendedCategories.indexOfFirst { it == selectedCategory }
+            LaunchedEffect(selectedIndex) {
+                if (selectedIndex > 0) chipListState.animateScrollToItem(selectedIndex)
             }
-        LaunchedEffect(selectedIndex) {
-            if (selectedIndex > 0) chipListState.animateScrollToItem(selectedIndex)
-        }
-        LazyRow(
-            state = chipListState,
-            modifier = Modifier.padding(bottom = 12.dp),
-            contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (regionFilter != null) {
-                // 지역 진입: 세부 지역(구·군) 칩만. 첫 칩 "추천순"이 그 시·도 전체다(카테고리 칩은 두지 않는다).
-                item {
+            LazyRow(
+                state = chipListState,
+                modifier = Modifier.padding(bottom = 12.dp),
+                contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(recommendedCategories) { category ->
                     DsChip(
-                        text = "추천순",
-                        selected = regionFilter.selected == null,
-                        onClick = { regionFilter.onSelect(null) },
-                    )
-                }
-                items(regionFilter.subRegions) { sub ->
-                    DsChip(
-                        text = sub.name,
-                        selected = regionFilter.selected == sub.code,
-                        onClick = { regionFilter.onSelect(sub.code) },
-                    )
-                }
-            } else {
-                // 일반 "오늘의 추천 코스": 코스 태그(테마) 칩.
-                items(recommendedCategories) { (category, label) ->
-                    DsChip(
-                        text = label,
+                        text =
+                            category?.let { courseTagLabel(it) }
+                                ?: stringResource(MainR.string.main_recommended_sort_default),
                         selected = selectedCategory == category,
                         modifier = Modifier.semantics { selected = selectedCategory == category },
                         onClick = { onSelectCategory(category) },
@@ -332,26 +324,37 @@ internal data class SubRegion(
     val name: String,
 )
 
-/** 지역 진입 시 상단 바에 넘기는 세부 지역 필터 묶음. [selected] 가 null 이면 "추천순"(시·도 전체)이다. */
+/** 지역 진입 시 상단 바에 넘기는 세부 지역 필터 묶음. [selected] 가 null 이면 시·도 전체다. */
 private class RegionFilter(
     val subRegions: List<SubRegion>,
     val selected: String?,
     val onSelect: (String?) -> Unit,
+    val isLoading: Boolean,
+    val loadError: Boolean,
+    val onRetry: () -> Unit,
 )
 
 /** [sidoCode] 시·도의 세부 지역(구·군) 목록을 지도 데이터에서 뽑는다. 지역 진입이 아니면 빈 목록. */
 @Composable
-private fun rememberSubRegions(sidoCode: String?): List<SubRegion> {
-    if (sidoCode == null) return emptyList()
+private fun rememberRegionFilter(
+    sidoCode: String?,
+    selected: String?,
+    onSelect: (String?) -> Unit,
+): RegionFilter? {
+    if (sidoCode == null) return null
     val viewModel: RegionMapViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
         viewModel.onIntent(RegionMapIntent.Initialize(editing = false, regions = emptyList()))
     }
-    return remember(state.regions, sidoCode) {
-        state.regions
-            .filter { it.area.level == AreaLevel.SIGUNGU && it.area.code.startsWith(sidoCode) }
-            .map { SubRegion(it.area.code, it.area.shortName) }
+    val subRegions =
+        remember(state.regions, sidoCode) {
+            state.regions
+                .filter { it.area.level == AreaLevel.SIGUNGU && isHomeSubRegion(sidoCode, it.area.code) }
+                .map { SubRegion(it.area.code, it.area.shortName) }
+        }
+    return RegionFilter(subRegions, selected, onSelect, state.isLoading, state.loadError) {
+        viewModel.onIntent(RegionMapIntent.Retry)
     }
 }
 
@@ -383,7 +386,7 @@ internal fun FeedMessage(
         )
         if (onRetry != null) {
             DsText(
-                text = "다시 시도",
+                text = stringResource(MainR.string.main_recommended_retry),
                 style = DesignSystemThemeImpl.typeScale.textRegularM,
                 color = color.contentAccent,
                 modifier = Modifier.clickable(onClick = onRetry),

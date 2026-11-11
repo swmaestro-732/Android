@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.presentation.saved
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.SetPlaceSavedUseCase
 import com.chillsam.courmy.main.domain.saved.GetSavedPlacesUseCase
@@ -26,6 +28,7 @@ class SavedPlacesViewModel
     constructor(
         private val getSavedPlacesUseCase: GetSavedPlacesUseCase,
         private val setPlaceSavedUseCase: SetPlaceSavedUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<SavedPlacesIntent, SavedPlacesUIState, SavedPlacesReducerEvent>(
             SavedPlacesUIState.empty,
         ) {
@@ -153,7 +156,11 @@ class SavedPlacesViewModel
                         if (e is CancellationException) throw e
                         // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                         Log.w(TAG, "저장 장소 로드 실패", e)
-                        dispatch(SavedPlacesReducerEvent.LoadFailed("저장한 장소를 불러오지 못했습니다."))
+                        dispatch(
+                            SavedPlacesReducerEvent.LoadFailed(
+                                resources.getString(StringResource.SAVED_PLACES_LOAD_FAILED),
+                            ),
+                        )
                     }
                 }
         }
@@ -179,7 +186,11 @@ class SavedPlacesViewModel
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "저장 장소 다음 페이지 로드 실패", e)
-                            dispatch(SavedPlacesReducerEvent.MoreFailed("더 불러오지 못했어요."))
+                            dispatch(
+                                SavedPlacesReducerEvent.MoreFailed(
+                                    resources.getString(StringResource.LOAD_MORE_FAILED),
+                                ),
+                            )
                         }
                 }
         }
@@ -191,7 +202,7 @@ class SavedPlacesViewModel
         private fun unsave(placeId: Long) {
             if (placeId <= 0L) {
                 Log.w(TAG, "잘못된 장소 id: $placeId")
-                dispatch(SavedPlacesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
+                dispatch(SavedPlacesReducerEvent.UnsaveFailed(resources.getString(StringResource.UNSAVE_FAILED)))
                 return
             }
             // 같은 장소의 중복 탭만 무시한다.
@@ -204,7 +215,11 @@ class SavedPlacesViewModel
                             .onFailure { e ->
                                 if (e is CancellationException) throw e
                                 Log.w(TAG, "저장 취소 실패: placeId=$placeId", e)
-                                dispatch(SavedPlacesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
+                                dispatch(
+                                    SavedPlacesReducerEvent.UnsaveFailed(
+                                        resources.getString(StringResource.UNSAVE_FAILED),
+                                    ),
+                                )
                             }
                     } finally {
                         unsaveJobs.remove(placeId)

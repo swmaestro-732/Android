@@ -12,11 +12,11 @@ import org.junit.Test
 class CourseReviewListDtoMappingTest {
     @Test
     fun `집계와 리뷰를 화면 표시용 VO 로 포맷팅한다`() {
-        val vo = fullData().toVO(myUserId = null, nowMillis = NOW)
+        val vo = fullData().toVO(myUserId = null)
 
         assertEquals("4.8", vo.averageRatingText)
         assertEquals(5, vo.averageStars)
-        assertEquals("128개", vo.totalCountText)
+        assertEquals(128, vo.totalCount)
         assertEquals("86", vo.photoCountText)
         assertEquals(3, vo.reviews.size)
         assertEquals("소마님", vo.reviews.first().author)
@@ -38,7 +38,7 @@ class CourseReviewListDtoMappingTest {
                             RatingCountDTO(rating = 5, count = 3),
                             RatingCountDTO(rating = 4, count = 1),
                         ),
-                ).toVO(myUserId = null, nowMillis = NOW)
+                ).toVO(myUserId = null)
 
         assertEquals(listOf(5, 4), vo.distribution.map { it.rating })
         assertEquals(0.75f, vo.distribution[0].ratio, 0.0001f)
@@ -51,7 +51,7 @@ class CourseReviewListDtoMappingTest {
         val vo =
             fullData()
                 .copy(ratingDistribution = listOf(RatingCountDTO(rating = 5, count = 0)))
-                .toVO(myUserId = null, nowMillis = NOW)
+                .toVO(myUserId = null)
 
         assertEquals(0f, vo.distribution.single().ratio, 0.0001f)
     }
@@ -70,7 +70,7 @@ class CourseReviewListDtoMappingTest {
                         item(id = 1, photoUrls = listOf("a", "b", "c")),
                         item(id = 2, photoUrls = listOf("d", "e")),
                     ),
-            ).toVO(myUserId = null, nowMillis = NOW)
+            ).toVO(myUserId = null)
 
         assertEquals(listOf("a", "b", "c", "d"), vo.photoUrls)
         assertEquals("+83", vo.morePhotoCountText)
@@ -83,7 +83,7 @@ class CourseReviewListDtoMappingTest {
             CourseReviewListData(
                 photoCount = 2,
                 reviews = listOf(item(id = 1, photoUrls = listOf("a", "b"))),
-            ).toVO(myUserId = null, nowMillis = NOW)
+            ).toVO(myUserId = null)
 
         assertEquals(listOf("a", "b"), vo.photoUrls)
         assertEquals("", vo.morePhotoCountText)
@@ -91,11 +91,11 @@ class CourseReviewListDtoMappingTest {
 
     @Test
     fun `누락 필드는 기본값으로 안전하게 매핑된다`() {
-        val vo = CourseReviewListData().toVO(myUserId = null, nowMillis = NOW)
+        val vo = CourseReviewListData().toVO(myUserId = null)
 
         assertEquals("0.0", vo.averageRatingText)
         assertEquals(0, vo.averageStars)
-        assertEquals("0개", vo.totalCountText)
+        assertNull(vo.totalCount)
         assertEquals("", vo.photoCountText)
         assertEquals("", vo.morePhotoCountText)
         assertEquals(emptyList<Any>(), vo.distribution)
@@ -106,7 +106,7 @@ class CourseReviewListDtoMappingTest {
 
     /** 문구 없는 태그는 칩에 그릴 게 없다. 이모지만 남은 칩을 만들지 않는다. */
     @Test
-    fun `문구가 없는 태그는 버리고 작성자 없는 리뷰는 익명으로 둔다`() {
+    fun `문구가 없는 태그는 버리고 작성자 없는 리뷰는 빈 이름으로 둔다`() {
         val vo =
             CourseReviewListData(
                 reviews =
@@ -122,18 +122,18 @@ class CourseReviewListDtoMappingTest {
                                 ),
                         ),
                     ),
-            ).toVO(myUserId = null, nowMillis = NOW)
+            ).toVO(myUserId = null)
 
         val review = vo.reviews.single()
-        assertEquals("익명", review.author)
+        assertEquals("", review.author)
         assertEquals(listOf("구성이 알차요"), review.tags.map { it.label })
         // code 는 화면에 안 쓰더라도 작성 요청에 다시 실어야 해서 보존한다.
         assertEquals(listOf("packed"), review.tags.map { it.code })
     }
 
-    /** 서버는 상대 시각 문구를 주지 않는다. `createdAt`(UTC)을 앱이 "N일 전" 으로 바꾼다. */
+    /** 서버는 상대 시각 문구를 주지 않는다. `createdAt`(UTC)을 presentation이 로컬라이즈하도록 epoch millis로 전달한다. */
     @Test
-    fun `createdAt 을 상대 시각 문구로 바꾼다`() {
+    fun `createdAt 을 언어와 무관한 epoch millis로 보존한다`() {
         val vo =
             CourseReviewListData(
                 reviews =
@@ -142,12 +142,12 @@ class CourseReviewListDtoMappingTest {
                         item(id = 2, createdAt = "2026-09-18T23:30:00Z"),
                         item(id = 3, createdAt = null),
                     ),
-            ).toVO(myUserId = null, nowMillis = NOW)
+            ).toVO(myUserId = null)
 
-        assertEquals("2일 전", vo.reviews[0].dateText)
-        assertEquals("30분 전", vo.reviews[1].dateText)
+        assertEquals(NOW - 2 * 86_400_000L, vo.reviews[0].createdAtMillis)
+        assertEquals(NOW - 30 * 60_000L, vo.reviews[1].createdAtMillis)
         // 시각을 못 읽으면 날짜 줄만 비우고 리뷰 자체는 그대로 보여준다.
-        assertEquals("", vo.reviews[2].dateText)
+        assertNull(vo.reviews[2].createdAtMillis)
     }
 
     /** 서버가 isMine 을 주지 않아 작성자 id 와 내 id 를 비교해 채운다. 삭제 버튼 노출 근거다. */
@@ -158,13 +158,13 @@ class CourseReviewListDtoMappingTest {
                 reviews = listOf(item(id = 1, authorId = 7), item(id = 2, authorId = 9)),
             )
 
-        val mine = data.toVO(myUserId = 7, nowMillis = NOW)
+        val mine = data.toVO(myUserId = 7)
         assertTrue(mine.reviews[0].isMine)
         assertFalse(mine.reviews[1].isMine)
         assertTrue(mine.hasMyReview)
 
         // 비로그인은 어느 리뷰도 내 것이 아니다.
-        val guest = data.toVO(myUserId = null, nowMillis = NOW)
+        val guest = data.toVO(myUserId = null)
         assertFalse(guest.reviews.any { it.isMine })
         assertFalse(guest.hasMyReview)
     }
@@ -177,13 +177,13 @@ class CourseReviewListDtoMappingTest {
     fun `커서가 없으면 hasNext 가 true 여도 끝으로 본다`() {
         val vo =
             CourseReviewListData(hasNext = true, nextCursor = null)
-                .toVO(myUserId = null, nowMillis = NOW)
+                .toVO(myUserId = null)
 
         assertFalse(vo.hasNext)
 
         val more =
             CourseReviewListData(hasNext = true, nextCursor = "c1")
-                .toVO(myUserId = null, nowMillis = NOW)
+                .toVO(myUserId = null)
 
         assertTrue(more.hasNext)
         assertEquals("c1", more.nextCursor)
@@ -191,9 +191,9 @@ class CourseReviewListDtoMappingTest {
 
     @Test
     fun `실제 집계는 표시 문구와 별개로 외부 후기 판단까지 전달한다`() {
-        val zero = CourseReviewListData(totalCount = 0).toVO(myUserId = null, nowMillis = NOW)
-        val three = CourseReviewListData(totalCount = 3).toVO(myUserId = null, nowMillis = NOW)
-        val four = CourseReviewListData(totalCount = 4).toVO(myUserId = null, nowMillis = NOW)
+        val zero = CourseReviewListData(totalCount = 0).toVO(myUserId = null)
+        val three = CourseReviewListData(totalCount = 3).toVO(myUserId = null)
+        val four = CourseReviewListData(totalCount = 4).toVO(myUserId = null)
         assertEquals(0, zero.totalCount)
         assertEquals(3, three.totalCount)
         assertEquals(4, four.totalCount)
@@ -204,7 +204,7 @@ class CourseReviewListDtoMappingTest {
 
     @Test
     fun `집계 누락을 실제 0건으로 바꾸지 않는다`() {
-        val vo = CourseReviewListData().toVO(myUserId = null, nowMillis = NOW)
+        val vo = CourseReviewListData().toVO(myUserId = null)
         assertNull(vo.totalCount)
         assertFalse(vo.shouldSuggestExternalReviews)
     }
@@ -213,7 +213,7 @@ class CourseReviewListDtoMappingTest {
     fun `페이지가 더 있으면 적은 집계라도 외부 후기를 제안하지 않는다`() {
         val vo =
             CourseReviewListData(totalCount = 3, hasNext = true, nextCursor = "c1")
-                .toVO(myUserId = null, nowMillis = NOW)
+                .toVO(myUserId = null)
         assertFalse(vo.shouldSuggestExternalReviews)
     }
 

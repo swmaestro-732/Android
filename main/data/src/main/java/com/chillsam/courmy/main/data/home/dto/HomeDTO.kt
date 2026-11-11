@@ -8,6 +8,7 @@ import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.entity.home.HomeInProgressCourseVO
 import com.chillsam.courmy.main.entity.home.HomeNearbyPlaceVO
 import com.chillsam.courmy.main.entity.home.HomeVO
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -74,6 +75,7 @@ data class HomeNearbyPlaceDTO(
     val walkingMinutes: Int? = null,
     val address: String? = null,
     val visited: Boolean = false,
+    @SerialName("categoryDetail")
     val detailCategory: String? = null,
 )
 
@@ -135,5 +137,5 @@ internal fun HomeNearbyPlaceDTO.toVO(): HomeNearbyPlaceVO =
         walkingMinutes = walkingMinutes,
         address = address.orEmpty(),
         visited = visited,
-        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
+        detailCategory = PlaceDetailCategoryVO.fromServerValue(detailCategory),
     )

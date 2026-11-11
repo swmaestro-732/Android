@@ -14,6 +14,7 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
@@ -22,12 +23,14 @@ import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.main.presentation.R
 
 /** 선택 화면을 가리지 않는 조회 안내. 첫 조회 실패에도 복구 액션에 접근할 수 있게 유지한다. */
 @Composable
 internal fun InterestLoadFeedback(
     isLoading: Boolean,
     loadError: Boolean,
+    loadingMessage: String = stringResource(R.string.main_interest_load_feedback_loading),
     onRetry: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -39,7 +42,7 @@ internal fun InterestLoadFeedback(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CircularProgressIndicator(modifier = Modifier.size(16.dp), color = color.contentAccent, strokeWidth = 2.dp)
-            DsText("저장된 선택을 확인하고 있어요", style = type.textRegularXS, color = color.contentDefaultLevel2)
+            DsText(loadingMessage, style = type.textRegularXS, color = color.contentDefaultLevel2)
         }
     } else if (loadError) {
         Surface(
@@ -54,14 +57,14 @@ internal fun InterestLoadFeedback(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 DsText(
-                    "잠시 후 다시 시도해 주세요.",
+                    stringResource(R.string.main_interest_load_feedback_error),
                     style = type.textRegularXS,
                     color = color.contentDefaultLevel2,
                     maxLines = 2,
                     modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
                 )
                 DsText(
-                    "새로고침",
+                    stringResource(R.string.main_interest_load_feedback_retry),
                     style = type.textRegularXS,
                     color = color.contentAccent,
                     modifier =

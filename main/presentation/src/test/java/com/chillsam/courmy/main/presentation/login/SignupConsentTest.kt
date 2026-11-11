@@ -2,6 +2,7 @@ package com.chillsam.courmy.main.presentation.login
 
 import com.chillsam.courmy.main.domain.auth.SignupUseCase
 import com.chillsam.courmy.main.entity.auth.SignupProfile
+import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -39,7 +40,7 @@ class SignupConsentTest {
     @Test
     fun `동의값을 생략하거나 거절하면 가입을 호출하지 않는다`() =
         runTest {
-            val viewModel = SignupViewModel(signup)
+            val viewModel = SignupViewModel(signup, resources = testResources())
             viewModel.onIntent(SignupIntent.Submit(profile))
             runCurrent()
             assertFalse(viewModel.uiState.value.isLoading)
@@ -54,7 +55,7 @@ class SignupConsentTest {
     fun `동의 거절 후 필수 동의를 마치면 가입이 진행된다`() =
         runTest {
             coEvery { signup(profile, null, emptyList(), emptyList()) } returns true
-            val viewModel = SignupViewModel(signup)
+            val viewModel = SignupViewModel(signup, resources = testResources())
             viewModel.onIntent(SignupIntent.Submit(profile))
 
             viewModel.onIntent(SignupIntent.Submit(profile, requiredTermsAgreed = true))

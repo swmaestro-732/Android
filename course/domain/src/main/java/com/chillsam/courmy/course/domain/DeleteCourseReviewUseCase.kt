@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import javax.inject.Inject
 
 /**
@@ -17,7 +20,7 @@ class DeleteCourseReviewUseCase
             courseId: Long,
             reviewId: Long,
         ) {
-            require(reviewId > 0) { "삭제할 리뷰 id 가 없습니다." }
+            requireLocalized(reviewId > 0) { LocalizedValidationException(StringResource.VALIDATION_REVIEW_DELETE) }
             repository.deleteCourseReview(courseId, reviewId)
         }
     }

@@ -17,18 +17,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapSortOrder
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 정렬 기준 이름. 시트 제목 옆에 그대로 노출된다. */
+@Composable
 internal fun MapSortOrder.label(): String =
     when (this) {
-        MapSortOrder.SAVED -> "저장순"
-        MapSortOrder.DISTANCE -> "거리순"
-        MapSortOrder.RATING -> "평점순"
+        MapSortOrder.SAVED -> stringResource(MainR.string.main_map_sort_saved)
+        MapSortOrder.DISTANCE -> stringResource(MainR.string.main_map_sort_distance)
+        MapSortOrder.RATING -> stringResource(MainR.string.main_map_sort_rating)
     }
 
 /**

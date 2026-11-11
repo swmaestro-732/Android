@@ -1,5 +1,9 @@
 package com.chillsam.courmy.main.presentation.my
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.chillsam.courmy.main.presentation.R
+
 /**
  * 프로필 코스 목록의 구분 탭(FS-15).
  *
@@ -17,8 +21,9 @@ enum class ProfileTab {
 }
 
 /** 탭에 노출할 이름. 옆에 개수가 따로 붙으므로 이름만 갖는다. */
+@Composable
 internal fun ProfileTab.label(): String =
     when (this) {
-        ProfileTab.PLAN -> "계획"
-        ProfileTab.COURSES -> "코스"
+        ProfileTab.PLAN -> stringResource(R.string.main_my_tab_plan)
+        ProfileTab.COURSES -> stringResource(R.string.main_saved_tab_courses)
     }

@@ -2,6 +2,8 @@ package com.chillsam.courmy.course.presentation
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
@@ -95,6 +97,7 @@ class PlaceSearchViewModel
     constructor(
         private val searchPlacesUseCase: SearchPlacesUseCase,
         private val searchExternalPlacesUseCase: SearchExternalPlacesUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<PlaceSearchIntent, PlaceSearchUiState, PlaceSearchReducerEvent>(
             PlaceSearchUiState.empty,
         ) {
@@ -202,7 +205,7 @@ class PlaceSearchViewModel
                 Log.w(TAG, "지도 장소 검색 실패: query=$query", e)
                 dispatch(
                     PlaceSearchReducerEvent.Failed(
-                        message = "지도에서 장소를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+                        message = resources.getString(StringResource.MAP_PLACES_RETRY_LATER),
                         fromMapSearch = true,
                     ),
                 )
@@ -235,7 +238,7 @@ class PlaceSearchViewModel
                         Log.w(TAG, "장소 검색 실패: query=$query", e)
                         dispatch(
                             PlaceSearchReducerEvent.Failed(
-                                message = "장소를 불러오지 못했어요.",
+                                message = resources.getString(StringResource.PLACES_LOAD_FAILED),
                                 fromMapSearch = false,
                             ),
                         )

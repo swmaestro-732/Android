@@ -20,6 +20,9 @@ class CourmyApplication : Application() {
     @Inject
     lateinit var devices: DeviceRegistration
 
+    @Inject
+    lateinit var resourcesHelper: com.chillsam.courmy.common.domain.helper.ResourceHelper
+
     override fun onCreate() {
         super.onCreate()
         devices.sync()
@@ -27,7 +30,13 @@ class CourmyApplication : Application() {
         devices.syncConsent()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
-                NotificationChannel("courmy_activity", "활동 알림", NotificationManager.IMPORTANCE_DEFAULT),
+                NotificationChannel(
+                    "courmy_activity",
+                    resourcesHelper.getString(
+                        com.chillsam.courmy.common.domain.helper.StringResource.NOTIFICATION_CHANNEL_ACTIVITY,
+                    ),
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ),
             )
         }
         // 소셜 로그인 SDK 초기화(키는 local.properties → BuildConfig 로 주입).
@@ -41,7 +50,10 @@ class CourmyApplication : Application() {
                 initializeNaverSdkOrDisable(
                     clientId = BuildConfig.NAVER_LOGIN_CLIENT_ID,
                     clientSecret = BuildConfig.NAVER_LOGIN_CLIENT_SECRET,
-                    clientName = "Courmy",
+                    clientName =
+                        resourcesHelper.getString(
+                            com.chillsam.courmy.common.domain.helper.StringResource.APP_NAME,
+                        ),
                     telemetry = telemetry,
                 )
         }

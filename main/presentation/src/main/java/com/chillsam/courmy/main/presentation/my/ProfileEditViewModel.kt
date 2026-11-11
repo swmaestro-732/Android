@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.presentation.my
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
@@ -62,6 +64,7 @@ class ProfileEditViewModel
     @Inject
     constructor(
         private val updateProfileUseCase: UpdateProfileUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<ProfileEditIntent, ProfileEditUiState, ProfileEditReducerEvent>(
             ProfileEditUiState.empty,
         ) {
@@ -105,7 +108,11 @@ class ProfileEditViewModel
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "프로필 저장 실패", e)
-                            dispatch(ProfileEditReducerEvent.Failed("저장에 실패했어요. 잠시 후 다시 시도해 주세요."))
+                            dispatch(
+                                ProfileEditReducerEvent.Failed(
+                                    resources.getString(StringResource.PROFILE_SAVE_RETRY_LATER),
+                                ),
+                            )
                         }
                 }
         }

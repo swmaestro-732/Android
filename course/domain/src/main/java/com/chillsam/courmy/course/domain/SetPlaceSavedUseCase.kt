@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.domain.telemetry.AppFlow
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.common.domain.telemetry.track
@@ -23,7 +26,7 @@ class SetPlaceSavedUseCase
             placeId: Long,
             saved: Boolean,
         ) {
-            require(placeId > 0) { "저장할 장소 id 가 없습니다." }
+            requireLocalized(placeId > 0) { LocalizedValidationException(StringResource.VALIDATION_PLACE_SAVE) }
             if (saved) {
                 telemetry.track(AppFlow.PlaceSave) { repository.setSaved(placeId, saved) }
             } else {

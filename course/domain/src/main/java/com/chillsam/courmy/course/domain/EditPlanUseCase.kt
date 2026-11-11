@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.course.entity.PlanInputVO
 import javax.inject.Inject
 
@@ -13,8 +16,10 @@ class EditPlanUseCase
             planId: Long,
             plan: PlanInputVO,
         ) {
-            require(planId > 0) { "계획을 확인해 주세요." }
-            require(plan.title.isNotBlank()) { "계획 이름을 입력해 주세요." }
+            requireLocalized(planId > 0) { LocalizedValidationException(StringResource.VALIDATION_PLAN_TARGET) }
+            requireLocalized(
+                plan.title.isNotBlank(),
+            ) { LocalizedValidationException(StringResource.VALIDATION_PLAN_REQUIRED) }
             repository.editPlan(planId, plan)
         }
     }

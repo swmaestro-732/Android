@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -31,6 +32,7 @@ import com.chillsam.courmy.course.presentation.PlanDetailPage
 import com.chillsam.courmy.main.domain.deeplink.RoutePattern
 import com.chillsam.courmy.main.domain.map.searchBounds
 import com.chillsam.courmy.main.presentation.FeatureFlags
+import com.chillsam.courmy.main.presentation.aichat.AiCourseChatPage
 import com.chillsam.courmy.main.presentation.chat.ChatPage
 import com.chillsam.courmy.main.presentation.chat.ChatRoomPage
 import com.chillsam.courmy.main.presentation.helper.copyShareLink
@@ -68,6 +70,7 @@ import com.chillsam.courmy.course.domain.CourseFollowPage as CourseFollowRoute
 import com.chillsam.courmy.course.domain.CourseReviewListPage as CourseReviewListRoute
 import com.chillsam.courmy.course.domain.DraftListPage as DraftListRoute
 import com.chillsam.courmy.course.domain.PlanDetailPage as PlanDetailRoute
+import com.chillsam.courmy.main.domain.aichat.AiCourseChatPage as AiCourseChatRoute
 import com.chillsam.courmy.main.domain.chat.ChatPage as ChatRoute
 import com.chillsam.courmy.main.domain.chat.ChatRoomPage as ChatRoomRoute
 import com.chillsam.courmy.main.domain.home.HomePage as HomeRoute
@@ -95,6 +98,7 @@ import com.chillsam.courmy.main.domain.settings.AccountManagePage as AccountMana
 import com.chillsam.courmy.main.domain.settings.AppVersionPage as AppVersionRoute
 import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 앱의 모든 페이지 메타데이터 + 렌더러 모음.
@@ -220,6 +224,18 @@ val appRoutes: List<AppRoute> =
         AppRoute(
             path = HomeRoute.PATH,
             render = { HomePage() },
+        ),
+        // 커미 AI 코스 추천 채팅(FS-09 "커미 AI" 배너 진입). 서버 응답 기반 대화.
+        AppRoute(
+            path = AiCourseChatRoute.PATH,
+            render = {
+                val navigationHelper = LocalNavigationHelper.current
+                AiCourseChatPage(
+                    onBack = { navigationHelper.navigateToBack() },
+                    onLogin = { navigationHelper.navigateTo(LoginRoute) },
+                    onCourseClick = { id -> navigationHelper.navigateByRoute(CourseDetailRoute.route(id)) },
+                )
+            },
         ),
         // 홈 "오늘의 추천 코스" 전체보기. 기존 홈 세로 피드를 통째로 옮긴 화면이다. 지역별 둘러보기 진입 시 지역 인자가 실린다.
         AppRoute(
@@ -434,6 +450,13 @@ val appRoutes: List<AppRoute> =
             },
         ),
         AppRoute(
+            path = com.chillsam.courmy.main.domain.settings.LanguageSettingsPage.PATH,
+            render = {
+                com.chillsam.courmy.main.presentation.settings
+                    .LanguageSettingsPage()
+            },
+        ),
+        AppRoute(
             path = AppVersionRoute.PATH,
             render = { AppVersionPage() },
         ),
@@ -474,11 +497,11 @@ val appRoutes: List<AppRoute> =
                 if (showCopyChoice) {
                     val sourceId = args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull()
                     DsDialogScaffold(
-                        title = "어떻게 복제할까요?",
-                        description = "계획은 나만 볼 수 있고, 방문할 장소와 메모를 담을 수 있어요.",
+                        title = stringResource(MainR.string.main_copy_course_title),
+                        description = stringResource(MainR.string.main_copy_course_description),
                         onDismiss = { showCopyChoice = false },
                     ) {
-                        DsButton(text = "계획하기", onClick = {
+                        DsButton(text = stringResource(MainR.string.main_copy_course_plan), onClick = {
                             showCopyChoice = false
                             sourceId?.let {
                                 navigationHelper.navigateByRoute(
@@ -487,16 +510,33 @@ val appRoutes: List<AppRoute> =
                                 )
                             }
                         })
-                        DsButton(text = "후기 작성", variant = DsButtonVariant.Secondary, onClick = {
-                            showCopyChoice = false
-                            sourceId?.let {
-                                navigationHelper.navigateByRoute(
-                                    CourseCreateRoute.forkRoute(it),
-                                    source = NavigationSource(CourseDetailRoute.PATH, "copy_as_course"),
-                                )
-                            }
-                        })
-                        DsButton(text = "취소", variant = DsButtonVariant.Secondary, onClick = { showCopyChoice = false })
+                        DsButton(
+                            text =
+                                stringResource(
+                                    MainR.string.main_copy_course_review,
+                                ),
+                            variant = DsButtonVariant.Secondary,
+                            onClick = {
+                                showCopyChoice = false
+                                sourceId?.let {
+                                    navigationHelper.navigateByRoute(
+                                        CourseCreateRoute.forkRoute(it),
+                                        source = NavigationSource(CourseDetailRoute.PATH, "copy_as_course"),
+                                    )
+                                }
+                            },
+                        )
+                        DsButton(
+                            text =
+                                stringResource(
+                                    MainR.string.main_saved_create_folder_cancel,
+                                ),
+                            variant = DsButtonVariant.Secondary,
+                            onClick = {
+                                showCopyChoice =
+                                    false
+                            },
+                        )
                     }
                 }
                 CourseDetailPage(
@@ -604,8 +644,12 @@ val appRoutes: List<AppRoute> =
             },
         ),
     ).filter { route ->
-        // 채팅 기능 토글이 꺼져 있으면 채팅 라우트(/chat, /chat/room)를 등록하지 않는다.
-        FeatureFlags.CHAT_ENABLED || (route.path != ChatRoute.PATH && route.path != ChatRoomRoute.PATH)
+        // 기능 토글이 꺼져 있으면 해당 라우트를 등록하지 않는다(딥링크로도 진입 불가).
+        when (route.path) {
+            ChatRoute.PATH, ChatRoomRoute.PATH -> FeatureFlags.CHAT_ENABLED
+            AiCourseChatRoute.PATH -> FeatureFlags.AI_COURSE_CHAT_ENABLED
+            else -> true
+        }
     }
 
 val appRouteByPath: Map<String, AppRoute> = appRoutes.associateBy { it.path }

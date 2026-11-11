@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  *
  * - [category]    카테고리 요약 (예: "성수 · 하루 코스")
  * - [title]       코스 제목 (예: "성수 종일 나들이 코스")
- * - [summaryText] 규모 요약 (예: "6 스팟")
+ * - [placeCount] 장소 수. 요약 문구는 presentation에서 표시한다.
  * - [thumbnailUrl] 대표 이미지. 작성 중 고른 사진이라 아직 로컬 content URI 일 수 있다.
  *                  비어 있으면 플레이스홀더 색만 보인다.
  * - [stops]       코스 동선(방문 순서대로의 장소 목록)
@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
 data class CourseCompleteVO(
     val category: String,
     val title: String,
-    val summaryText: String,
+    val placeCount: Int,
     val thumbnailUrl: String = "",
     val stops: List<CourseStopVO>,
 )

@@ -24,17 +24,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.CourseTagVO
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsBilingualText
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.courseTagLabel
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.FeatureFlags
 import com.chillsam.courmy.main.presentation.search.component.RecentKeywordChips
 import com.chillsam.courmy.main.presentation.search.component.SearchInputBar
 import com.chillsam.courmy.main.presentation.search.component.TrendingKeywordRow
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 검색어 입력 화면(FS-17)의 본문.
@@ -46,7 +53,7 @@ import com.chillsam.courmy.main.presentation.search.component.TrendingKeywordRow
 fun SearchScreen(
     uiState: SearchUIState,
     actions: SearchActions,
-    placeholder: String = "코스 검색",
+    placeholder: String = stringResource(MainR.string.main_search_placeholder),
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -72,8 +79,8 @@ fun SearchScreen(
             }
             if (uiState.recentKeywords.isNotEmpty()) {
                 SectionHeader(
-                    title = "최근 검색",
-                    actionText = "전체 삭제",
+                    title = stringResource(MainR.string.main_search_recent_title),
+                    actionText = stringResource(MainR.string.main_search_clear_all),
                     onActionClick = actions.onClearAllRecent,
                 )
                 RecentKeywordChips(
@@ -117,7 +124,7 @@ private fun SearchTopBar(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_chevron_left_24),
-            contentDescription = "뒤로",
+            contentDescription = stringResource(MainR.string.main_search_back),
             tint = color.contentDefaultLevel0,
             modifier =
                 Modifier
@@ -155,7 +162,7 @@ private fun TrendingSection(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         DsText(
-            text = "지금 뜨는 검색어",
+            text = stringResource(MainR.string.main_search_trending_title),
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel0,
         )
@@ -180,7 +187,7 @@ private fun TrendingSection(
 private fun ThemeFindSection(onThemeClick: (String) -> Unit) {
     val color = DesignSystemThemeImpl.designSystemColor
     DsText(
-        text = "테마로 찾기",
+        text = stringResource(MainR.string.main_search_theme_find_title),
         style = DesignSystemThemeImpl.typeScale.textStrongS,
         color = color.contentDefaultLevel0,
         modifier = Modifier.padding(horizontal = ScreenHorizontalPadding).padding(bottom = 12.dp),
@@ -192,7 +199,7 @@ private fun ThemeFindSection(onThemeClick: (String) -> Unit) {
     ) {
         CourseTagVO.entries.forEach { tag ->
             // 라우트 인자는 taxonomy 컨벤션대로 소문자 코드("date")를 싣는다. 라벨은 표시 전용.
-            DsChip(text = tag.label, selected = false, onClick = { onThemeClick(tag.code) })
+            DsChip(text = courseTagLabel(tag), selected = false, onClick = { onThemeClick(tag.code) })
         }
     }
 }
@@ -241,9 +248,9 @@ private fun PlaceSuggestions(
     val color = DesignSystemThemeImpl.designSystemColor
     val message =
         when {
-            state.suggestionsLoading -> "장소를 찾고 있어요"
+            state.suggestionsLoading -> stringResource(MainR.string.main_search_places_loading)
             state.suggestionsError != null -> state.suggestionsError
-            state.suggestions.isEmpty() -> "일치하는 장소가 없어요"
+            state.suggestions.isEmpty() -> stringResource(MainR.string.main_search_places_empty)
             else -> null
         }
     message?.let {
@@ -261,16 +268,25 @@ private fun PlaceSuggestions(
                 .clickable { actions.onSuggestionClick(place) }
                 .padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
         ) {
-            DsText(
+            DsBilingualText(
                 text = place.name,
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = place.category,
+                text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.category)),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
+            if (place.address.isNotBlank()) {
+                DsBilingualText(
+                    text = place.address,
+                    style = DesignSystemThemeImpl.typeScale.textRegularXS,
+                    color = color.contentDefaultLevel3,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

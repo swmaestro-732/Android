@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,8 +45,10 @@ import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
+import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 비로그인 마이 화면(FS-15-Guest). 게스트 환영 카드(로그인 유도)와
@@ -68,17 +72,32 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
-            DsText(
-                text = "마이",
-                style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                color = color.contentDefaultLevel0,
-                modifier = Modifier.padding(vertical = 20.dp),
-            )
+            // 비로그인도 언어·문의·개인정보·앱 버전 등 로그인 불필요 설정에 들어갈 수 있게 톱니를 둔다.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DsText(
+                    text = stringResource(MainR.string.main_guest_my_title),
+                    style = DesignSystemThemeImpl.typeScale.titleExtraL,
+                    color = color.contentDefaultLevel0,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = {
+                    navigationHelper.navigateTo(SettingsPage, source = NavigationSource("/my/guest", "settings"))
+                }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings_24),
+                        contentDescription = stringResource(MainR.string.main_guest_my_settings_cd),
+                        tint = color.contentDefaultLevel0,
+                    )
+                }
+            }
 
             GuestWelcomeCard(onLogin = { onLogin("welcome_login") })
 
             DsText(
-                text = "가입하면 할 수 있어요",
+                text = stringResource(MainR.string.main_guest_my_benefits_header),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
                 modifier = Modifier.padding(top = 24.dp, bottom = 12.dp),
@@ -86,15 +105,15 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
             Row(modifier = Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 GuestBenefitCard(
                     iconRes = R.drawable.ic_tab_bookmark_24,
-                    title = "장소·코스 저장",
-                    subtitle = "가고 싶은 장소와 코스를 모아보세요",
+                    title = stringResource(MainR.string.main_guest_my_benefit_saved_title),
+                    subtitle = stringResource(MainR.string.main_guest_my_benefit_saved_subtitle),
                     onClick = { onLogin("saved_benefit") },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
                 GuestBenefitCard(
                     iconRes = R.drawable.ic_calendar_24,
-                    title = "여행 계획",
-                    subtitle = "원하는 장소로 나만의 일정을 짜보세요",
+                    title = stringResource(MainR.string.main_guest_my_benefit_plan_title),
+                    subtitle = stringResource(MainR.string.main_guest_my_benefit_plan_subtitle),
                     onClick = { onLogin("plan_benefit") },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
@@ -103,15 +122,15 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
             Row(modifier = Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 GuestBenefitCard(
                     iconRes = R.drawable.ic_review_write_24,
-                    title = "방문 후기",
-                    subtitle = "다녀온 장소의 경험을 나눠보세요",
+                    title = stringResource(MainR.string.main_guest_my_benefit_review_title),
+                    subtitle = stringResource(MainR.string.main_guest_my_benefit_review_subtitle),
                     onClick = { onLogin("review_benefit") },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
                 GuestBenefitCard(
                     iconRes = R.drawable.ic_tab_person_24,
-                    title = "친구 팔로우",
-                    subtitle = "취향이 맞는 사람의 코스를 만나보세요",
+                    title = stringResource(MainR.string.main_guest_my_benefit_follow_title),
+                    subtitle = stringResource(MainR.string.main_guest_my_benefit_follow_subtitle),
                     onClick = { onLogin("follow_benefit") },
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                 )
@@ -201,12 +220,12 @@ private fun GuestWelcomeCard(onLogin: () -> Unit) {
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     DsText(
-                        text = "게스트님, 반가워요",
+                        text = stringResource(MainR.string.main_guest_my_welcome_title),
                         style = DesignSystemThemeImpl.typeScale.titleExtraL,
                         color = color.contentOnAccent,
                     )
                     DsText(
-                        text = "로그인하고 취향 코스를 받아보세요",
+                        text = stringResource(MainR.string.main_guest_my_welcome_subtitle),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentOnAccent,
                     )
@@ -224,7 +243,7 @@ private fun GuestWelcomeCard(onLogin: () -> Unit) {
                 contentAlignment = Alignment.Center,
             ) {
                 DsText(
-                    text = "로그인 / 회원가입",
+                    text = stringResource(MainR.string.main_guest_my_login_button),
                     style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = color.contentDefaultLevel0,
                 )
@@ -246,8 +265,11 @@ private fun GuestBenefitCard(
         modifier =
             modifier
                 .cardShadow(RoundedCornerShape(16.dp))
-                .clickable(role = Role.Button, onClickLabel = "로그인 화면으로 이동", onClick = onClick)
-                .padding(16.dp),
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = stringResource(MainR.string.main_guest_my_benefit_click_label),
+                    onClick = onClick,
+                ).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(

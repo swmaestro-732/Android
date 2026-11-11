@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /** 라운드 사각형 점선 테두리(장소 더 담기 · 사진 추가 슬롯). Compose 기본 border 는 점선 미지원이라 직접 그린다. */
 fun Modifier.dashedBorder(
@@ -116,7 +118,7 @@ fun CourseTopBar(
     onSaveDraft: () -> Unit,
     modifier: Modifier = Modifier,
     savingDraft: Boolean = false,
-    title: String = "새 코스 만들기",
+    title: String = stringResource(CourseR.string.course_common_topbar_title),
     showDraft: Boolean = true,
 ) {
     Row(
@@ -127,7 +129,7 @@ fun CourseTopBar(
         IconButton(onClick = onClose, modifier = Modifier.size(48.dp)) {
             Icon(
                 painter = painterResource(R.drawable.close_small_24),
-                contentDescription = "코스 만들기 닫기",
+                contentDescription = stringResource(CourseR.string.course_common_topbar_close),
                 tint = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
                 modifier = Modifier.size(24.dp),
             )
@@ -140,7 +142,12 @@ fun CourseTopBar(
         )
         if (showDraft) {
             DsText(
-                text = if (savingDraft) "저장 중…" else "임시저장",
+                text =
+                    if (savingDraft) {
+                        stringResource(CourseR.string.course_common_topbar_saving)
+                    } else {
+                        stringResource(CourseR.string.course_common_topbar_save_draft)
+                    },
                 modifier = Modifier.clickable(enabled = !savingDraft, onClick = onSaveDraft).padding(6.dp),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color =
@@ -256,7 +263,7 @@ private fun FilledPhotoSlot(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.close_small_24),
-                    contentDescription = "사진 삭제",
+                    contentDescription = stringResource(CourseR.string.course_common_photo_remove),
                     tint = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
                     modifier = Modifier.size(16.dp),
                 )
@@ -353,7 +360,7 @@ private suspend fun filterWithinSizeLimit(
             }
         }
     if (within.size < uris.size) {
-        Toast.makeText(context, "5MB 이하 이미지만 추가할 수 있어요.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(CourseR.string.course_image_size_limit), Toast.LENGTH_SHORT).show()
     }
     return within.map { it.toString() }
 }

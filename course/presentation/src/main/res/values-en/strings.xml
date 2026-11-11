@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 영어 번역(초안). UI 문구 번역은 검토 필요. -->
+<resources>
+    <string name="course_review_header_title">Reviews</string>
+    <string name="course_review_see_all">See all</string>
+    <string name="course_review_empty">No reviews yet. Share your experience on this course.</string>
+    <string name="course_review_delete">Delete my review</string>
+
+    <!-- Place detail bottom sheet (FS-11 Sheet) -->
+    <string name="course_place_sheet_close_map">Close map</string>
+    <string name="course_place_sheet_close_detail">Close place details</string>
+    <string name="course_place_sheet_place_count">%1$d places</string>
+    <string name="course_place_sheet_review_count">Reviews %1$s</string>
+    <string name="course_place_sheet_review_title">Reviews</string>
+    <string name="course_place_sheet_review_load_failed">Couldn\'t load reviews</string>
+    <string name="course_place_sheet_review_delete_title">Delete this review?</string>
+    <string name="course_place_sheet_review_delete_desc">Deleted reviews can\'t be restored.</string>
+    <string name="course_place_sheet_save">Save</string>
+    <string name="course_place_sheet_saved">Saved</string>
+    <string name="course_place_sheet_directions">Directions</string>
+    <string name="course_place_sheet_opening_hours">Opening hours</string>
+    <string name="course_place_sheet_opening_hours_expand">Show hours by day</string>
+    <string name="course_place_sheet_opening_hours_collapse">Collapse hours</string>
+    <string name="course_place_sheet_overview_open">View whole course</string>
+    <string name="course_place_sheet_overview_back">Back to current place</string>
+    <string name="course_place_sheet_tip_author">Tip.%1$s</string>
+    <string name="course_place_sheet_step_previous">Previous</string>
+    <string name="course_place_sheet_step_next">Next</string>
+    <string name="course_place_sheet_no_location">No location info</string>
+
+    <!-- course 화면 고정 문구(SCRUM-813 i18n) -->
+    <!-- 코스 상세 화면(FS-11) 고정 문구 -->
+    <string name="course_detail_back">Back</string>
+    <string name="course_detail_hero_back">Back</string>
+    <string name="course_detail_unsave">Remove from saved</string>
+    <string name="course_detail_save">Save course</string>
+    <string name="course_detail_share">Share</string>
+    <string name="course_detail_forked_badge">Copied course</string>
+    <string name="course_detail_settings">Course settings</string>
+    <string name="course_detail_menu_edit">Edit course</string>
+    <string name="course_detail_menu_deleting">Deleting…</string>
+    <string name="course_detail_menu_delete">Delete course</string>
+    <string name="course_detail_unlike">Unlike</string>
+    <string name="course_detail_like">Like</string>
+    <string name="course_detail_following">Following</string>
+    <string name="course_detail_follow_author">Follow</string>
+    <string name="course_detail_map_section">Course at a glance</string>
+    <string name="course_detail_places_section">Places in course</string>
+    <string name="course_detail_place_count">%1$d places</string>
+    <string name="course_detail_collapse">Collapse</string>
+    <string name="course_detail_expand">Expand</string>
+    <string name="course_detail_place_detail">Place details</string>
+    <string name="course_detail_more_places">See %1$d more places</string>
+    <string name="course_detail_tip_prefix">Tip.%1$s</string>
+    <string name="course_detail_close">Close</string>
+    <string name="course_detail_comments">Comments</string>
+    <string name="course_detail_fork">Copy course</string>
+    <string name="course_detail_follow">Follow course</string>
+
+    <!-- 코스 장소 카드 -->
+    <string name="course_place_card_note_placeholder">Add a quick note…</string>
+
+    <!-- 코스 정보 입력(이름·설명·썸네일) -->
+    <string name="course_info_name_label">Course name</string>
+    <string name="course_info_name_placeholder">Enter a course name</string>
+    <string name="course_info_description_label">Course description</string>
+    <string name="course_info_description_placeholder">Enter a course description</string>
+    <string name="course_info_thumbnail_label">Thumbnail image</string>
+
+    <!-- 코스 계획(제목·메모·날짜) -->
+    <string name="course_plan_title_label">Plan title (optional · %1$d/200)</string>
+    <string name="course_plan_title_placeholder">Enter a plan title</string>
+    <string name="course_plan_memo_label">Memo (optional · %1$d/500)</string>
+    <string name="course_plan_memo_placeholder">Jot down anything to remember</string>
+    <string name="course_plan_date_label">Planned date (optional)</string>
+    <string name="course_plan_date_unset">Not set · Pick a date</string>
+    <string name="course_plan_date_clear">Clear date</string>
+    <string name="course_route_map_my_location">My location</string>
+
+    <!-- Plan detail screen (fixed strings, SCRUM-813 i18n) -->
+    <string name="course_plan_detail_title">Plan details</string>
+    <string name="course_plan_detail_back">Back</string>
+    <string name="course_plan_detail_settings">Plan settings</string>
+    <string name="course_plan_detail_menu_edit">Edit plan</string>
+    <string name="course_plan_detail_menu_processing">Processing…</string>
+    <string name="course_plan_detail_menu_delete">Delete plan</string>
+    <string name="course_plan_detail_source_label">Copied from a course</string>
+    <string name="course_plan_detail_source_view_origin">View original course</string>
+    <string name="course_plan_detail_memo_title">Plan memo</string>
+    <string name="course_plan_detail_places_title">Places in plan</string>
+    <string name="course_plan_detail_map_title">Plan at a glance</string>
+    <string name="course_plan_detail_place_count">%1$d places</string>
+    <string name="course_plan_detail_delete_title">Delete this plan?</string>
+    <string name="course_plan_detail_delete_description">Deleted plans can\'t be restored.</string>
+    <string name="course_plan_detail_delete_confirm">Delete</string>
+    <string name="course_plan_detail_delete_cancel">Cancel</string>
+    <string name="course_plan_detail_edit_title">Edit plan</string>
+    <string name="course_plan_detail_edit_description">Keep the places and change the title, memo, or date.</string>
+    <string name="course_plan_detail_edit_title_placeholder">Plan name</string>
+    <string name="course_plan_detail_edit_memo_placeholder">Memo (optional)</string>
+    <string name="course_plan_detail_edit_date_label">Visit date (optional)</string>
+    <string name="course_plan_detail_edit_save">Save</string>
+    <string name="course_plan_detail_edit_cancel">Cancel</string>
+
+    <!-- 코스 공통 컴포넌트(상단바·사진 담기) -->
+    <string name="course_common_topbar_title">New course</string>
+    <string name="course_common_topbar_close">Close course builder</string>
+    <string name="course_common_topbar_saving">Saving…</string>
+    <string name="course_common_topbar_save_draft">Save draft</string>
+    <string name="course_common_photo_remove">Remove photo</string>
+
+    <!-- Place search & add overlay (FS-34) -->
+    <string name="course_place_search_limit_alert">You can add up to %1$d places.</string>
+    <string name="course_place_search_searching">Finding places…</string>
+    <string name="course_place_search_map_result_count">Map results %1$d</string>
+    <string name="course_place_search_result_count">Results %1$d</string>
+    <string name="course_place_search_add_new_place">Add a new place</string>
+    <string name="course_place_search_input_hint">Search place or address</string>
+    <string name="course_place_search_clear_query">Clear search</string>
+    <string name="course_place_search_cancel">Cancel</string>
+    <string name="course_place_search_selected_count">%1$d selected</string>
+    <string name="course_place_search_confirm">Add places</string>
+    <string name="course_place_search_empty_result">No results found</string>
+    <string name="course_place_search_empty_prompt">Search for a place or address</string>
+    <!-- Course create confirm dialogs & toast (FS-34) -->
+    <string name="course_remove_place_question_plan">Remove this place from the plan?</string>
+    <string name="course_remove_place_question_course">Remove this place from the course?</string>
+    <string name="course_remove_place_confirm_plan">Remove from plan</string>
+    <string name="course_remove_place_confirm_course">Remove from course</string>
+    <string name="course_dialog_cancel">Cancel</string>
+    <string name="course_exit_confirm_title">Save this course as a draft?</string>
+    <string name="course_exit_confirm_desc">If you leave now, your changes will be lost.</string>
+    <string name="course_exit_save_and_exit">Save draft and exit</string>
+    <string name="course_exit_discard">Don\'t save</string>
+    <string name="course_saved_draft_toast">Draft saved</string>
+    <string name="course_delete_confirm_title">Delete this course?</string>
+    <string name="course_delete_confirm_desc">Deleted courses can\'t be restored.</string>
+    <string name="course_add_place_title">Add a new place</string>
+    <string name="course_add_place_description">Enter the name of the place\nand we\'ll find candidates on the map.</string>
+    <string name="course_add_place_name_placeholder">e.g. Onion Seongsu</string>
+    <string name="course_add_place_searching">Searching…</string>
+    <string name="course_add_place_search">Search</string>
+
+    <!-- Course review list screen (FS-37) -->
+    <string name="course_review_list_title">Course reviews</string>
+    <string name="course_review_list_back">Back</string>
+    <string name="course_review_list_write">Write a review</string>
+    <string name="course_review_list_photo_header">Review photos</string>
+    <string name="course_review_list_photo_see_all">See all</string>
+    <string name="course_review_list_empty_title">Be the first to review</string>
+    <string name="course_review_list_empty_desc">Share your experience on this course.\nEven a rating helps the next traveler.</string>
+    <string name="course_review_list_delete_title">Delete this review?</string>
+    <string name="course_review_list_delete_desc">Deleted reviews can\'t be restored.</string>
+    <string name="course_review_list_delete_confirm">Delete</string>
+    <string name="course_review_list_delete_dismiss">Cancel</string>
+
+    <!-- 로딩 스켈레톤 접근성 안내 -->
+    <string name="course_loading_detail">Loading course</string>
+    <string name="course_loading_content">Loading content</string>
+    <string name="course_loading_reviews">Loading reviews</string>
+    <string name="course_loading_drafts">Loading saved drafts</string>
+    <string name="course_loading_list">Loading list</string>
+    <string name="course_loading_create">Loading course editor</string>
+    <string name="course_loading_follow">Loading course to follow</string>
+
+    <!-- Course edit screen (fixed strings) -->
+    <string name="course_edit_top_bar_title">Edit course</string>
+    <string name="course_edit_close">Close course edit</string>
+    <string name="course_edit_section_info">Course info</string>
+    <string name="course_edit_title_label">Course name</string>
+    <string name="course_edit_title_placeholder">Enter a course name</string>
+    <string name="course_edit_description_label">Course intro</string>
+    <string name="course_edit_description_placeholder">Introduce this course</string>
+    <string name="course_edit_section_tag">Tags</string>
+    <string name="course_edit_section_visibility">Visibility</string>
+    <string name="course_edit_visibility_unknown_notice">Couldn\'t load the current setting. Saving will apply the option you pick below.</string>
+    <string name="course_edit_section_place_tip">Place notes</string>
+    <string name="course_edit_place_tip_notice">Places and photos can\'t be edited. You can only change the notes.</string>
+    <string name="course_edit_place_tip_placeholder">Leave a quick note here</string>
+    <string name="course_edit_saving">Saving…</string>
+    <string name="course_edit_save">Save</string>
+
+    <!-- Review write screen (SCRUM-813 i18n) -->
+    <string name="course_review_write_title">Write a review</string>
+    <string name="course_review_write_close">Close review</string>
+    <string name="course_review_write_submit">Post review</string>
+    <string name="course_review_write_rating_title_place">How was this place?</string>
+    <string name="course_review_write_rating_title_course">How was this course?</string>
+    <string name="course_review_write_rating_hint">Pick a rating</string>
+    <string name="course_review_write_content_section">Tell us about your visit</string>
+    <string name="course_review_write_content_placeholder_place">Share your experience at this place. (Optional)</string>
+    <string name="course_review_write_content_placeholder_course">Share your experience on this course. (Optional)</string>
+    <string name="course_review_write_photo_section">Add some photos</string>
+    <string name="course_review_write_tag_section">Describe it with keywords</string>
+    <string name="course_review_write_tag_guide">Pick up to %1$d things you liked. (Optional)</string>
+    <string name="course_review_write_selected_keywords_count">Selected keywords %1$d/%2$d</string>
+    <string name="course_review_write_selected_keywords_empty">Your selected keywords show up here</string>
+    <string name="course_review_write_keyword_remove">Deselect %1$s</string>
+
+    <!-- 임시저장 코스 목록 화면(FS-20) -->
+    <string name="course_draft_list_title">Drafts</string>
+    <string name="course_draft_list_count">%1$d</string>
+    <string name="course_draft_list_header_desc">Pick up where you left off on a saved course.</string>
+    <string name="course_draft_list_back">Back</string>
+    <string name="course_draft_list_empty">No saved drafts yet</string>
+    <string name="course_draft_list_load_error">Couldn\'t load your drafts.</string>
+    <string name="course_draft_list_retry">Try again</string>
+    <string name="course_draft_list_delete">Delete</string>
+    <string name="course_draft_list_delete_title">Delete this draft?</string>
+    <string name="course_draft_list_delete_description">\"%1$s\" can\'t be restored once deleted.</string>
+
+    <!-- 코스 댓글 시트 -->
+    <string name="course_comment_title">Comments</string>
+    <string name="course_comment_title_count">Comments %1$d%2$s</string>
+    <string name="course_comment_login_prompt">Log in to leave a comment.</string>
+    <string name="course_comment_empty">Be the first to comment.</string>
+    <string name="course_comment_retry">Try again</string>
+    <string name="course_comment_input_placeholder">Leave a comment</string>
+    <string name="course_comment_submit_description">Post comment</string>
+    <string name="course_comment_author_fallback">Author</string>
+    <string name="course_comment_author_unknown">Unknown user</string>
+    <string name="course_comment_author_profile_description">View %1$s\'s profile</string>
+    <string name="course_comment_menu_description">Comment options</string>
+    <string name="course_comment_menu_edit">Edit</string>
+    <string name="course_comment_menu_delete">Delete</string>
+    <string name="course_comment_edit_title">Edit comment</string>
+    <string name="course_comment_edit_description">Comments can be up to 1,000 characters.</string>
+    <string name="course_comment_edit_placeholder">Comment</string>
+    <string name="course_comment_edit_save">Save</string>
+    <string name="course_comment_delete_title">Delete this comment?</string>
+    <string name="course_comment_delete_description">Deleted comments can\'t be restored.</string>
+    <string name="course_comment_delete_confirm">Delete</string>
+    <string name="course_comment_delete_dismiss">Cancel</string>
+
+    <!-- Course create / plan screen (FS-34) fixed strings (SCRUM-807 i18n) -->
+    <string name="course_create_draft_saved_images_missing">Photos weren’t saved. Please add them again when you continue.</string>
+    <string name="course_create_draft_saved">Draft saved</string>
+    <string name="course_create_saved_images_missing">Photos weren’t saved. Please add them again from editing.</string>
+    <string name="course_create_plan_saved">Plan saved</string>
+    <string name="course_create_retry">Try again</string>
+    <string name="course_create_go_back">Go back</string>
+    <string name="course_create_title_plan">New plan</string>
+    <string name="course_create_title_course">New course</string>
+    <string name="course_create_exit_plan_title">Stop creating this plan?</string>
+    <string name="course_create_exit_plan_desc">Unsaved changes will be lost.</string>
+    <string name="course_create_info_header_plan">Plan details</string>
+    <string name="course_create_info_header_course">Course details</string>
+    <string name="course_create_plan_info_hint">Only you can see this plan. Title, memo, and date are optional.</string>
+    <string name="course_create_records_header_plan">Notes by place</string>
+    <string name="course_create_records_header_course">Records by place</string>
+    <string name="course_create_records_hint_plan">Notes for each place are optional.</string>
+    <string name="course_create_records_hint_course">Each place needs at least one photo. A comment is optional.</string>
+    <string name="course_create_fork_author_fallback">Someone</string>
+    <string name="course_create_fork_banner">Copying %1$s’s course</string>
+    <string name="course_create_places_header">Pick places</string>
+    <string name="course_create_places_count_reorder">%1$d places · Drag to reorder</string>
+    <string name="course_create_add_place_at_max">You can add up to %1$d places</string>
+    <string name="course_create_add_place">＋ Add place</string>
+    <string name="course_create_settings_header">Course settings</string>
+    <string name="course_create_prev">Back</string>
+    <string name="course_create_calculating_walking">Calculating walking time…</string>
+    <string name="course_create_save_plan">Save plan</string>
+    <string name="course_create_save_course">Save course</string>
+    <string name="course_create_next">Next</string>
+
+    <!-- 따라가기(FS-21): 미리보기·진행·완주 -->
+    <string name="course_follow_route_count">Course route %1$d</string>
+    <string name="course_follow_visited">Visited</string>
+    <string name="course_follow_resume">Resume</string>
+    <string name="course_follow_start">Follow this course</string>
+    <string name="course_follow_tracking_title">%1$s · %2$d/%3$d in progress</string>
+    <string name="course_follow_next_spot">Next spot</string>
+    <string name="course_follow_start_here">Start here</string>
+    <string name="course_follow_recording">Saving visit…</string>
+    <string name="course_follow_arrive">Arrived</string>
+    <string name="course_follow_end">End</string>
+    <string name="course_follow_end_confirm_title">End the course?</string>
+    <string name="course_follow_end_confirm_desc">Ending now leaves the tracking screen. You can resume from the course later.</string>
+    <string name="course_follow_done_title">Course complete!\nGreat job</string>
+    <string name="course_follow_stat_visited">Spots visited</string>
+    <string name="course_follow_stat_elapsed">Time taken</string>
+    <string name="course_follow_stat_distance">Distance</string>
+    <string name="course_follow_visited_course">Your route</string>
+    <string name="course_follow_visit_done">Visited</string>
+    <string name="course_follow_leave_review">Write a review</string>
+    <string name="course_follow_skip">Skip</string>
+    <string name="course_follow_back">Back</string>
+    <string name="course_follow_route_start">Your course starts here</string>
+    <string name="course_follow_route_loading">Loading walking route…</string>
+    <string name="course_follow_route_to_dest">To %1$s</string>
+    <string name="course_follow_route_walk_minutes">%1$d min walk</string>
+    <string name="course_follow_route_detail">Walking route</string>
+    <string name="course_follow_guide_expand">Directions</string>
+    <string name="course_follow_guide_collapse">Hide directions</string>
+    <!-- course 화면 고정 문구(SCRUM-813 i18n): 추가 분 -->
+    <string name="course_companion_card_label">Who did you go with? (Optional)</string>
+    <string name="course_visibility_card_label">Visibility</string>
+    <string name="course_visibility_public_label">Public</string>
+    <string name="course_visibility_public_helper">Anyone can browse and follow this course.</string>
+    <string name="course_visibility_follower_label">Followers</string>
+    <string name="course_visibility_follower_helper">Only your followers can see this.</string>
+    <string name="course_visibility_private_label">Private</string>
+    <string name="course_visibility_private_helper">Only you can see this.</string>
+    <string name="course_external_reviews_prompt">Curious about other visitors\' reviews?</string>
+    <string name="course_external_reviews_open_naver">Search on Naver Map</string>
+    <string name="course_external_reviews_map_open_failed">Can\'t open Naver Map</string>
+    <string name="course_place_review_empty_title">No reviews yet</string>
+    <string name="course_place_review_empty_subtitle">Been here? Be the first to leave a review.</string>
+    <string name="course_place_review_write_first">Write first review</string>
+    <string name="course_place_review_write">Write a review</string>
+    <string name="course_complete_timeline_title">Course route</string>
+    <string name="course_complete_view_my_courses">View in My Courses</string>
+    <string name="course_complete_header_title">Your course is ready!</string>
+    <string name="course_complete_header_desc">Saved to My Courses.</string>
+    <string name="course_detail_error_load_failed">Couldn\'t load the course.</string>
+    <string name="course_detail_error_retry">Retry</string>
+    <string name="course_follow_load_failed">Couldn\'t load the course.</string>
+    <string name="course_follow_retry">Retry</string>
+    <string name="course_review_list_load_error">Couldn\'t load reviews.</string>
+    <string name="course_review_list_retry">Retry</string>
+    <string name="course_plan_detail_retry">Retry</string>
+    <string name="course_recommended_tags">Suggested tags</string>
+    <string name="course_remove_tag">Remove tag %1$s</string>
+    <string name="course_add_tag_hint">Add a tag</string>
+    <string name="course_add_tag_action">Add</string>
+    <string name="course_place_selected_order">Selected, number %1$d</string>
+    <string name="course_image_size_limit">Only images up to 5 MB can be added.</string>
+</resources>

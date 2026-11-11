@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="opening_hours_weekdays">
+        <item>月</item>
+        <item>火</item>
+        <item>水</item>
+        <item>木</item>
+        <item>金</item>
+        <item>土</item>
+        <item>日</item>
+    </string-array>
+    <string name="opening_hours_closed">休業</string>
+    <string name="opening_hours_regular_closed">定休日</string>
+    <string name="opening_hours_daily">毎日</string>
+    <string name="opening_hours_always_open">年中無休</string>
+</resources>

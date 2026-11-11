@@ -3,12 +3,13 @@ package com.chillsam.courmy.course.data.courseDetail.dto
 import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.entity.category.toCourseTagLabel
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
-import com.chillsam.courmy.common.entity.time.toRelativeTimeText
+import com.chillsam.courmy.common.entity.time.parseIsoUtcMillis
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
 import com.chillsam.courmy.course.entity.CourseDetailVO
 import com.chillsam.courmy.course.entity.CoursePlaceVO
 import com.chillsam.courmy.course.entity.CourseReviewVO
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
 
@@ -96,6 +97,7 @@ data class CoursePlaceDTO(
     val categories: List<String>? = null,
     val location: CoursePlaceLocationDTO? = null,
     val images: List<CoursePlaceImageDTO>? = null,
+    @SerialName("categoryDetail")
     val detailCategory: String? = null,
 )
 
@@ -142,7 +144,7 @@ data class ReviewAuthorDTO(
 )
 
 /**
- * BFF 응답 → 화면 표시용 VO. raw 값을 화면 표시 문자열("4곳", "도보 20분" 등)로 포맷팅한다.
+ * BFF 응답 → 화면 표시용 VO. 개수·시간은 원본 숫자로 전달하고 화면에서 로컬라이즈한다.
  *
  * [myUserId] 는 JWT 에서 얻은 내 id 로, "내 코스" 판정에만 쓴다(서버가 isMine 을 주지 않는다).
  */
@@ -172,9 +174,9 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
                 ?.let { "@$it" }
                 .orEmpty(),
         authorImageUrl = course.author?.profileImageUrl.orEmpty(),
-        placeCountText = "${stats?.placeCount ?: 0}곳",
-        walkText = walkSummaryText(stats?.walkingMinutes, course.places),
-        followerText = "${formatTracingCount(stats?.tracingCount ?: 0)} 따라감",
+        placeCount = stats?.placeCount ?: 0,
+        walkingMinutes = walkSummaryMinutes(stats?.walkingMinutes, course.places),
+        tracingCount = stats?.tracingCount ?: 0,
         description = course.description.orEmpty(),
         places =
             course.places
@@ -182,7 +184,7 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
                 .sortedBy { it.orderNo ?: 0 }
                 .map { it.toVO() },
         rating = (summary?.averageRating ?: 0.0).toString(),
-        reviewCountText = "${summary?.totalCount ?: 0}개",
+        reviewCount = summary?.totalCount ?: 0,
         reviews = summary?.previews.orEmpty().map { it.toVO(myUserId) },
         isSaved = course.viewer?.hasSaved ?: false,
         isLiked = course.viewer?.hasLiked ?: false,
@@ -192,34 +194,23 @@ fun CourseScreenData.toVO(myUserId: Long?): CourseDetailVO {
 }
 
 /**
- * 총 도보 요약. 쓸 수 없는 값이면 빈 문자열을 돌려 "도보" 항목을 아예 빼게 한다
- * (호출부인 StatsRow 등이 빈 값을 건너뛴다).
+ * 총 도보 요약. 쓸 수 없는 값이면 null을 돌려 "도보" 항목을 아예 빼게 한다
+ * (화면은 null인 요약을 건너뛴다).
  *
  * 빼는 경우는 둘이다.
  * - 구간 중 하나라도 걸어갈 수 없음(서버가 음수로 준다). 합계가 실제 동선을 말해 주지 않는다.
  * - 합계가 0분 이하. 걸어갈 수 없는 구간이 섞여 합계가 0으로 내려오거나 서버가 아직 계산하지
  *   못한 경우인데, "도보 0분" 은 값이 없다는 뜻이지 붙어 있다는 뜻이 아니다.
  */
-private fun walkSummaryText(
+private fun walkSummaryMinutes(
     totalMinutes: Int?,
     places: List<CoursePlaceDTO>?,
-): String {
+): Int? {
     val total = totalMinutes ?: 0
     val hasUnreachableLeg =
         places.orEmpty().any { (it.walkingMinutesToNext ?: 0) <= CoursePlaceVO.UNREACHABLE_ON_FOOT }
-    return if (total <= 0 || hasUnreachableLeg) "" else "도보 ${total}분"
+    return total.takeIf { it > 0 && !hasUnreachableLeg }
 }
-
-/** 따라감 수 표시(1200 → "1.2k"). 프로필 통계와 같은 규칙을 쓴다. */
-private fun formatTracingCount(value: Int): String =
-    if (value >= THOUSAND) {
-        val truncated = (value / THOUSAND.toDouble() * 10).toInt() / 10.0
-        if (truncated % 1.0 == 0.0) "${truncated.toInt()}k" else "${truncated}k"
-    } else {
-        value.toString()
-    }
-
-private const val THOUSAND = 1000
 
 private fun CoursePlaceDTO.toVO(): CourseDetailPlaceVO {
     val urls =
@@ -232,11 +223,10 @@ private fun CoursePlaceDTO.toVO(): CourseDetailPlaceVO {
         order = (orderNo ?: 0) + 1,
         name = name.orEmpty(),
         category = categories.toPlaceCategoryLabel(SEPARATOR),
-        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
+        detailCategory = PlaceDetailCategoryVO.fromServerValue(detailCategory),
         photoCountText = "1/${urls.size.coerceAtLeast(1)}",
         tip = caption.orEmpty(),
         imageUrls = urls,
-        walkToNextText = walkingMinutesToNext?.toWalkText(),
         // 편집이 그대로 되돌려 보내지 않으면 서버가 places 를 치환하며 도보 시간이 지워진다.
         walkingMinutesToNext = walkingMinutesToNext,
         latitude = location?.latitude,
@@ -244,25 +234,14 @@ private fun CoursePlaceDTO.toVO(): CourseDetailPlaceVO {
     )
 }
 
-/**
- * 구간 도보 분 → 화면 문구.
- *
- * 서버는 걸어서 갈 수 없는 구간을 음수(-1)로 알려 준다. 그대로 포맷하면 "도보 -1분" 이 나오므로
- * 분으로 환산하지 않고 그렇게 알린다. 코스 작성 화면(`CourseCreateViewModel`)과 같은 규칙이다.
- */
-private fun Int.toWalkText(): String =
-    if (this <= CoursePlaceVO.UNREACHABLE_ON_FOOT) UNREACHABLE_TEXT else "도보 ${this}분"
-
-private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
-
 private fun ReviewPreviewDTO.toVO(myUserId: Long?): CourseReviewVO =
     CourseReviewVO(
         id = id ?: 0L,
         authorId = author?.id ?: 0L,
-        author = author?.nickname ?: "익명",
+        author = author?.nickname.orEmpty(),
         authorImageUrl = author?.profileImageUrl.orEmpty(),
         rating = rating ?: 0,
-        dateText = createdAt.toRelativeTimeText(),
+        createdAtMillis = parseIsoUtcMillis(createdAt),
         body = content.orEmpty(),
         photoUrls = photoUrls.orEmpty(),
         isMine = myUserId != null && author?.id != null && author.id == myUserId,

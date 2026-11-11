@@ -15,7 +15,7 @@ data class ChatMessageUi(
     val id: Long,
     val content: String,
     val fromMe: Boolean,
-    val time: String,
+    val time: ChatTime,
     val senderName: String? = null,
 )
 

@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.presentation.my
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.GetPlansUseCase
 import com.chillsam.courmy.main.domain.my.GetMyProfileUseCase
@@ -30,6 +32,7 @@ class MyViewModel
     constructor(
         private val getMyProfileUseCase: GetMyProfileUseCase,
         private val getPlansUseCase: GetPlansUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<MyProfileIntent, MyProfileUIState, MyProfileReducerEvent>(
             MyProfileUIState.empty,
         ) {
@@ -62,6 +65,8 @@ class MyViewModel
                     state.copy(
                         isLoading = false,
                         profile = event.profile,
+                        // 편집 화면이 재조회 실패에도 보존해 쓸 마지막 성공 원본.
+                        lastLoadedProfile = event.profile,
                         errorMessage = null,
                         courses =
                             event.profile.myCourses.items
@@ -125,7 +130,9 @@ class MyViewModel
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "마이 프로필 로드 실패", e)
-                            dispatch(MyProfileReducerEvent.Failed("프로필을 불러오지 못했습니다."))
+                            dispatch(
+                                MyProfileReducerEvent.Failed(resources.getString(StringResource.PROFILE_LOAD_FAILED)),
+                            )
                         }
                 }
         }
@@ -147,7 +154,12 @@ class MyViewModel
                                         ProfileCourseVO(
                                             // 코스 id 와 섞이지 않게 접두사를 유지한다(상세 이동 시 접두사를 제거한다).
                                             id = "plan-${plan.planId}",
-                                            title = plan.title.ifBlank { "제목 없는 계획" },
+                                            title =
+                                                plan.title.ifBlank {
+                                                    resources.getString(
+                                                        StringResource.PLAN_UNTITLED,
+                                                    )
+                                                },
                                         )
                                     },
                                 ),
@@ -155,7 +167,9 @@ class MyViewModel
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "계획 목록 로드 실패", e)
-                            dispatch(MyProfileReducerEvent.PlanFailed("계획을 불러오지 못했어요. 다시 시도해 주세요."))
+                            dispatch(
+                                MyProfileReducerEvent.PlanFailed(resources.getString(StringResource.PLAN_LOAD_RETRY)),
+                            )
                         }
                 }
         }

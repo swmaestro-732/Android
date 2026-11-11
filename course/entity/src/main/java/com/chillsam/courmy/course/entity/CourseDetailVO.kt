@@ -19,13 +19,13 @@ import kotlinx.serialization.Serializable
  * - [authorHandle]   작성자 핸들 (예: "@jiho_routes")
  * - [authorImageUrl] 작성자 프로필 이미지 URL
  * - [isFollowingAuthor] 내가 이 작성자를 팔로우 중인지. true 면 버튼이 "팔로잉"(흐린 상태)으로 바뀐다.
- * - [placeCountText] 장소 수 요약 (예: "4곳")
- * - [walkText]       총 도보 요약 (예: "도보 20분")
- * - [followerText]   따라간 사람 수 (예: "1.2k 따라감")
+ * - [placeCount] 장소 수. 표시 문구는 presentation에서 로컬라이즈한다.
+ * - [walkingMinutes] 총 도보 분. 유효한 합계가 없으면 null.
+ * - [tracingCount] 따라간 사람 수.
  * - [description]    코스 소개 문단
  * - [places]         코스 속 장소 목록 (순서대로)
  * - [rating]         평균 별점 텍스트 (예: "4.8")
- * - [reviewCountText] 리뷰 수 (예: "128개")
+ * - [reviewCount] 리뷰 수.
  * - [reviews]        리뷰 목록
  */
 @Serializable
@@ -40,13 +40,13 @@ data class CourseDetailVO(
     val authorHandle: String,
     val authorImageUrl: String = "",
     val isFollowingAuthor: Boolean = false,
-    val placeCountText: String,
-    val walkText: String,
-    val followerText: String,
+    val placeCount: Int,
+    val walkingMinutes: Int?,
+    val tracingCount: Int,
     val description: String,
     val places: List<CourseDetailPlaceVO>,
     val rating: String,
-    val reviewCountText: String,
+    val reviewCount: Int,
     val reviews: List<CourseReviewVO>,
     /** 내가 이 코스를 저장했는지(서버 viewer.hasSaved). 하단 저장 버튼 상태에 쓴다. */
     val isSaved: Boolean = false,
@@ -70,8 +70,7 @@ data class CourseDetailVO(
  * - [photoCountText] 사진 인덱스 배지 (예: "1/3")
  * - [imageUrls]      장소 사진 URL 목록 (순서대로)
  * - [tip]            작성자 팁 ("지호님 팁" 본문)
- * - [walkToNextText] 다음 장소로의 도보 안내 (예: "도보 6분"). 마지막 장소는 null
- * - [walkingMinutesToNext] [walkToNextText] 의 원본 숫자. 편집이 이 값을 그대로 되돌려 보내야
+ * - [walkingMinutesToNext] 다음 장소까지 도보 분. 편집이 이 값을 그대로 되돌려 보내야
  *                    기존 도보 시간이 유지된다(서버가 places 를 통째로 치환한다). 마지막 장소는 null
  * - [latitude]       위도. 좌표가 없으면 null (지도에 핀을 찍지 않는다)
  * - [longitude]      경도. 좌표가 없으면 null
@@ -85,7 +84,6 @@ data class CourseDetailPlaceVO(
     val photoCountText: String,
     val tip: String,
     val imageUrls: List<String> = emptyList(),
-    val walkToNextText: String? = null,
     val walkingMinutesToNext: Int? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
@@ -100,7 +98,7 @@ data class CourseDetailPlaceVO(
  * - [author]      리뷰어 이름
  * - [authorImageUrl] 리뷰어 프로필 이미지 URL
  * - [rating]      별점(1~5)
- * - [dateText]    상대 날짜 (예: "2일 전"). 서버는 `createdAt`(UTC)만 주므로 변환해서 채운다.
+ * - [createdAtMillis] UTC epoch millis. 누락/파싱 실패는 null이며 상대 시각은 presentation에서 표시한다.
  * - [body]        리뷰 본문. 별점만 남긴 리뷰는 빈 문자열이다(서버 content 가 nullable).
  * - [photoUrls]   첨부 사진 URL 목록 (비면 미표시)
  * - [tags]        리뷰어가 고른 태그. 상세 미리보기 카드(FS-11)는 감추고 후기 목록(FS-37)만 보여준다.
@@ -114,7 +112,7 @@ data class CourseReviewVO(
     val author: String,
     val authorImageUrl: String = "",
     val rating: Int,
-    val dateText: String,
+    val createdAtMillis: Long?,
     val body: String,
     val photoUrls: List<String> = emptyList(),
     val tags: List<CourseReviewTagVO> = emptyList(),

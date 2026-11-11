@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_ai_label" translatable="false">AI</string>
+    <string name="language_name_korean" translatable="false">한국어</string>
+    <string name="language_name_english" translatable="false">English</string>
+    <string name="language_name_japanese" translatable="false">日本語</string>
+</resources>

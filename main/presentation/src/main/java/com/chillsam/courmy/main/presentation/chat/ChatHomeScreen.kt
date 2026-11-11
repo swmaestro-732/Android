@@ -30,12 +30,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 채팅홈 UI: 상단바(채팅·동네) + 세그먼트 탭(참여 중 / 동네 채팅방) + 목록. 행을 누르면 [onRoomEnter]. */
 @Composable
@@ -91,7 +93,7 @@ private fun ChatHomeTopBar(region: String) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         DsText(
-            text = "채팅",
+            text = stringResource(MainR.string.main_chat_home_title),
             style = DesignSystemThemeImpl.typeScale.titleExtraL,
             color = color.contentDefaultLevel0,
             modifier = Modifier.weight(1f),
@@ -122,12 +124,12 @@ private fun ChatHomeTabRow(
         horizontalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         ChatHomeTab(
-            label = "참여 중",
+            label = stringResource(MainR.string.main_chat_home_tab_participating),
             selected = selectedTab == ChatHomeTab.PARTICIPATING,
             onClick = { onTabSelect(ChatHomeTab.PARTICIPATING) },
         )
         ChatHomeTab(
-            label = "$region 채팅방",
+            label = stringResource(MainR.string.main_chat_region_rooms, region),
             selected = selectedTab == ChatHomeTab.NEIGHBORHOOD,
             onClick = { onTabSelect(ChatHomeTab.NEIGHBORHOOD) },
         )
@@ -208,7 +210,7 @@ private fun ConversationRow(
         Spacer(Modifier.width(8.dp))
         Column(horizontalAlignment = Alignment.End) {
             DsText(
-                text = conversation.time,
+                text = conversation.time.label(),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -267,7 +269,7 @@ private fun NeighborhoodRow(
         Spacer(Modifier.width(8.dp))
         if (room.joined) {
             DsText(
-                text = "참여 중",
+                text = stringResource(MainR.string.main_chat_home_tab_participating),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -289,7 +291,7 @@ private fun EnterButton(onClick: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 7.dp),
     ) {
         DsText(
-            text = "입장",
+            text = stringResource(MainR.string.main_chat_home_enter),
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel0,
         )

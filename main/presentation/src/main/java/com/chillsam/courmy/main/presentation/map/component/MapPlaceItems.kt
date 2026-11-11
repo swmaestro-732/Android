@@ -21,17 +21,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsBilingualText
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val CardShape = RoundedCornerShape(12.dp)
 private val ThumbShape = RoundedCornerShape(10.dp)
@@ -89,7 +94,7 @@ internal fun MapPlaceCarouselCard(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            DsText(
+            DsBilingualText(
                 text = place.name,
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = color.contentDefaultLevel0,
@@ -97,7 +102,7 @@ internal fun MapPlaceCarouselCard(
                 overflow = TextOverflow.Ellipsis,
             )
             DsText(
-                text = place.categoryMeta(),
+                text = rememberTaxonomyLabel(place.categoryMeta()),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
                 maxLines = 1,
@@ -137,7 +142,7 @@ internal fun MapPlaceDetailCard(
             PlaceNameAndCategoryLine(place = place)
             RankedPlaceMetaLine(place = place)
             if (place.address.isNotBlank()) {
-                DsText(
+                DsBilingualText(
                     text = place.address,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
@@ -189,7 +194,7 @@ internal fun MapRankedPlaceRow(
             PlaceNameAndCategoryLine(place = place)
             RankedPlaceMetaLine(place = place)
             if (place.address.isNotBlank()) {
-                DsText(
+                DsBilingualText(
                     text = place.address,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
@@ -214,12 +219,12 @@ private fun PlaceNameAndCategoryLine(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val category = place.categoryLabel()
+    val category = rememberTaxonomyLabel(place.categoryLabel())
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        DsText(
+        DsBilingualText(
             text = place.name,
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel0,
@@ -326,7 +331,14 @@ private fun SaveToggleIcon(
             painterResource(
                 if (saved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
             ),
-        contentDescription = if (saved) "저장 해제" else "저장",
+        contentDescription =
+            if (saved) {
+                stringResource(
+                    MainR.string.main_map_place_save_toggle_remove,
+                )
+            } else {
+                stringResource(MainR.string.main_map_place_save_toggle_add)
+            },
         tint = if (saved) color.contentAccent else color.contentDefaultLevel3,
         modifier =
             modifier
@@ -341,23 +353,36 @@ private fun SaveToggleIcon(
 
 /** `카페 · 베이커리`. [prefixSeparator] 면 앞에 붙는 평점과 잇도록 구분점으로 시작한다. */
 private fun MapPlaceVO.categoryMeta(prefixSeparator: Boolean = false): String {
-    val parts = listOfNotNull(category, subCategory)
+    val parts = listOfNotNull(detailCategory.orCategoryLabel(category), subCategory)
     val joined = parts.joinToString(" · ")
     return if (prefixSeparator && joined.isNotEmpty()) "· $joined" else joined
 }
 
 /** 첫 줄에 인라인으로 붙는 카테고리 라벨. 세부 카테고리가 있으면 `카페 · 베이커리`처럼 잇는다. */
-private fun MapPlaceVO.categoryLabel(): String = listOfNotNull(category, subCategory).joinToString(" · ")
+private fun MapPlaceVO.categoryLabel(): String =
+    listOfNotNull(detailCategory.orCategoryLabel(category), subCategory).joinToString(" · ")
 
 /**
  * 결과 행용 영업 상태 문구.
  * 영업 중이면 `영업 중`(마감 시간 있으면 `영업 중 · 22:00 종료`), 영업 종료면 `영업 종료`만 보여준다.
  */
+@Composable
 private fun MapPlaceVO.rankedOpenStatusText(): String =
     when {
-        openNow == true && closingTime != null -> "영업 중 · $closingTime 종료"
-        openNow == true -> "영업 중"
-        else -> "영업 종료"
+        openNow == true && closingTime != null -> {
+            stringResource(
+                MainR.string.main_map_place_open_until,
+                closingTime.orEmpty(),
+            )
+        }
+
+        openNow == true -> {
+            stringResource(MainR.string.main_map_place_open_now)
+        }
+
+        else -> {
+            stringResource(MainR.string.main_map_place_closed)
+        }
     }
 
 @Preview

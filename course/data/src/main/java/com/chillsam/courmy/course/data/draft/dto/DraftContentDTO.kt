@@ -40,7 +40,7 @@ fun CourseScreenData.toDraftVO(visibility: CourseVisibility?): CourseDraftVO {
  * 장소 썸네일([CoursePlaceVO.thumbnailUrl])은 비워 둔다. 응답에 담긴 이미지는 사용자가 올린 코스
  * 사진이지 장소 대표 사진이 아니라, 그대로 끼워 넣으면 검색에서 담았을 때와 다른 그림이 된다.
  *
- * 도보 문구([CoursePlaceVO.walkText])도 비운다. 작성 화면이 초안을 불러온 직후 좌표로 다시 계산한다.
+ * 도보 시간도 비운다. 작성 화면이 초안을 불러온 직후 좌표로 다시 계산한다.
  */
 private fun CoursePlaceDTO.toDraftPlaceVO(): CoursePlaceVO =
     CoursePlaceVO(
@@ -48,7 +48,7 @@ private fun CoursePlaceDTO.toDraftPlaceVO(): CoursePlaceVO =
         id = (placeId ?: 0L).toString(),
         name = name.orEmpty(),
         category = categories.toPlaceCategoryLabel(),
-        detailCategory = PlaceDetailCategoryVO.fromCode(detailCategory),
+        detailCategory = PlaceDetailCategoryVO.fromServerValue(detailCategory),
         note = caption.orEmpty(),
         photoUrls =
             images

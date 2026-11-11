@@ -1,6 +1,9 @@
 package com.chillsam.courmy.common.presentation.report
 
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.error.localizedValidationMessage
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.domain.report.ReportSubmissionException
 import com.chillsam.courmy.common.domain.report.SubmitReportUseCase
 import com.chillsam.courmy.common.entity.report.ReportReason
@@ -66,6 +69,7 @@ class ReportViewModel
     @Inject
     constructor(
         private val submitReport: SubmitReportUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<ReportIntent, ReportUIState, ReportEvent>(ReportUIState()) {
         override fun onIntent(intent: ReportIntent) {
             if (currentState.submitting) return
@@ -97,12 +101,19 @@ class ReportViewModel
             dispatch(ReportEvent.Started)
             viewModelScope.launch {
                 runCatching { submitReport(intent.type, intent.id, reason, state.description) }
-                    .onSuccess { result -> dispatch(ReportEvent.Succeeded(result.message)) }
-                    .onFailure { error ->
+                    .onSuccess { result ->
+                        dispatch(
+                            ReportEvent.Succeeded(
+                                result.message.ifBlank { resources.getString(StringResource.REPORT_RECEIVED) },
+                            ),
+                        )
+                    }.onFailure { error ->
                         if (error is CancellationException) throw error
                         dispatch(
                             ReportEvent.Failed(
-                                (error as? ReportSubmissionException)?.message ?: "신고하지 못했어요. 다시 시도해 주세요.",
+                                error.localizedValidationMessage(resources)
+                                    ?: (error as? ReportSubmissionException)?.message
+                                    ?: resources.getString(StringResource.REPORT_SUBMIT_FAILED),
                             ),
                         )
                     }

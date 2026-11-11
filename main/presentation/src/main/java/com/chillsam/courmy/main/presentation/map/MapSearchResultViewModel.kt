@@ -1,6 +1,8 @@
 package com.chillsam.courmy.main.presentation.map
 
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.entity.paging.CursorPageVO
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.SetPlaceSavedUseCase
@@ -26,6 +28,7 @@ class MapSearchResultViewModel
         private val searchPlaces: SearchMapPlacesUseCase,
         private val setPlaceSaved: SetPlaceSavedUseCase,
         private val suggestPlaces: SuggestMapPlacesUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<MapSearchResultIntent, MapSearchResultUIState, MapSearchResultReducerEvent>(
             MapSearchResultUIState.empty,
         ) {
@@ -190,7 +193,7 @@ class MapSearchResultViewModel
                         currentCoroutineContext().ensureActive()
                         dispatch(
                             MapSearchResultReducerEvent.Failed(
-                                error.searchErrorMessage("장소 검색 결과를 불러오지 못했어요. 다시 시도해 주세요."),
+                                error.searchErrorMessage(resources.getString(StringResource.PLACE_SEARCH_FAILED)),
                             ),
                         )
                     }
@@ -209,7 +212,9 @@ class MapSearchResultViewModel
                             currentCoroutineContext().ensureActive()
                             dispatch(
                                 MapSearchResultReducerEvent.ActionFailed(
-                                    error.searchErrorMessage("장소 저장을 변경하지 못했어요. 로그인 상태를 확인해 주세요."),
+                                    error.searchErrorMessage(
+                                        resources.getString(StringResource.PLACE_SAVE_AUTH_FAILED),
+                                    ),
                                 ),
                             )
                         }

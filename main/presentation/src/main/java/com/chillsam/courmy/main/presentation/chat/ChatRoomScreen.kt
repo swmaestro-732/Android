@@ -33,12 +33,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 채팅방 UI: 뒤로가기 상단바(제목·부제) + 말풍선 목록 + 하단 입력창. 네비게이션/ViewModel 을 모르는 순수 표시 레이어. */
 @Composable
@@ -105,7 +107,7 @@ private fun ChatRoomTopBar(
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_chevron_left_24),
-                contentDescription = "뒤로 가기",
+                contentDescription = stringResource(MainR.string.main_chat_room_back),
                 tint = color.contentDefaultLevel0,
                 modifier = Modifier.size(24.dp),
             )
@@ -177,7 +179,7 @@ private fun ChatBubble(message: ChatMessageUi) {
             }
             Spacer(Modifier.height(4.dp))
             DsText(
-                text = message.time,
+                text = message.time.label(),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -219,7 +221,7 @@ private fun ChatInputBar(
                 )
                 if (value.isEmpty()) {
                     DsText(
-                        text = "메시지 보내기",
+                        text = stringResource(MainR.string.main_chat_room_input_placeholder),
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel2,
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 11.dp),
@@ -237,7 +239,7 @@ private fun ChatInputBar(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_send_24),
-                    contentDescription = "전송",
+                    contentDescription = stringResource(MainR.string.main_chat_room_send),
                     tint = color.contentOnAccent,
                     modifier = Modifier.size(20.dp),
                 )

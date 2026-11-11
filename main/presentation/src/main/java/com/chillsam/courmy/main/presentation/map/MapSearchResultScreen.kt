@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
@@ -51,6 +52,7 @@ import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.rememberFusedLocationSource
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val ScreenHorizontalPadding = 16.dp
 private val ControlBottomGap = 12.dp
@@ -78,7 +80,7 @@ fun MapSearchResultScreen(
     val isList = uiState.sheetMode == MapSheetMode.LIST
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val listSheetHeight = screenHeight * LIST_SHEET_EXPANDED_RATIO
-    val categoryLabels = remember { MapCategory.entries.map { it.label() }.toImmutableList() }
+    val categoryLabels = MapCategory.entries.map { it.label() }.toImmutableList()
 
     // 내 위치 버튼은 지도 탭과 같은 기기 위치 추적(SCRUM-634). 초기 카메라는 검색 결과가
     // 주인공이라 결과 쪽에 두고, 추적은 버튼을 눌렀을 때만 켠다.
@@ -150,7 +152,13 @@ fun MapSearchResultScreen(
                 } else {
                     FeedMessage(
                         uiState.errorMessage
-                            ?: if (uiState.clusters.isNotEmpty()) "지도를 확대해 장소를 확인해 주세요" else "검색 결과가 없어요",
+                            ?: if (uiState.clusters.isNotEmpty()) {
+                                stringResource(
+                                    MainR.string.main_map_search_result_zoom_in,
+                                )
+                            } else {
+                                stringResource(MainR.string.main_map_search_result_empty)
+                            },
                         uiState.errorMessage?.let { actions.onRetry },
                     )
                 }
@@ -202,7 +210,7 @@ private fun MapControlsRow(
     Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         MapCircleIconButton(
             iconRes = R.drawable.ic_my_location_24,
-            contentDescription = "내 위치",
+            contentDescription = stringResource(MainR.string.main_map_search_result_my_location),
             onClick = onMyLocation,
             modifier = Modifier.align(Alignment.CenterEnd),
         )
@@ -300,7 +308,7 @@ private fun ResultCountLabel(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         DsText(
-            text = "검색 결과",
+            text = stringResource(MainR.string.main_map_search_result_count_label),
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel0,
         )
@@ -323,7 +331,14 @@ private fun ColumnScope.EmptyResults(
         contentAlignment = Alignment.Center,
     ) {
         DsText(
-            text = if (loading) "검색 결과를 불러오는 중이에요" else "검색 결과가 없어요",
+            text =
+                if (loading) {
+                    stringResource(
+                        MainR.string.main_map_search_result_loading,
+                    )
+                } else {
+                    stringResource(MainR.string.main_map_search_result_empty)
+                },
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel3,
         )

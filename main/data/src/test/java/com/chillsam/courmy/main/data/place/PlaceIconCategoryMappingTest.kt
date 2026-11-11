@@ -14,9 +14,9 @@ class PlaceIconCategoryMappingTest {
     fun `홈과 저장함이 같은 상세 분류 및 누락 폴백을 전달한다`() {
         mapOf(
             "" to null,
-            ",\"detailCategory\":null" to null,
-            ",\"detailCategory\":\"FUTURE\"" to null,
-            ",\"detailCategory\":\" bakery \"" to PlaceDetailCategoryVO.BAKERY,
+            ",\"categoryDetail\":null" to null,
+            ",\"categoryDetail\":\"FUTURE\"" to null,
+            ",\"categoryDetail\":\" bakery \"" to PlaceDetailCategoryVO.BAKERY,
         ).forEach { (field, expected) ->
             val home =
                 Json
