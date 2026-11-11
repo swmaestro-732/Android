@@ -43,12 +43,13 @@ fun AppVersionPage(modifier: Modifier = Modifier) {
     val navigation = LocalNavigationHelper.current
     val viewModel: AppVersionViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val unknownVersion = stringResource(MainR.string.main_app_version_unknown)
     val installedVersion =
-        remember(context) {
+        remember(context, unknownVersion) {
             runCatching {
                 val info = context.packageManager.getPackageInfo(context.packageName, 0)
                 info.versionName.orEmpty()
-            }.getOrDefault(context.getString(MainR.string.main_app_version_unknown))
+            }.getOrDefault(unknownVersion)
         }
     RefreshOnResume { viewModel.onIntent(AppVersionIntent.Check) }
     AppVersionContent(

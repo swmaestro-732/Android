@@ -3,6 +3,7 @@ package com.chillsam.courmy.common.presentation.translation
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.chillsam.courmy.common.presentation.R
@@ -12,9 +13,10 @@ import java.util.Locale
 @Composable
 fun catalogLabel(original: String): String {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val ids =
-        remember(context) {
-            val config = Configuration(context.resources.configuration).apply { setLocale(Locale.KOREAN) }
+        remember(context, configuration) {
+            val config = Configuration(configuration).apply { setLocale(Locale.KOREAN) }
             val korean = context.createConfigurationContext(config).resources
             CATALOG_LABEL_IDS.associateBy { korean.getString(it) }
         }
