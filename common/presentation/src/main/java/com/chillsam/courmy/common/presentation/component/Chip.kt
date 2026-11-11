@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -53,6 +54,7 @@ fun DsChip(
     val shape = RoundedCornerShape(percent = PILL_PERCENT)
 
     Box(
+        contentAlignment = Alignment.Center,
         modifier =
             modifier
                 .alpha(if (enabled) 1f else DISABLED_ALPHA)

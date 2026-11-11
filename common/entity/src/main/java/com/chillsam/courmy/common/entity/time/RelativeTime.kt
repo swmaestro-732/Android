@@ -4,14 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
-// 서버 ISO-8601 시각 문자열 → 화면 표시용 상대 시각("3분 전").
-//
-// 서버는 목록·상세 어디서도 상대 시각 문구를 주지 않고 createdAt(UTC Instant)만 준다.
-// 같은 규칙을 코스 상세 미리보기와 후기 전체보기가 함께 써야 해서 한곳에 둔다.
-//
-// java.time 을 쓰지 않는 이유는 minSdk 가 24 이기 때문이다(java.time 은 API 26+ 이고
-// 이 프로젝트는 core library desugaring 을 켜지 않았다 — DraftListDTO 도 같은 이유로
-// SimpleDateFormat 을 쓴다).
+// 서버 시각은 언어와 무관한 epoch millis·상대 단위로 전달하고 화면에서 문구를 정한다.
 
 /**
  * ISO-8601 UTC(`2026-08-16T04:20:00Z`, `2026-08-08T12:14:07.923816Z`) → epoch millis.
@@ -31,37 +24,33 @@ fun parseIsoUtcMillis(raw: String?): Long? {
     return runCatching { format.parse(withoutFraction)?.time }.getOrNull()
 }
 
-/**
- * epoch millis → "방금 전"·"3분 전"·"2일 전".
- *
- * [nowMillis] 를 인자로 받는 이유는 테스트가 고정 시각으로 검증하기 위해서다.
- * 서버 시계가 앞서 있어 미래로 계산되면 "방금 전" 으로 접는다 — "-1분 전" 을 보여주지 않는다.
- */
-fun formatRelativeTime(
+/** 언어와 무관한 상대 시각 단위. 문구와 복수형은 presentation 리소스가 정한다. */
+enum class RelativeTimeUnit { JUST_NOW, MINUTE, HOUR, DAY, WEEK, MONTH, YEAR }
+
+data class RelativeTime(
+    val unit: RelativeTimeUnit,
+    val count: Long,
+)
+
+/** 미래 시각은 방금 전으로 처리하고 기존 7일·30일·365일 경계를 유지한다. */
+fun relativeTime(
     epochMillis: Long,
     nowMillis: Long = System.currentTimeMillis(),
-): String {
-    val elapsed = nowMillis - epochMillis
+): RelativeTime {
+    val elapsed = (nowMillis - epochMillis).coerceAtLeast(0)
     val minutes = elapsed / MINUTE
     val hours = elapsed / HOUR
     val days = elapsed / DAY
     return when {
-        elapsed < MINUTE -> "방금 전"
-        minutes < MINUTES_PER_HOUR -> "${minutes}분 전"
-        hours < HOURS_PER_DAY -> "${hours}시간 전"
-        days < DAYS_PER_WEEK -> "${days}일 전"
-        days < DAYS_PER_MONTH -> "${days / DAYS_PER_WEEK}주 전"
-        days < DAYS_PER_YEAR -> "${days / DAYS_PER_MONTH}개월 전"
-        else -> "${days / DAYS_PER_YEAR}년 전"
+        elapsed < MINUTE -> RelativeTime(RelativeTimeUnit.JUST_NOW, 0)
+        minutes < MINUTES_PER_HOUR -> RelativeTime(RelativeTimeUnit.MINUTE, minutes)
+        hours < HOURS_PER_DAY -> RelativeTime(RelativeTimeUnit.HOUR, hours)
+        days < DAYS_PER_WEEK -> RelativeTime(RelativeTimeUnit.DAY, days)
+        days < DAYS_PER_MONTH -> RelativeTime(RelativeTimeUnit.WEEK, days / DAYS_PER_WEEK)
+        days < DAYS_PER_YEAR -> RelativeTime(RelativeTimeUnit.MONTH, days / DAYS_PER_MONTH)
+        else -> RelativeTime(RelativeTimeUnit.YEAR, days / DAYS_PER_YEAR)
     }
 }
-
-/**
- * ISO-8601 문자열 → 상대 시각 문구. 읽을 수 없으면 빈 문자열이라 화면이 날짜 줄을 비운다.
- * DTO → VO 변환에서 바로 쓰라고 확장으로 둔다.
- */
-fun String?.toRelativeTimeText(nowMillis: Long = System.currentTimeMillis()): String =
-    parseIsoUtcMillis(this)?.let { formatRelativeTime(it, nowMillis) }.orEmpty()
 
 private const val ISO_PATTERN = "yyyy-MM-dd'T'HH:mm:ss"
 

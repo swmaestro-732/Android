@@ -58,11 +58,11 @@ class CourseDetailDtoMappingTest {
         assertEquals(listOf("성수", "데이트"), vo.themes)
         assertEquals("지호님", vo.authorName)
         assertEquals("@jiho_routes", vo.authorHandle)
-        assertEquals("4곳", vo.placeCountText)
-        assertEquals("도보 20분", vo.walkText)
-        assertEquals("1.2k 따라감", vo.followerText)
+        assertEquals(4, vo.placeCount)
+        assertEquals(20, vo.walkingMinutes)
+        assertEquals(1200, vo.tracingCount)
         assertEquals("4.3", vo.rating)
-        assertEquals("6개", vo.reviewCountText)
+        assertEquals(6, vo.reviewCount)
     }
 
     @Test
@@ -82,13 +82,13 @@ class CourseDetailDtoMappingTest {
 
         assertEquals(listOf("첫째", "둘째"), vo.places.map { it.name })
         assertEquals(listOf(1, 2), vo.places.map { it.order })
-        assertEquals("도보 6분", vo.places[0].walkToNextText)
-        assertNull(vo.places[1].walkToNextText)
+        assertEquals(6, vo.places[0].walkingMinutesToNext)
+        assertNull(vo.places[1].walkingMinutesToNext)
         assertEquals("1/2", vo.places[0].photoCountText)
     }
 
     @Test
-    fun `리뷰 작성자 null 이면 익명, photoUrls 는 사진 목록`() {
+    fun `리뷰 작성자 null 이면 빈 이름, photoUrls 는 사진 목록`() {
         val vo =
             fullData()
                 .copy(
@@ -109,10 +109,10 @@ class CourseDetailDtoMappingTest {
                         ),
                 ).toVO(myUserId = null)
 
-        assertEquals("익명", vo.reviews[0].author)
+        assertEquals("", vo.reviews[0].author)
         assertEquals(listOf("a", "b"), vo.reviews[0].photoUrls)
-        // 서버가 주는 것은 createdAt(UTC) 뿐이라 상대 시각은 앱이 만든다. 고정 시각이 없어 형식만 확인한다.
-        assertTrue(vo.reviews[0].dateText.endsWith("전"))
+        // 서버 시각은 언어와 무관한 epoch millis로 보존한다.
+        assertEquals(1_789_689_600_000L, vo.reviews[0].createdAtMillis)
     }
 
     /** 서버가 isMine 을 주지 않아 작성자 id 와 세션 id 비교로 판정한다. 잘못되면 남의 코스에 삭제 버튼이 뜬다. */
@@ -150,16 +150,16 @@ class CourseDetailDtoMappingTest {
 
     /** 서버는 포맷된 문자열이 아니라 raw 숫자(tracingCount)를 준다. 이름·타입이 어긋나면 항상 0 이 된다. */
     @Test
-    fun `따라감 수는 raw 숫자를 축약해 표시한다`() {
+    fun `따라감 수는 축약하지 않고 원본 숫자로 전달한다`() {
         fun voWith(count: Int) =
             fullData()
                 .copy(course = fullData().course!!.copy(stats = CourseStatsDTO(tracingCount = count)))
                 .toVO(myUserId = null)
 
-        assertEquals("0 따라감", voWith(0).followerText)
-        assertEquals("999 따라감", voWith(999).followerText)
-        assertEquals("1k 따라감", voWith(1000).followerText)
-        assertEquals("1.2k 따라감", voWith(1200).followerText)
+        assertEquals(0, voWith(0).tracingCount)
+        assertEquals(999, voWith(999).tracingCount)
+        assertEquals(1000, voWith(1000).tracingCount)
+        assertEquals(1200, voWith(1200).tracingCount)
     }
 
     @Test
@@ -239,12 +239,12 @@ class CourseDetailDtoMappingTest {
 
         assertEquals("", vo.title)
         assertEquals(emptyList<String>(), vo.themes)
-        assertEquals("0곳", vo.placeCountText)
+        assertEquals(0, vo.placeCount)
         // 도보 합계가 없으면 "도보 0분" 대신 빈 값 — 화면이 항목째 뺀다.
-        assertEquals("", vo.walkText)
-        assertEquals("0 따라감", vo.followerText)
+        assertNull(vo.walkingMinutes)
+        assertEquals(0, vo.tracingCount)
         assertEquals("0.0", vo.rating)
-        assertEquals("0개", vo.reviewCountText)
+        assertEquals(0, vo.reviewCount)
         assertEquals(emptyList<Any>(), vo.places)
         assertEquals(emptyList<Any>(), vo.reviews)
     }
@@ -267,12 +267,12 @@ class CourseDetailDtoMappingTest {
                     ),
             ).toVO(myUserId = null)
 
-        assertEquals("도보 20분", voWith(total = 20, toNext = 6).walkText)
+        assertEquals(20, voWith(total = 20, toNext = 6).walkingMinutes)
         // 구간 하나가 -1 이면 합계를 믿을 수 없다
-        assertEquals("", voWith(total = 20, toNext = -1).walkText)
+        assertNull(voWith(total = 20, toNext = -1).walkingMinutes)
         // 합계가 0 이하면 값이 없다는 뜻이라 "도보 0분" 을 띄우지 않는다
-        assertEquals("", voWith(total = 0, toNext = 6).walkText)
-        assertEquals("", voWith(total = -1, toNext = 6).walkText)
+        assertNull(voWith(total = 0, toNext = 6).walkingMinutes)
+        assertNull(voWith(total = -1, toNext = 6).walkingMinutes)
     }
 
     @Test
@@ -334,7 +334,7 @@ class CourseDetailDtoMappingTest {
                 ).toVO(myUserId = null)
 
         assertEquals(6, vo.places[0].walkingMinutesToNext)
-        assertEquals("도보 6분", vo.places[0].walkToNextText)
+        assertEquals(6, vo.places[0].walkingMinutesToNext)
         assertNull(vo.places[1].walkingMinutesToNext)
     }
 
@@ -350,7 +350,7 @@ class CourseDetailDtoMappingTest {
                         ),
                 ).toVO(myUserId = null)
 
-        assertEquals("걸어갈 수 없는 거리", vo.places.single().walkToNextText)
+        assertEquals(-1, vo.places.single().walkingMinutesToNext)
         // 숫자는 편집 왕복을 위해 그대로 보존한다.
         assertEquals(-1, vo.places.single().walkingMinutesToNext)
     }

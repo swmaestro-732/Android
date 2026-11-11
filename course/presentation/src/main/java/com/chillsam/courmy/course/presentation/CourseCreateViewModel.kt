@@ -2,7 +2,9 @@ package com.chillsam.courmy.course.presentation
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
+import com.chillsam.courmy.common.presentation.translation.UiMessage
 import com.chillsam.courmy.course.domain.CreateCourseUseCase
 import com.chillsam.courmy.course.domain.CreatePlanUseCase
 import com.chillsam.courmy.course.domain.GetCourseDraftUseCase
@@ -372,7 +374,7 @@ class CourseCreateViewModel
         }
 
         /**
-         * 장소 사이 도보 시간을 다시 구해 [CoursePlaceVO.walkText] 에 채운다.
+         * 장소 사이 도보 시간을 다시 구해 [CoursePlaceVO.walkingMinutes] 에 채운다.
          *
          * 좌표가 빠진 장소가 섞이면 구간을 짝지을 수 없어 아예 표시하지 않는다. 응답이 와도 구간 수가
          * 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없으므로 같은 이유로 걷어낸다.
@@ -383,7 +385,7 @@ class CourseCreateViewModel
             dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(false))
             val places = currentState.places
             if (places.size < MIN_WALK_POINTS || places.any { !it.hasLocation }) {
-                places.clearedWalkTexts()?.let { dispatch(CourseCreateReducerEvent.PlacesChanged(it)) }
+                places.clearedWalkingMinutes()?.let { dispatch(CourseCreateReducerEvent.PlacesChanged(it)) }
                 return
             }
             val points =
@@ -395,10 +397,10 @@ class CourseCreateViewModel
                         .onSuccess { segments ->
                             dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(false))
                             if (currentState.places.map { it.id } != places.map { it.id }) return@onSuccess
-                            val applied = currentState.places.withWalkTexts(segments)
+                            val applied = currentState.places.withWalkingMinutes(segments)
                             if (applied == null) {
                                 Log.w(TAG, "도보 구간 수 불일치: 장소 ${places.size}곳 / 구간 ${segments.size}개")
-                                currentState.places.clearedWalkTexts()?.let {
+                                currentState.places.clearedWalkingMinutes()?.let {
                                     dispatch(
                                         CourseCreateReducerEvent.PlacesChanged(it),
                                     )
@@ -411,7 +413,7 @@ class CourseCreateViewModel
                             dispatch(CourseCreateReducerEvent.WalkingLoadingChanged(false))
                             Log.w(TAG, "도보 시간 조회 실패: 장소 ${places.size}곳", e)
                             if (currentState.places.map { it.id } == places.map { it.id }) {
-                                currentState.places.clearedWalkTexts()?.let {
+                                currentState.places.clearedWalkingMinutes()?.let {
                                     dispatch(
                                         CourseCreateReducerEvent.PlacesChanged(it),
                                     )
@@ -469,9 +471,9 @@ class CourseCreateViewModel
                         dispatch(
                             CourseCreateReducerEvent.SaveFailed(
                                 if (state.isPlan) {
-                                    "계획 저장에 실패했어요. 장소와 도보 경로를 확인한 뒤 다시 시도해 주세요."
+                                    UiMessage(StringResource.PLAN_SAVE_CHECK_ROUTE)
                                 } else {
-                                    "코스 저장에 실패했어요. 잠시 후 다시 시도해 주세요."
+                                    UiMessage(StringResource.COURSE_SAVE_RETRY_LATER)
                                 },
                             ),
                         )
@@ -558,9 +560,9 @@ class CourseCreateViewModel
                             dispatch(
                                 CourseCreateReducerEvent.LoadFailed(
                                     if (forkFromCourseId != null) {
-                                        "복제할 코스를 불러오지 못했어요."
+                                        UiMessage(StringResource.COURSE_COPY_LOAD_FAILED)
                                     } else {
-                                        "임시저장한 내용을 불러오지 못했어요."
+                                        UiMessage(StringResource.DRAFT_CONTENT_LOAD_FAILED)
                                     },
                                 ),
                             )
@@ -581,7 +583,7 @@ class CourseCreateViewModel
             if (!currentState.canSaveDraft) {
                 dispatch(
                     CourseCreateReducerEvent.DraftSaveFailed(
-                        "장소를 ${CourseCreateUIState.MIN_PLACES}곳 이상 담아야 임시저장할 수 있어요.",
+                        UiMessage(StringResource.DRAFT_MIN_PLACES, listOf(CourseCreateUIState.MIN_PLACES)),
                     ),
                 )
                 return
@@ -602,7 +604,9 @@ class CourseCreateViewModel
                             if (e is CancellationException) throw e
                             Log.w(TAG, "임시저장 실패: courseId=${currentState.draftCourseId}", e)
                             dispatch(
-                                CourseCreateReducerEvent.DraftSaveFailed("임시저장에 실패했어요. 잠시 후 다시 시도해 주세요."),
+                                CourseCreateReducerEvent.DraftSaveFailed(
+                                    UiMessage(StringResource.DRAFT_SAVE_FAILED),
+                                ),
                             )
                         }
                 }
@@ -632,34 +636,23 @@ private fun CourseCreateUIState.toDraftVO(): CourseDraftVO =
         forkedFromId = forkFromCourseId,
     )
 
-/** 걸어서 갈 수 없는 구간(서버가 음수로 알려 준다). */
-private const val UNREACHABLE_TEXT = "걸어갈 수 없는 거리"
-
 /**
  * 구간 도보 분을 장소별 값으로 채운다. 구간 수가 장소 수-1 과 다르면 어느 구간의 값인지 알 수 없어
- * null 을 돌려 호출부가 표시를 걷어내게 한다. 마지막 장소는 갈 곳이 없어 빈 문자열·null 이다.
- * 서버 저장 요청에도 숫자 값이 필요하므로 표시 문구와 함께 원본 분을 보존한다.
+ * null 을 돌려 호출부가 표시를 걷어내게 한다. 마지막 장소는 갈 곳이 없어 null 이다.
+ * 화면의 언어별 표시와 서버 저장 요청에 원본 분을 사용한다.
  */
-private fun List<CoursePlaceVO>.withWalkTexts(segments: List<Int>): List<CoursePlaceVO>? {
+private fun List<CoursePlaceVO>.withWalkingMinutes(segments: List<Int>): List<CoursePlaceVO>? {
     if (segments.size != size - 1) return null
     return mapIndexed { index, place ->
         val minutes = segments.getOrNull(index)
-        place.copy(walkText = minutes?.toWalkText().orEmpty(), walkingMinutes = minutes)
+        place.copy(walkingMinutes = minutes)
     }
 }
 
 /** 이미 비어 있으면 null 을 돌려 불필요한 상태 갱신을 막는다. */
-private fun List<CoursePlaceVO>.clearedWalkTexts(): List<CoursePlaceVO>? =
-    if (none { it.walkText.isNotEmpty() || it.walkingMinutes != null }) {
+private fun List<CoursePlaceVO>.clearedWalkingMinutes(): List<CoursePlaceVO>? =
+    if (none { it.walkingMinutes != null }) {
         null
     } else {
-        map { it.copy(walkText = "", walkingMinutes = null) }
+        map { it.copy(walkingMinutes = null) }
     }
-
-/**
- * 구간 도보 분 → 화면 문구.
- *
- * 서버는 걸어서 갈 수 없는 구간(너무 멀거나 경로가 없음)을 **음수(-1)** 로 준다.
- * 이때는 분으로 환산하지 않고 그렇게 알린다.
- */
-private fun Int.toWalkText(): String = if (this < 0) UNREACHABLE_TEXT else "도보 ${this}분"

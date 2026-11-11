@@ -18,14 +18,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsBilingualText
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 장소 카드: 썸네일 + 이름 + "카테고리 · 지역"(+ 방문함 표시) + 저장(북마크) 버튼.
@@ -68,7 +72,7 @@ fun SavedPlaceCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                DsText(
+                DsBilingualText(
                     text = place.name,
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = color.contentDefaultLevel0,
@@ -81,7 +85,7 @@ fun SavedPlaceCard(
                 )
                 if (place.categoryLabel.isNotBlank()) {
                     DsText(
-                        text = place.detailCategory.orCategoryLabel(place.categoryLabel),
+                        text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.categoryLabel)),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,
@@ -98,7 +102,7 @@ fun SavedPlaceCard(
                     modifier = Modifier.padding(top = 4.dp),
                 ) {
                     if (place.area.isNotBlank()) {
-                        DsText(
+                        DsBilingualText(
                             text = place.area,
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
                             color = color.contentDefaultLevel2,
@@ -109,7 +113,7 @@ fun SavedPlaceCard(
                     }
                     if (place.visited) {
                         DsText(
-                            text = "방문함",
+                            text = stringResource(MainR.string.main_saved_place_card_visited),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
                             color = color.contentAccent,
                             maxLines = 1,
@@ -134,7 +138,7 @@ fun SavedPlaceCard(
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_bookmark_filled_24),
-                contentDescription = "저장 취소",
+                contentDescription = stringResource(MainR.string.main_saved_place_card_remove_bookmark),
                 tint = color.contentAccent,
                 modifier = Modifier.size(18.dp),
             )

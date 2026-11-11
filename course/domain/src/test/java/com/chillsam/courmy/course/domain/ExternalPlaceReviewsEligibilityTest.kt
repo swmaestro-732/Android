@@ -20,9 +20,22 @@ class ExternalPlaceReviewsEligibilityTest {
     }
 
     @Test
-    fun `집계를 모르면 0개 표시 문구만으로 소수 후기를 판단하지 않는다`() {
+    fun `집계를 모르면 받아 온 후기 수만으로 소수 후기를 판단하지 않는다`() {
         assertFalse(CourseReviewListVO.empty.shouldSuggestExternalReviews)
-        assertFalse(CourseReviewListVO.empty.copy(totalCountText = "3개").shouldSuggestExternalReviews)
+        assertFalse(
+            CourseReviewListVO.empty
+                .copy(
+                    reviews =
+                        List(3) {
+                            com.chillsam.courmy.course.entity.CourseReviewVO(
+                                author = "reviewer",
+                                rating = 5,
+                                createdAtMillis = null,
+                                body = "",
+                            )
+                        },
+                ).shouldSuggestExternalReviews,
+        )
     }
 
     @Test

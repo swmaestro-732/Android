@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -76,15 +77,19 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
+import com.chillsam.courmy.common.presentation.translation.rememberAutoTranslated
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.aichat.AiChatStep
 import com.chillsam.courmy.main.entity.aichat.QuickReplyVO
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.presentation.component.hasLocationPermission
+import com.chillsam.courmy.main.presentation.home.districtNameLabel
 import com.google.android.gms.location.LocationServices
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val ScreenPadding = 16.dp
 private val BubbleMaxWidth = 272.dp
@@ -251,14 +256,18 @@ private fun LoginGate(
                 AiAvatar()
                 Spacer(Modifier.height(16.dp))
                 DsText(
-                    text = "로그인하고\n커미 AI에게 코스를 추천받아 보세요",
+                    text = stringResource(MainR.string.ai_login_prompt),
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = AiChatPalette.ink,
-                    maxLines = 2,
+                    maxLines = 4,
                     textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(24.dp))
-                DsButton(text = "로그인하기", onClick = onLogin, modifier = Modifier.widthIn(max = 240.dp))
+                DsButton(
+                    text = stringResource(MainR.string.ai_login),
+                    onClick = onLogin,
+                    modifier = Modifier.widthIn(max = 240.dp),
+                )
             }
         }
     }
@@ -275,7 +284,7 @@ private fun ChatTopBar(onBack: () -> Unit) {
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_chevron_left_24),
-            contentDescription = "뒤로",
+            contentDescription = stringResource(MainR.string.ai_back),
             tint = AiChatPalette.ink,
             modifier =
                 Modifier
@@ -284,8 +293,16 @@ private fun ChatTopBar(onBack: () -> Unit) {
                     .clickable(onClick = onBack)
                     .padding(8.dp),
         )
-        DsText("커미 AI", style = DesignSystemThemeImpl.typeScale.textStrongS, color = AiChatPalette.ink)
-        DsText("Beta", style = DesignSystemThemeImpl.typeScale.textRegularXS, color = AiChatPalette.inkSoft)
+        DsText(
+            stringResource(MainR.string.ai_title),
+            style = DesignSystemThemeImpl.typeScale.textStrongS,
+            color = AiChatPalette.ink,
+        )
+        DsText(
+            stringResource(MainR.string.ai_beta),
+            style = DesignSystemThemeImpl.typeScale.textRegularXS,
+            color = AiChatPalette.inkSoft,
+        )
     }
 }
 
@@ -336,7 +353,8 @@ private fun GlassBubble(text: String) {
                 .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
         DsText(
-            text = text,
+            text = districtNameLabel(text),
+            autoTranslate = true,
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = AiChatPalette.ink,
             maxLines = Int.MAX_VALUE,
@@ -357,6 +375,7 @@ private fun UserMessageRow(message: AiChatMessage) {
         ) {
             DsText(
                 text = message.text,
+                autoTranslate = true,
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
                 maxLines = Int.MAX_VALUE,
@@ -421,7 +440,11 @@ private fun ChipRow(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         chips.forEach { (label, withPin) ->
-            ChipPill(label = label, iconRes = if (withPin) R.drawable.ic_location_24 else null, enabled = enabled) {
+            ChipPill(
+                label = districtNameLabel(label),
+                iconRes = if (withPin) R.drawable.ic_location_24 else null,
+                enabled = enabled,
+            ) {
                 onTap(label)
             }
         }
@@ -471,7 +494,12 @@ private fun ChipPill(
                 modifier = Modifier.size(13.dp),
             )
         }
-        DsText(text = label, style = DesignSystemThemeImpl.typeScale.textRegularS, color = AiChatPalette.ink)
+        DsText(
+            text = rememberTaxonomyLabel(label),
+            autoTranslate = true,
+            style = DesignSystemThemeImpl.typeScale.textRegularS,
+            color = AiChatPalette.ink,
+        )
     }
 }
 
@@ -513,7 +541,7 @@ private fun ChatCourseCard(
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (course.categoryLabel.isNotBlank()) {
                 DsText(
-                    course.categoryLabel,
+                    rememberTaxonomyLabel(course.categoryLabel),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = DesignSystemThemeImpl.designSystemColor.contentAccent,
                     maxLines = 1,
@@ -521,6 +549,7 @@ private fun ChatCourseCard(
             }
             DsText(
                 course.title,
+                autoTranslate = true,
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = AiChatPalette.ink,
                 maxLines = 2,
@@ -534,6 +563,7 @@ private fun ChatCourseCard(
 
 @Composable
 private fun TypingRow(rippleStrength: () -> Float) {
+    val thinkingLabel = stringResource(MainR.string.ai_thinking)
     Row(verticalAlignment = Alignment.Top) {
         AiAvatar(rippleStrength = rippleStrength)
         Spacer(Modifier.width(11.dp))
@@ -544,7 +574,7 @@ private fun TypingRow(rippleStrength: () -> Float) {
                     .padding(horizontal = 18.dp, vertical = 15.dp),
         ) {
             Row(
-                modifier = Modifier.height(14.dp).semantics { contentDescription = "응답 준비 중" },
+                modifier = Modifier.height(14.dp).semantics { contentDescription = thinkingLabel },
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -604,7 +634,10 @@ private fun ChatInputBar(
             value = input,
             onValueChange = { input = it },
             modifier = Modifier.weight(1f),
-            placeholder = placeholder,
+            placeholder =
+                rememberAutoTranslated(placeholder, enabled = true).ifBlank {
+                    stringResource(MainR.string.ai_placeholder)
+                },
             enabled = enabled,
         )
         val canSend = enabled && input.isNotBlank()
@@ -639,7 +672,7 @@ private fun SendButton(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_arrow_up_24),
-            contentDescription = "보내기",
+            contentDescription = stringResource(MainR.string.ai_send),
             tint =
                 if (enabled) {
                     DesignSystemThemeImpl.designSystemColor.contentOnAccent

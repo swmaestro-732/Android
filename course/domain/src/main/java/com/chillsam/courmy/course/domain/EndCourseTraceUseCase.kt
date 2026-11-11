@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.course.entity.TraceVisitVO
 import javax.inject.Inject
 
@@ -15,7 +18,7 @@ class EndCourseTraceUseCase
             durationMinutes: Int,
             distanceMeters: Int = 0,
         ) {
-            require(traceId > 0) { "따라가기 기록을 확인해 주세요." }
+            requireLocalized(traceId > 0) { LocalizedValidationException(StringResource.VALIDATION_TRACE_TARGET) }
             repository.endTrace(
                 traceId = traceId,
                 visits = visits,

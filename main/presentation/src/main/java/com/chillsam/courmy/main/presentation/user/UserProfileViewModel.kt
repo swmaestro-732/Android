@@ -3,6 +3,8 @@ package com.chillsam.courmy.main.presentation.user
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.user.GetUserProfileUseCase
 import com.chillsam.courmy.main.domain.user.ToggleFollowUseCase
@@ -29,6 +31,7 @@ class UserProfileViewModel
         private val getUserProfileUseCase: GetUserProfileUseCase,
         private val toggleFollowUseCase: ToggleFollowUseCase,
         private val isLoggedInUseCase: IsLoggedInUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<UserProfileIntent, UserProfileUIState, UserProfileReducerEvent>(
             UserProfileUIState.empty,
         ) {
@@ -162,7 +165,7 @@ class UserProfileViewModel
             // handle 검증이 더미 분기보다 먼저다. 라우트 인자가 빠지면 빈 handle 이 들어오는데,
             // 순서가 반대면 debug 빌드에서 handle 이 빈 더미 프로필을 정상 화면처럼 렌더한다.
             if (handle.isBlank()) {
-                dispatch(UserProfileReducerEvent.Failed("사용자를 찾을 수 없습니다."))
+                dispatch(UserProfileReducerEvent.Failed(resources.getString(StringResource.USER_NOT_FOUND)))
                 return
             }
             dispatch(UserProfileReducerEvent.LoadStarted)
@@ -183,7 +186,9 @@ class UserProfileViewModel
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "타유저 프로필 로드 실패: handle=$handle", e)
-                            dispatch(UserProfileReducerEvent.Failed("프로필을 불러오지 못했습니다."))
+                            dispatch(
+                                UserProfileReducerEvent.Failed(resources.getString(StringResource.PROFILE_LOAD_FAILED)),
+                            )
                         }
                 }
         }
@@ -256,7 +261,7 @@ class UserProfileViewModel
                     }.onFailure { e ->
                         if (e is CancellationException) throw e
                         Log.w(TAG, "팔로우 토글 실패: userId=${profile.id}", e)
-                        dispatch(UserProfileReducerEvent.FollowFailed("잠시 후 다시 시도해 주세요."))
+                        dispatch(UserProfileReducerEvent.FollowFailed(resources.getString(StringResource.RETRY_LATER)))
                     }
                 }
         }

@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -31,6 +33,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.chillsam.courmy.main.presentation.R as MainR
 
 @Composable
 internal fun NotificationRow(
@@ -38,12 +41,14 @@ internal fun NotificationRow(
     onClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val stateRead = stringResource(MainR.string.main_notification_state_read)
+    val stateUnread = stringResource(MainR.string.main_notification_state_unread)
     Column(
         Modifier
             .fillMaxWidth()
             .background(if (item.isRead) color.bgDefaultLevel0 else color.bgAccentSubtle)
             .clickable(role = Role.Button, onClick = onClick)
-            .semantics { stateDescription = if (item.isRead) "읽음" else "안 읽음" },
+            .semantics { stateDescription = if (item.isRead) stateRead else stateUnread },
     ) {
         Row(
             Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
@@ -84,14 +89,15 @@ internal fun NotificationRow(
     }
 }
 
+@Composable
 internal fun notificationMessage(item: NotificationItemVO): String {
-    val name = item.actorNickname.ifBlank { "누군가" }
+    val name = item.actorNickname.ifBlank { stringResource(MainR.string.main_remaining_actor_unknown) }
     return when (item.type) {
-        "COURSE_LIKED" -> "${name}님이 내 코스를 좋아해요"
-        "COURSE_COMMENTED" -> "${name}님이 내 코스에 댓글을 남겼어요"
-        "COURSE_REVIEWED" -> "${name}님이 내 코스에 후기를 남겼어요"
-        "USER_FOLLOWED" -> "${name}님이 나를 팔로우해요"
-        else -> "새로운 소식이 도착했어요"
+        "COURSE_LIKED" -> stringResource(MainR.string.main_remaining_notification_liked, name)
+        "COURSE_COMMENTED" -> stringResource(MainR.string.main_remaining_notification_commented, name)
+        "COURSE_REVIEWED" -> stringResource(MainR.string.main_remaining_notification_reviewed, name)
+        "USER_FOLLOWED" -> stringResource(MainR.string.main_remaining_notification_followed, name)
+        else -> stringResource(MainR.string.main_remaining_notification_unknown)
     }
 }
 
@@ -104,6 +110,7 @@ private fun notificationIcon(type: String): Int =
         else -> R.drawable.ic_notifications_24
     }
 
+@Composable
 internal fun notificationTime(
     value: String,
     now: Instant = Instant.now(),
@@ -111,10 +118,30 @@ internal fun notificationTime(
     val date = runCatching { Instant.parse(value) }.getOrNull() ?: return ""
     val minutes = Duration.between(date, now).toMinutes().coerceAtLeast(0)
     return when {
-        minutes < 1 -> "방금 전"
-        minutes < 60 -> "${minutes}분 전"
-        minutes < 1440 -> "${minutes / 60}시간 전"
-        else -> DateTimeFormatter.ofPattern("M월 d일").withZone(ZoneId.systemDefault()).format(date)
+        minutes < 1 -> {
+            stringResource(MainR.string.main_remaining_notification_now)
+        }
+
+        minutes < 60 -> {
+            pluralStringResource(MainR.plurals.main_remaining_notification_minutes, minutes.toInt(), minutes)
+        }
+
+        minutes < 1440 -> {
+            pluralStringResource(
+                MainR.plurals.main_remaining_notification_hours,
+                (minutes / 60).toInt(),
+                minutes / 60,
+            )
+        }
+
+        else -> {
+            DateTimeFormatter
+                .ofPattern(
+                    stringResource(MainR.string.main_remaining_notification_date_pattern),
+                    androidx.compose.ui.platform.LocalConfiguration.current.locales[0],
+                ).withZone(ZoneId.systemDefault())
+                .format(date)
+        }
     }
 }
 

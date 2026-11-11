@@ -27,12 +27,9 @@ platform :android do
     next_code = (existing.max || 0) + 1
     UI.message("다음 versionCode = #{next_code} (기존 최고값 #{existing.max || '없음'})")
 
-    # versionName 패치 자동 산정. versionCode 14 == 1.3.0 기준으로, 이후 배포마다 패치를 +1 한다
-    # (versionCode 15 → 1.3.1, 16 → 1.3.2 …). 메이저·마이너(1.3)는 build.gradle 에서 관리하며,
-    # 거기서 올릴 땐 아래 PATCH_BASE_CODE 를 그 시점 versionCode 로 맞춰 패치를 0 부터 다시 시작시킨다.
-    patch_base_code = 14
-    version_patch = [next_code - patch_base_code, 0].max
-    UI.message("versionName = 1.3.#{version_patch} (patch 자동 산정)")
+    # Release 1.4.0: do not carry over the 1.3 versionCode-based patch counter.
+    version_patch = 0
+    UI.message("versionName = 1.4.0")
 
     # 산정한 versionCode·패치로 서명된 AAB(Play)·APK(GitHub pre-release)를 새로 빌드한다
     # — 두 아티팩트가 같은 버전을 갖도록 한 번에 만든다(기본값 대신 주입값 사용).

@@ -23,10 +23,9 @@ data class AiCourseChatUIState(
     val step: AiChatStep = AiChatStep.REGION,
     val isAiTyping: Boolean = false,
     val inputEnabled: Boolean = true,
-    val inputPlaceholder: String = DEFAULT_PLACEHOLDER,
+    val inputPlaceholder: String = "",
 ) : UiState {
     companion object {
-        const val DEFAULT_PLACEHOLDER = "메시지를 입력하세요"
         val empty: AiCourseChatUIState = AiCourseChatUIState()
     }
 }

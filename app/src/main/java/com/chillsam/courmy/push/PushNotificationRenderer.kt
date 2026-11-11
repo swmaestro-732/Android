@@ -47,8 +47,10 @@ class PushNotificationRenderer(
             NotificationCompat
                 .Builder(context, "courmy_activity")
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(message.notification?.title ?: message.data["title"] ?: "Courmy")
-                .setContentText(message.notification?.body ?: message.data["body"].orEmpty())
+                .setContentTitle(
+                    message.notification?.title ?: message.data["title"]
+                        ?: context.getString(com.chillsam.courmy.common.presentation.R.string.app_name),
+                ).setContentText(message.notification?.body ?: message.data["body"].orEmpty())
                 .setStyle(
                     NotificationCompat.BigTextStyle().bigText(
                         message.notification?.body ?: message.data["body"].orEmpty(),

@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,6 +44,7 @@ import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
@@ -50,6 +52,7 @@ import com.chillsam.courmy.course.entity.PlanDetailVO
 import com.chillsam.courmy.course.presentation.component.PlaceDetailSheet
 import com.chillsam.courmy.course.presentation.component.PlaceSheetCourse
 import com.chillsam.courmy.course.presentation.component.PlannedDateField
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 @Composable
 internal fun PlanDetailScreen(
@@ -62,7 +65,8 @@ internal fun PlanDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val places = remember(detail) { detail.toDisplayPlaces() }
+    val unavailablePlace = stringResource(CourseR.string.course_remaining_place_unavailable)
+    val places = remember(detail, unavailablePlace) { detail.toDisplayPlaces(unavailablePlace) }
     var selectedPlace by remember(detail.planId) { mutableStateOf<CourseDetailPlaceVO?>(null) }
     var openSheetInOverview by remember(detail.planId) { mutableStateOf(false) }
     var editing by remember(detail.planId) { mutableStateOf(false) }
@@ -86,7 +90,7 @@ internal fun PlanDetailScreen(
             PlacesSection(
                 places = places,
                 authorName = "",
-                title = "계획 속 장소",
+                title = stringResource(CourseR.string.course_plan_detail_places_title),
                 onPlaceClick = { selectedPlace = it },
                 expandedPlaceContent = { place ->
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -101,7 +105,7 @@ internal fun PlanDetailScreen(
                     openSheetInOverview = true
                     selectedPlace = it
                 },
-                title = "계획 한눈에 보기",
+                title = stringResource(CourseR.string.course_plan_detail_map_title),
             )
         }
     }
@@ -110,17 +114,19 @@ internal fun PlanDetailScreen(
             place = place,
             course =
                 PlaceSheetCourse(
-                    title = detail.title,
+                    title = detail.title.ifBlank { stringResource(CourseR.string.course_remaining_my_plan) },
                     category =
-                        places
-                            .flatMap { it.category.split(" · ") }
-                            .filter { it.isNotBlank() }
-                            .distinct()
-                            .joinToString(" · "),
+                        rememberTaxonomyLabel(
+                            places
+                                .flatMap { it.category.split(" · ") }
+                                .filter { it.isNotBlank() }
+                                .distinct()
+                                .joinToString(" · "),
+                        ),
                     summary =
                         listOf(
                             detail.plannedDate,
-                            "${places.size}곳",
+                            stringResource(CourseR.string.course_plan_detail_place_count, places.size),
                         ).filter { it.isNotBlank() }.joinToString(" · "),
                     authorName = "",
                     places = places,
@@ -141,7 +147,7 @@ internal fun PlanDetailScreen(
 
     if (editing) {
         EditPlanDialog(
-            initialTitle = detail.title,
+            initialTitle = detail.title.ifBlank { stringResource(CourseR.string.course_remaining_my_plan) },
             initialMemo = detail.memo,
             initialDate = detail.plannedDate,
             isSaving = isMutating,
@@ -154,10 +160,10 @@ internal fun PlanDetailScreen(
     }
     if (confirmingDelete) {
         DsConfirmDialog(
-            title = "계획을 삭제할까요?",
-            description = "삭제한 계획은 되돌릴 수 없어요.",
-            confirmText = "삭제",
-            dismissText = "취소",
+            title = stringResource(CourseR.string.course_plan_detail_delete_title),
+            description = stringResource(CourseR.string.course_plan_detail_delete_description),
+            confirmText = stringResource(CourseR.string.course_plan_detail_delete_confirm),
+            dismissText = stringResource(CourseR.string.course_plan_detail_delete_cancel),
             destructive = true,
             onConfirm = {
                 confirmingDelete = false
@@ -185,27 +191,35 @@ private fun EditPlanDialog(
     var memo by remember { mutableStateOf(initialMemo) }
     var date by remember { mutableStateOf(initialDate) }
     DsDialogScaffold(
-        title = "계획 수정",
-        description = "장소 구성은 그대로 두고 제목·메모·방문 날짜를 바꿔요.",
+        title = stringResource(CourseR.string.course_plan_detail_edit_title),
+        description = stringResource(CourseR.string.course_plan_detail_edit_description),
         onDismiss = onDismiss,
     ) {
-        DsTextField(value = title, onValueChange = { title = it }, placeholder = "계획 이름")
-        DsTextField(value = memo, onValueChange = { memo = it }, placeholder = "메모 (선택)")
+        DsTextField(
+            value = title,
+            onValueChange = { title = it },
+            placeholder = stringResource(CourseR.string.course_plan_detail_edit_title_placeholder),
+        )
+        DsTextField(
+            value = memo,
+            onValueChange = { memo = it },
+            placeholder = stringResource(CourseR.string.course_plan_detail_edit_memo_placeholder),
+        )
         DsText(
-            text = "방문 날짜 (선택)",
+            text = stringResource(CourseR.string.course_plan_detail_edit_date_label),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
         )
         PlannedDateField(plannedDate = date, onDateChange = { date = it })
         DsButton(
-            text = "저장",
+            text = stringResource(CourseR.string.course_plan_detail_edit_save),
             enabled = title.isNotBlank() && !isSaving,
             loading = isSaving,
             onClick = { onSave(title, memo, date) },
             modifier = Modifier.fillMaxWidth(),
         )
         DsButton(
-            text = "취소",
+            text = stringResource(CourseR.string.course_plan_detail_edit_cancel),
             variant = DsButtonVariant.Secondary,
             enabled = !isSaving,
             onClick = onDismiss,
@@ -229,12 +243,12 @@ internal fun PlanHeader(
         IconButton(onClick = onBack) {
             Icon(
                 painterResource(R.drawable.arrow_back_24px),
-                contentDescription = "뒤로",
+                contentDescription = stringResource(CourseR.string.course_plan_detail_back),
                 tint = color.contentDefaultLevel0,
             )
         }
         DsText(
-            "계획 상세",
+            stringResource(CourseR.string.course_plan_detail_title),
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
             modifier = Modifier.weight(1f),
@@ -259,7 +273,7 @@ private fun PlanSettingsMenu(
         IconButton(onClick = { expanded = true }) {
             Icon(
                 painterResource(R.drawable.ic_more_vert_24),
-                contentDescription = "계획 설정",
+                contentDescription = stringResource(CourseR.string.course_plan_detail_settings),
                 tint = color.contentDefaultLevel0,
             )
         }
@@ -271,7 +285,7 @@ private fun PlanSettingsMenu(
             DropdownMenuItem(
                 text = {
                     DsText(
-                        "계획 수정",
+                        stringResource(CourseR.string.course_plan_detail_menu_edit),
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel0,
                     )
@@ -285,7 +299,11 @@ private fun PlanSettingsMenu(
             DropdownMenuItem(
                 text = {
                     DsText(
-                        if (isMutating) "처리 중…" else "계획 삭제",
+                        if (isMutating) {
+                            stringResource(CourseR.string.course_plan_detail_menu_processing)
+                        } else {
+                            stringResource(CourseR.string.course_plan_detail_menu_delete)
+                        },
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDanger,
                     )
@@ -315,9 +333,13 @@ private fun PlanSourceRow(onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            DsText("코스에서 복제한 계획", style = DesignSystemThemeImpl.typeScale.textStrongS, color = color.contentAccent)
             DsText(
-                "원본 코스 보기",
+                stringResource(CourseR.string.course_plan_detail_source_label),
+                style = DesignSystemThemeImpl.typeScale.textStrongS,
+                color = color.contentAccent,
+            )
+            DsText(
+                stringResource(CourseR.string.course_plan_detail_source_view_origin),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -335,7 +357,11 @@ private fun PlanSourceRow(onClick: () -> Unit) {
 private fun PlanMemo(memo: String) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        DsText("계획 메모", style = DesignSystemThemeImpl.typeScale.textStrongM, color = color.contentDefaultLevel0)
+        DsText(
+            stringResource(CourseR.string.course_plan_detail_memo_title),
+            style = DesignSystemThemeImpl.typeScale.textStrongM,
+            color = color.contentDefaultLevel0,
+        )
         DsText(
             memo,
             style = DesignSystemThemeImpl.typeScale.textRegularS,
@@ -422,29 +448,19 @@ private fun PlanPlaceDetail(
     )
 }
 
-private fun PlanDetailVO.toDisplayPlaces(): List<CourseDetailPlaceVO> =
+private fun PlanDetailVO.toDisplayPlaces(unavailablePlace: String): List<CourseDetailPlaceVO> =
     places.mapIndexed { index, place ->
         CourseDetailPlaceVO(
             placeId = place.placeId,
             order = index + 1,
-            name = place.name.ifBlank { "장소 정보를 불러오지 못했어요" },
+            name = place.name.ifBlank { unavailablePlace },
             category = place.categoryLabel,
             detailCategory = place.detailCategory,
             photoCountText = "",
             tip = place.memo,
             latitude = place.latitude,
             longitude = place.longitude,
-            walkingMinutesToNext = place.walkingMinutesToNext,
-            walkToNextText =
-                place.walkingMinutesToNext?.takeIf { index < places.lastIndex }?.let {
-                    if (it <
-                        0
-                    ) {
-                        "도보 이동 불가"
-                    } else {
-                        "도보 ${it}분"
-                    }
-                },
+            walkingMinutesToNext = place.walkingMinutesToNext?.takeIf { index < places.lastIndex },
         )
     }
 

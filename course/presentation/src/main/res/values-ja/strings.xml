@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 日本語翻訳(ドラフト)。UI文言は要確認。 -->
+<resources>
+    <string name="course_review_header_title">レビュー</string>
+    <string name="course_review_see_all">すべて見る</string>
+    <string name="course_review_empty">まだレビューがありません。このコースの体験をシェアしてください。</string>
+    <string name="course_review_delete">自分のレビューを削除</string>
+
+    <!-- 場所詳細ボトムシート(FS-11 Sheet) -->
+    <string name="course_place_sheet_close_map">地図を閉じる</string>
+    <string name="course_place_sheet_close_detail">場所の詳細を閉じる</string>
+    <string name="course_place_sheet_place_count">%1$dか所</string>
+    <string name="course_place_sheet_review_count">レビュー %1$s</string>
+    <string name="course_place_sheet_review_title">レビュー</string>
+    <string name="course_place_sheet_review_load_failed">レビューを読み込めませんでした</string>
+    <string name="course_place_sheet_review_delete_title">レビューを削除しますか?</string>
+    <string name="course_place_sheet_review_delete_desc">削除したレビューは元に戻せません。</string>
+    <string name="course_place_sheet_save">保存</string>
+    <string name="course_place_sheet_saved">保存済み</string>
+    <string name="course_place_sheet_directions">ルート案内</string>
+    <string name="course_place_sheet_opening_hours">営業時間</string>
+    <string name="course_place_sheet_opening_hours_expand">曜日別の営業時間を表示</string>
+    <string name="course_place_sheet_opening_hours_collapse">営業時間を閉じる</string>
+    <string name="course_place_sheet_overview_open">コース全体を見る</string>
+    <string name="course_place_sheet_overview_back">現在の場所に戻る</string>
+    <string name="course_place_sheet_tip_author">ヒント：%1$s</string>
+    <string name="course_place_sheet_step_previous">前へ</string>
+    <string name="course_place_sheet_step_next">次へ</string>
+    <string name="course_place_sheet_no_location">位置情報がありません</string>
+
+    <!-- course 화면 고정 문구(SCRUM-813 i18n) -->
+    <!-- 코스 상세 화면(FS-11) 고정 문구 -->
+    <string name="course_detail_back">戻る</string>
+    <string name="course_detail_hero_back">戻る</string>
+    <string name="course_detail_unsave">保存を解除</string>
+    <string name="course_detail_save">コースを保存</string>
+    <string name="course_detail_share">共有</string>
+    <string name="course_detail_forked_badge">複製したコース</string>
+    <string name="course_detail_settings">コース設定</string>
+    <string name="course_detail_menu_edit">コースを編集</string>
+    <string name="course_detail_menu_deleting">削除中…</string>
+    <string name="course_detail_menu_delete">コースを削除</string>
+    <string name="course_detail_unlike">いいねを取り消す</string>
+    <string name="course_detail_like">いいね</string>
+    <string name="course_detail_following">フォロー中</string>
+    <string name="course_detail_follow_author">フォロー</string>
+    <string name="course_detail_map_section">コースをひと目で</string>
+    <string name="course_detail_places_section">コース内のスポット</string>
+    <string name="course_detail_place_count">%1$dか所</string>
+    <string name="course_detail_collapse">折りたたむ</string>
+    <string name="course_detail_expand">開く</string>
+    <string name="course_detail_place_detail">スポットの詳細</string>
+    <string name="course_detail_more_places">残り%1$dか所を見る</string>
+    <string name="course_detail_tip_prefix">ヒント：%1$s</string>
+    <string name="course_detail_close">閉じる</string>
+    <string name="course_detail_comments">コメント</string>
+    <string name="course_detail_fork">コースを複製</string>
+    <string name="course_detail_follow">コースをたどる</string>
+
+    <!-- 코스 장소 카드 -->
+    <string name="course_place_card_note_placeholder">ひとことメモを残す…</string>
+
+    <!-- 코스 정보 입력(이름·설명·썸네일) -->
+    <string name="course_info_name_label">コース名</string>
+    <string name="course_info_name_placeholder">コース名を入力してください</string>
+    <string name="course_info_description_label">コースの説明</string>
+    <string name="course_info_description_placeholder">コースの説明を入力してください</string>
+    <string name="course_info_thumbnail_label">サムネイル画像</string>
+
+    <!-- 코스 계획(제목·메모·날짜) -->
+    <string name="course_plan_title_label">プランのタイトル（任意・%1$d/200）</string>
+    <string name="course_plan_title_placeholder">プランのタイトルを入力してください</string>
+    <string name="course_plan_memo_label">メモ（任意・%1$d/500）</string>
+    <string name="course_plan_memo_placeholder">覚えておきたいことを残しましょう</string>
+    <string name="course_plan_date_label">訪問予定日（任意）</string>
+    <string name="course_plan_date_unset">未定・日付を選択</string>
+    <string name="course_plan_date_clear">日付を未定にする</string>
+    <string name="course_route_map_my_location">現在地</string>
+
+    <!-- プラン詳細画面の固定文言(SCRUM-813 i18n) -->
+    <string name="course_plan_detail_title">プランの詳細</string>
+    <string name="course_plan_detail_back">戻る</string>
+    <string name="course_plan_detail_settings">プラン設定</string>
+    <string name="course_plan_detail_menu_edit">プランを編集</string>
+    <string name="course_plan_detail_menu_processing">処理中…</string>
+    <string name="course_plan_detail_menu_delete">プランを削除</string>
+    <string name="course_plan_detail_source_label">コースから複製したプラン</string>
+    <string name="course_plan_detail_source_view_origin">元のコースを見る</string>
+    <string name="course_plan_detail_memo_title">プランのメモ</string>
+    <string name="course_plan_detail_places_title">プラン内のスポット</string>
+    <string name="course_plan_detail_map_title">プランをひと目で</string>
+    <string name="course_plan_detail_place_count">%1$dか所</string>
+    <string name="course_plan_detail_delete_title">プランを削除しますか？</string>
+    <string name="course_plan_detail_delete_description">削除したプランは元に戻せません。</string>
+    <string name="course_plan_detail_delete_confirm">削除</string>
+    <string name="course_plan_detail_delete_cancel">キャンセル</string>
+    <string name="course_plan_detail_edit_title">プランを編集</string>
+    <string name="course_plan_detail_edit_description">スポットの構成はそのままに、タイトル・メモ・訪問日を変更します。</string>
+    <string name="course_plan_detail_edit_title_placeholder">プラン名</string>
+    <string name="course_plan_detail_edit_memo_placeholder">メモ（任意）</string>
+    <string name="course_plan_detail_edit_date_label">訪問日（任意）</string>
+    <string name="course_plan_detail_edit_save">保存</string>
+    <string name="course_plan_detail_edit_cancel">キャンセル</string>
+
+    <!-- 코스 공통 컴포넌트(상단바·사진 담기) -->
+    <string name="course_common_topbar_title">新しいコース</string>
+    <string name="course_common_topbar_close">コース作成を閉じる</string>
+    <string name="course_common_topbar_saving">保存中…</string>
+    <string name="course_common_topbar_save_draft">一時保存</string>
+    <string name="course_common_photo_remove">写真を削除</string>
+
+    <!-- 場所検索・追加オーバーレイ(FS-34) -->
+    <string name="course_place_search_limit_alert">場所は最大%1$dか所まで追加できます。</string>
+    <string name="course_place_search_searching">場所を探しています…</string>
+    <string name="course_place_search_map_result_count">地図の検索結果 %1$d</string>
+    <string name="course_place_search_result_count">検索結果 %1$d</string>
+    <string name="course_place_search_add_new_place">新しい場所を追加</string>
+    <string name="course_place_search_input_hint">場所・住所を検索</string>
+    <string name="course_place_search_clear_query">検索語を消去</string>
+    <string name="course_place_search_cancel">キャンセル</string>
+    <string name="course_place_search_selected_count">%1$dか所を選択中</string>
+    <string name="course_place_search_confirm">追加する</string>
+    <string name="course_place_search_empty_result">検索結果がありません</string>
+    <string name="course_place_search_empty_prompt">場所や住所を検索してみましょう</string>
+    <!-- コース作成の確認ダイアログ・トースト(FS-34) -->
+    <string name="course_remove_place_question_plan">この場所をプランから外しますか？</string>
+    <string name="course_remove_place_question_course">この場所をコースから外しますか？</string>
+    <string name="course_remove_place_confirm_plan">プランから外す</string>
+    <string name="course_remove_place_confirm_course">コースから外す</string>
+    <string name="course_dialog_cancel">キャンセル</string>
+    <string name="course_exit_confirm_title">作成中のコースを下書き保存しますか？</string>
+    <string name="course_exit_confirm_desc">このまま出ると変更内容が失われます。</string>
+    <string name="course_exit_save_and_exit">下書き保存して出る</string>
+    <string name="course_exit_discard">保存しない</string>
+    <string name="course_saved_draft_toast">下書きを保存しました</string>
+    <string name="course_delete_confirm_title">コースを削除しますか？</string>
+    <string name="course_delete_confirm_desc">削除したコースは元に戻せません。</string>
+    <string name="course_add_place_title">新しい場所を追加</string>
+    <string name="course_add_place_description">探している場所の名前を入力すると\n地図から候補を表示します。</string>
+    <string name="course_add_place_name_placeholder">例）オニオン聖水</string>
+    <string name="course_add_place_searching">検索中…</string>
+    <string name="course_add_place_search">検索</string>
+
+    <!-- コースレビュー一覧画面(FS-37) -->
+    <string name="course_review_list_title">コースのレビュー</string>
+    <string name="course_review_list_back">戻る</string>
+    <string name="course_review_list_write">レビューを書く</string>
+    <string name="course_review_list_photo_header">レビュー写真</string>
+    <string name="course_review_list_photo_see_all">すべて見る</string>
+    <string name="course_review_list_empty_title">最初のレビューを待っています</string>
+    <string name="course_review_list_empty_desc">このコースの体験をシェアしてください。\n星の評価だけでも次の旅の参考になります。</string>
+    <string name="course_review_list_delete_title">レビューを削除しますか?</string>
+    <string name="course_review_list_delete_desc">削除したレビューは元に戻せません。</string>
+    <string name="course_review_list_delete_confirm">削除</string>
+    <string name="course_review_list_delete_dismiss">キャンセル</string>
+
+    <!-- コース編集画面の固定文言 -->
+    <string name="course_edit_top_bar_title">コースを編集</string>
+    <string name="course_edit_close">コース編集を閉じる</string>
+    <string name="course_edit_section_info">コース情報</string>
+    <string name="course_edit_title_label">コース名</string>
+    <string name="course_edit_title_placeholder">コース名を入力してください</string>
+    <string name="course_edit_description_label">コース紹介</string>
+    <string name="course_edit_description_placeholder">このコースを紹介してください</string>
+    <string name="course_edit_section_tag">タグ</string>
+    <string name="course_edit_section_visibility">公開設定</string>
+    <string name="course_edit_visibility_unknown_notice">現在の設定を読み込めませんでした。保存すると、下で選んだ内容に変わります。</string>
+    <string name="course_edit_section_place_tip">スポットごとのひとこと</string>
+    <string name="course_edit_place_tip_notice">スポットと写真は編集できません。ひとことだけ変更できます。</string>
+    <string name="course_edit_place_tip_placeholder">ここにひとことを残しましょう</string>
+    <string name="course_edit_saving">保存中…</string>
+    <string name="course_edit_save">保存する</string>
+
+    <!-- 로딩 스켈레톤 접근성 안내 -->
+    <string name="course_loading_detail">コースを読み込み中</string>
+    <string name="course_loading_content">コンテンツを読み込み中</string>
+    <string name="course_loading_reviews">レビューを読み込み中</string>
+    <string name="course_loading_drafts">下書きのコースを読み込み中</string>
+    <string name="course_loading_list">リストを読み込み中</string>
+    <string name="course_loading_create">コース作成画面を読み込み中</string>
+    <string name="course_loading_follow">フォローするコースを読み込み中</string>
+
+    <!-- レビュー作成画面(SCRUM-813 i18n) -->
+    <string name="course_review_write_title">レビューを書く</string>
+    <string name="course_review_write_close">レビュー作成を閉じる</string>
+    <string name="course_review_write_submit">レビューを投稿</string>
+    <string name="course_review_write_rating_title_place">この場所はいかがでしたか？</string>
+    <string name="course_review_write_rating_title_course">このコースはいかがでしたか？</string>
+    <string name="course_review_write_rating_hint">評価を選んでください</string>
+    <string name="course_review_write_content_section">訪問の感想を教えてください</string>
+    <string name="course_review_write_content_placeholder_place">この場所を訪れた感想を書いてください。（任意）</string>
+    <string name="course_review_write_content_placeholder_course">このコースをたどった感想を書いてください。（任意）</string>
+    <string name="course_review_write_photo_section">写真を追加しましょう</string>
+    <string name="course_review_write_tag_section">キーワードで表現しましょう</string>
+    <string name="course_review_write_tag_guide">良かった点を最大%1$d個選んでください。（任意）</string>
+    <string name="course_review_write_selected_keywords_count">選んだキーワード %1$d/%2$d</string>
+    <string name="course_review_write_selected_keywords_empty">選んだキーワードがここに集まります</string>
+    <string name="course_review_write_keyword_remove">%1$sの選択を解除</string>
+
+    <!-- 임시저장 코스 목록 화면(FS-20) -->
+    <string name="course_draft_list_title">下書き</string>
+    <string name="course_draft_list_count">%1$d件</string>
+    <string name="course_draft_list_header_desc">保存したコースの続きを作成できます。</string>
+    <string name="course_draft_list_back">戻る</string>
+    <string name="course_draft_list_empty">下書きのコースはありません</string>
+    <string name="course_draft_list_load_error">下書きのコースを読み込めませんでした。</string>
+    <string name="course_draft_list_retry">再試行</string>
+    <string name="course_draft_list_delete">削除</string>
+    <string name="course_draft_list_delete_title">下書きを削除しますか？</string>
+    <string name="course_draft_list_delete_description">「%1$s」は削除すると元に戻せません。</string>
+
+    <!-- 코스 댓글 시트 -->
+    <string name="course_comment_title">コメント</string>
+    <string name="course_comment_title_count">コメント %1$d%2$s</string>
+    <string name="course_comment_login_prompt">ログインするとコメントを書けます。</string>
+    <string name="course_comment_empty">最初のコメントを残してみましょう。</string>
+    <string name="course_comment_retry">再試行</string>
+    <string name="course_comment_input_placeholder">コメントを残してください</string>
+    <string name="course_comment_submit_description">コメントを投稿</string>
+    <string name="course_comment_author_fallback">投稿者</string>
+    <string name="course_comment_author_unknown">不明なユーザー</string>
+    <string name="course_comment_author_profile_description">%1$s のプロフィールを見る</string>
+    <string name="course_comment_menu_description">コメントメニュー</string>
+    <string name="course_comment_menu_edit">編集</string>
+    <string name="course_comment_menu_delete">削除</string>
+    <string name="course_comment_edit_title">コメントを編集</string>
+    <string name="course_comment_edit_description">コメントは1000文字まで書けます。</string>
+    <string name="course_comment_edit_placeholder">コメント内容</string>
+    <string name="course_comment_edit_save">保存</string>
+    <string name="course_comment_delete_title">コメントを削除しますか？</string>
+    <string name="course_comment_delete_description">削除したコメントは元に戻せません。</string>
+    <string name="course_comment_delete_confirm">削除</string>
+    <string name="course_comment_delete_dismiss">キャンセル</string>
+
+    <!-- コース作成／プラン画面(FS-34) 固定文言 (SCRUM-807 i18n) -->
+    <string name="course_create_draft_saved_images_missing">写真は保存されませんでした。続きを書くときにもう一度アップロードしてください。</string>
+    <string name="course_create_draft_saved">下書きを保存しました</string>
+    <string name="course_create_saved_images_missing">写真は保存されませんでした。編集からもう一度アップロードしてください。</string>
+    <string name="course_create_plan_saved">プランを保存しました</string>
+    <string name="course_create_retry">再試行</string>
+    <string name="course_create_go_back">戻る</string>
+    <string name="course_create_title_plan">プランを作成</string>
+    <string name="course_create_title_course">新しいコース</string>
+    <string name="course_create_exit_plan_title">プランの作成をやめますか？</string>
+    <string name="course_create_exit_plan_desc">保存していない内容は失われます。</string>
+    <string name="course_create_info_header_plan">プラン情報</string>
+    <string name="course_create_info_header_course">コース情報</string>
+    <string name="course_create_plan_info_hint">自分だけが見られるプランです。タイトル・メモ・日付は空のままでも大丈夫です。</string>
+    <string name="course_create_records_header_plan">場所ごとのメモ</string>
+    <string name="course_create_records_header_course">場所ごとの記録</string>
+    <string name="course_create_records_hint_plan">場所ごとのメモは残さなくても大丈夫です。</string>
+    <string name="course_create_records_hint_course">場所ごとに写真が1枚は必要です。ひとことは残さなくても大丈夫です。</string>
+    <string name="course_create_fork_author_fallback">ほかの人</string>
+    <string name="course_create_fork_banner">%1$sさんのコースを複製しています</string>
+    <string name="course_create_places_header">場所を選ぶ</string>
+    <string name="course_create_places_count_reorder">%1$dか所 · ドラッグで並べ替え</string>
+    <string name="course_create_add_place_at_max">場所は最大%1$dか所まで追加できます</string>
+    <string name="course_create_add_place">＋ 場所を追加</string>
+    <string name="course_create_settings_header">コース設定</string>
+    <string name="course_create_prev">戻る</string>
+    <string name="course_create_calculating_walking">徒歩時間を計算中…</string>
+    <string name="course_create_save_plan">プランを保存</string>
+    <string name="course_create_save_course">コースを保存</string>
+    <string name="course_create_next">次へ</string>
+
+    <!-- 따라가기(FS-21): 미리보기·진행·완주 -->
+    <string name="course_follow_route_count">コースの動線 %1$d</string>
+    <string name="course_follow_visited">訪問済み</string>
+    <string name="course_follow_resume">続きから</string>
+    <string name="course_follow_start">このコースをフォロー</string>
+    <string name="course_follow_tracking_title">%1$s · %2$d/%3$d 進行中</string>
+    <string name="course_follow_next_spot">次のスポット</string>
+    <string name="course_follow_start_here">ここから出発</string>
+    <string name="course_follow_recording">訪問を記録中…</string>
+    <string name="course_follow_arrive">到着</string>
+    <string name="course_follow_end">終了</string>
+    <string name="course_follow_end_confirm_title">フォローを終了しますか？</string>
+    <string name="course_follow_end_confirm_desc">今終了すると進行画面を離れます。あとでコースから続けられます。</string>
+    <string name="course_follow_done_title">コース完走！\nお疲れさまでした</string>
+    <string name="course_follow_stat_visited">訪問スポット</string>
+    <string name="course_follow_stat_elapsed">所要時間</string>
+    <string name="course_follow_stat_distance">移動距離</string>
+    <string name="course_follow_visited_course">歩いたコース</string>
+    <string name="course_follow_visit_done">訪問完了</string>
+    <string name="course_follow_leave_review">レビューを書く</string>
+    <string name="course_follow_skip">スキップ</string>
+    <string name="course_follow_back">戻る</string>
+    <string name="course_follow_route_start">ここからコースを始めます</string>
+    <string name="course_follow_route_loading">徒歩ルートを読み込み中…</string>
+    <string name="course_follow_route_to_dest">%1$s まで</string>
+    <string name="course_follow_route_walk_minutes">徒歩%1$d分</string>
+    <string name="course_follow_route_detail">徒歩ルート詳細</string>
+    <string name="course_follow_guide_expand">ルート案内</string>
+    <string name="course_follow_guide_collapse">ルート案内を閉じる</string>
+    <!-- course 화면 고정 문구(SCRUM-813 i18n): 추가 분 -->
+    <string name="course_companion_card_label">誰と一緒でしたか？（任意）</string>
+    <string name="course_visibility_card_label">公開設定</string>
+    <string name="course_visibility_public_label">公開</string>
+    <string name="course_visibility_public_helper">誰でも閲覧してフォローできます。</string>
+    <string name="course_visibility_follower_label">フォロワー</string>
+    <string name="course_visibility_follower_helper">フォロワーにのみ公開されます。</string>
+    <string name="course_visibility_private_label">非公開</string>
+    <string name="course_visibility_private_helper">自分だけが見られます。</string>
+    <string name="course_external_reviews_prompt">ほかの訪問者のレビューも見てみませんか？</string>
+    <string name="course_external_reviews_open_naver">NAVERマップで探す</string>
+    <string name="course_external_reviews_map_open_failed">NAVERマップを開けませんでした</string>
+    <string name="course_place_review_empty_title">まだ口コミがありません</string>
+    <string name="course_place_review_empty_subtitle">訪れたことがあれば、最初の口コミを残してください。</string>
+    <string name="course_place_review_write_first">最初の口コミを書く</string>
+    <string name="course_place_review_write">口コミを書く</string>
+    <string name="course_complete_timeline_title">コースの順路</string>
+    <string name="course_complete_view_my_courses">マイコースで見る</string>
+    <string name="course_complete_header_title">コースが完成しました!</string>
+    <string name="course_complete_header_desc">マイコースに保存しました。</string>
+    <string name="course_detail_error_load_failed">コースを読み込めませんでした。</string>
+    <string name="course_detail_error_retry">再試行</string>
+    <string name="course_follow_load_failed">コースを読み込めませんでした。</string>
+    <string name="course_follow_retry">再試行</string>
+    <string name="course_review_list_load_error">レビューを読み込めませんでした。</string>
+    <string name="course_review_list_retry">再試行</string>
+    <string name="course_plan_detail_retry">再試行</string>
+    <string name="course_recommended_tags">おすすめタグ</string>
+    <string name="course_remove_tag">タグ「%1$s」を削除</string>
+    <string name="course_add_tag_hint">タグを追加</string>
+    <string name="course_add_tag_action">追加</string>
+    <string name="course_place_selected_order">選択済み、%1$d番目</string>
+    <string name="course_image_size_limit">5MB以下の画像のみ追加できます。</string>
+</resources>

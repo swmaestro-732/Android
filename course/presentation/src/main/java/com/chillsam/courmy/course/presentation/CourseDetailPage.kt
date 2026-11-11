@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
@@ -205,12 +206,12 @@ private fun CourseDetailError(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             DsText(
-                text = message ?: "코스를 불러오지 못했습니다.",
+                text = message ?: stringResource(R.string.course_detail_error_load_failed),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
             )
             DsText(
-                text = "다시 시도",
+                text = stringResource(R.string.course_detail_error_retry),
                 style = DesignSystemThemeImpl.typeScale.textRegularM,
                 color = DesignSystemThemeImpl.designSystemColor.contentAccent,
                 modifier = Modifier.clickable(onClick = onRetry),

@@ -1,6 +1,6 @@
 package com.chillsam.courmy.course.data.courseComments.dto
 
-import com.chillsam.courmy.common.entity.time.toRelativeTimeText
+import com.chillsam.courmy.common.entity.time.parseIsoUtcMillis
 import com.chillsam.courmy.course.entity.CourseCommentPageVO
 import com.chillsam.courmy.course.entity.CourseCommentVO
 import kotlinx.serialization.Serializable
@@ -74,7 +74,7 @@ fun CourseCommentListDTO.toVO(): CourseCommentPageVO {
                     authorProfileImageUrl = item.authorProfileImageUrl.orEmpty(),
                     authorHandle = item.authorHandle.orEmpty(),
                     content = item.content.orEmpty(),
-                    dateText = item.createdAt.toRelativeTimeText(),
+                    createdAtMillis = parseIsoUtcMillis(item.createdAt),
                     isMine = item.isMine,
                 )
             }

@@ -3,6 +3,9 @@ package com.chillsam.courmy.course.presentation
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.error.HttpResponseException
+import com.chillsam.courmy.common.domain.error.localizedValidationMessage
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CreateCourseReviewUseCase
 import com.chillsam.courmy.course.domain.CreatePlaceReviewUseCase
@@ -28,6 +31,7 @@ class CourseReviewWriteViewModel
     constructor(
         private val createCourseReviewUseCase: CreateCourseReviewUseCase,
         private val createPlaceReviewUseCase: CreatePlaceReviewUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<CourseReviewWriteIntent, CourseReviewWriteUIState, CourseReviewWriteReducerEvent>(
             CourseReviewWriteUIState.empty,
         ) {
@@ -128,9 +132,18 @@ class CourseReviewWriteViewModel
          */
         private fun Throwable.toWriteMessage(): String =
             when ((this as? HttpResponseException)?.rawCode) {
-                CONFLICT -> "이미 후기를 남긴 곳이에요."
-                UNAUTHORIZED -> "로그인이 필요해요."
-                else -> message?.takeIf { this is IllegalArgumentException } ?: "후기를 등록하지 못했어요."
+                CONFLICT -> {
+                    resources.getString(StringResource.REVIEW_ALREADY_WRITTEN)
+                }
+
+                UNAUTHORIZED -> {
+                    resources.getString(StringResource.LOGIN_REQUIRED)
+                }
+
+                else -> {
+                    localizedValidationMessage(resources)
+                        ?: resources.getString(StringResource.REVIEW_SUBMIT_FAILED)
+                }
             }
 
         override fun reduce(

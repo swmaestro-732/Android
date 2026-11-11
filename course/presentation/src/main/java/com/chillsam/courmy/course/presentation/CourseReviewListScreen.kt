@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -42,6 +43,7 @@ import com.chillsam.courmy.common.presentation.component.DsRatingStars
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
+import com.chillsam.courmy.common.presentation.translation.catalogLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseRatingBucketVO
@@ -49,6 +51,7 @@ import com.chillsam.courmy.course.entity.CourseReviewListVO
 import com.chillsam.courmy.course.entity.CourseReviewSort
 import com.chillsam.courmy.course.entity.CourseReviewVO
 import kotlinx.collections.immutable.ImmutableList
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /** 사진 띠 한 칸 크기(Figma FS-37: 88×88, radius 12). */
 private val PHOTO_TILE = 88.dp
@@ -142,10 +145,10 @@ fun CourseReviewListScreen(
     }
     if (pendingDeleteId != 0L) {
         DsConfirmDialog(
-            title = "후기를 삭제할까요?",
-            description = "삭제한 후기는 되돌릴 수 없어요.",
-            confirmText = "삭제",
-            dismissText = "취소",
+            title = stringResource(CourseR.string.course_review_list_delete_title),
+            description = stringResource(CourseR.string.course_review_list_delete_desc),
+            confirmText = stringResource(CourseR.string.course_review_list_delete_confirm),
+            dismissText = stringResource(CourseR.string.course_review_list_delete_dismiss),
             destructive = true,
             onConfirm = {
                 onDeleteReview(pendingDeleteId)
@@ -167,7 +170,11 @@ private fun ReviewWriteBar(onWriteReview: () -> Unit) {
                 .navigationBarsPadding()
                 .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
     ) {
-        DsButton(text = "후기 쓰기", onClick = onWriteReview, modifier = Modifier.fillMaxWidth())
+        DsButton(
+            text = stringResource(CourseR.string.course_review_list_write),
+            onClick = onWriteReview,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -188,13 +195,13 @@ internal fun ReviewListTopBar(onBack: () -> Unit) {
         IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
             Icon(
                 painter = painterResource(R.drawable.ic_chevron_left_24),
-                contentDescription = "뒤로",
+                contentDescription = stringResource(CourseR.string.course_review_list_back),
                 tint = color.contentDefaultLevel0,
                 modifier = Modifier.size(24.dp),
             )
         }
         DsText(
-            text = "코스 후기",
+            text = stringResource(CourseR.string.course_review_list_title),
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
         )
@@ -224,7 +231,7 @@ private fun RatingSummaryBand(summary: CourseReviewListVO) {
             )
             DsRatingStars(rating = summary.averageStars, starSize = 11.dp)
             DsText(
-                text = summary.totalCountText,
+                text = reviewCountText(summary.totalCount ?: 0),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -290,7 +297,7 @@ private fun ReviewPhotoBand(summary: CourseReviewListVO) {
         ) {
             Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 DsText(
-                    text = "후기 사진",
+                    text = stringResource(CourseR.string.course_review_list_photo_header),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel0,
                 )
@@ -302,7 +309,7 @@ private fun ReviewPhotoBand(summary: CourseReviewListVO) {
             }
             // 사진 모아보기 화면(FS-23)이 아직 없다. 리뷰 섹션의 "전체보기" 와 같은 이유로 비활성이다.
             DsText(
-                text = "모두 보기",
+                text = stringResource(CourseR.string.course_review_list_photo_see_all),
                 modifier = Modifier.semantics { disabled() },
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
@@ -363,7 +370,7 @@ private fun SortTabs(
         CourseReviewSort.entries.forEach { sort ->
             val isSelected = sort == selected
             DsText(
-                text = sort.label,
+                text = catalogLabel(sort.label),
                 modifier =
                     Modifier
                         .clip(CircleShape)
@@ -395,12 +402,12 @@ private fun ReviewListEmpty() {
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         DsText(
-            text = "첫 후기를 기다리고 있어요",
+            text = stringResource(CourseR.string.course_review_list_empty_title),
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
         )
         DsText(
-            text = "코스를 다녀온 경험을 나눠 주세요.\n별점만 남겨도 다음 여행에 도움이 돼요.",
+            text = stringResource(CourseR.string.course_review_list_empty_desc),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
             textAlign = TextAlign.Center,

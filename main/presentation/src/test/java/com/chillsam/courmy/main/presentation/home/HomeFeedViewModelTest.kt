@@ -7,6 +7,7 @@ import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
 import com.chillsam.courmy.main.domain.home.GetHomeFeedUseCase
 import com.chillsam.courmy.main.domain.saved.GetSavedCourseIdsUseCase
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -393,13 +394,49 @@ class HomeFeedViewModelTest {
             assertEquals(13, viewModel.course("1").saveCount)
         }
 
+    @Test
+    fun `region is retained for pagination and reset to province for all areas`() =
+        runTest(dispatcher) {
+            val viewModel = loadedViewModel(course("1", 0, "0"))
+            advanceUntilIdle()
+            coEvery { getFeed(any(), null, null, "11110") } returns
+                CursorPageVO(listOf(course("2", 0, "0")), "district-next", true)
+            coEvery { getFeed(any(), "district-next", null, "11110") } returns
+                CursorPageVO(listOf(course("3", 0, "0")), null, false)
+            coEvery { getFeed(any(), null, null, "11") } returns
+                CursorPageVO(listOf(course("4", 0, "0")), null, false)
+
+            viewModel.onIntent(HomeFeedIntent.SetRegion("11110"))
+            advanceUntilIdle()
+            viewModel.onIntent(HomeFeedIntent.LoadMore)
+            advanceUntilIdle()
+            assertEquals(
+                listOf("2", "3"),
+                viewModel.uiState.value.courses
+                    .map { it.id },
+            )
+            coVerify(exactly = 1) { getFeed(any(), "district-next", null, "11110") }
+
+            viewModel.onIntent(HomeFeedIntent.SetRegion("11"))
+            advanceUntilIdle()
+            assertEquals(
+                listOf("4"),
+                viewModel.uiState.value.courses
+                    .map { it.id },
+            )
+            assertNull(viewModel.uiState.value.nextCursor)
+            coVerify(exactly = 1) { getFeed(any(), null, null, "11") }
+        }
+
     private fun loadedViewModel(
         vararg courses: HomeCourseVO,
         savedIds: Set<String> = emptySet(),
     ): HomeFeedViewModel {
         coEvery { getFeed(any(), any(), any()) } returns CursorPageVO(courses.toList(), "next", true)
         coEvery { getSavedIds() } returns savedIds
-        return HomeFeedViewModel(getFeed, setSaved, getSavedIds).also { it.onIntent(HomeFeedIntent.Load) }
+        return HomeFeedViewModel(getFeed, setSaved, getSavedIds, resources = testResources()).also {
+            it.onIntent(HomeFeedIntent.Load)
+        }
     }
 
     private fun course(

@@ -8,12 +8,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 목록용 좋아요 집계. 개인의 좋아요 여부나 토글 동작을 나타내지 않는다. */
 @Composable
@@ -23,8 +25,9 @@ internal fun CourseLikeCount(
 ) {
     if (count.isBlank()) return
     val color = DesignSystemThemeImpl.designSystemColor
+    val likeCountDescription = stringResource(MainR.string.main_course_like_count_description, count)
     Row(
-        modifier = modifier.clearAndSetSemantics { contentDescription = "좋아요 $count" },
+        modifier = modifier.clearAndSetSemantics { contentDescription = likeCountDescription },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {

@@ -3,6 +3,8 @@ package com.chillsam.courmy.main.presentation.login
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.domain.telemetry.AppFailure
 import com.chillsam.courmy.common.domain.telemetry.AppFlow
 import com.chillsam.courmy.common.domain.telemetry.ProductEvent
@@ -29,6 +31,7 @@ class LoginViewModel
     constructor(
         private val socialLoginUseCase: SocialLoginUseCase,
         private val telemetry: Telemetry,
+        private val resources: ResourceHelper,
     ) : MviViewModel<LoginIntent, LoginUiState, LoginReducerEvent>(LoginUiState.empty) {
         private var loginJob: Job? = null
 
@@ -139,7 +142,7 @@ class LoginViewModel
                             }
                         if (completed == null) {
                             logProviderOutcome(provider, "timeout", "server")
-                            dispatch(LoginReducerEvent.Failed("로그인 응답이 늦어지고 있어요. 다시 시도해 주세요."))
+                            dispatch(LoginReducerEvent.Failed(resources.getString(StringResource.LOGIN_TIMEOUT)))
                         }
                     } finally {
                         dispatch(LoginReducerEvent.Canceled)
@@ -184,7 +187,14 @@ class LoginViewModel
                         e is GoogleLoginClient.NotConfiguredException
                     -> {
                         logProviderOutcome(provider, "not_configured", "sdk")
-                        dispatch(LoginReducerEvent.Failed("${provider.label()} 로그인이 아직 준비되지 않았어요."))
+                        dispatch(
+                            LoginReducerEvent.Failed(
+                                resources.getString(
+                                    StringResource.PROVIDER_LOGIN_UNAVAILABLE,
+                                    provider.label(resources),
+                                ),
+                            ),
+                        )
                     }
 
                     provider == SocialProvider.KAKAO -> {
@@ -221,7 +231,11 @@ class LoginViewModel
                     cause = e,
                 ),
             )
-            dispatch(LoginReducerEvent.Failed("${provider.label()} 로그인을 완료하지 못했어요."))
+            dispatch(
+                LoginReducerEvent.Failed(
+                    resources.getString(StringResource.PROVIDER_LOGIN_FAILED, provider.label(resources)),
+                ),
+            )
         }
 
         /**
@@ -244,7 +258,7 @@ class LoginViewModel
                     cause = e,
                 ),
             )
-            dispatch(LoginReducerEvent.Failed("카카오 로그인을 완료하지 못했어요."))
+            dispatch(LoginReducerEvent.Failed(resources.getString(StringResource.KAKAO_LOGIN_FAILED)))
         }
 
         /** 서버 social-login 단계. 성공/실패 계측은 [SocialLoginUseCase] 의 track 이 담당한다. */
@@ -272,7 +286,7 @@ class LoginViewModel
                     // 원시 예외 메시지(개발자용 requireNotNull·URL 포함 등)는 로그로만 남기고,
                     // 사용자에게는 고정 안내 문구를 보여준다.
                     Log.w(TAG, "소셜 로그인 실패: ${e.javaClass.simpleName} - ${e.message}", e)
-                    dispatch(LoginReducerEvent.Failed("로그인에 실패했어요. 잠시 후 다시 시도해 주세요."))
+                    dispatch(LoginReducerEvent.Failed(resources.getString(StringResource.LOGIN_FAILED)))
                 }
         }
 
@@ -292,12 +306,12 @@ class LoginViewModel
             const val SERVER_LOGIN_TIMEOUT_MILLIS = 30_000L
 
             /** 안내 문구용 한글 이름. */
-            fun SocialProvider.label(): String =
+            fun SocialProvider.label(resources: ResourceHelper): String =
                 when (this) {
-                    SocialProvider.KAKAO -> "카카오"
-                    SocialProvider.NAVER -> "네이버"
-                    SocialProvider.GOOGLE -> "구글"
-                    SocialProvider.APPLE -> "애플"
+                    SocialProvider.KAKAO -> resources.getString(StringResource.PROVIDER_KAKAO)
+                    SocialProvider.NAVER -> resources.getString(StringResource.PROVIDER_NAVER)
+                    SocialProvider.GOOGLE -> resources.getString(StringResource.PROVIDER_GOOGLE)
+                    SocialProvider.APPLE -> resources.getString(StringResource.PROVIDER_APPLE)
                 }
         }
     }

@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.R
@@ -38,6 +39,8 @@ import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
+import com.chillsam.courmy.common.presentation.translation.catalogLabel
+import com.chillsam.courmy.common.presentation.translation.courseTagLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
@@ -48,6 +51,7 @@ import com.chillsam.courmy.main.presentation.component.CourseSkeletonLayout
 import com.chillsam.courmy.main.presentation.component.HomeCourseCard
 import com.chillsam.courmy.main.presentation.home.FeedMessage
 import com.chillsam.courmy.main.presentation.search.component.SearchResultTopBar
+import com.chillsam.courmy.main.presentation.R as MainR
 
 @Composable
 fun SearchResultScreen(
@@ -109,11 +113,12 @@ fun SearchResultScreen(
 }
 
 /** 필터가 걸려 있으면 "조건에 맞는" 문구로 바꿔 검색어 문제가 아님을 알린다. */
+@Composable
 private fun emptyMessage(uiState: SearchResultUIState): String =
     if (uiState.hasActiveFilter) {
-        "조건에 맞는 코스가 없어요. 필터를 조정해 보세요."
+        stringResource(MainR.string.main_search_result_empty_filtered)
     } else {
-        "'${uiState.query}'에 맞는 코스가 없어요"
+        stringResource(MainR.string.main_search_result_empty_query, uiState.query)
     }
 
 /** 검색 카드가 홈 카드와 같은 모양으로 그려지도록 표시 필드만 옮긴다. */
@@ -144,11 +149,15 @@ private fun CategoryChipRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
-            DsChip(text = "전체", selected = selected == null, onClick = { onSelect(null) })
+            DsChip(
+                text = stringResource(MainR.string.main_search_result_category_all),
+                selected = selected == null,
+                onClick = { onSelect(null) },
+            )
         }
         items(CourseTagVO.entries) { category ->
             DsChip(
-                text = category.label,
+                text = courseTagLabel(category),
                 selected = selected == category,
                 onClick = { onSelect(category) },
             )
@@ -191,7 +200,7 @@ private fun SortSelectorRow(
                     modifier = Modifier.size(13.dp),
                 )
                 DsText(
-                    text = sort.label,
+                    text = catalogLabel(sort.label),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel1,
                 )
@@ -201,7 +210,7 @@ private fun SortSelectorRow(
                     DropdownMenuItem(
                         text = {
                             DsText(
-                                text = option.label,
+                                text = catalogLabel(option.label),
                                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                                 color =
                                     if (option == sort) color.contentAccent else color.contentDefaultLevel1,

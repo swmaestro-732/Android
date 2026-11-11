@@ -84,7 +84,7 @@ class PlanDetailDtoMappingTest {
             val plan = PlanDetailDTO(planId = 1, sourceCourseId = sourceId).toVO()
 
             assertNull(plan.sourceCourseId)
-            assertEquals("나의 계획", plan.title)
+            assertEquals("", plan.title)
             assertEquals("", plan.memo)
             assertEquals("", plan.plannedDate)
             assertEquals(emptyList<Any>(), plan.places)

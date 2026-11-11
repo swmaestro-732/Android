@@ -2,6 +2,9 @@ package com.chillsam.courmy.main.presentation.saved
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.error.localizedValidationMessage
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.CreateCourseFolderUseCase
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
@@ -30,6 +33,7 @@ class SavedCoursesViewModel
         private val getSavedCoursesUseCase: GetSavedCoursesUseCase,
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
         private val createCourseFolderUseCase: CreateCourseFolderUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<SavedCoursesIntent, SavedCoursesUIState, SavedCoursesReducerEvent>(
             SavedCoursesUIState.empty,
         ) {
@@ -182,7 +186,11 @@ class SavedCoursesViewModel
                         if (e is CancellationException) throw e
                         // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                         Log.w(TAG, "저장 코스 로드 실패", e)
-                        dispatch(SavedCoursesReducerEvent.LoadFailed("저장한 코스를 불러오지 못했습니다."))
+                        dispatch(
+                            SavedCoursesReducerEvent.LoadFailed(
+                                resources.getString(StringResource.SAVED_COURSES_LOAD_FAILED),
+                            ),
+                        )
                     }
                 }
         }
@@ -214,7 +222,9 @@ class SavedCoursesViewModel
                     }.onFailure { e ->
                         if (e is CancellationException) throw e
                         Log.w(TAG, "저장 코스 다음 페이지 로드 실패", e)
-                        dispatch(SavedCoursesReducerEvent.MoreFailed("더 불러오지 못했어요."))
+                        dispatch(
+                            SavedCoursesReducerEvent.MoreFailed(resources.getString(StringResource.LOAD_MORE_FAILED)),
+                        )
                     }
                 }
         }
@@ -229,7 +239,7 @@ class SavedCoursesViewModel
             val id = courseId.toLongOrNull()
             if (id == null) {
                 Log.w(TAG, "잘못된 코스 id: $courseId")
-                dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
+                dispatch(SavedCoursesReducerEvent.UnsaveFailed(resources.getString(StringResource.UNSAVE_FAILED)))
                 return
             }
             // 코스마다 독립된 요청이라 서로 취소하지 않는다. 같은 코스의 중복 탭만 무시한다.
@@ -244,7 +254,11 @@ class SavedCoursesViewModel
                             }.onFailure { e ->
                                 if (e is CancellationException) throw e
                                 Log.w(TAG, "저장 취소 실패: courseId=$courseId", e)
-                                dispatch(SavedCoursesReducerEvent.UnsaveFailed("저장을 취소하지 못했어요."))
+                                dispatch(
+                                    SavedCoursesReducerEvent.UnsaveFailed(
+                                        resources.getString(StringResource.UNSAVE_FAILED),
+                                    ),
+                                )
                             }
                     } finally {
                         unsaveJobs.remove(courseId)
@@ -265,11 +279,8 @@ class SavedCoursesViewModel
                         Log.w(TAG, "폴더 생성 실패", error)
                         dispatch(
                             SavedCoursesReducerEvent.FolderFailed(
-                                if (error is IllegalArgumentException) {
-                                    error.message.orEmpty()
-                                } else {
-                                    "폴더를 만들지 못했어요. 다시 시도해 주세요."
-                                },
+                                error.localizedValidationMessage(resources)
+                                    ?: resources.getString(StringResource.FOLDER_CREATE_FAILED),
                             ),
                         )
                     }

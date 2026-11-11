@@ -91,6 +91,7 @@ class CourseCommentsViewModelTest {
             writeComment = WriteCourseCommentUseCase(repository, NoOpTelemetry),
             editComment = EditCourseCommentUseCase(repository),
             deleteComment = DeleteCourseCommentUseCase(repository),
+            resources = testResources(),
         )
 
     private class FakeCommentRepository : CourseCommentRepository {

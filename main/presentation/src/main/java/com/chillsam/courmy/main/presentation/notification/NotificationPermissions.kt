@@ -8,6 +8,7 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.core.app.NotificationManagerCompat
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * OS 알림 권한 상태 판정과 기기 설정 이동. 알림 동의 팝업과 설정 > 알림이 같은 규칙을 쓴다.
@@ -21,7 +22,12 @@ internal fun Context.openNotificationSettings(): Boolean {
         }
     return runCatching { startActivity(intent) }
         .onFailure {
-            Toast.makeText(this, "기기 알림 설정을 열 수 없어요.", Toast.LENGTH_SHORT).show()
+            Toast
+                .makeText(
+                    this,
+                    getString(MainR.string.main_notification_settings_open_failed),
+                    Toast.LENGTH_SHORT,
+                ).show()
         }.isSuccess
 }
 

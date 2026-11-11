@@ -66,7 +66,7 @@ class ReportDataSource(
                         ?.jsonPrimitive
                         ?.contentOrNull
                 }.getOrNull()?.takeIf { it.isNotBlank() }
-            throw ReportSubmissionException(message ?: "신고하지 못했어요. 다시 시도해 주세요.", error)
+            throw ReportSubmissionException(message, error)
         }
 }
 
@@ -81,8 +81,12 @@ class ReportRepositoryImpl(
     ): ReportResultVO {
         val response = source.submit(ReportRequest(targetType.name, targetId, reason.name, description))
         val id = response.data?.reportId
-        check(response.code == SUCCESS && id != null && id > 0) { response.message ?: "신고 접수를 확인하지 못했어요." }
-        return ReportResultVO(id, response.message ?: "신고가 접수되었습니다.")
+        if (response.code != SUCCESS || id == null ||
+            id <= 0
+        ) {
+            throw ReportSubmissionException(response.message?.takeIf { it.isNotBlank() })
+        }
+        return ReportResultVO(id, response.message.orEmpty())
     }
 
     private companion object {

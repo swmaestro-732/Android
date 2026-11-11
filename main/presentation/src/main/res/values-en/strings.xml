@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 영어 번역(초안). UI 문구 번역은 검토 필요. -->
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_profile_edit">Edit profile</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_notice">Notices</string>
+    <string name="settings_notification">Notifications</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_contact">Contact us</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_app_version">App version</string>
+    <string name="settings_hint_not_ready">(Coming soon)</string>
+    <string name="settings_toast_not_ready">Coming soon</string>
+    <string name="settings_toast_no_browser">Can\'t open a browser</string>
+
+    <string name="language_description">If the language isn\'t Korean, you can translate course descriptions and more. Translation runs on your device.</string>
+    <string name="language_selected">Selected</string>
+
+    <string name="main_region_map_inset_separate_scale">Not to scale</string>
+
+    <string name="main_region_map_country_name">Korea</string>
+    <string name="main_region_map_content_description">Administrative district map of %1$s. You can also select from the region list below.</string>
+
+    <string name="main_my_create_course_title">Create your own course</string>
+    <string name="main_my_create_course_subtitle">Link the places you\'ve been into your first course</string>
+    <string name="main_my_create_plan_title">Create a plan</string>
+    <string name="main_my_create_plan_subtitle">Gather places you want to visit and make a plan</string>
+    <string name="main_my_share_description">Share</string>
+    <string name="main_my_settings_description">Settings</string>
+
+    <string name="main_interest_theme_title">Interests</string>
+    <string name="main_interest_theme_headline">What kind of places\ndo you like?</string>
+    <string name="main_interest_theme_min_count">At least %1$d · </string>
+    <string name="main_interest_theme_selected_count">%1$d selected</string>
+    <string name="main_interest_theme_select_min">Pick at least %1$d</string>
+    <string name="main_interest_theme_save_error">Couldn\'t save. We kept your picks, so please try again.</string>
+    <string name="main_interest_theme_save">Save</string>
+    <string name="main_interest_theme_next">Next</string>
+
+    <string name="main_follow_list_title">Follows</string>
+    <string name="main_follow_list_back">Back</string>
+    <string name="main_follow_list_tab_follower">Followers</string>
+    <string name="main_follow_list_tab_following">Following</string>
+    <string name="main_follow_list_empty_follower">No followers yet.</string>
+    <string name="main_follow_list_empty_following">Not following anyone yet.</string>
+    <string name="main_follow_list_retry">Try again</string>
+    <string name="main_follow_list_remove">Remove %1$s</string>
+    <string name="main_follow_list_unfollow_dialog_title">Unfollow?</string>
+    <string name="main_follow_list_unfollow_dialog_description">You\'ll unfollow %1$s.</string>
+
+    <string name="main_recommended_title">Today\'s picks</string>
+    <string name="main_recommended_region_title">%1$s courses</string>
+    <string name="main_recommended_back">Back</string>
+    <string name="main_recommended_sort_default">Recommended</string>
+    <string name="main_recommended_empty">No public courses yet.</string>
+    <string name="main_recommended_empty_theme">No courses in this theme yet.</string>
+    <string name="main_recommended_retry">Retry</string>
+
+    <!-- Search result screen: empty states, category all chip -->
+    <string name="main_search_result_empty_filtered">No courses match these filters. Try adjusting them.</string>
+    <string name="main_search_result_empty_query">No courses match \'%1$s\'</string>
+    <string name="main_search_result_category_all">All</string>
+    <string name="main_search_result_save_toggle_add">Save</string>
+    <string name="main_search_result_save_toggle_remove">Remove from saved</string>
+
+    <!-- Search input screen (FS-17) search box placeholder -->
+    <string name="main_search_placeholder_place">Search places</string>
+    <string name="main_search_placeholder_course">Search courses</string>
+
+    <!-- Profile edit (FS-26) -->
+    <string name="main_profile_edit_title">Edit profile</string>
+    <string name="main_profile_edit_save">Save changes</string>
+    <string name="main_profile_edit_toast_saved">Saved</string>
+    <string name="main_profile_edit_avatar_image_desc">Profile photo</string>
+    <string name="main_profile_edit_avatar_change_desc">Change photo</string>
+    <string name="main_profile_edit_label_nickname">Nickname</string>
+    <string name="main_profile_edit_label_handle">ID</string>
+    <string name="main_profile_edit_label_bio">Bio</string>
+    <string name="main_profile_edit_handle_check">Check</string>
+    <string name="main_profile_edit_interest_themes">Interests</string>
+    <string name="main_profile_edit_interest_regions">Favorite areas</string>
+    <string name="main_profile_edit_interest_edit">Edit</string>
+    <string name="main_profile_edit_interest_empty">No %1$s selected yet. Tap Edit to choose.</string>
+
+    <!-- 관심 지역 선택 화면(InterestRegionPage) -->
+    <string name="main_interest_region_title">Favorite Areas</string>
+    <string name="main_interest_region_heading">Pick the areas you visit often</string>
+    <string name="main_interest_region_subheading">At least 1 · Whole province or city/district</string>
+    <string name="main_interest_region_view_all">‹ View all</string>
+    <string name="main_interest_region_selected_count">%1$d selected ·</string>
+    <string name="main_interest_region_sido_all">All of %1$s</string>
+    <string name="main_interest_region_chip_remove">%1$s ×</string>
+    <string name="main_interest_region_chip_deselect_a11y">Remove %1$s</string>
+    <string name="main_interest_region_sido_all_desc">Select all of %1$s, including every sub-area</string>
+    <string name="main_interest_region_zoom_desc">Zoom into %1$s</string>
+    <string name="main_interest_region_save_error">Couldn\'t save. Your selected areas were kept, so please try again.</string>
+    <string name="main_interest_region_cta_empty">Please select at least one area</string>
+    <string name="main_interest_region_cta_next">Next</string>
+    <string name="main_interest_region_cta_save">Save</string>
+
+    <!-- Search result top bar / map preview card -->
+    <string name="main_search_result_chrome_back">Back</string>
+    <string name="main_search_result_chrome_clear_query">Clear search</string>
+    <string name="main_search_result_chrome_map_preview_title">See them all on the map</string>
+    <string name="main_search_result_chrome_map_preview_place_count">%1$d places</string>
+    <string name="main_search_result_chrome_map_open">View map</string>
+
+    <!-- Home screen (FS-09) -->
+    <string name="main_home_greeting_user">%1$s,\nwhere to today?</string>
+    <string name="main_home_greeting_guest">Where to today?</string>
+    <string name="main_home_profile_click_label">Go to My page</string>
+    <string name="main_home_profile_description">My profile</string>
+    <string name="main_home_see_all">See all</string>
+    <string name="main_home_save_label">Saves</string>
+    <string name="main_home_nearby_title">Saved nearby</string>
+    <string name="main_home_nearby_see_on_map">View on map</string>
+    <string name="main_home_nearby_permission_message">Allow location to see places you\'ve saved nearby</string>
+    <string name="main_home_nearby_gps_message">Location (GPS) is off, so we can\'t find nearby places</string>
+    <string name="main_home_nearby_allow_location">Allow location</string>
+    <string name="main_home_nearby_enable_location">Turn on location</string>
+    <string name="main_home_nearby_empty_message">No saved places nearby</string>
+    <string name="main_home_nearby_find_on_map">Find places on the map</string>
+    <string name="main_home_place_visited">Visited</string>
+    <string name="main_home_place_not_visited">Not visited</string>
+    <string name="main_home_theme_browse_title">Browse by theme</string>
+    <string name="main_home_region_browse_title">Browse by region</string>
+    <string name="main_home_in_progress_label">In progress</string>
+    <string name="main_home_in_progress_private_label">Private course</string>
+    <string name="main_home_in_progress_dismiss">Dismiss course in progress</string>
+    <string name="main_home_in_progress_end_title">End this course?</string>
+    <string name="main_home_in_progress_end_description">Ended courses are completed and saved to your library.</string>
+
+    <!-- 프로필 공용 구성요소(FS-15 마이·타유저) -->
+    <string name="main_profile_header_back">Back</string>
+    <string name="main_profile_bio_empty">No bio yet</string>
+    <string name="main_profile_follower">Followers</string>
+    <string name="main_profile_following">Following</string>
+    <string name="main_profile_avatar_image_desc">Profile image</string>
+    <string name="main_profile_avatar_empty_desc">No profile image</string>
+    <string name="main_profile_error_message">Couldn\'t load the profile.</string>
+    <string name="main_profile_error_retry">Try again</string>
+    <string name="main_profile_error_go_home">Back to home</string>
+
+    <!-- 코스 요약 카드(SavedCourseCard) -->
+    <string name="main_saved_course_card_unsave">Remove from saved</string>
+    <string name="main_saved_course_card_mine">My course</string>
+    <string name="main_saved_course_card_completed">Completed %1$s</string>
+
+    <!-- 코스 좋아요 집계(CourseLikeCount) 접근성 설명 -->
+    <string name="main_course_like_count_description">%1$s likes</string>
+
+
+    <!-- Saved courses filter (SavedCourseFilters) -->
+    <string name="main_saved_filter_all">All %1$d</string>
+    <string name="main_saved_filter_add_folder">Add folder</string>
+    <string name="main_saved_filter_uncompleted">To go %1$d</string>
+    <string name="main_saved_filter_completed">Done %1$d</string>
+    <string name="main_saved_create_folder_title">Add folder</string>
+    <string name="main_saved_create_folder_description">Group courses under a name you like. (up to %1$d characters)</string>
+    <string name="main_saved_create_folder_placeholder">e.g. Weekend outings</string>
+    <string name="main_saved_create_folder_cancel">Cancel</string>
+    <string name="main_saved_create_folder_confirm">Add</string>
+    <string name="main_saved_place_card_visited">Visited</string>
+    <string name="main_saved_place_card_remove_bookmark">Remove bookmark</string>
+
+    <!-- 저장함 화면(SavedPage) 빈 상태·저장 취소 다이얼로그·게스트 안내 -->
+    <string name="main_saved_courses_empty">No saved courses match your filters.</string>
+    <string name="main_saved_places_empty">No saved places match your filters.</string>
+    <string name="main_saved_places_load_more">Load more places</string>
+    <string name="main_saved_retry">Try again</string>
+    <string name="main_saved_unsave_dialog_title">Remove from saved?</string>
+    <string name="main_saved_unsave_course_dialog_description">This course will be removed from your saved list.</string>
+    <string name="main_saved_unsave_place_dialog_description">This place will be removed from your saved list.</string>
+    <string name="main_saved_guest_title">Collect the places\nyou love right here</string>
+    <string name="main_saved_guest_subtitle">Sign in to see your saved places on the map\nand turn them into your own course.</string>
+    <string name="main_saved_guest_login">Log in / Sign up</string>
+
+    <!-- Saved screen: course/place tabs, place category chip, notice, visit status tabs -->
+    <string name="main_saved_tab_courses">Courses</string>
+    <string name="main_saved_tab_places">Places</string>
+    <string name="main_saved_filter_chip_label">%1$s %2$d</string>
+    <string name="main_saved_places_loaded_notice">Among loaded places</string>
+    <string name="main_saved_status_not_visited">Not visited %1$d</string>
+    <string name="main_saved_status_visited">Visited %1$d</string>
+
+    <!-- i18n merge: main:presentation 추가 문구 (자동 병합) -->
+    <string name="main_interest_load_feedback_loading">Checking your saved selections</string>
+    <string name="main_interest_load_feedback_error">Please try again in a moment.</string>
+    <string name="main_interest_load_feedback_retry">Refresh</string>
+    <string name="main_guest_my_title">My</string>
+    <string name="main_guest_my_settings_cd">Settings</string>
+    <string name="main_guest_my_welcome_title">Welcome, guest</string>
+    <string name="main_guest_my_welcome_subtitle">Log in to get courses made for you</string>
+    <string name="main_guest_my_login_button">Log in / Sign up</string>
+    <string name="main_guest_my_benefits_header">Sign up to unlock these</string>
+    <string name="main_guest_my_benefit_saved_title">Save places &amp; courses</string>
+    <string name="main_guest_my_benefit_saved_subtitle">Collect places and courses you want to visit</string>
+    <string name="main_guest_my_benefit_plan_title">Trip planning</string>
+    <string name="main_guest_my_benefit_plan_subtitle">Build your own itinerary from the places you want</string>
+    <string name="main_guest_my_benefit_review_title">Reviews</string>
+    <string name="main_guest_my_benefit_review_subtitle">Share your experience of places you\'ve been</string>
+    <string name="main_guest_my_benefit_follow_title">Follow friends</string>
+    <string name="main_guest_my_benefit_follow_subtitle">Discover courses from people who share your taste</string>
+    <string name="main_guest_my_benefit_click_label">Go to login screen</string>
+    <string name="main_search_placeholder">Search courses</string>
+    <string name="main_search_recent_title">Recent searches</string>
+    <string name="main_search_clear_all">Clear all</string>
+    <string name="main_search_back">Back</string>
+    <string name="main_search_trending_title">Trending searches</string>
+    <string name="main_search_theme_find_title">Browse by theme</string>
+    <string name="main_search_places_loading">Finding places…</string>
+    <string name="main_search_places_empty">No matching places</string>
+    <string name="main_trending_keyword_rank_up">Up %1$d places</string>
+    <string name="main_trending_keyword_rank_down">Down %1$d places</string>
+    <string name="main_recent_keyword_chip_remove_description">Remove search history for %1$s</string>
+    <string name="main_search_input_placeholder">Search courses</string>
+    <string name="main_search_input_clear">Clear search</string>
+    <string name="main_home_course_card_bookmark_remove">Remove bookmark</string>
+    <string name="main_home_course_card_bookmark_add">Save</string>
+    <string name="main_skeleton_courses_loading">Loading courses</string>
+    <string name="main_skeleton_recommended_loading">Loading recommended courses</string>
+    <string name="main_skeleton_places_loading">Loading places</string>
+    <string name="main_skeleton_profile_loading">Loading profile</string>
+    <string name="main_skeleton_follow_loading">Loading follow list</string>
+    <string name="main_back_top_bar_back">Back</string>
+
+    <!-- 알림 권한 사전 안내(프라이밍) 다이얼로그 -->
+    <string name="main_notification_priming_title">Turn on notifications?</string>
+    <string name="main_notification_priming_description">Get notified about likes and comments on your courses.</string>
+    <string name="main_notification_priming_allow">Allow</string>
+    <string name="main_notification_priming_later">Not now</string>
+
+    <!-- 알림 벨 버튼 접근성 설명 -->
+    <string name="main_notification_bell_description">Notifications</string>
+    <string name="main_notification_bell_unread_description">Notifications, %1$d unread</string>
+
+    <!-- 알림 항목 읽음 상태 접근성 설명 -->
+    <string name="main_notification_state_read">Read</string>
+    <string name="main_notification_state_unread">Unread</string>
+
+    <!-- 지도 탭 메인 탐색(FS-10) -->
+    <string name="main_map_my_location_description">My location</string>
+    <string name="main_map_visible_place_count">%1$d places shown</string>
+    <string name="main_map_empty_loading">Finding places nearby</string>
+    <string name="main_map_empty_no_result">No places match</string>
+
+    <!-- 계정 관리 화면 -->
+    <string name="main_account_manage_title">Account</string>
+    <string name="main_account_manage_logout">Log out</string>
+    <string name="main_account_manage_withdraw">Delete account</string>
+    <string name="main_account_manage_withdraw_dialog_title">Delete your account?</string>
+    <string name="main_account_manage_withdraw_dialog_description">Deleting your account permanently removes your account and course data. This can\'t be undone.</string>
+    <string name="main_notification_settings_title">Notifications</string>
+    <string name="main_notification_settings_activity_title">Activity notifications</string>
+    <string name="main_notification_settings_activity_description">Get likes and comments on your courses</string>
+    <string name="main_notification_settings_marketing_title">Promotional notifications</string>
+    <string name="main_notification_settings_marketing_description">Get recommended courses and event news</string>
+    <string name="main_notification_settings_night_title">Allow at night</string>
+    <string name="main_notification_settings_night_description">Also receive from 9 PM to 8 AM</string>
+    <string name="main_notification_settings_dialog_error_title">Couldn\'t finish notification setup</string>
+    <string name="main_notification_settings_dialog_error_description">Check your connection and try again. To block notifications now, turn them off in device settings.</string>
+    <string name="main_notification_settings_dialog_permission_title">Allow device notifications</string>
+    <string name="main_notification_settings_dialog_permission_description">To get activity notifications, allow Courmy notifications in device settings.</string>
+    <string name="main_notification_settings_dialog_confirm">Device settings</string>
+    <string name="main_notification_settings_dialog_dismiss">Close</string>
+
+    <!-- 채팅홈 화면 -->
+    <string name="main_chat_home_title">Chats</string>
+    <string name="main_chat_home_tab_participating">Joined</string>
+    <string name="main_chat_home_tab_neighborhood">%1$s chats</string>
+    <string name="main_chat_home_enter">Join</string>
+
+    <!-- Login / Get started screen (FS-03) -->
+    <string name="main_login_title">Let\'s get started\nwith Courmy</string>
+    <string name="main_login_subtitle">Connect in 3 seconds with your account.\nNew here? You\'re signed up instantly.</string>
+    <string name="main_login_google_account_guide">Please choose a Google account.\nIf the picker doesn\'t open, cancel and try again.</string>
+    <string name="main_login_google_cancel">Cancel Google sign-in</string>
+    <string name="main_login_start_kakao">Continue with Kakao</string>
+    <string name="main_login_start_naver">Continue with Naver</string>
+    <string name="main_login_start_google">Continue with Google</string>
+    <string name="main_login_back_to_guest">Back to guest</string>
+    <string name="main_login_profile_hint">New here? Profile setup comes next.</string>
+
+    <!-- 온보딩 완료 화면(FS-08) -->
+    <string name="main_onboarding_complete_default_name">there</string>
+    <string name="main_onboarding_complete_greeting">You\'re all set!\nWelcome, %1$s!</string>
+    <string name="main_onboarding_complete_guide_heading">Here\'s what you can do now</string>
+    <string name="main_onboarding_complete_guide_create_title">Create your own course</string>
+    <string name="main_onboarding_complete_guide_create_desc">String together the places you\'ve been into a course.</string>
+    <string name="main_onboarding_complete_guide_save_title">Save courses you like</string>
+    <string name="main_onboarding_complete_guide_save_desc">Find saved courses again on the Saved tab.</string>
+    <string name="main_onboarding_complete_guide_follow_title">Follow users you vibe with</string>
+    <string name="main_onboarding_complete_guide_follow_desc">Never miss a new course from people you follow.</string>
+    <string name="main_onboarding_complete_start_button">Start Courmy</string>
+
+    <!-- Terms agreement screen (FS-04) -->
+    <string name="main_terms_headline">Please agree\nto the terms</string>
+    <string name="main_terms_subtitle">Agreeing to the terms below is required to use the service.</string>
+    <string name="main_terms_agree_all">Agree to all</string>
+    <string name="main_terms_age14">[Required] I am 14 or older</string>
+    <string name="main_terms_service_terms">[Required] Terms of Service</string>
+    <string name="main_terms_privacy_policy">[Required] Privacy Policy</string>
+    <string name="main_terms_agree_continue">Agree and continue</string>
+    <string name="main_terms_social_verified_badge">Social account verified</string>
+    <string name="main_terms_view_document">View ›</string>
+    <string name="main_terms_open_document_error">Couldn\'t open the document. Please try again later.</string>
+
+    <!-- 스플래시 화면(FS-01) 로고 서브타이틀·오프라인 차단 다이얼로그 -->
+    <string name="main_splash_subtitle">My course, my neighborhood</string>
+    <string name="main_splash_offline_dialog_title">You\'re offline</string>
+    <string name="main_splash_offline_dialog_description">Check that Wi-Fi or mobile data is on, then try again.</string>
+    <string name="main_splash_offline_dialog_retry">Retry</string>
+
+    <string name="main_onboarding_heading_1">Still leaving\nyour saved places untouched?</string>
+    <string name="main_onboarding_heading_2">Your saved places become\na course worth walking</string>
+    <string name="main_onboarding_heading_3">Local curation,\nshared together</string>
+    <string name="main_onboarding_login">Log in</string>
+    <string name="main_onboarding_browse">Look around without logging in</string>
+    <string name="main_onboarding_skip">Skip</string>
+    <string name="main_onboarding_next">Next</string>
+
+    <!-- Notification inbox screen -->
+    <string name="main_notification_inbox_title">Notifications</string>
+    <string name="main_notification_inbox_error_title">Couldn\'t load notifications</string>
+    <string name="main_notification_inbox_empty_title">No notifications yet</string>
+    <string name="main_notification_inbox_empty_description">Reactions on your courses and\nnew follower updates show up here.</string>
+    <string name="main_notification_inbox_unread_count">%1$d unread</string>
+    <string name="main_notification_inbox_all_read">You\'re all caught up</string>
+    <string name="main_notification_inbox_recent">Recent</string>
+    <string name="main_notification_inbox_marking_all">Marking…</string>
+    <string name="main_notification_inbox_mark_all_read">Mark all read</string>
+    <string name="main_notification_inbox_retry">Try again</string>
+    <string name="main_notification_inbox_refresh">Refresh</string>
+    <string name="main_notification_inbox_load_more">Load older</string>
+
+    <!-- 채팅방 화면 -->
+    <string name="main_chat_room_back">Back</string>
+    <string name="main_chat_room_input_placeholder">Type a message</string>
+    <string name="main_chat_room_send">Send</string>
+    <string name="main_map_sort_saved">Saved</string>
+    <string name="main_map_sort_distance">Distance</string>
+    <string name="main_map_sort_rating">Rating</string>
+
+    <!-- Map place card/list (FS-10) save toggle & open status -->
+    <string name="main_map_place_save_toggle_add">Save</string>
+    <string name="main_map_place_save_toggle_remove">Remove from saved</string>
+    <string name="main_map_place_open_now">Open</string>
+    <string name="main_map_place_closed">Closed</string>
+    <string name="main_map_place_open_until">Open · Closes %1$s</string>
+
+    <!-- 지도 검색바(FS-10) -->
+    <string name="main_map_search_bar_back">Back</string>
+    <string name="main_map_search_bar_clear_query">Clear search</string>
+
+    <!-- i18n merge wave: 알림 동의/앱버전/프로필 설정/팔로우/지도 추가 문구 -->
+    <string name="main_notification_consent_guide_title">Allow device notifications</string>
+    <string name="main_notification_consent_guide_description">To get activity notifications, allow Courmy notifications in your device settings.</string>
+    <string name="main_notification_consent_guide_confirm">Device settings</string>
+    <string name="main_notification_consent_guide_dismiss">Close</string>
+    <string name="main_notification_consent_title">Get course recommendation alerts?</string>
+    <string name="main_notification_consent_subtitle">You can change this later in settings.</string>
+    <string name="main_notification_consent_service_title">Activity alerts</string>
+    <string name="main_notification_consent_service_description">Get likes and comments on your courses</string>
+    <string name="main_notification_consent_marketing_title">Promotional alerts</string>
+    <string name="main_notification_consent_marketing_description">Get recommended courses and event news</string>
+    <string name="main_notification_consent_night_title">Receive at night too</string>
+    <string name="main_notification_consent_night_description">Also from 9 PM to 8 AM</string>
+    <string name="main_notification_consent_tag_required">(Required)</string>
+    <string name="main_notification_consent_tag_optional">(Optional)</string>
+    <string name="main_notification_consent_confirm">Agree and continue</string>
+    <string name="main_app_version_title">App version</string>
+    <string name="main_app_version_unknown">Version info unavailable</string>
+    <string name="main_app_version_current_label">Current version</string>
+    <string name="main_app_version_latest_label">Latest version</string>
+    <string name="main_app_version_status_loading">Checking for updates…</string>
+    <string name="main_app_version_status_latest">You\'re on the latest version.</string>
+    <string name="main_app_version_status_update_available">A new version is available.</string>
+    <string name="main_app_version_status_unavailable">Couldn\'t check the version.</string>
+    <string name="main_app_version_recheck">Check version again</string>
+    <string name="main_app_version_go_update">Update now</string>
+    <string name="main_profile_setup_title">Create your\nprofile</string>
+    <string name="main_profile_setup_nickname_label">Nickname</string>
+    <string name="main_profile_setup_nickname_placeholder">Enter your nickname</string>
+    <string name="main_profile_setup_handle_label">ID</string>
+    <string name="main_profile_setup_handle_placeholder">ID</string>
+    <string name="main_profile_setup_next">Next</string>
+    <string name="main_profile_setup_avatar_description">Profile image</string>
+    <string name="main_profile_setup_add_photo">Add photo</string>
+    <string name="main_profile_setup_check_duplicate">Check</string>
+    <string name="main_map_search_result_zoom_in">Zoom in to see places</string>
+    <string name="main_map_search_result_empty">No results found</string>
+    <string name="main_map_search_result_my_location">My location</string>
+    <string name="main_map_search_result_count_label">Results</string>
+    <string name="main_map_search_result_loading">Loading results</string>
+    <string name="main_map_sheet_collapse_list">Collapse list</string>
+    <string name="main_map_sheet_expand_list">Expand list</string>
+    <string name="main_optional_app_update_title">A new version is available</string>
+    <string name="main_optional_app_update_description">Discover an improved Courmy.\nYou can also check under My &gt; Settings &gt; App version.</string>
+    <string name="main_optional_app_update_confirm">Update</string>
+    <string name="main_optional_app_update_dismiss">Later</string>
+    <string name="main_app_update_required_title">Please update to the latest version</string>
+    <string name="main_app_update_required_message">Update to the latest version from the store.</string>
+    <string name="main_app_update_required_cta">Go to update</string>
+    <string name="main_app_update_store_open_failed">Couldn\'t open the store. Please try again later.</string>
+    <string name="main_follow_button_follow">Follow</string>
+    <string name="main_follow_button_follow_back">Follow back</string>
+    <string name="main_follow_button_following">Following</string>
+    <string name="main_follow_button_mutual_following">Mutual</string>
+    <string name="main_user_profile_share">Share</string>
+    <string name="main_region_map_inset_west_islands">Baengnyeong·Daecheong·Yeonpyeong</string>
+    <string name="main_region_map_inset_east_islands">Ulleungdo·Dokdo</string>
+    <!-- i18n merge: 알림 동의 확인 버튼·약관·프로필 설정·스플래시 추가 문구 (자동 병합) -->
+    <string name="main_notification_consent_confirm_button">Agree and continue</string>
+    <string name="main_notification_settings_consent_caption">Agreed on %1$s</string>
+    <string name="main_notification_settings_dialog_grant_title">Allow device notifications</string>
+    <string name="main_notification_settings_dialog_grant_description">To receive activity notifications, allow Courmy notifications in your device settings.</string>
+    <string name="main_terms_title">Please agree\nto the terms</string>
+    <string name="main_terms_age_14">[Required] I am 14 or older</string>
+    <string name="main_terms_social_verified">Social account verified</string>
+    <string name="main_onboarding_complete_default_nickname">member</string>
+    <string name="main_onboarding_complete_guide_header">Here\'s what you can do now</string>
+    <string name="main_profile_setup_label_nickname">Nickname</string>
+    <string name="main_profile_setup_label_handle">Handle</string>
+    <string name="main_profile_setup_handle_check">Check</string>
+    <string name="main_profile_setup_avatar_image_desc">Profile image</string>
+    <string name="main_profile_setup_avatar_add_desc">Add photo</string>
+    <string name="main_login_kakao_start">Continue with Kakao</string>
+    <string name="main_login_naver_start">Continue with Naver</string>
+    <string name="main_login_google_start">Continue with Google</string>
+    <string name="main_login_profile_setup_hint">New here? Profile setup comes next.</string>
+    <string name="main_onboarding_browse_without_login">Browse without logging in</string>
+    <string name="main_splash_tagline">My courses, my neighborhood</string>
+    <string name="main_splash_offline_title">You need an internet connection</string>
+    <string name="main_splash_offline_description">Check that Wi-Fi or mobile data is on, then try again.</string>
+    <string name="main_splash_offline_retry">Retry</string>
+    <string name="main_my_tab_plan">Plans</string>
+    <string name="main_chat_region_rooms">%1$s chat rooms</string>
+    <string name="main_notification_settings_open_failed">Unable to open notification settings.</string>
+    <string name="main_notification_unread_description">Notifications, %1$d unread</string>
+    <string name="main_session_expired">Your session has expired. Please log in again.</string>
+    <string name="main_copy_course_title">How would you like to copy this course?</string>
+    <string name="main_copy_course_description">Plans are private. Add places to visit and notes.</string>
+    <string name="main_copy_course_plan">Make a plan</string>
+    <string name="main_copy_course_review">Write a review</string>
+    <string name="main_copy_link_failed">Unable to copy the link</string>
+    <string name="main_copy_link_success">Link copied</string>
+    <string name="main_copy_link_label">Courmy link</string>
+    <string name="main_remaining_actor_unknown">Someone</string>
+    <string name="main_remaining_notification_liked">%1$s liked your course</string>
+    <string name="main_remaining_notification_commented">%1$s commented on your course</string>
+    <string name="main_remaining_notification_reviewed">%1$s reviewed your course</string>
+    <string name="main_remaining_notification_followed">%1$s followed you</string>
+    <string name="main_remaining_notification_unknown">You have a new update</string>
+    <string name="main_remaining_notification_now">Just now</string>
+    <string name="main_remaining_notification_date_pattern">MMM d</string>
+    <plurals name="main_remaining_place_count">
+        <item quantity="one">%1$d place</item>
+        <item quantity="other">%1$d places</item>
+    </plurals>
+    <string name="main_remaining_brand_wordmark">Courmy</string>
+    <string name="main_remaining_brand_morph">my course</string>
+    <string name="main_remaining_keyword_new">NEW</string>
+    <plurals name="main_remaining_notification_minutes">
+        <item quantity="one">%d minute ago</item>
+        <item quantity="other">%d minutes ago</item>
+    </plurals>
+    <plurals name="main_remaining_notification_hours">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <string name="main_remaining_chat_now">Just now</string>
+    <string name="main_remaining_chat_yesterday">Yesterday</string>
+    <plurals name="main_remaining_chat_days">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+</resources>

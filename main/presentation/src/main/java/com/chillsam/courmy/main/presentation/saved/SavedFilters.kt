@@ -21,10 +21,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R
 
 @Composable
 internal fun SavedHeader(
@@ -43,7 +46,9 @@ internal fun SavedHeader(
                 .selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        listOf(SAVED_TAB_COURSES to "코스", SAVED_TAB_PLACES to "장소").forEach { (tab, title) ->
+        val coursesTabTitle = stringResource(R.string.main_saved_tab_courses)
+        val placesTabTitle = stringResource(R.string.main_saved_tab_places)
+        listOf(SAVED_TAB_COURSES to coursesTabTitle, SAVED_TAB_PLACES to placesTabTitle).forEach { (tab, title) ->
             Box(
                 modifier =
                     Modifier
@@ -80,10 +85,12 @@ internal fun SavedPlaceFilters(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val allLabel = stringResource(R.string.main_search_result_category_all)
         categories.forEach { category ->
             val count = state.places.count { category == null || it.categoryLabel == category }
+            val categoryLabel = category?.let { rememberTaxonomyLabel(it) } ?: allLabel
             SavedFilterChip(
-                label = "${category ?: "전체"} $count",
+                label = stringResource(R.string.main_saved_filter_chip_label, categoryLabel, count),
                 selected = state.selectedCategory == category,
                 onClick = { onIntent(SavedPlacesIntent.SelectCategory(category)) },
             )
@@ -91,7 +98,7 @@ internal fun SavedPlaceFilters(
     }
     if (state.hasNext) {
         DsText(
-            text = "불러온 장소 기준",
+            text = stringResource(R.string.main_saved_places_loaded_notice),
             style = DesignSystemThemeImpl.typeScale.textExtraXS,
             color = color.contentDefaultLevel3,
             modifier = Modifier.padding(top = 4.dp),
@@ -99,8 +106,8 @@ internal fun SavedPlaceFilters(
     }
     SavedStatusTabs(
         selectedSecond = state.showVisited,
-        firstLabel = "미방문 ${state.categoryPlaces.count { !it.visited }}",
-        secondLabel = "방문 ${state.categoryPlaces.count { it.visited }}",
+        firstLabel = stringResource(R.string.main_saved_status_not_visited, state.categoryPlaces.count { !it.visited }),
+        secondLabel = stringResource(R.string.main_saved_status_visited, state.categoryPlaces.count { it.visited }),
         onSelect = { onIntent(SavedPlacesIntent.SelectVisited(it)) },
     )
 }

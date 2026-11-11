@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.presentation.home
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
@@ -32,6 +34,7 @@ class HomeFeedViewModel
         private val getHomeFeedUseCase: GetHomeFeedUseCase,
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
         private val getSavedCourseIdsUseCase: GetSavedCourseIdsUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<HomeFeedIntent, HomeFeedUIState, HomeFeedReducerEvent>(
             HomeFeedUIState.empty,
         ) {
@@ -39,8 +42,8 @@ class HomeFeedViewModel
         private var moreJob: Job? = null
         private var syncJob: Job? = null
 
-        /** 지역별 둘러보기에서 진입할 때 고정되는 시·군·구 필터. null 이면 지역 제한 없음(백엔드 선행 전까지 서버가 무시). */
-        private var sigungu: String? = null
+        /** 지역별 둘러보기의 시·도/시·군·구 prefix. null 이면 지역 제한 없음. */
+        private var region: String? = null
 
         override fun onIntent(intent: HomeFeedIntent) {
             when (intent) {
@@ -67,8 +70,8 @@ class HomeFeedViewModel
                 }
 
                 is HomeFeedIntent.SetRegion -> {
-                    if (sigungu != intent.sigungu) {
-                        sigungu = intent.sigungu
+                    if (region != intent.region) {
+                        region = intent.region
                         load()
                     }
                 }
@@ -231,7 +234,14 @@ class HomeFeedViewModel
                     }.onFailure { e ->
                         if (e is CancellationException) throw e
                         Log.w(TAG, "코스 저장 토글 실패: courseId=$courseId, target=$target", e)
-                        val message = if (target) "저장하지 못했어요." else "저장을 취소하지 못했어요."
+                        val message =
+                            if (target) {
+                                resources.getString(
+                                    StringResource.SAVE_FAILED,
+                                )
+                            } else {
+                                resources.getString(StringResource.UNSAVE_FAILED)
+                            }
                         dispatch(HomeFeedReducerEvent.SaveFailed(courseId, message))
                     }
             }
@@ -257,7 +267,7 @@ class HomeFeedViewModel
             moreJob?.cancel()
             loadJob =
                 viewModelScope.launch {
-                    runCatching { getHomeFeedUseCase(category = category, sigungu = sigungu) }
+                    runCatching { getHomeFeedUseCase(category = category, region = region) }
                         .onSuccess { page ->
                             val savedIds = loadSavedCourseIds()
                             dispatch(
@@ -273,7 +283,9 @@ class HomeFeedViewModel
                             if (e is CancellationException) throw e
                             // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                             Log.w(TAG, "코스 피드 로드 실패", e)
-                            dispatch(HomeFeedReducerEvent.Failed("코스를 불러오지 못했습니다."))
+                            dispatch(
+                                HomeFeedReducerEvent.Failed(resources.getString(StringResource.COURSES_LOAD_FAILED)),
+                            )
                         }
                 }
         }
@@ -296,7 +308,7 @@ class HomeFeedViewModel
             moreJob?.cancel()
             moreJob =
                 viewModelScope.launch {
-                    runCatching { getHomeFeedUseCase(cursor = cursor, category = category, sigungu = sigungu) }
+                    runCatching { getHomeFeedUseCase(cursor = cursor, category = category, region = region) }
                         .onSuccess { page ->
                             dispatch(
                                 HomeFeedReducerEvent.MoreLoaded(
@@ -308,7 +320,9 @@ class HomeFeedViewModel
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "코스 피드 다음 페이지 로드 실패", e)
-                            dispatch(HomeFeedReducerEvent.MoreFailed("더 불러오지 못했어요."))
+                            dispatch(
+                                HomeFeedReducerEvent.MoreFailed(resources.getString(StringResource.LOAD_MORE_FAILED)),
+                            )
                         }
                 }
         }

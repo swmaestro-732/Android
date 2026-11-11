@@ -20,19 +20,19 @@ class GetHomeFeedUseCaseTest {
         var requestedCategory: CourseTagVO? = null
             private set
 
-        var requestedSigungu: String? = null
+        var requestedRegion: String? = null
             private set
 
         override suspend fun getCourseFeed(
             size: Int,
             cursor: String?,
             category: CourseTagVO?,
-            sigungu: String?,
+            region: String?,
         ): CursorPageVO<HomeCourseVO> {
             requestedSize = size
             requestedCursor = cursor
             requestedCategory = category
-            requestedSigungu = sigungu
+            requestedRegion = region
             return CursorPageVO()
         }
 
@@ -100,10 +100,10 @@ class GetHomeFeedUseCaseTest {
             val filtered = FakeRepository()
 
             GetHomeFeedUseCase(all)()
-            GetHomeFeedUseCase(filtered)(sigungu = "11680")
+            GetHomeFeedUseCase(filtered)(region = "11680")
 
-            // 지역 제한 없는 조회는 sigungu 없이 나가야 한다(서버가 null 이면 전국을 준다).
-            assertEquals(null, all.requestedSigungu)
-            assertEquals("11680", filtered.requestedSigungu)
+            // 지역 제한 없는 조회는 region 없이 나가야 한다(서버가 null 이면 전국을 준다).
+            assertEquals(null, all.requestedRegion)
+            assertEquals("11680", filtered.requestedRegion)
         }
 }

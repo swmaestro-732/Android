@@ -111,6 +111,7 @@ class CourseDetailViewModelTest {
                     override val isLoggedIn = loggedIn
                 },
             ),
+            resources = testResources(),
         )
 
     private class FakeCourseRepository :
@@ -127,13 +128,13 @@ class CourseDetailViewModelTest {
                 title = "테스트 코스",
                 authorName = "작성자",
                 authorHandle = "author",
-                placeCountText = "0곳",
-                walkText = "",
-                followerText = "",
+                placeCount = 0,
+                walkingMinutes = null,
+                tracingCount = 0,
                 description = "",
                 places = emptyList(),
                 rating = "",
-                reviewCountText = "0",
+                reviewCount = 0,
                 reviews = emptyList(),
             )
 

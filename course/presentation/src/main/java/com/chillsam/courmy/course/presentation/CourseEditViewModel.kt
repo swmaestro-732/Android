@@ -2,6 +2,8 @@ package com.chillsam.courmy.course.presentation
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
 import com.chillsam.courmy.course.domain.GetCourseVisibilityUseCase
@@ -28,6 +30,7 @@ class CourseEditViewModel
         private val getCourseDetailUseCase: GetCourseDetailUseCase,
         private val getCourseVisibilityUseCase: GetCourseVisibilityUseCase,
         private val updateCourseUseCase: UpdateCourseUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<CourseEditIntent, CourseEditUIState, CourseEditReducerEvent>(
             CourseEditUIState.empty,
         ) {
@@ -115,7 +118,11 @@ class CourseEditViewModel
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "코스 편집 로드 실패: courseId=$courseId", e)
-                            dispatch(CourseEditReducerEvent.LoadFailed("코스를 불러오지 못했어요."))
+                            dispatch(
+                                CourseEditReducerEvent.LoadFailed(
+                                    resources.getString(StringResource.COURSE_LOAD_FAILED),
+                                ),
+                            )
                         }
                     loadVisibility()
                 }
@@ -168,7 +175,9 @@ class CourseEditViewModel
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "코스 편집 저장 실패: courseId=$courseId", e)
-                            dispatch(CourseEditReducerEvent.SaveFailed("저장하지 못했어요. 잠시 후 다시 시도해 주세요."))
+                            dispatch(
+                                CourseEditReducerEvent.SaveFailed(resources.getString(StringResource.SAVE_RETRY_LATER)),
+                            )
                         }
                 }
         }

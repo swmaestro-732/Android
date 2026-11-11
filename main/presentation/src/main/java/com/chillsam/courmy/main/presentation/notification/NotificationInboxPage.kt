@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +27,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 
 @Composable
@@ -46,7 +48,7 @@ fun NotificationInboxContent(
     val color = DesignSystemThemeImpl.designSystemColor
     StatusBarColor(color.bgDefaultLevel0)
     Column(modifier.fillMaxSize().background(color.bgDefaultLevel0).navigationBarsPadding()) {
-        BackTopBar("알림", onBack, boxed = true)
+        BackTopBar(stringResource(R.string.main_notification_inbox_title), onBack, boxed = true)
         InboxSummary(state, onIntent)
         when {
             state.isLoading && state.items.isEmpty() -> {
@@ -55,17 +57,17 @@ fun NotificationInboxContent(
 
             state.error != null && state.items.isEmpty() -> {
                 InboxEmpty(
-                    title = "알림을 불러오지 못했어요",
+                    title = stringResource(R.string.main_notification_inbox_error_title),
                     description = state.error,
-                    action = "다시 시도",
+                    action = stringResource(R.string.main_notification_inbox_retry),
                     onAction = { onIntent(NotificationInboxIntent.Refresh) },
                 )
             }
 
             state.items.isEmpty() -> {
                 InboxEmpty(
-                    title = "아직 도착한 알림이 없어요",
-                    description = "내 코스에 남겨진 반응과\n새로운 팔로우 소식을 여기서 확인해요.",
+                    title = stringResource(R.string.main_notification_inbox_empty_title),
+                    description = stringResource(R.string.main_notification_inbox_empty_description),
                 )
             }
 
@@ -88,7 +90,14 @@ private fun InboxSummary(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         DsText(
-            text = state.unreadCount?.let { if (it > 0) "안 읽은 알림 ${it}개" else "모든 알림을 읽었어요" } ?: "최근 알림",
+            text =
+                state.unreadCount?.let {
+                    if (it > 0) {
+                        stringResource(R.string.main_notification_inbox_unread_count, it)
+                    } else {
+                        stringResource(R.string.main_notification_inbox_all_read)
+                    }
+                } ?: stringResource(R.string.main_notification_inbox_recent),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel2,
         )
@@ -97,7 +106,11 @@ private fun InboxSummary(
             enabled = !state.isMarkingAll && (state.unreadCount ?: 0) > 0,
         ) {
             DsText(
-                if (state.isMarkingAll) "읽는 중…" else "모두 읽음",
+                if (state.isMarkingAll) {
+                    stringResource(R.string.main_notification_inbox_marking_all)
+                } else {
+                    stringResource(R.string.main_notification_inbox_mark_all_read)
+                },
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = if ((state.unreadCount ?: 0) > 0) color.contentAccent else color.contentDefaultLevel3,
             )
@@ -116,7 +129,11 @@ private fun InboxList(
         }
         item {
             if (state.error != null) {
-                InboxRetry(state.error, "새로고침", { onIntent(NotificationInboxIntent.Refresh) })
+                InboxRetry(
+                    state.error,
+                    stringResource(R.string.main_notification_inbox_refresh),
+                    { onIntent(NotificationInboxIntent.Refresh) },
+                )
             }
             when {
                 state.isLoadingMore -> {
@@ -126,13 +143,17 @@ private fun InboxList(
                 state.moreError != null -> {
                     InboxRetry(
                         state.moreError,
-                        "다시 시도",
+                        stringResource(R.string.main_notification_inbox_retry),
                         { onIntent(NotificationInboxIntent.LoadMore) },
                     )
                 }
 
                 state.hasNext -> {
-                    InboxRetry(null, "이전 알림 더 보기", { onIntent(NotificationInboxIntent.LoadMore) })
+                    InboxRetry(
+                        null,
+                        stringResource(R.string.main_notification_inbox_load_more),
+                        { onIntent(NotificationInboxIntent.LoadMore) },
+                    )
                 }
             }
         }

@@ -30,10 +30,10 @@ sealed interface HomeFeedIntent : MviIntent {
 
     /**
      * 지역(시·군·구) 필터 설정 — 지역별 둘러보기에서 진입할 때 1회 적용한다. null 이면 지역 제한 없음.
-     * 서버가 sigungu 를 받기 전까지는 전체가 내려오지만, 선택 지역 문맥을 유지하기 위해 싣는다.
+     * 서버 region 파라미터에 법정동코드 prefix를 전달한다.
      */
     data class SetRegion(
-        val sigungu: String?,
+        val region: String?,
     ) : HomeFeedIntent
 
     data object ConsumeError : HomeFeedIntent

@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -37,8 +38,9 @@ import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.presentation.component.BackTopBar
+import com.chillsam.courmy.main.presentation.R as MainR
 
-/** 계정 관리 화면. 설정 목록의 "계정 관리" 상세로, 로그아웃·회원 탈퇴를 담당한다. */
+/** 계정 관리 화면. 설정 목록의 stringResource(MainR.string.main_account_manage_title) 상세로, 로그아웃·회원 탈퇴를 담당한다. */
 @Composable
 fun AccountManagePage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
@@ -66,7 +68,9 @@ fun AccountManagePage(modifier: Modifier = Modifier) {
 
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            BackTopBar(title = "계정 관리", onBack = { navigationHelper.navigateToBack() }, boxed = true)
+            BackTopBar(title = stringResource(MainR.string.main_account_manage_title), onBack = {
+                navigationHelper.navigateToBack()
+            }, boxed = true)
 
             Column(
                 modifier =
@@ -75,9 +79,14 @@ fun AccountManagePage(modifier: Modifier = Modifier) {
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState()),
             ) {
-                SettingsDangerRow(label = "로그아웃", onClick = { viewModel.onIntent(AccountIntent.Logout) })
+                SettingsDangerRow(label = stringResource(MainR.string.main_account_manage_logout), onClick = {
+                    viewModel.onIntent(AccountIntent.Logout)
+                })
                 SettingsDivider()
-                SettingsDangerRow(label = "회원 탈퇴", onClick = { showWithdrawDialog = true })
+                SettingsDangerRow(label = stringResource(MainR.string.main_account_manage_withdraw), onClick = {
+                    showWithdrawDialog =
+                        true
+                })
             }
         }
 
@@ -96,8 +105,8 @@ fun AccountManagePage(modifier: Modifier = Modifier) {
 
     if (showWithdrawDialog) {
         DsConfirmDialog(
-            title = "정말 탈퇴할까요?",
-            description = "탈퇴하면 계정과 코스 정보가 삭제되고 되돌릴 수 없어요.",
+            title = stringResource(MainR.string.main_account_manage_withdraw_dialog_title),
+            description = stringResource(MainR.string.main_account_manage_withdraw_dialog_description),
             destructive = true,
             onConfirm = {
                 showWithdrawDialog = false

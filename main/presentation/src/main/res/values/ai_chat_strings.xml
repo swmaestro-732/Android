@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_title">커미 AI</string>
+    <string name="ai_banner">취향만 알려주면\n코스를 뚝딱 짜줘요</string>
+    <string name="ai_recommend">코스 추천받기</string>
+    <string name="ai_login_prompt">로그인하고\n커미 AI에게 코스를 추천받아 보세요</string>
+    <string name="ai_login">로그인하기</string>
+    <string name="ai_back">뒤로</string>
+    <string name="ai_beta">베타</string>
+    <string name="ai_thinking">응답 준비 중</string>
+    <string name="ai_send">보내기</string>
+    <string name="ai_placeholder">메시지를 입력하세요</string>
+</resources>

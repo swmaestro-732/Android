@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -71,11 +72,13 @@ import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.report.ReportAction
+import com.chillsam.courmy.common.presentation.translation.relativeTimeText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseCommentVO
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /** 댓글 시트가 차지할 화면 높이 비율. 뒤의 코스가 살짝 비쳐 "덮인 것"으로 읽히게 다 채우지 않는다. */
 private const val COMMENT_SHEET_HEIGHT_FRACTION = 0.72f
@@ -197,7 +200,16 @@ internal fun CourseCommentSheet(
                 // 더 받을 페이지가 남았으면 수에 +를 붙인다 — 전체 집계는 응답에 없다.
                 val countSuffix = if (state.hasNext) "+" else ""
                 DsText(
-                    text = if (state.comments.isEmpty()) "댓글" else "댓글 ${state.comments.size}$countSuffix",
+                    text =
+                        if (state.comments.isEmpty()) {
+                            stringResource(CourseR.string.course_comment_title)
+                        } else {
+                            stringResource(
+                                CourseR.string.course_comment_title_count,
+                                state.comments.size,
+                                countSuffix,
+                            )
+                        },
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                     modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
@@ -223,11 +235,17 @@ internal fun CourseCommentSheet(
                     )
                 } else {
                     DsText(
-                        text = "로그인하면 댓글을 쓸 수 있어요.",
+                        text = stringResource(CourseR.string.course_comment_login_prompt),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel3,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 12.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    session.requireLogin {}
+                                }.navigationBarsPadding()
+                                .padding(vertical = 12.dp),
                     )
                 }
             }
@@ -247,10 +265,10 @@ internal fun CourseCommentSheet(
     }
     deleteTargetId?.let { targetId ->
         DsConfirmDialog(
-            title = "댓글을 삭제할까요?",
-            description = "삭제한 댓글은 되돌릴 수 없어요.",
-            confirmText = "삭제",
-            dismissText = "취소",
+            title = stringResource(CourseR.string.course_comment_delete_title),
+            description = stringResource(CourseR.string.course_comment_delete_description),
+            confirmText = stringResource(CourseR.string.course_comment_delete_confirm),
+            dismissText = stringResource(CourseR.string.course_comment_delete_dismiss),
             destructive = true,
             onConfirm = {
                 deleteTargetId = null
@@ -271,13 +289,17 @@ private fun EditCommentDialog(
 ) {
     var content by remember { mutableStateOf(initialContent) }
     DsDialogScaffold(
-        title = "댓글 수정",
-        description = "댓글은 1000자까지 쓸 수 있어요.",
+        title = stringResource(CourseR.string.course_comment_edit_title),
+        description = stringResource(CourseR.string.course_comment_edit_description),
         onDismiss = onDismiss,
     ) {
-        DsTextField(value = content, onValueChange = { content = it }, placeholder = "댓글 내용")
+        DsTextField(
+            value = content,
+            onValueChange = { content = it },
+            placeholder = stringResource(CourseR.string.course_comment_edit_placeholder),
+        )
         DsButton(
-            text = "저장",
+            text = stringResource(CourseR.string.course_comment_edit_save),
             enabled = content.isNotBlank() && !isSaving,
             loading = isSaving,
             onClick = { onSave(content) },
@@ -346,7 +368,7 @@ private fun CommentList(
                         color = color.contentDefaultLevel2,
                     )
                     DsText(
-                        text = "다시 시도",
+                        text = stringResource(CourseR.string.course_comment_retry),
                         style = DesignSystemThemeImpl.typeScale.textRegularM,
                         color = color.contentAccent,
                         modifier =
@@ -362,7 +384,7 @@ private fun CommentList(
             // 비었을 때 목록 영역 가운데 안내 한 줄. 목록 머리에 붙이면 빈 공간이 고장처럼 보인다.
             Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 DsText(
-                    text = "첫 댓글을 남겨 보세요.",
+                    text = stringResource(CourseR.string.course_comment_empty),
                     style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = color.contentDefaultLevel3,
                 )
@@ -405,13 +427,15 @@ private fun CommentRow(
     onAuthorClick: (CourseCommentVO) -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val authorName = comment.authorNickname.ifBlank { stringResource(CourseR.string.course_comment_author_fallback) }
+    val authorProfileDescription = stringResource(CourseR.string.course_comment_author_profile_description, authorName)
     Row {
         IconButton(
             onClick = { onAuthorClick(comment) },
             enabled = comment.isMine || comment.authorHandle.isNotBlank(),
             modifier =
                 Modifier.size(48.dp).semantics {
-                    contentDescription = "${comment.authorNickname.ifBlank { "작성자" }} 프로필 보기"
+                    contentDescription = authorProfileDescription
                 },
         ) {
             CourseImage(
@@ -429,7 +453,12 @@ private fun CommentRow(
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 DsText(
-                    text = comment.authorNickname.ifBlank { "알 수 없는 사용자" },
+                    text =
+                        comment.authorNickname.ifBlank {
+                            stringResource(
+                                CourseR.string.course_comment_author_unknown,
+                            )
+                        },
                     modifier = Modifier.weight(1f, fill = false),
                     overflow = TextOverflow.Ellipsis,
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
@@ -437,7 +466,7 @@ private fun CommentRow(
                 )
                 Spacer(Modifier.width(6.dp))
                 DsText(
-                    text = comment.dateText,
+                    text = relativeTimeText(comment.createdAtMillis),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
                 )
@@ -473,7 +502,7 @@ private fun MyCommentMenu(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_more_horizontal_24),
-                    contentDescription = "내 댓글 메뉴",
+                    contentDescription = stringResource(CourseR.string.course_comment_menu_description),
                     tint = color.contentDefaultLevel0,
                     modifier = Modifier.size(22.dp),
                 )
@@ -487,7 +516,7 @@ private fun MyCommentMenu(
             DropdownMenuItem(
                 text = {
                     DsText(
-                        "수정",
+                        stringResource(CourseR.string.course_comment_menu_edit),
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel0,
                     )
@@ -500,7 +529,7 @@ private fun MyCommentMenu(
             DropdownMenuItem(
                 text = {
                     DsText(
-                        "삭제",
+                        stringResource(CourseR.string.course_comment_menu_delete),
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDanger,
                     )
@@ -543,7 +572,7 @@ private fun CommentInputBar(
             DsTextField(
                 value = draft,
                 onValueChange = onCommentChange,
-                placeholder = "댓글을 남겨 주세요",
+                placeholder = stringResource(CourseR.string.course_comment_input_placeholder),
                 enabled = enabled,
                 modifier = Modifier.weight(1f),
             )
@@ -559,7 +588,7 @@ private fun CommentInputBar(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_arrow_up_24),
-                    contentDescription = "댓글 등록",
+                    contentDescription = stringResource(CourseR.string.course_comment_submit_description),
                     tint = if (canSubmit) color.contentOnAccent else color.contentDefaultLevel3,
                     modifier = Modifier.size(20.dp),
                 )

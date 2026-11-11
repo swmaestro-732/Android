@@ -54,7 +54,7 @@ data class PlanPlaceLocationDTO(
 fun PlanDetailDTO.toVO(): PlanDetailVO =
     PlanDetailVO(
         planId = requireNotNull(planId),
-        title = title.orEmpty().ifBlank { "나의 계획" },
+        title = title.orEmpty(),
         memo = memo.orEmpty(),
         plannedDate = plannedDate.orEmpty(),
         sourceCourseId = sourceCourseId?.takeIf { it > 0 },

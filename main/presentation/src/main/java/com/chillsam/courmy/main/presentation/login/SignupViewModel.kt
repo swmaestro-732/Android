@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.presentation.login
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
@@ -61,6 +63,7 @@ class SignupViewModel
     @Inject
     constructor(
         private val signupUseCase: SignupUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<SignupIntent, SignupUiState, SignupReducerEvent>(SignupUiState.empty) {
         private var job: Job? = null
 
@@ -101,7 +104,7 @@ class SignupViewModel
         private fun submit(intent: SignupIntent.Submit) {
             if (currentState.isLoading) return
             if (!intent.requiredTermsAgreed) {
-                dispatch(SignupReducerEvent.Failed("필수 약관에 동의해 주세요."))
+                dispatch(SignupReducerEvent.Failed(resources.getString(StringResource.SIGNUP_TERMS_REQUIRED)))
                 return
             }
             dispatch(SignupReducerEvent.Started)
@@ -122,7 +125,7 @@ class SignupViewModel
                             if (e is CancellationException) throw e
                             // 원시 예외 메시지는 로그로만 남기고 사용자에게는 고정 안내 문구를 보여준다.
                             Log.w(TAG, "회원가입 실패: ${e.javaClass.simpleName} - ${e.message}", e)
-                            dispatch(SignupReducerEvent.Failed("회원가입에 실패했어요. 잠시 후 다시 시도해 주세요."))
+                            dispatch(SignupReducerEvent.Failed(resources.getString(StringResource.SIGNUP_FAILED)))
                         }
                 }
         }

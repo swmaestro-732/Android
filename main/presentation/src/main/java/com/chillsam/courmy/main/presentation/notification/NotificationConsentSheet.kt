@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -33,6 +34,7 @@ import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R
 
 /** 뒤 화면을 덮는 스크림 농도. [DsConfirmDialog] 와 동일값. */
 private const val SCRIM_ALPHA = 0.4f
@@ -95,10 +97,10 @@ fun NotificationConsentSheet(
     )
     if (state.permissionGuideVisible) {
         DsConfirmDialog(
-            title = "기기 알림을 허용해 주세요",
-            description = "활동 알림을 받으려면 기기 설정에서 Courmy 알림을 허용해 주세요.",
-            confirmText = "기기 설정",
-            dismissText = "닫기",
+            title = stringResource(R.string.main_notification_consent_guide_title),
+            description = stringResource(R.string.main_notification_consent_guide_description),
+            confirmText = stringResource(R.string.main_notification_consent_guide_confirm),
+            dismissText = stringResource(R.string.main_notification_consent_guide_dismiss),
             onConfirm = {
                 context.openNotificationSettings()
                 onIntent(NotificationConsentIntent.Finish)
@@ -153,42 +155,42 @@ private fun NotificationConsentContent(
                 Spacer(modifier = Modifier.height(16.dp))
                 Column(modifier = Modifier.fillMaxWidth()) {
                     DsText(
-                        text = "추천 코스 알림을 받아볼까요?",
+                        text = stringResource(R.string.main_notification_consent_title),
                         style = DesignSystemThemeImpl.typeScale.textStrongM,
                         color = color.contentDefaultLevel0,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     DsText(
-                        text = "나중에 설정에서 바꿀 수 있어요.",
+                        text = stringResource(R.string.main_notification_consent_subtitle),
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel1,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     NotificationToggleRow(
-                        title = "활동 알림",
-                        tag = "(필수)",
-                        description = "내 코스의 좋아요와 댓글 소식을 받아요",
+                        title = stringResource(R.string.main_notification_consent_service_title),
+                        tag = stringResource(R.string.main_notification_consent_tag_required),
+                        description = stringResource(R.string.main_notification_consent_service_description),
                         checked = state.serviceAgreed,
                         onToggle = { onIntent(NotificationConsentIntent.ToggleService) },
                     )
                     NotificationToggleRow(
-                        title = "광고 알림",
-                        tag = "(선택)",
-                        description = "추천 코스와 이벤트 소식을 받아요",
+                        title = stringResource(R.string.main_notification_consent_marketing_title),
+                        tag = stringResource(R.string.main_notification_consent_tag_optional),
+                        description = stringResource(R.string.main_notification_consent_marketing_description),
                         checked = state.marketingAgreed,
                         onToggle = { onIntent(NotificationConsentIntent.ToggleMarketing) },
                     )
                     // 야간을 먼저 켜면 광고 동의가 함께 켜진다 — 토글을 흐리게 두지 않고 모양을 통일한다.
                     NotificationToggleRow(
-                        title = "야간에도 받기",
-                        tag = "(선택)",
-                        description = "밤 9시부터 오전 8시까지도 받아요",
+                        title = stringResource(R.string.main_notification_consent_night_title),
+                        tag = stringResource(R.string.main_notification_consent_tag_optional),
+                        description = stringResource(R.string.main_notification_consent_night_description),
                         checked = state.nightAgreed,
                         onToggle = { onIntent(NotificationConsentIntent.ToggleNight) },
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     DsButton(
-                        text = "동의하고 계속하기",
+                        text = stringResource(R.string.main_notification_consent_confirm_button),
                         enabled = state.confirmEnabled,
                         loading = state.saving || state.consentDone,
                         onClick = onConfirm,

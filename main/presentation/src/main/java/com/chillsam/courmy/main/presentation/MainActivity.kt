@@ -1,8 +1,10 @@
 package com.chillsam.courmy.main.presentation
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -17,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.metrics.performance.JankStats
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
@@ -24,18 +28,30 @@ import com.chillsam.courmy.common.domain.push.NotificationConsentStore
 import com.chillsam.courmy.common.domain.push.NotificationSettings
 import com.chillsam.courmy.common.domain.push.PushTarget
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.translation.AppLanguage
+import com.chillsam.courmy.common.domain.translation.LanguageRepository
+import com.chillsam.courmy.common.domain.translation.Translator
 import com.chillsam.courmy.common.presentation.LocalTTIHelper
 import com.chillsam.courmy.common.presentation.helper.LocalMessageHelper
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.jank.JankReporter
 import com.chillsam.courmy.common.presentation.jank.LocalJankReporter
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
+import com.chillsam.courmy.common.presentation.translation.LocalAppLanguage
+import com.chillsam.courmy.common.presentation.translation.LocalTranslator
 import com.chillsam.courmy.main.presentation.deeplink.resolveNewIntentRoute
 import com.chillsam.courmy.main.presentation.deeplink.resolveRoute
 import com.chillsam.courmy.main.presentation.deeplink.resolveStartStack
 import com.chillsam.courmy.main.presentation.navigation.RootComposable
 import com.chillsam.courmy.tti.TTIHelper
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import java.util.Locale
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -61,6 +77,12 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var notificationConsent: NotificationConsentStore
 
+    @Inject
+    lateinit var translator: Translator
+
+    @Inject
+    lateinit var languageRepository: LanguageRepository
+
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             // 허용/거절과 관계없이 앱 진입을 계속한다. 설정 화면은 OS 상태를 다시 읽는다.
@@ -70,8 +92,46 @@ class MainActivity : FragmentActivity() {
 
     private var jankStats: JankStats? = null
 
+    /** attachBaseContext 가 이번 생성에서 실제 적용한 언어 코드. 재생성 판단의 기준(설정 변경 시 1회만 재생성). */
+    private var appliedLanguageCode: String = AppLanguage.KOREAN.code
+
+    /**
+     * 선택 언어를 리소스 locale 로 적용한다. 리소스(strings.xml values-en/ja)는 Context 의 locale 로 해석되므로,
+     * Activity 가 base context 를 붙일 때 선택 언어로 Context 를 래핑해야 한다
+     * (앱 내 언어 선택을 기기 시스템 언어보다 우선시킨다 — 시스템이 영어라도 한국어 선택이면 한국어로).
+     *
+     * Hilt 필드 주입은 super.onCreate 에서 일어나 이 시점엔 아직 null 이므로, EntryPoint 로 저장소를 직접 얻는다.
+     * DataStore 는 비동기지만 locale 은 화면을 그리기 전에 확정돼야 해 한 번만 blocking 으로 읽는다.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        val language =
+            runBlocking {
+                EntryPointAccessors
+                    .fromApplication(newBase.applicationContext, LocaleEntryPoint::class.java)
+                    .languageRepository()
+                    .language
+                    .first()
+            }
+        appliedLanguageCode = language.code
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(Locale.forLanguageTag(language.code))
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
+
+    /** 선택 언어가 이번 생성에 적용된 것과 다르면 재생성한다(attachBaseContext 가 새 locale 로 다시 붙는다). */
+    private fun applyLanguageIfChanged(language: AppLanguage) {
+        if (language.code != appliedLanguageCode) recreate()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notifications = getSystemService(android.app.NotificationManager::class.java)
+            notifications.getNotificationChannel("courmy_activity")?.let { channel ->
+                channel.name = getString(com.chillsam.courmy.common.presentation.R.string.notification_channel_activity)
+                notifications.createNotificationChannel(channel)
+            }
+        }
 
         // App Link 는 Intent.data, 알림 탭은 extras(활동=pendingPush / 일회성=link)에서 시작 스택을 만든다.
         pendingPush = readPush(savedInstanceState?.getBundle("pendingPush") ?: intent?.extras)
@@ -119,12 +179,20 @@ class MainActivity : FragmentActivity() {
         // 상태바 영역의 색과 아이콘 밝기는 화면마다 달라 RootComposable 이 맡는다.
         enableEdgeToEdge()
         setContent {
+            // 초기값은 attachBaseContext 가 이미 적용한 언어로 시드한다. 하드코딩 기본값(KOREAN)으로 두면
+            // 실제 값이 흘러오기 전 첫 조합에서 어긋나 recreate 가 무한 반복된다(초기값≠적용값 → 재생성 루프).
+            val appLanguage by languageRepository.language
+                .collectAsStateWithLifecycle(AppLanguage.fromCode(appliedLanguageCode))
+            // 설정에서 언어를 바꾸면 재생성해 attachBaseContext 가 새 locale 로 Context 를 다시 붙인다.
+            LaunchedEffect(appLanguage) { applyLanguageIfChanged(appLanguage) }
             CompositionLocalProvider(
                 LocalNavigationHelper provides navigationHelper,
                 LocalMessageHelper provides messageHelper,
                 LocalJankReporter provides jankReporter,
                 LocalTTIHelper provides ttiHelper,
                 LocalTelemetry provides telemetry,
+                LocalAppLanguage provides appLanguage,
+                LocalTranslator provides translator,
             ) {
                 RootComposable(
                     startStack = startStack,
@@ -212,6 +280,13 @@ class MainActivity : FragmentActivity() {
             else -> intent.data?.let(::resolveNewIntentRoute)?.let(navigationHelper::navigateDeepLink)
         }
     }
+}
+
+/** [MainActivity.attachBaseContext] 가 Hilt 주입 전에 선택 언어를 읽기 위한 진입점. */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface LocaleEntryPoint {
+    fun languageRepository(): LanguageRepository
 }
 
 /**

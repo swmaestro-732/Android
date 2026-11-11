@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -36,11 +37,13 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseCompleteVO
 import com.chillsam.courmy.course.entity.CourseStopVO
+import com.chillsam.courmy.course.presentation.R
 
 /**
  * 코스 완성(저장 성공) 화면(Figma FS-34-Done). 완료 체크·안내 → 코스 요약 카드 →
@@ -76,7 +79,7 @@ fun CourseCompleteScreen(
             SummaryCard(course = course)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DsText(
-                    text = "코스 동선",
+                    text = stringResource(R.string.course_complete_timeline_title),
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                 )
@@ -100,7 +103,10 @@ fun CourseCompleteScreen(
                     .navigationBarsPadding()
                     .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
         ) {
-            DsButton(text = "내 코스에서 보기", onClick = onViewMyCourses)
+            DsButton(
+                text = stringResource(R.string.course_complete_view_my_courses),
+                onClick = onViewMyCourses,
+            )
         }
     }
 }
@@ -125,13 +131,13 @@ private fun CompleteHeader() {
             )
         }
         DsText(
-            text = "코스가 완성됐어요!",
+            text = stringResource(R.string.course_complete_header_title),
             style = DesignSystemThemeImpl.typeScale.titleExtraL,
             color = color.contentDefaultLevel0,
             textAlign = TextAlign.Center,
         )
         DsText(
-            text = "내 코스에 저장되었어요.",
+            text = stringResource(R.string.course_complete_header_desc),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel2,
             textAlign = TextAlign.Center,
@@ -171,18 +177,23 @@ private fun SummaryCard(course: CourseCompleteVO) {
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             DsText(
-                text = course.category,
+                text = rememberTaxonomyLabel(course.category),
                 maxLines = Int.MAX_VALUE,
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
             DsText(
-                text = course.title,
+                text = course.title.ifBlank { stringResource(R.string.course_remaining_new_course) },
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = course.summaryText,
+                text =
+                    androidx.compose.ui.res.pluralStringResource(
+                        R.plurals.course_remaining_spots,
+                        course.placeCount,
+                        course.placeCount,
+                    ),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -215,7 +226,7 @@ private fun StopRow(
                     color = color.contentDefaultLevel0,
                 )
                 DsText(
-                    text = stop.category,
+                    text = rememberTaxonomyLabel(stop.category),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )
@@ -276,7 +287,7 @@ fun sampleCourseComplete(title: String = "성수 종일 나들이 코스"): Cour
     CourseCompleteVO(
         category = "카페·디저트 · 문화·전시",
         title = title,
-        summaryText = "6 스팟",
+        placeCount = 6,
         stops =
             listOf(
                 CourseStopVO(1, "어니언 성수", "카페·디저트"),

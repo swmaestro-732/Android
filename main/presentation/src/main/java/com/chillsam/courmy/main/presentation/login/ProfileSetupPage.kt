@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,6 +52,7 @@ import com.chillsam.courmy.common.presentation.media.rememberAccentedImagePicker
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.login.SignupThemePage
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 프로필·아이디 설정 화면(FS-05). 아바타·닉네임·아이디를 정하고 다음(완료)으로 이어진다. */
 @Composable
@@ -90,7 +92,7 @@ fun ProfileSetupPage(
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
             DsText(
-                text = "프로필을\n만들어 주세요",
+                text = stringResource(MainR.string.main_profile_setup_title),
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = color.contentDefaultLevel0,
                 maxLines = 2,
@@ -103,16 +105,16 @@ fun ProfileSetupPage(
             )
             Spacer(Modifier.height(28.dp))
 
-            FieldLabel("닉네임")
+            FieldLabel(stringResource(MainR.string.main_profile_setup_label_nickname))
             DsTextField(
                 value = nickname,
                 onValueChange = { nickname = it },
-                placeholder = "닉네임을 입력해 주세요",
+                placeholder = stringResource(MainR.string.main_profile_setup_nickname_placeholder),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp).alignTextFieldBorder(),
             )
 
             Spacer(Modifier.height(20.dp))
-            FieldLabel("아이디")
+            FieldLabel(stringResource(MainR.string.main_profile_setup_label_handle))
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -125,7 +127,7 @@ fun ProfileSetupPage(
                         // 값이 바뀌면 이전 확인 결과 무효화.
                         handleCheckViewModel.onIntent(HandleCheckIntent.Reset)
                     },
-                    placeholder = "아이디",
+                    placeholder = stringResource(MainR.string.main_profile_setup_handle_placeholder),
                     // 중복 확인 실패 시 위험(빨간 테두리) 표시.
                     isError = idResult != null && !idResult.isAvailable,
                     // "@"는 항상 붙는 기본값이라 입력창 앞 고정 프리픽스로 표시.
@@ -156,7 +158,7 @@ fun ProfileSetupPage(
                     modifier = Modifier.padding(top = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    HANDLE_RULES.forEach { rule ->
+                    handleRules().forEach { rule ->
                         DsText(
                             text = rule,
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -169,7 +171,7 @@ fun ProfileSetupPage(
         }
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
-                text = "다음",
+                text = stringResource(MainR.string.main_profile_setup_next),
                 enabled = canContinue,
                 onClick = {
                     // 완료 화면의 회원가입 API 호출에 쓰도록 프로필을 홀더에 담는다.
@@ -221,7 +223,7 @@ private fun AvatarEditor(
             if (imageUri != null) {
                 AsyncImage(
                     model = imageUri,
-                    contentDescription = "프로필 이미지",
+                    contentDescription = stringResource(MainR.string.main_profile_setup_avatar_image_desc),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
@@ -250,7 +252,7 @@ private fun AvatarEditor(
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_camera_24),
-                contentDescription = "사진 추가",
+                contentDescription = stringResource(MainR.string.main_profile_setup_avatar_add_desc),
                 tint = color.contentOnAccent,
                 modifier = Modifier.size(16.dp),
             )
@@ -279,7 +281,7 @@ private fun CheckButton(
         contentAlignment = Alignment.Center,
     ) {
         DsText(
-            text = "중복 확인",
+            text = stringResource(MainR.string.main_profile_setup_handle_check),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = if (enabled) color.contentOnAccent else color.contentDefaultLevel2,
         )

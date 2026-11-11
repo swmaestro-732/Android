@@ -1,6 +1,6 @@
 package com.chillsam.courmy.course.data.courseReviews.dto
 
-import com.chillsam.courmy.common.entity.time.toRelativeTimeText
+import com.chillsam.courmy.common.entity.time.parseIsoUtcMillis
 import com.chillsam.courmy.course.entity.CourseRatingBucketVO
 import com.chillsam.courmy.course.entity.CourseReviewListVO
 import com.chillsam.courmy.course.entity.CourseReviewTagVO
@@ -55,7 +55,7 @@ data class RatingCountDTO(
  * 리뷰 1건.
  *
  * [createdAt] 은 ISO-8601 UTC 문자열이다. 서버는 "3분 전" 같은 상대 시각 문구를 주지 않으므로
- * 앱이 변환한다([toRelativeTimeText]).
+ * 앱이 변환한다([parseIsoUtcMillis]).
  */
 @Serializable
 data class CourseReviewItemDTO(
@@ -91,15 +91,11 @@ data class ReviewItemTagDTO(
  * totalCount 와 분포가 어긋나도 막대가 넘치지 않는다.
  *
  * [myUserId] 는 JWT 에서 얻은 내 id 로 "내 리뷰"(삭제 가능) 판정에만 쓴다 — 서버가 주지 않는다.
- * [nowMillis] 는 상대 시각 계산 기준이며 테스트가 시각을 고정하려고 넘긴다.
  */
-fun CourseReviewListData.toVO(
-    myUserId: Long?,
-    nowMillis: Long = System.currentTimeMillis(),
-): CourseReviewListVO {
+fun CourseReviewListData.toVO(myUserId: Long?): CourseReviewListVO {
     val buckets = ratingDistribution.orEmpty()
     val bucketTotal = buckets.sumOf { it.count ?: 0 }
-    val items = reviews.orEmpty().map { it.toVO(myUserId, nowMillis) }
+    val items = reviews.orEmpty().map { it.toVO(myUserId) }
     // 서버가 사진 목록을 따로 주지 않아 리뷰에 붙은 사진을 순서대로 펼쳐 띠를 만든다.
     val photos = items.flatMap { it.photoUrls }
     val totalPhotos = photoCount ?: photos.size
@@ -108,7 +104,6 @@ fun CourseReviewListData.toVO(
     return CourseReviewListVO(
         averageRatingText = (averageRating ?: 0.0).toString(),
         averageStars = (averageRating ?: 0.0).roundToInt(),
-        totalCountText = "${totalCount ?: 0}개",
         totalCount = totalCount,
         distribution =
             buckets
@@ -131,17 +126,14 @@ fun CourseReviewListData.toVO(
     )
 }
 
-private fun CourseReviewItemDTO.toVO(
-    myUserId: Long?,
-    nowMillis: Long,
-): CourseReviewVO =
+private fun CourseReviewItemDTO.toVO(myUserId: Long?): CourseReviewVO =
     CourseReviewVO(
         id = id ?: 0L,
         authorId = author?.id ?: 0L,
-        author = author?.nickname ?: "익명",
+        author = author?.nickname.orEmpty(),
         authorImageUrl = author?.profileImageUrl.orEmpty(),
         rating = rating ?: 0,
-        dateText = createdAt.toRelativeTimeText(nowMillis),
+        createdAtMillis = parseIsoUtcMillis(createdAt),
         body = content.orEmpty(),
         photoUrls = photoUrls.orEmpty(),
         tags =

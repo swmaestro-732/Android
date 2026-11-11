@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.domain.telemetry.AppFlow
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.common.domain.telemetry.track
@@ -16,10 +19,14 @@ class WriteCourseCommentUseCase
             courseId: Long,
             content: String,
         ): Long {
-            require(courseId > 0) { "코스를 확인해 주세요." }
+            requireLocalized(courseId > 0) { LocalizedValidationException(StringResource.VALIDATION_COURSE_TARGET) }
             val trimmed = content.trim()
-            require(trimmed.isNotEmpty()) { "댓글 내용을 입력해 주세요." }
-            require(trimmed.length <= MAX_LENGTH) { "댓글은 ${MAX_LENGTH}자까지 쓸 수 있어요." }
+            requireLocalized(
+                trimmed.isNotEmpty(),
+            ) { LocalizedValidationException(StringResource.VALIDATION_COMMENT_REQUIRED) }
+            requireLocalized(trimmed.length <= MAX_LENGTH) {
+                LocalizedValidationException(StringResource.VALIDATION_COMMENT_LENGTH, MAX_LENGTH)
+            }
             return telemetry.track(AppFlow.CommentWrite) { repository.writeComment(courseId, trimmed) }
         }
 

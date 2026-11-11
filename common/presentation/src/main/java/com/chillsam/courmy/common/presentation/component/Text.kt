@@ -10,6 +10,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import com.chillsam.courmy.common.presentation.translation.rememberAutoTranslated
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 
 @Composable
@@ -26,9 +27,12 @@ fun DsText(
     minLines: Int = 1,
     onTextLayout: (TextLayoutResult) -> Unit = {},
     style: TextStyle = LocalTextStyle.current,
+    // 서버 게시글 등 **동적 콘텐츠**에서만 true 로 켜 온디바이스 AI 번역을 돌린다.
+    // 기본 false — 앱 고정 UI 문자열은 번역하지 않아 오번역을 막는다(고정 문구는 strings.xml 로 번역).
+    autoTranslate: Boolean = false,
 ) {
     Text(
-        text = text,
+        text = rememberAutoTranslated(text, enabled = autoTranslate),
         modifier = modifier,
         color = color,
         textDecoration = textDecoration,

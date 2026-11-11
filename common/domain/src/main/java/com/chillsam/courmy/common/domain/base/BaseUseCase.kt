@@ -4,6 +4,7 @@ import com.chillsam.courmy.common.domain.error.HttpResponseException
 import com.chillsam.courmy.common.domain.helper.MessageHelper
 import com.chillsam.courmy.common.domain.helper.NavigationHelper
 import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.tti.TTIHelper
 
 open class BaseUseCase(
@@ -17,8 +18,8 @@ open class BaseUseCase(
             401 -> {
                 messageHelper.showOneButtonDialog(
                     cantIgnore = true,
-                    descText = "Session expired. Please login again.",
-                    buttonText = "Move to login",
+                    descText = resourceHelper.getString(StringResource.BASE_SESSION_EXPIRED),
+                    buttonText = resourceHelper.getString(StringResource.BASE_MOVE_LOGIN),
                     onClickButton = {
 //                        navigationHelper.navigateTo(AppPage.Intro)
                     },
@@ -28,8 +29,8 @@ open class BaseUseCase(
             404 -> {
                 messageHelper.showOneButtonDialog(
                     cantIgnore = true,
-                    descText = "This feature is not currently available in the app version.",
-                    buttonText = "Move to back",
+                    descText = resourceHelper.getString(StringResource.BASE_FEATURE_UNAVAILABLE),
+                    buttonText = resourceHelper.getString(StringResource.BASE_GO_BACK),
                     onClickButton = {
                         navigationHelper.navigateToBack()
                     },
@@ -38,8 +39,8 @@ open class BaseUseCase(
 
             else -> {
                 messageHelper.showOneButtonDialog(
-                    titleText = "A temporary error occurred.",
-                    descText = "error status : ${e.print()}",
+                    titleText = resourceHelper.getString(StringResource.BASE_TEMPORARY_ERROR),
+                    descText = resourceHelper.getString(StringResource.BASE_ERROR_STATUS, e.rawCode),
                 )
             }
         }

@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -43,6 +44,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.profile.ProfileCourseVO
 import com.chillsam.courmy.main.presentation.component.CourseLikeCount
 import com.chillsam.courmy.main.presentation.component.ProfileContentSkeleton
+import com.chillsam.courmy.main.presentation.R as MainR
 
 // 마이(FS-15)·타유저(FS-15 OtherUserPage) 프로필이 공유하는 구성요소.
 // 두 화면은 상단 프로필·코스 그리드가 같고, 상단 좌우 버튼(뒤로 가기·공유·설정)과 소개 유무,
@@ -101,7 +103,7 @@ fun ProfileHeader(
                 Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                     ProfileHeaderIconButton(
                         iconRes = R.drawable.ic_chevron_left_24,
-                        contentDescription = "뒤로 가기",
+                        contentDescription = stringResource(MainR.string.main_profile_header_back),
                         onClick = onBack,
                     )
                 }
@@ -154,11 +156,13 @@ fun ProfileHeader(
             // 소개가 없으면 빈 줄 대신 안내 문구를 옅게 표시해, 편집으로 채울 수 있음을 알린다.
             val hasBio = bio.isNotBlank()
             DsText(
-                text = if (hasBio) bio else "아직 소개가 없어요",
+                text = if (hasBio) bio else stringResource(MainR.string.main_profile_bio_empty),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = if (hasBio) color.contentDefaultLevel1 else color.contentDefaultLevel3,
                 maxLines = 2,
                 modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                // 실제 소개(사용자 작성)만 번역하고, 빈 상태 안내는 고정 문구라 번역하지 않는다.
+                autoTranslate = hasBio,
             )
         }
 
@@ -207,7 +211,11 @@ private fun FollowCounts(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Row(verticalAlignment = Alignment.CenterVertically) {
-        FollowCountItem(label = "팔로워", value = followerCount, onClick = onFollowerClick)
+        FollowCountItem(
+            label = stringResource(MainR.string.main_profile_follower),
+            value = followerCount,
+            onClick = onFollowerClick,
+        )
         Box(
             modifier =
                 Modifier
@@ -216,7 +224,11 @@ private fun FollowCounts(
                     .height(12.dp)
                     .background(color.borderDefaultLevel1),
         )
-        FollowCountItem(label = "팔로잉", value = followingCount, onClick = onFollowingClick)
+        FollowCountItem(
+            label = stringResource(MainR.string.main_profile_following),
+            value = followingCount,
+            onClick = onFollowingClick,
+        )
     }
 }
 
@@ -307,7 +319,7 @@ fun ProfileAvatar(
         if (imageUrl.isNotBlank()) {
             AsyncImage(
                 model = imageUrl,
-                contentDescription = "프로필 이미지",
+                contentDescription = stringResource(MainR.string.main_profile_avatar_image_desc),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
@@ -315,7 +327,7 @@ fun ProfileAvatar(
             // 사진을 아직 안 올린 사용자. 빈 회색 원만 두면 로딩이 덜 끝난 것처럼 보인다.
             Icon(
                 painter = painterResource(R.drawable.ic_tab_person_24),
-                contentDescription = "프로필 이미지 없음",
+                contentDescription = stringResource(MainR.string.main_profile_avatar_empty_desc),
                 tint = color.contentDefaultLevel3,
                 modifier = Modifier.size(size * AVATAR_ICON_RATIO),
             )
@@ -406,6 +418,7 @@ private fun ProfileCourseCard(
         }
         DsText(
             text = course.title,
+            autoTranslate = true,
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel0,
             maxLines = 1,
@@ -448,16 +461,20 @@ fun ProfileError(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         DsText(
-            text = message ?: "프로필을 불러오지 못했습니다.",
+            text = message ?: stringResource(MainR.string.main_profile_error_message),
             style = DesignSystemThemeImpl.typeScale.textRegularM,
             color = color.contentDefaultLevel1,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(16.dp))
-        DsButton(text = "다시 시도", onClick = onRetry)
+        DsButton(text = stringResource(MainR.string.main_profile_error_retry), onClick = onRetry)
         if (onGoHome != null) {
             Spacer(Modifier.height(8.dp))
-            DsButton(text = "홈으로 돌아가기", variant = DsButtonVariant.Secondary, onClick = onGoHome)
+            DsButton(
+                text = stringResource(MainR.string.main_profile_error_go_home),
+                variant = DsButtonVariant.Secondary,
+                onClick = onGoHome,
+            )
         }
     }
 }

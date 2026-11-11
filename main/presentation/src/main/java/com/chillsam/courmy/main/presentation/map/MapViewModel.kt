@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.presentation.map
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.map.ClusterMapPlacesUseCase
 import com.chillsam.courmy.main.domain.map.GetMapPlacesUseCase
@@ -31,6 +33,7 @@ class MapViewModel
     constructor(
         private val getMapPlacesUseCase: GetMapPlacesUseCase,
         private val clusterMapPlacesUseCase: ClusterMapPlacesUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<MapIntent, MapUIState, MapReducerEvent>(MapUIState.empty) {
         private var loadJob: Job? = null
 
@@ -136,7 +139,11 @@ class MapViewModel
                         if (e is CancellationException) throw e
                         // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                         Log.w(TAG, "지도 장소 로드 실패", e)
-                        dispatch(MapReducerEvent.Failed(e.searchErrorMessage("주변 장소를 불러오지 못했습니다.")))
+                        dispatch(
+                            MapReducerEvent.Failed(
+                                e.searchErrorMessage(resources.getString(StringResource.NEARBY_PLACES_LOAD_FAILED)),
+                            ),
+                        )
                     }
                 }
         }

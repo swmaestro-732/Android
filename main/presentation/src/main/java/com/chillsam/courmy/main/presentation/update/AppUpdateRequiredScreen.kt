@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,12 +39,10 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val IconBadgeSize = 88.dp
 private val IconSize = 40.dp
-
-private const val TITLE = "새 버전으로 업데이트해 주세요"
-private const val MESSAGE = "스토어에서 최신 버전으로 업데이트해 주세요."
 
 /**
  * 서버가 426 을 내렸을 때 앱 화면 전체를 대신하는 강제 업데이트 안내.
@@ -110,14 +109,14 @@ fun AppUpdateRequiredScreen(modifier: Modifier = Modifier) {
             Spacer(Modifier.height(12.dp))
 
             DsText(
-                text = TITLE,
+                text = stringResource(MainR.string.main_app_update_required_title),
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
                 textAlign = TextAlign.Center,
                 maxLines = Int.MAX_VALUE,
             )
             DsText(
-                text = MESSAGE,
+                text = stringResource(MainR.string.main_app_update_required_message),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel2,
                 textAlign = TextAlign.Center,
@@ -127,7 +126,7 @@ fun AppUpdateRequiredScreen(modifier: Modifier = Modifier) {
             Spacer(Modifier.height(20.dp))
 
             DsButton(
-                text = "업데이트하러 가기",
+                text = stringResource(MainR.string.main_app_update_required_cta),
                 onClick = { context.openStoreListing() },
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -145,7 +144,14 @@ internal fun Context.openStoreListing() {
     runCatching { startActivity(storeIntent("market://details?id=$packageName")) }
         .onFailure {
             runCatching { startActivity(storeIntent("https://play.google.com/store/apps/details?id=$packageName")) }
-                .onFailure { Toast.makeText(this, "스토어를 열 수 없어요. 잠시 후 다시 시도해 주세요.", Toast.LENGTH_SHORT).show() }
+                .onFailure {
+                    Toast
+                        .makeText(
+                            this,
+                            getString(MainR.string.main_app_update_store_open_failed),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                }
         }
 }
 

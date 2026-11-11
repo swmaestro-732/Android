@@ -83,7 +83,7 @@ internal fun SavedCourseScreenDTO.toVOList(): List<SavedCourseVO> =
                 id = item.courseId.toString(),
                 tagLabel = tagLabelOf(course?.area, course?.theme, course?.themes),
                 title = course?.title.orEmpty(),
-                placeLabel = "장소 ${course?.placeCount ?: 0}곳",
+                placeCount = course?.placeCount ?: 0,
                 // 핸들이 없는 작성자는 닉네임으로 대신 표기한다(카드에 빈 줄을 남기지 않게).
                 authorHandle = course?.author?.handle ?: course?.author?.nickname.orEmpty(),
                 thumbnailUrl = course?.coverImageUrl.orEmpty(),

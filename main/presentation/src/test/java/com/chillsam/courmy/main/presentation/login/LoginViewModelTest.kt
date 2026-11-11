@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.main.domain.auth.SocialLoginUseCase
 import com.chillsam.courmy.main.entity.auth.SocialLoginResult
 import com.chillsam.courmy.main.entity.auth.SocialProvider
+import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -61,7 +62,7 @@ class LoginViewModelTest {
             coEvery { GoogleLoginClient.login(context) } returns "secret-google-token"
             coEvery { socialLogin(SocialProvider.GOOGLE, "secret-google-token") } returns
                 SocialLoginResult(newUser = true)
-            val viewModel = LoginViewModel(socialLogin, telemetry)
+            val viewModel = LoginViewModel(socialLogin, telemetry, resources = testResources())
 
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
             runCurrent()
@@ -88,7 +89,7 @@ class LoginViewModelTest {
             coEvery { GoogleLoginClient.login(context) } returns "secret-token"
             coEvery { socialLogin(SocialProvider.GOOGLE, "secret-token") } throws
                 IllegalStateException("server body with secret-token")
-            val viewModel = LoginViewModel(socialLogin, telemetry)
+            val viewModel = LoginViewModel(socialLogin, telemetry, resources = testResources())
 
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
             runCurrent()
@@ -106,7 +107,7 @@ class LoginViewModelTest {
         runTest {
             val token = CompletableDeferred<String>()
             coEvery { GoogleLoginClient.login(context) } coAnswers { token.await() }
-            val viewModel = LoginViewModel(socialLogin, telemetry)
+            val viewModel = LoginViewModel(socialLogin, telemetry, resources = testResources())
 
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
             runCurrent()
@@ -149,7 +150,7 @@ class LoginViewModelTest {
         runTest {
             val token = CompletableDeferred<String>()
             coEvery { GoogleLoginClient.login(context) } coAnswers { token.await() }
-            val viewModel = LoginViewModel(socialLogin, telemetry)
+            val viewModel = LoginViewModel(socialLogin, telemetry, resources = testResources())
 
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
             runCurrent()
@@ -170,7 +171,7 @@ class LoginViewModelTest {
         runTest {
             coEvery { GoogleLoginClient.login(context) } throws
                 GoogleLoginClient.CanceledException(IllegalStateException("사용자가 닫음"))
-            val viewModel = LoginViewModel(socialLogin, telemetry)
+            val viewModel = LoginViewModel(socialLogin, telemetry, resources = testResources())
 
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
             runCurrent()
@@ -188,7 +189,7 @@ class LoginViewModelTest {
             val token = CompletableDeferred<String>()
             coEvery { GoogleLoginClient.login(context) } coAnswers { token.await() }
             coEvery { socialLogin(SocialProvider.GOOGLE, "token") } returns SocialLoginResult(newUser = true)
-            val viewModel = LoginViewModel(socialLogin, telemetry)
+            val viewModel = LoginViewModel(socialLogin, telemetry, resources = testResources())
 
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
@@ -213,7 +214,7 @@ class LoginViewModelTest {
             val response = CompletableDeferred<SocialLoginResult>()
             coEvery { GoogleLoginClient.login(context) } returns "token"
             coEvery { socialLogin(SocialProvider.GOOGLE, "token") } coAnswers { response.await() }
-            val viewModel = LoginViewModel(socialLogin, telemetry)
+            val viewModel = LoginViewModel(socialLogin, telemetry, resources = testResources())
 
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
             runCurrent()
@@ -245,7 +246,7 @@ class LoginViewModelTest {
         runTest {
             coEvery { GoogleLoginClient.login(context) } returns "token"
             coEvery { socialLogin(SocialProvider.GOOGLE, "token") } returns SocialLoginResult(newUser = false)
-            val viewModel = LoginViewModel(socialLogin, telemetry)
+            val viewModel = LoginViewModel(socialLogin, telemetry, resources = testResources())
 
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
             viewModel.onIntent(LoginIntent.CancelGoogleLogin)
@@ -267,7 +268,7 @@ class LoginViewModelTest {
             coEvery { GoogleLoginClient.login(context) } coAnswers {
                 withContext(NonCancellable) { token.await() }
             }
-            val viewModel = LoginViewModel(socialLogin, telemetry)
+            val viewModel = LoginViewModel(socialLogin, telemetry, resources = testResources())
 
             viewModel.onIntent(LoginIntent.GoogleLogin(context))
             runCurrent()

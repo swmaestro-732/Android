@@ -1,5 +1,7 @@
 package com.chillsam.courmy.main.presentation.chat
 
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.toImmutableList
@@ -14,8 +16,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatHomeViewModel
     @Inject
-    constructor() :
-    MviViewModel<ChatHomeIntent, ChatHomeUIState, ChatHomeReducerEvent>(ChatHomeUIState.empty) {
+    constructor(
+        private val resources: ResourceHelper,
+    ) : MviViewModel<ChatHomeIntent, ChatHomeUIState, ChatHomeReducerEvent>(ChatHomeUIState.empty) {
         override fun onIntent(intent: ChatHomeIntent) {
             when (intent) {
                 ChatHomeIntent.Load -> {
@@ -69,11 +72,18 @@ class ChatHomeViewModel
         private fun buildNeighborhoodRooms() =
             ChatSampleData.neighborhoodRooms
                 .map { room ->
-                    val memberText = "${room.memberCount}명 대화 중"
+                    val memberText = resources.getString(StringResource.CHAT_ACTIVE_MEMBER_COUNT, room.memberCount)
                     NeighborhoodRoomUi(
                         roomId = room.roomId,
                         name = room.name,
-                        subtitle = room.description?.let { "$it · $memberText" } ?: memberText,
+                        subtitle =
+                            if (room.openToEveryone) {
+                                "${resources.getString(
+                                    StringResource.CHAT_OPEN_TO_EVERYONE,
+                                )} · $memberText"
+                            } else {
+                                memberText
+                            },
                         featured = room.featured,
                         initial = room.name.take(1),
                         joined = room.joined,

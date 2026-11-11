@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="message_ai_greeting">Hi, I am Courmy AI!\nWhich area would you like to explore?</string>
+    <string name="message_ai_region_placeholder">You can enter an area</string>
+    <string name="message_ai_session_expired">This conversation has expired. Let us start again.</string>
+    <string name="message_ai_error">Could not load recommendations. Please try again shortly.</string>
+</resources>

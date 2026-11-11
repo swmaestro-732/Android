@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.presentation
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.course.domain.CreatePlanUseCase
 import com.chillsam.courmy.course.domain.GetWalkingMinutesUseCase
 import com.chillsam.courmy.course.entity.CoursePlaceCoordinate
@@ -17,12 +20,20 @@ internal suspend fun savePlan(
         if (state.places.size == 1) {
             emptyList()
         } else {
-            require(state.places.all { it.hasLocation }) { "장소의 위치를 확인할 수 없어요." }
+            requireLocalized(
+                state.places.all {
+                    it.hasLocation
+                },
+            ) { LocalizedValidationException(StringResource.VALIDATION_PLACE_LOCATION) }
             getWalkingMinutes(
                 state.places.map {
                     CoursePlaceCoordinate(latitude = it.latitude!!, longitude = it.longitude!!)
                 },
-            ).also { require(it.size == state.places.size - 1) { "도보 구간 수가 일치하지 않아요." } }
+            ).also {
+                requireLocalized(it.size == state.places.size - 1) {
+                    LocalizedValidationException(StringResource.VALIDATION_WALKING_SEGMENTS)
+                }
+            }
         }
     val id =
         createPlan(

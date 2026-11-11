@@ -2,6 +2,8 @@ package com.chillsam.courmy.course.presentation
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.DeleteDraftUseCase
 import com.chillsam.courmy.course.domain.GetDraftsUseCase
@@ -24,6 +26,7 @@ class DraftListViewModel
     constructor(
         private val getDraftsUseCase: GetDraftsUseCase,
         private val deleteDraftUseCase: DeleteDraftUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<DraftListIntent, DraftListUIState, DraftListReducerEvent>(
             DraftListUIState.empty,
         ) {
@@ -56,7 +59,11 @@ class DraftListViewModel
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "임시저장 목록 조회 실패", e)
-                            dispatch(DraftListReducerEvent.LoadFailed("임시저장한 코스를 불러오지 못했어요."))
+                            dispatch(
+                                DraftListReducerEvent.LoadFailed(
+                                    resources.getString(StringResource.DRAFT_COURSES_LOAD_FAILED),
+                                ),
+                            )
                         }
                 }
         }
@@ -74,7 +81,11 @@ class DraftListViewModel
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "임시저장 삭제 실패: courseId=$courseId", e)
-                            dispatch(DraftListReducerEvent.DeleteFailed("삭제하지 못했어요. 잠시 후 다시 시도해 주세요."))
+                            dispatch(
+                                DraftListReducerEvent.DeleteFailed(
+                                    resources.getString(StringResource.DELETE_RETRY_LATER),
+                                ),
+                            )
                         }
                 } finally {
                     deletingCourseIds.remove(courseId)

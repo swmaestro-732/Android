@@ -15,8 +15,7 @@ import kotlinx.serialization.Serializable
  * - [note]         이곳에 한마디 (사용자 메모). 비어있으면 입력 유도 placeholder 표시
  * - [photoUrls]    사용자가 담은 사진 URL 목록
  * - [maxPhotos]    사진 최대 개수 (디자인상 6)
- * - [walkText]     다음 장소로의 경로 안내 (예: "도보 9분"). 마지막 장소는 빈 문자열
- * - [walkingMinutes] 다음 장소까지의 도보 분. [walkText] 의 원본 숫자다. 서버는 도보 시간을 스스로
+ * - [walkingMinutes] 다음 장소까지의 도보 분. 표시와 서버 전송에 쓰는 원본 숫자다. 서버는 도보 시간을 스스로
  *                    계산하지 않고 코스 생성·편집 요청에 실린 값을 그대로 저장하므로, 표시용 문자열만
  *                    갖고 있으면 저장된 코스의 도보 시간이 0 이 된다. 마지막 장소·미계산은 null,
  *                    걸어갈 수 없는 구간은 [UNREACHABLE_ON_FOOT]
@@ -33,7 +32,6 @@ data class CoursePlaceVO(
     val note: String = "",
     val photoUrls: List<String> = emptyList(),
     val maxPhotos: Int = MAX_PHOTOS,
-    val walkText: String = "",
     val walkingMinutes: Int? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,

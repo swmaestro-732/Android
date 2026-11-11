@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.domain.report.SubmitReportUseCase
 import com.chillsam.courmy.common.entity.report.ReportReason
 import com.chillsam.courmy.common.entity.report.ReportResultVO
 import com.chillsam.courmy.common.entity.report.ReportTargetType
+import com.chillsam.courmy.common.presentation.testResources
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,7 +36,7 @@ class ReportViewModelTest {
     @Test
     fun `사유 없이 전송하지 않고 제출 중 중복과 폼 변경을 막는다`() =
         runTest(dispatcher) {
-            val viewModel = ReportViewModel(SubmitReportUseCase(repository))
+            val viewModel = ReportViewModel(SubmitReportUseCase(repository), resources = testResources())
             val submit = ReportIntent.Submit(ReportTargetType.COURSE, 42)
             viewModel.onIntent(submit)
             runCurrent()
@@ -61,7 +62,7 @@ class ReportViewModelTest {
     @Test
     fun `실패 시 사유와 설명을 보존하고 같은 폼으로 재시도할 수 있다`() =
         runTest(dispatcher) {
-            val viewModel = ReportViewModel(SubmitReportUseCase(repository))
+            val viewModel = ReportViewModel(SubmitReportUseCase(repository), resources = testResources())
             viewModel.onIntent(ReportIntent.SelectReason(ReportReason.PRIVACY))
             viewModel.onIntent(ReportIntent.Describe("개인정보 노출"))
             viewModel.onIntent(ReportIntent.Submit(ReportTargetType.USER, 42))
@@ -86,7 +87,7 @@ class ReportViewModelTest {
     @Test
     fun `서버 안내만 표시하고 원시 JSON을 담은 다른 예외는 숨긴다`() =
         runTest(dispatcher) {
-            val viewModel = ReportViewModel(SubmitReportUseCase(repository))
+            val viewModel = ReportViewModel(SubmitReportUseCase(repository), resources = testResources())
             viewModel.onIntent(ReportIntent.SelectReason(ReportReason.SPAM))
             repository.result.completeExceptionally(ReportSubmissionException("이미 신고한 대상입니다."))
             viewModel.onIntent(ReportIntent.Submit(ReportTargetType.USER, 42))
@@ -101,6 +102,23 @@ class ReportViewModelTest {
             advanceUntilIdle()
             assertEquals("신고하지 못했어요. 다시 시도해 주세요.", viewModel.uiState.value.error)
             assertNull(viewModel.uiState.value.success)
+        }
+
+    @Test
+    fun `선택 언어로 로컬 검증과 서버 문구 없는 접수 결과를 표시한다`() =
+        runTest(dispatcher) {
+            val viewModel = ReportViewModel(SubmitReportUseCase(repository), resources = testResources("en"))
+            viewModel.onIntent(ReportIntent.SelectReason(ReportReason.SPAM))
+            viewModel.onIntent(ReportIntent.Submit(ReportTargetType.USER, 0))
+            advanceUntilIdle()
+            assertEquals("Unable to identify what you want to report.", viewModel.uiState.value.error)
+            assertEquals(0, repository.calls)
+
+            repository.result.complete(ReportResultVO(1, ""))
+            viewModel.onIntent(ReportIntent.Submit(ReportTargetType.USER, 42))
+            advanceUntilIdle()
+            assertEquals("Your report has been received.", viewModel.uiState.value.success)
+            assertNull(viewModel.uiState.value.error)
         }
 
     private class FakeRepository : ReportRepository {

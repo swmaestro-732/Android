@@ -34,12 +34,4 @@ data class HomeInProgressCourseVO(
     /** 진행도 텍스트(예: "2 / 5"). 진행도 정보가 없으면 빈 문자열. */
     val progressText: String
         get() = if (hasProgress) "${visitedPlaceCount ?: 0} / $placeCount" else ""
-
-    /** 카드 요약 줄: 지역 · N곳 (있는 것만 이어 붙인다). */
-    val summaryText: String
-        get() =
-            listOfNotNull(
-                area.takeIf { it.isNotBlank() },
-                placeCount.takeIf { it > 0 }?.let { "${it}곳" },
-            ).joinToString(" · ")
 }
