@@ -3,6 +3,8 @@ package com.chillsam.courmy.main.presentation.aichat
 import android.content.Context
 import com.chillsam.courmy.common.domain.error.HttpResponseException
 import com.chillsam.courmy.common.domain.error.HttpResponseStatus
+import com.chillsam.courmy.common.domain.telemetry.ProductEvent
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.main.domain.aichat.AiChatRepository
 import com.chillsam.courmy.main.domain.aichat.SendAiChatMessageUseCase
 import com.chillsam.courmy.main.entity.aichat.AiChatAnswer
@@ -14,6 +16,7 @@ import com.chillsam.courmy.main.entity.aichat.QuickReplyVO
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,6 +40,7 @@ import java.io.IOException
 class AiCourseChatViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeRepository()
+    private val telemetry = mockk<Telemetry>(relaxed = true)
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -45,8 +49,32 @@ class AiCourseChatViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun viewModel(language: String = "ko") =
-        AiCourseChatViewModel(mockk<Context>(), SendAiChatMessageUseCase(repository), testResources(language)).also {
+        AiCourseChatViewModel(
+            mockk<Context>(),
+            SendAiChatMessageUseCase(repository),
+            testResources(language),
+            telemetry,
+        ).also {
             it.onIntent(AiCourseChatIntent.Start)
+        }
+
+    @Test
+    fun `chat events count start once and accepted messages without text content`() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.onIntent(AiCourseChatIntent.Start)
+            vm.onIntent(AiCourseChatIntent.SendText("   "))
+            vm.onIntent(AiCourseChatIntent.SendText("private input"))
+            advanceUntilIdle()
+            verify(exactly = 1) {
+                telemetry.logEvent(ProductEvent.AiChatOpen, mapOf("screen" to "/aichat", "source" to "chat_start"))
+            }
+            verify(exactly = 1) {
+                telemetry.logEvent(
+                    ProductEvent.AiChatMessageSent,
+                    mapOf("screen" to "/aichat", "answer_type" to "text", "step" to "REGION"),
+                )
+            }
         }
 
     @Test

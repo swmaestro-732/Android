@@ -6,6 +6,7 @@ import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
 import com.chillsam.courmy.common.domain.error.HttpResponseException
 import com.chillsam.courmy.common.domain.helper.ResourceHelper
 import com.chillsam.courmy.common.domain.helper.StringResource
+import com.chillsam.courmy.common.domain.telemetry.NoOpTelemetry
 import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.common.domain.telemetry.contentView
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
@@ -37,7 +38,7 @@ class CourseDetailViewModel
         private val deleteCourseUseCase: DeleteCourseUseCase,
         private val isLoggedInUseCase: IsLoggedInUseCase,
         private val resources: ResourceHelper,
-        private val telemetry: Telemetry,
+        private val telemetry: Telemetry = NoOpTelemetry,
     ) : MviViewModel<CourseDetailIntent, CourseDetailUIState, CourseDetailReducerEvent>(
             CourseDetailUIState.empty,
         ) {
