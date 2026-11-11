@@ -16,6 +16,7 @@ import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.domain.telemetry.selectionChange
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
+import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.domain.my.ProfileEditPage
@@ -41,6 +42,9 @@ fun SettingsPage(modifier: Modifier = Modifier) {
     val navigationHelper = LocalNavigationHelper.current
     val color = DesignSystemThemeImpl.designSystemColor
     val telemetry = LocalTelemetry.current
+    // 비로그인(게스트)에게는 로그인해야 쓸 수 있는 항목(프로필·계정·알림 동의)을 숨긴다.
+    // 언어·문의·개인정보·앱 버전은 로그인 없이 쓰므로 그대로 노출한다.
+    val loggedIn = LocalSessionUiState.current.isLoggedIn
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val notReadyMessage = stringResource(R.string.settings_toast_not_ready)
@@ -68,30 +72,34 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
         ) {
-            SettingsMenuRow(label = stringResource(R.string.settings_profile_edit), onClick = {
-                navigationHelper.navigateTo(ProfileEditPage, source = NavigationSource("/settings", "edit_profile"))
-            })
-            SettingsDivider()
-            SettingsMenuRow(label = stringResource(R.string.settings_account), onClick = {
-                navigationHelper.navigateTo(AccountManageRoute, source = NavigationSource("/settings", "account"))
-            })
-            SettingsDivider()
+            if (loggedIn) {
+                SettingsMenuRow(label = stringResource(R.string.settings_profile_edit), onClick = {
+                    navigationHelper.navigateTo(ProfileEditPage, source = NavigationSource("/settings", "edit_profile"))
+                })
+                SettingsDivider()
+                SettingsMenuRow(label = stringResource(R.string.settings_account), onClick = {
+                    navigationHelper.navigateTo(AccountManageRoute, source = NavigationSource("/settings", "account"))
+                })
+                SettingsDivider()
+            }
             SettingsMenuRow(
                 label = stringResource(R.string.settings_notice),
                 onClick = notReady,
                 hint = stringResource(R.string.settings_hint_not_ready),
             )
             SettingsDivider()
-            SettingsMenuRow(
-                label = stringResource(R.string.settings_notification),
-                onClick = {
-                    navigationHelper.navigateTo(
-                        com.chillsam.courmy.main.domain.settings.NotificationSettingsPage,
-                        source = NavigationSource("/settings", "notifications"),
-                    )
-                },
-            )
-            SettingsDivider()
+            if (loggedIn) {
+                SettingsMenuRow(
+                    label = stringResource(R.string.settings_notification),
+                    onClick = {
+                        navigationHelper.navigateTo(
+                            com.chillsam.courmy.main.domain.settings.NotificationSettingsPage,
+                            source = NavigationSource("/settings", "notifications"),
+                        )
+                    },
+                )
+                SettingsDivider()
+            }
             SettingsMenuRow(
                 label = stringResource(R.string.settings_language),
                 onClick = {

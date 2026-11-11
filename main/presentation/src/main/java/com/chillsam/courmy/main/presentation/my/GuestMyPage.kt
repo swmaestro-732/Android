@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +44,7 @@ import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.HomePage
 import com.chillsam.courmy.main.domain.login.LoginPage
 import com.chillsam.courmy.main.domain.saved.SavedPage
+import com.chillsam.courmy.main.domain.settings.SettingsPage
 import com.chillsam.courmy.main.presentation.component.CourmyBottomBar
 import com.chillsam.courmy.main.presentation.component.MainTab
 
@@ -68,12 +70,27 @@ fun GuestMyPage(modifier: Modifier = Modifier) {
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = ScreenHorizontalPadding),
         ) {
-            DsText(
-                text = "마이",
-                style = DesignSystemThemeImpl.typeScale.titleExtraL,
-                color = color.contentDefaultLevel0,
-                modifier = Modifier.padding(vertical = 20.dp),
-            )
+            // 비로그인도 언어·문의·개인정보·앱 버전 등 로그인 불필요 설정에 들어갈 수 있게 톱니를 둔다.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                DsText(
+                    text = "마이",
+                    style = DesignSystemThemeImpl.typeScale.titleExtraL,
+                    color = color.contentDefaultLevel0,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = {
+                    navigationHelper.navigateTo(SettingsPage, source = NavigationSource("/my/guest", "settings"))
+                }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings_24),
+                        contentDescription = "설정",
+                        tint = color.contentDefaultLevel0,
+                    )
+                }
+            }
 
             GuestWelcomeCard(onLogin = { onLogin("welcome_login") })
 
