@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,12 +31,14 @@ import com.chillsam.courmy.common.presentation.component.SkeletonBlock
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
+import com.chillsam.courmy.main.presentation.R
 
 /** 각 목록의 실제 커버 비율과 제목·메타 위치를 유지한다. 바깥 여백은 목록이 소유한다. */
 @Composable
 internal fun CourseCardsSkeleton(layout: CourseSkeletonLayout = CourseSkeletonLayout.FEED) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Column(Modifier.fillMaxWidth().semantics { contentDescription = "코스를 불러오는 중" }, Arrangement.spacedBy(16.dp)) {
+    val loadingDescription = stringResource(R.string.main_skeleton_courses_loading)
+    Column(Modifier.fillMaxWidth().semantics { contentDescription = loadingDescription }, Arrangement.spacedBy(16.dp)) {
         repeat(2) {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(color.bgDefaultLevel1)) {
                 val cover =
@@ -58,12 +61,13 @@ internal fun CourseCardsSkeleton(layout: CourseSkeletonLayout = CourseSkeletonLa
 @Composable
 internal fun RecommendedCardsSkeleton() {
     val color = DesignSystemThemeImpl.designSystemColor
+    val loadingDescription = stringResource(R.string.main_skeleton_recommended_loading)
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(0.dp))
             .horizontalScroll(rememberScrollState(), enabled = false)
-            .semantics { contentDescription = "추천 코스를 불러오는 중" }
+            .semantics { contentDescription = loadingDescription }
             .padding(horizontal = ScreenHorizontalPadding),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -87,7 +91,8 @@ internal fun PlaceRowsSkeleton(
     count: Int = 3,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    Column(modifier.fillMaxWidth().semantics { contentDescription = "장소를 불러오는 중" }, Arrangement.spacedBy(12.dp)) {
+    val loadingDescription = stringResource(R.string.main_skeleton_places_loading)
+    Column(modifier.fillMaxWidth().semantics { contentDescription = loadingDescription }, Arrangement.spacedBy(12.dp)) {
         repeat(count) {
             Row(
                 Modifier.fillMaxWidth().background(color.bgDefaultLevel1, RoundedCornerShape(16.dp)).padding(12.dp),
@@ -112,6 +117,7 @@ internal fun ProfileContentSkeleton(
     showTabs: Boolean = true,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val loadingDescription = stringResource(R.string.main_skeleton_profile_loading)
     Column(
         modifier
             .fillMaxSize()
@@ -120,7 +126,7 @@ internal fun ProfileContentSkeleton(
             ).statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = ScreenHorizontalPadding)
-            .semantics { contentDescription = "프로필을 불러오는 중" },
+            .semantics { contentDescription = loadingDescription },
     ) {
         Spacer(Modifier.height(60.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -159,7 +165,8 @@ internal fun ProfileContentSkeleton(
 
 @Composable
 internal fun FollowRowsSkeleton() {
-    Column(Modifier.fillMaxWidth().semantics { contentDescription = "팔로우 목록을 불러오는 중" }) {
+    val loadingDescription = stringResource(R.string.main_skeleton_follow_loading)
+    Column(Modifier.fillMaxWidth().semantics { contentDescription = loadingDescription }) {
         repeat(5) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),

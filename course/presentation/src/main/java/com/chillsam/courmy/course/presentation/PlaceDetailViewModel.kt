@@ -3,6 +3,8 @@ package com.chillsam.courmy.course.presentation
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.course.domain.DeletePlaceReviewUseCase
 import com.chillsam.courmy.course.domain.GetPlaceDetailUseCase
 import com.chillsam.courmy.course.domain.GetPlaceReviewsUseCase
@@ -54,6 +56,7 @@ class PlaceDetailViewModel
         private val getPlaceReviewsUseCase: GetPlaceReviewsUseCase,
         private val setPlaceSavedUseCase: SetPlaceSavedUseCase,
         private val deletePlaceReviewUseCase: DeletePlaceReviewUseCase,
+        private val resources: ResourceHelper,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(PlaceDetailUiState())
         val uiState: StateFlow<PlaceDetailUiState> = _uiState
@@ -75,7 +78,8 @@ class PlaceDetailViewModel
             currentPlaceId = placeId
             // 장소 id 가 없으면(응답에 placeId 가 빠진 경우) 서버에 물어볼 것이 없다.
             if (placeId <= 0L) {
-                _uiState.value = PlaceDetailUiState(errorMessage = "주소를 불러오지 못했어요.")
+                _uiState.value =
+                    PlaceDetailUiState(errorMessage = resources.getString(StringResource.ADDRESS_LOAD_FAILED))
                 return
             }
             _uiState.value = PlaceDetailUiState(isLoading = true, isSaved = initiallySaved)
@@ -90,7 +94,12 @@ class PlaceDetailViewModel
                             if (e is CancellationException) throw e
                             Log.w(TAG, "장소 상세 로드 실패: placeId=$placeId", e)
                             // 시트는 코스 데이터로 이미 그려져 있고 이 응답에서 쓰는 건 주소뿐이다.
-                            _uiState.update { it.copy(isLoading = false, errorMessage = "주소를 불러오지 못했어요.") }
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    errorMessage = resources.getString(StringResource.ADDRESS_LOAD_FAILED),
+                                )
+                            }
                         }
                 }
             // 후기는 상세와 독립 호출이라 따로 받는다 — 하나가 늦거나 실패해도 서로 막지 않는다.
@@ -119,7 +128,14 @@ class PlaceDetailViewModel
                             _uiState.update {
                                 it.copy(
                                     isSaved = !next,
-                                    errorMessage = if (next) "저장하지 못했어요." else "저장을 취소하지 못했어요.",
+                                    errorMessage =
+                                        if (next) {
+                                            resources.getString(
+                                                StringResource.SAVE_FAILED,
+                                            )
+                                        } else {
+                                            resources.getString(StringResource.UNSAVE_FAILED)
+                                        },
                                 )
                             }
                         }
@@ -141,7 +157,11 @@ class PlaceDetailViewModel
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "장소 후기 삭제 실패: placeId=$placeId, reviewId=$reviewId", e)
-                            _uiState.update { it.copy(errorMessage = "후기를 삭제하지 못했어요.") }
+                            _uiState.update {
+                                it.copy(
+                                    errorMessage = resources.getString(StringResource.REVIEW_DELETE_FAILED),
+                                )
+                            }
                         }
                 }
         }

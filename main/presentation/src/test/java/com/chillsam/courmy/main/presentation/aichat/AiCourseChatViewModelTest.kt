@@ -12,6 +12,7 @@ import com.chillsam.courmy.main.entity.aichat.AiChatStep
 import com.chillsam.courmy.main.entity.aichat.AiChatTurnVO
 import com.chillsam.courmy.main.entity.aichat.QuickReplyVO
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
+import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -43,9 +44,22 @@ class AiCourseChatViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel() =
-        AiCourseChatViewModel(mockk<Context>(), SendAiChatMessageUseCase(repository)).also {
+    private fun viewModel(language: String = "ko") =
+        AiCourseChatViewModel(mockk<Context>(), SendAiChatMessageUseCase(repository), testResources(language)).also {
             it.onIntent(AiCourseChatIntent.Start)
+        }
+
+    @Test
+    fun `English and Japanese greetings and input hints use localized resources`() =
+        runTest(dispatcher) {
+            for (language in listOf("en", "ja")) {
+                val vm = viewModel(language)
+                val state = vm.uiState.value
+                assertTrue(state.messages.isNotEmpty())
+                assertTrue(state.messages.none { message -> message.text.any { it in '가'..'힣' } })
+                assertTrue(state.inputPlaceholder.isNotBlank())
+                assertTrue(state.inputPlaceholder.none { it in '가'..'힣' })
+            }
         }
 
     @Test

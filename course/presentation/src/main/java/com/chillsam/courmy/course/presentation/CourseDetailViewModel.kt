@@ -3,6 +3,9 @@ package com.chillsam.courmy.course.presentation
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
+import com.chillsam.courmy.common.domain.error.HttpResponseException
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.DeleteCourseUseCase
 import com.chillsam.courmy.course.domain.GetCourseDetailUseCase
@@ -31,6 +34,7 @@ class CourseDetailViewModel
         private val setFollowAuthorUseCase: SetFollowAuthorUseCase,
         private val deleteCourseUseCase: DeleteCourseUseCase,
         private val isLoggedInUseCase: IsLoggedInUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<CourseDetailIntent, CourseDetailUIState, CourseDetailReducerEvent>(
             CourseDetailUIState.empty,
         ) {
@@ -291,7 +295,14 @@ class CourseDetailViewModel
                             if (courseId == id) {
                                 dispatch(
                                     CourseDetailReducerEvent.LikeFailed(
-                                        message = if (target) "좋아요하지 못했어요." else "좋아요를 취소하지 못했어요.",
+                                        message =
+                                            if (target) {
+                                                resources.getString(
+                                                    StringResource.LIKE_FAILED,
+                                                )
+                                            } else {
+                                                resources.getString(StringResource.UNLIKE_FAILED)
+                                            },
                                         liked = before.isLiked,
                                         likeCount = before.likeCount,
                                     ),
@@ -332,7 +343,14 @@ class CourseDetailViewModel
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "팔로우 토글 실패: userId=$authorId, target=$target", e)
-                            val message = if (target) "팔로우하지 못했어요." else "팔로우를 해제하지 못했어요."
+                            val message =
+                                if (target) {
+                                    resources.getString(
+                                        StringResource.FOLLOW_FAILED,
+                                    )
+                                } else {
+                                    resources.getString(StringResource.UNFOLLOW_FAILED)
+                                }
                             dispatch(CourseDetailReducerEvent.FollowFailed(message))
                         }
                 }
@@ -351,7 +369,11 @@ class CourseDetailViewModel
                         .onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "코스 삭제 실패: courseId=$id", e)
-                            dispatch(CourseDetailReducerEvent.DeleteFailed("삭제하지 못했어요. 잠시 후 다시 시도해 주세요."))
+                            dispatch(
+                                CourseDetailReducerEvent.DeleteFailed(
+                                    resources.getString(StringResource.DELETE_RETRY_LATER),
+                                ),
+                            )
                         }
                 }
         }
@@ -381,7 +403,14 @@ class CourseDetailViewModel
                         }.onFailure { e ->
                             if (e is CancellationException) throw e
                             Log.w(TAG, "코스 저장 토글 실패: courseId=$id, target=$target", e)
-                            val message = if (target) "저장하지 못했어요." else "저장을 취소하지 못했어요."
+                            val message =
+                                if (target) {
+                                    resources.getString(
+                                        StringResource.SAVE_FAILED,
+                                    )
+                                } else {
+                                    resources.getString(StringResource.UNSAVE_FAILED)
+                                }
                             dispatch(CourseDetailReducerEvent.SaveFailed(message))
                         }
                 }
@@ -392,7 +421,7 @@ class CourseDetailViewModel
             val id = courseId
             if (id == null || id <= 0L) {
                 Log.w(TAG, "잘못된 코스 id: $id")
-                dispatch(CourseDetailReducerEvent.Failed("코스를 찾을 수 없습니다."))
+                dispatch(CourseDetailReducerEvent.Failed(resources.getString(StringResource.COURSE_NOT_FOUND)))
                 return
             }
             dispatch(CourseDetailReducerEvent.LoadStarted)
@@ -414,7 +443,12 @@ class CourseDetailViewModel
                             if (e is CancellationException) throw e
                             // 실패 원인(타임아웃/404/파싱 등)을 스택트레이스까지 남긴다.
                             Log.w(TAG, "로드 실패: ${e.javaClass.simpleName} - ${e.message}", e)
-                            dispatch(CourseDetailReducerEvent.Failed(e.message ?: "코스를 불러오지 못했습니다."))
+                            dispatch(
+                                CourseDetailReducerEvent.Failed(
+                                    (e as? HttpResponseException)?.message?.takeIf { it.isNotBlank() }
+                                        ?: resources.getString(StringResource.COURSES_LOAD_FAILED),
+                                ),
+                            )
                         }
                 }
         }

@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.chillsam.courmy.common.domain.navigation.NavigationSource
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -97,6 +98,7 @@ import com.chillsam.courmy.main.domain.settings.AccountManagePage as AccountMana
 import com.chillsam.courmy.main.domain.settings.AppVersionPage as AppVersionRoute
 import com.chillsam.courmy.main.domain.settings.SettingsPage as SettingsRoute
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 앱의 모든 페이지 메타데이터 + 렌더러 모음.
@@ -448,6 +450,13 @@ val appRoutes: List<AppRoute> =
             },
         ),
         AppRoute(
+            path = com.chillsam.courmy.main.domain.settings.LanguageSettingsPage.PATH,
+            render = {
+                com.chillsam.courmy.main.presentation.settings
+                    .LanguageSettingsPage()
+            },
+        ),
+        AppRoute(
             path = AppVersionRoute.PATH,
             render = { AppVersionPage() },
         ),
@@ -488,11 +497,11 @@ val appRoutes: List<AppRoute> =
                 if (showCopyChoice) {
                     val sourceId = args[CourseDetailRoute.ARG_COURSE_ID]?.toLongOrNull()
                     DsDialogScaffold(
-                        title = "어떻게 복제할까요?",
-                        description = "계획은 나만 볼 수 있고, 방문할 장소와 메모를 담을 수 있어요.",
+                        title = stringResource(MainR.string.main_copy_course_title),
+                        description = stringResource(MainR.string.main_copy_course_description),
                         onDismiss = { showCopyChoice = false },
                     ) {
-                        DsButton(text = "계획하기", onClick = {
+                        DsButton(text = stringResource(MainR.string.main_copy_course_plan), onClick = {
                             showCopyChoice = false
                             sourceId?.let {
                                 navigationHelper.navigateByRoute(
@@ -501,16 +510,33 @@ val appRoutes: List<AppRoute> =
                                 )
                             }
                         })
-                        DsButton(text = "후기 작성", variant = DsButtonVariant.Secondary, onClick = {
-                            showCopyChoice = false
-                            sourceId?.let {
-                                navigationHelper.navigateByRoute(
-                                    CourseCreateRoute.forkRoute(it),
-                                    source = NavigationSource(CourseDetailRoute.PATH, "copy_as_course"),
-                                )
-                            }
-                        })
-                        DsButton(text = "취소", variant = DsButtonVariant.Secondary, onClick = { showCopyChoice = false })
+                        DsButton(
+                            text =
+                                stringResource(
+                                    MainR.string.main_copy_course_review,
+                                ),
+                            variant = DsButtonVariant.Secondary,
+                            onClick = {
+                                showCopyChoice = false
+                                sourceId?.let {
+                                    navigationHelper.navigateByRoute(
+                                        CourseCreateRoute.forkRoute(it),
+                                        source = NavigationSource(CourseDetailRoute.PATH, "copy_as_course"),
+                                    )
+                                }
+                            },
+                        )
+                        DsButton(
+                            text =
+                                stringResource(
+                                    MainR.string.main_saved_create_folder_cancel,
+                                ),
+                            variant = DsButtonVariant.Secondary,
+                            onClick = {
+                                showCopyChoice =
+                                    false
+                            },
+                        )
                     }
                 }
                 CourseDetailPage(

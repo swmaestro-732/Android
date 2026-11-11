@@ -106,18 +106,48 @@ class HandleCheckViewModel
     }
 
 /** 확인 전 보여 주는 아이디 입력 조건. [message] 와 마찬가지로 회원가입·프로필 편집이 같은 문구를 쓴다. */
-val HANDLE_RULES =
+@androidx.compose.runtime.Composable
+fun handleRules() =
     listOf(
-        "영문 소문자, 숫자, 밑줄(_)만 사용 가능",
-        "3~12자 이내로 입력 가능",
+        androidx.compose.ui.res.stringResource(
+            com.chillsam.courmy.common.presentation.R.string.message_handle_allowed_characters_hint,
+        ),
+        androidx.compose.ui.res.stringResource(
+            com.chillsam.courmy.common.presentation.R.string.message_handle_length_hint,
+        ),
     )
 
 /** 판정 결과별 안내 문구. 화면 두 곳이 같은 문구를 쓴다. */
+@androidx.compose.runtime.Composable
 fun HandleCheckResult.message(): String =
     when (this) {
-        HandleCheckResult.AVAILABLE -> "사용할 수 있는 아이디예요"
-        HandleCheckResult.INVALID_LENGTH -> "3~12자 이내로 입력해 주세요"
-        HandleCheckResult.INVALID_FORMAT -> "영문 소문자, 숫자, 밑줄(_)만 사용할 수 있어요"
-        HandleCheckResult.TAKEN -> "이미 사용 중인 아이디예요"
-        HandleCheckResult.ERROR -> "확인에 실패했어요. 잠시 후 다시 시도해 주세요"
+        HandleCheckResult.AVAILABLE -> {
+            androidx.compose.ui.res.stringResource(
+                com.chillsam.courmy.common.presentation.R.string.message_handle_available,
+            )
+        }
+
+        HandleCheckResult.INVALID_LENGTH -> {
+            androidx.compose.ui.res.stringResource(
+                com.chillsam.courmy.common.presentation.R.string.message_handle_invalid_length,
+            )
+        }
+
+        HandleCheckResult.INVALID_FORMAT -> {
+            androidx.compose.ui.res.stringResource(
+                com.chillsam.courmy.common.presentation.R.string.message_handle_invalid_format,
+            )
+        }
+
+        HandleCheckResult.TAKEN -> {
+            androidx.compose.ui.res.stringResource(
+                com.chillsam.courmy.common.presentation.R.string.message_handle_taken,
+            )
+        }
+
+        HandleCheckResult.ERROR -> {
+            androidx.compose.ui.res.stringResource(
+                com.chillsam.courmy.common.presentation.R.string.message_handle_check_failed,
+            )
+        }
     }

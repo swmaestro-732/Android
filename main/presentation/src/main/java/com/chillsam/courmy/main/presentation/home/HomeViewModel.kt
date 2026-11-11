@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.presentation.home
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.course.domain.EndCourseTraceUseCase
 import com.chillsam.courmy.course.domain.SetCourseSavedUseCase
@@ -32,6 +34,7 @@ class HomeViewModel
         private val getHomeUseCase: GetHomeUseCase,
         private val endCourseTraceUseCase: EndCourseTraceUseCase,
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<HomeIntent, HomeUIState, HomeReducerEvent>(
             HomeUIState.empty,
         ) {
@@ -176,7 +179,7 @@ class HomeViewModel
                         if (e is CancellationException) throw e
                         // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                         Log.w(TAG, "홈 로드 실패", e)
-                        dispatch(HomeReducerEvent.Failed("코스를 불러오지 못했습니다."))
+                        dispatch(HomeReducerEvent.Failed(resources.getString(StringResource.COURSES_LOAD_FAILED)))
                     }
                 }
         }

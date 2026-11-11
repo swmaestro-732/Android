@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="course_remaining_new_course">새 코스</string>
+    <string name="course_remaining_untitled_course">제목 없는 코스</string>
+    <string name="course_remaining_my_plan">나의 계획</string>
+    <string name="course_remaining_place_unavailable">장소 정보를 불러오지 못했어요</string>
+    <string name="course_remaining_map_unavailable">지도를 열 수 없어요</string>
+    <string name="course_remaining_rating_1">별로였어요</string>
+    <string name="course_remaining_rating_2">아쉬웠어요</string>
+    <string name="course_remaining_rating_3">보통이었어요</string>
+    <string name="course_remaining_rating_4">좋았어요</string>
+    <string name="course_remaining_rating_5">최고였어요</string>
+    <string name="course_remaining_other">기타</string>
+    <string name="course_remaining_followers">%1$s 따라감</string>
+    <plurals name="course_remaining_spots">
+        <item quantity="one">%1$d 스팟</item>
+        <item quantity="other">%1$d 스팟</item>
+    </plurals>
+    <plurals name="course_remaining_reviews">
+        <item quantity="one">%1$d개</item>
+        <item quantity="other">%1$d개</item>
+    </plurals>
+    <plurals name="course_remaining_minutes">
+        <item quantity="one">%1$d분</item>
+        <item quantity="other">%1$d분</item>
+    </plurals>
+    <plurals name="course_remaining_places">
+        <item quantity="one">%1$d곳</item>
+        <item quantity="other">%1$d곳</item>
+    </plurals>
+    <string name="course_remaining_anonymous">익명</string>
+</resources>

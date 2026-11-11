@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,6 +43,7 @@ import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.domain.login.TermsAgreementPage
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val KakaoYellow = Color(0xFFFEE500)
 
@@ -104,13 +106,13 @@ fun LoginPage(modifier: Modifier = Modifier) {
         ) {
             Spacer(Modifier.height(40.dp))
             DsText(
-                text = "Courmy와\n함께 시작해요",
+                text = stringResource(MainR.string.main_login_title),
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = color.contentDefaultLevel0,
                 maxLines = 2,
             )
             DsText(
-                text = "계정으로 3초 만에 자동 연결돼요.\n처음이면 바로 가입돼요.",
+                text = stringResource(MainR.string.main_login_subtitle),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel2,
                 maxLines = 2,
@@ -122,12 +124,12 @@ fun LoginPage(modifier: Modifier = Modifier) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (uiState.isSelectingGoogleAccount) {
                     DsText(
-                        text = "Google 계정을 선택해 주세요.\n선택창이 열리지 않으면 취소 후 다시 시도해 주세요.",
+                        text = stringResource(MainR.string.main_login_google_account_guide),
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel1,
                     )
                     SocialButton(
-                        text = "Google 로그인 취소",
+                        text = stringResource(MainR.string.main_login_google_cancel),
                         iconRes = null,
                         background = color.bgDefaultLevel0,
                         textColor = color.contentDefaultLevel0,
@@ -135,7 +137,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     )
                 }
                 SocialButton(
-                    text = "카카오로 시작하기",
+                    text = stringResource(MainR.string.main_login_kakao_start),
                     iconRes = R.drawable.ic_kakao_24,
                     background = KakaoYellow,
                     textColor = color.contentDefaultLevel0,
@@ -143,7 +145,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     onClick = { viewModel.onIntent(LoginIntent.KakaoLogin(context)) },
                 )
                 SocialButton(
-                    text = "네이버로 시작하기",
+                    text = stringResource(MainR.string.main_login_naver_start),
                     iconRes = R.drawable.ic_naver_24,
                     background = NaverGreen,
                     textColor = color.contentOnAccent,
@@ -151,7 +153,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     onClick = { viewModel.onIntent(LoginIntent.NaverLogin(context)) },
                 )
                 SocialButton(
-                    text = "Google로 시작하기",
+                    text = stringResource(MainR.string.main_login_google_start),
                     iconRes = R.drawable.ic_google_24,
                     background = color.bgDefaultLevel1,
                     textColor = color.contentDefaultLevel0,
@@ -160,7 +162,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     onClick = { viewModel.onIntent(LoginIntent.GoogleLogin(context)) },
                 )
                 SocialButton(
-                    text = "게스트로 돌아가기",
+                    text = stringResource(MainR.string.main_login_back_to_guest),
                     iconRes = null,
                     background = color.bgDefaultLevel0,
                     textColor = color.contentDefaultLevel1,
@@ -173,7 +175,7 @@ fun LoginPage(modifier: Modifier = Modifier) {
                 )
             }
             DsText(
-                text = "처음이라면 프로필 설정이 이어져요.",
+                text = stringResource(MainR.string.main_login_profile_setup_hint),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
                 textAlign = TextAlign.Center,

@@ -6,6 +6,7 @@ import com.chillsam.courmy.main.domain.follow.GetFollowListUseCase
 import com.chillsam.courmy.main.domain.profile.ProfileRepository
 import com.chillsam.courmy.main.domain.user.ToggleFollowUseCase
 import com.chillsam.courmy.main.entity.my.FollowUserVO
+import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +44,7 @@ class FollowListViewModelTest {
         FollowListViewModel(
             GetFollowListUseCase(repository),
             ToggleFollowUseCase(mockk<ProfileRepository>(relaxed = true)),
+            resources = testResources(),
         )
 
     @Test

@@ -19,14 +19,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsBilingualText
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val CardShape = RoundedCornerShape(14.dp)
 private val ThumbShape = RoundedCornerShape(10.dp)
@@ -74,7 +78,7 @@ internal fun SearchPlaceRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                DsText(
+                DsBilingualText(
                     text = place.name,
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = color.contentDefaultLevel0,
@@ -84,7 +88,7 @@ internal fun SearchPlaceRow(
                 )
                 if (categoryLine.isNotEmpty()) {
                     DsText(
-                        text = categoryLine,
+                        text = rememberTaxonomyLabel(categoryLine),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,
@@ -115,7 +119,7 @@ internal fun SearchPlaceRow(
                 }
             }
             if (showAddress) {
-                DsText(
+                DsBilingualText(
                     text = place.address,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
@@ -182,7 +186,12 @@ private fun SaveToggleIcon(
             painterResource(
                 if (saved) R.drawable.ic_bookmark_filled_24 else R.drawable.ic_tab_bookmark_24,
             ),
-        contentDescription = if (saved) "저장 해제" else "저장",
+        contentDescription =
+            if (saved) {
+                stringResource(MainR.string.main_search_result_save_toggle_remove)
+            } else {
+                stringResource(MainR.string.main_search_result_save_toggle_add)
+            },
         tint = if (saved) color.contentAccent else color.contentDefaultLevel3,
         modifier =
             modifier

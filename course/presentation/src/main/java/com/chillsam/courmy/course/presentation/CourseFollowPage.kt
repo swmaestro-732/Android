@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,12 +81,12 @@ fun CourseFollowPage(
                 CourseFollowSkeleton()
             } else {
                 DsText(
-                    text = "코스를 불러오지 못했어요.",
+                    text = stringResource(R.string.course_follow_load_failed),
                     style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = color.contentDefaultLevel1,
                 )
                 DsText(
-                    text = "다시 시도",
+                    text = stringResource(R.string.course_follow_retry),
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = color.contentOnAccent,
                     modifier =

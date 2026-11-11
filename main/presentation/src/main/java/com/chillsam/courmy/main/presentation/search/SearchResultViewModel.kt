@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.presentation.search
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.format.formatCount
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
@@ -32,6 +34,7 @@ class SearchResultViewModel
         private val searchCoursesUseCase: SearchCoursesUseCase,
         private val getSavedCourseIdsUseCase: GetSavedCourseIdsUseCase,
         private val setCourseSavedUseCase: SetCourseSavedUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<SearchResultIntent, SearchResultUIState, SearchResultReducerEvent>(SearchResultUIState.empty) {
         private var loadJob: Job? = null
 
@@ -120,7 +123,7 @@ class SearchResultViewModel
                             if (error is CancellationException) throw error
                             dispatch(
                                 SearchResultReducerEvent.Failed(
-                                    error.searchErrorMessage("코스 검색 결과를 불러오지 못했어요. 다시 시도해 주세요."),
+                                    error.searchErrorMessage(resources.getString(StringResource.COURSE_SEARCH_FAILED)),
                                 ),
                             )
                         }
@@ -153,7 +156,10 @@ class SearchResultViewModel
                         if (e is CancellationException) throw e
                         Log.w(TAG, "저장 변경 실패: courseId=$courseId", e)
                         dispatch(
-                            SearchResultReducerEvent.SaveFailed(courseId, "저장을 변경하지 못했어요. 다시 시도해 주세요."),
+                            SearchResultReducerEvent.SaveFailed(
+                                courseId,
+                                resources.getString(StringResource.SAVE_CHANGE_FAILED),
+                            ),
                         )
                     }
             }

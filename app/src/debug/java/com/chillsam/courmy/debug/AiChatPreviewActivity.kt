@@ -1,17 +1,26 @@
 package com.chillsam.courmy.debug
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.translation.LanguageRepository
+import com.chillsam.courmy.common.domain.translation.Translator
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.LocalStatusBarState
 import com.chillsam.courmy.common.presentation.helper.SessionUiState
 import com.chillsam.courmy.common.presentation.helper.StatusBarState
+import com.chillsam.courmy.common.presentation.translation.LocalAppLanguage
+import com.chillsam.courmy.common.presentation.translation.LocalTranslator
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.main.domain.aichat.AiChatRepository
 import com.chillsam.courmy.main.domain.aichat.SendAiChatMessageUseCase
@@ -23,10 +32,20 @@ import com.chillsam.courmy.main.entity.aichat.QuickReplyVO
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
 import com.chillsam.courmy.main.presentation.aichat.AiCourseChatPage
 import com.chillsam.courmy.main.presentation.aichat.AiCourseChatViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import java.util.Locale
+import javax.inject.Inject
 
 /** 실제 화면과 ViewModel을 사용하며 서버 응답만 대체하는 debug 전용 데모. */
+@AndroidEntryPoint
 class AiChatPreviewActivity : ComponentActivity() {
+    @Inject lateinit var resourcesHelper: ResourceHelper
+
+    @Inject lateinit var languages: LanguageRepository
+
+    @Inject lateinit var translator: Translator
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -36,15 +55,30 @@ class AiChatPreviewActivity : ComponentActivity() {
                 object : ViewModelProvider.Factory {
                     @Suppress("UNCHECKED_CAST")
                     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                        AiCourseChatViewModel(applicationContext, SendAiChatMessageUseCase(PreviewRepository())) as T
+                        AiCourseChatViewModel(
+                            applicationContext,
+                            SendAiChatMessageUseCase(PreviewRepository()),
+                            resourcesHelper,
+                        ) as T
                 },
             )[AiCourseChatViewModel::class.java]
         val session = SessionUiState().apply { login() }
         val statusBar = StatusBarState()
+        val language = languages.currentLanguage
+        val configuration =
+            Configuration(
+                resources.configuration,
+            ).apply { setLocale(Locale.forLanguageTag(language.code)) }
+        val localizedContext = createConfigurationContext(configuration)
         setContent {
             DesignSystemTheme {
                 CompositionLocalProvider(
                     LocalSessionUiState provides session,
+                    LocalAppLanguage provides language,
+                    LocalTranslator provides translator,
+                    LocalContext provides localizedContext,
+                    LocalActivityResultRegistryOwner provides this,
+                    LocalConfiguration provides configuration,
                     LocalStatusBarState provides statusBar,
                 ) {
                     AiCourseChatPage(

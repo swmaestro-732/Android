@@ -17,12 +17,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /**
  * 코스 후기 전체보기(FS-37) 진입점. [CourseReviewListViewModel] 상태를 구독해
@@ -159,12 +161,12 @@ private fun ReviewListError(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             DsText(
-                text = message ?: "후기를 불러오지 못했습니다.",
+                text = message ?: stringResource(CourseR.string.course_review_list_load_error),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
             )
             DsText(
-                text = "다시 시도",
+                text = stringResource(CourseR.string.course_review_list_retry),
                 style = DesignSystemThemeImpl.typeScale.textRegularM,
                 color = DesignSystemThemeImpl.designSystemColor.contentAccent,
                 modifier = Modifier.clickable(onClick = onRetry),

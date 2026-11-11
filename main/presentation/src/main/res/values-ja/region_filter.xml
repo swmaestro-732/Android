@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_region_filter_all">すべての地域</string>
+    <string name="main_region_filter_label">市・区・郡を選択</string>
+    <string name="main_region_filter_expanded">地域一覧を展開中</string>
+    <string name="main_region_filter_collapsed">地域一覧を折りたたみ中</string>
+    <string name="main_region_filter_loading">地域を読み込み中…</string>
+    <string name="main_region_filter_error">地域を読み込めませんでした</string>
+    <string name="main_region_filter_empty">選択できる下位地域はありません</string>
+</resources>

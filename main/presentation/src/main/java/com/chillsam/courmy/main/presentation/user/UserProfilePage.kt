@@ -15,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,6 +50,7 @@ import com.chillsam.courmy.main.presentation.profile.ProfileHeader
 import com.chillsam.courmy.main.presentation.profile.ProfileHeaderIconButton
 import com.chillsam.courmy.main.presentation.profile.ProfileLoading
 import com.chillsam.courmy.main.domain.user.UserProfilePage as UserProfileRoute
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 타유저 프로필 화면(FS-15 OtherUserPageActivity).
@@ -190,7 +192,7 @@ private fun UserProfileContent(
                 if (FeatureFlags.SHARE_ENABLED) {
                     ProfileHeaderIconButton(
                         iconRes = R.drawable.ic_share_24,
-                        contentDescription = "공유",
+                        contentDescription = stringResource(MainR.string.main_user_profile_share),
                         onClick = shareProfile,
                     )
                 }

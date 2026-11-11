@@ -26,7 +26,7 @@ class DraftListDtoMappingTest {
         val vo = json.decodeFromString<DraftListEnvelope>(RESPONSE).toVOList()
 
         // 임시저장은 제목 없이도 만들 수 있어 서버가 빈 문자열을 준다.
-        assertEquals("제목 없는 코스", vo[0].title)
+        assertEquals("", vo[0].title)
         assertEquals("임시저장 테스트", vo[1].title)
     }
 

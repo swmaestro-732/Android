@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
@@ -20,7 +23,7 @@ class StartCourseTraceUseCase
         private val repository: TraceRepository,
     ) {
         suspend operator fun invoke(courseId: Long): Long {
-            require(courseId > 0) { "코스를 확인해 주세요." }
+            requireLocalized(courseId > 0) { LocalizedValidationException(StringResource.VALIDATION_COURSE_TARGET) }
             return try {
                 repository.startTrace(courseId)
             } catch (e: ActiveTraceConflictException) {

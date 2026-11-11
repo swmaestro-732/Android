@@ -19,8 +19,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val SheetShape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
 private val SheetElevation = 12.dp
@@ -77,7 +79,16 @@ private fun SheetHandle(
                         Modifier
                     } else {
                         Modifier
-                            .clickable(onClickLabel = if (expanded) "목록 접기" else "목록 펼치기") {
+                            .clickable(
+                                onClickLabel =
+                                    if (expanded) {
+                                        stringResource(
+                                            MainR.string.main_map_sheet_collapse_list,
+                                        )
+                                    } else {
+                                        stringResource(MainR.string.main_map_sheet_expand_list)
+                                    },
+                            ) {
                                 onExpandedChange(!expanded)
                             }.pointerInput(expanded) {
                                 var dragDistance = 0f

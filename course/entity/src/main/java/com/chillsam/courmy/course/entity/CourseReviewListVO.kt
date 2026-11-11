@@ -9,7 +9,6 @@ import kotlinx.serialization.Serializable
  *
  * - [averageRatingText] 평균 별점 표시값 (예: "4.8")
  * - [averageStars]      헤더 별 5칸에 채울 개수. 평균을 반올림한 값이라 표시용이다.
- * - [totalCountText]    리뷰 총 개수 (예: "128개")
  * - [distribution]      별점 분포. 5점부터 내림차순이며 서버가 준 구간만 담는다.
  * - [photoCountText]    후기 사진 총 개수 (예: "86"). 사진이 없으면 빈 문자열.
  * - [photoUrls]         상단 사진 띠에 그릴 URL. 서버가 사진만 모아 주는 필드는 없어서
@@ -25,7 +24,6 @@ import kotlinx.serialization.Serializable
 data class CourseReviewListVO(
     val averageRatingText: String,
     val averageStars: Int,
-    val totalCountText: String,
     val distribution: List<CourseRatingBucketVO> = emptyList(),
     val photoCountText: String = "",
     val photoUrls: List<String> = emptyList(),
@@ -53,7 +51,6 @@ data class CourseReviewListVO(
             CourseReviewListVO(
                 averageRatingText = "0.0",
                 averageStars = 0,
-                totalCountText = "0개",
             )
     }
 }

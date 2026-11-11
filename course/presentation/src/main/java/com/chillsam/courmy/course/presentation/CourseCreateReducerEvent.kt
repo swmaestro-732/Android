@@ -1,6 +1,7 @@
 package com.chillsam.courmy.course.presentation
 
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
+import com.chillsam.courmy.common.presentation.translation.UiMessage
 import com.chillsam.courmy.course.entity.CourseCompanionVO
 import com.chillsam.courmy.course.entity.CourseDraftVO
 import com.chillsam.courmy.course.entity.CourseForkSourceVO
@@ -29,7 +30,7 @@ sealed interface CourseCreateReducerEvent : ReducerEvent {
 
     /** 초안 로드 실패. 스피너를 걷고 안내를 띄운다(빈 초안으로 계속 쓸 수 있게 한다). */
     data class LoadFailed(
-        val message: String,
+        val message: UiMessage,
     ) : CourseCreateReducerEvent
 
     /**
@@ -88,7 +89,7 @@ sealed interface CourseCreateReducerEvent : ReducerEvent {
     ) : CourseCreateReducerEvent
 
     data class SaveFailed(
-        val message: String,
+        val message: UiMessage,
     ) : CourseCreateReducerEvent
 
     data object SaveErrorConsumed : CourseCreateReducerEvent
@@ -117,7 +118,7 @@ sealed interface CourseCreateReducerEvent : ReducerEvent {
 
     /** 임시저장 실패(서버 오류 + 장소 수 미달 같은 앱 자체 판정). */
     data class DraftSaveFailed(
-        val message: String,
+        val message: UiMessage,
     ) : CourseCreateReducerEvent
 
     data object DraftSavedConsumed : CourseCreateReducerEvent

@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,10 +61,11 @@ import com.chillsam.courmy.main.domain.my.InterestRegionPage
 import com.chillsam.courmy.main.domain.my.InterestThemePage
 import com.chillsam.courmy.main.entity.auth.HandleCheckResult
 import com.chillsam.courmy.main.presentation.component.BackTopBar
-import com.chillsam.courmy.main.presentation.login.HANDLE_RULES
 import com.chillsam.courmy.main.presentation.login.HandleCheckIntent
 import com.chillsam.courmy.main.presentation.login.HandleCheckViewModel
+import com.chillsam.courmy.main.presentation.login.handleRules
 import com.chillsam.courmy.main.presentation.login.message
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 닉네임 최대 길이(Figma FS-26 카운터 기준). 서버 한도(20)보다 엄격한 앱 규칙이다. */
 private const val NICKNAME_MAX_LENGTH = 12
@@ -107,6 +109,7 @@ fun ProfileEditPage(
     // 프로필을 아직 못 받았거나 조회 실패·저장 중이면 입력을 잠가 빈 값 저장·충돌을 막는다.
     val canEdit = canEditProfile(myState, editState.isSaving)
     val context = LocalContext.current
+    val savedMessage = stringResource(MainR.string.main_profile_edit_toast_saved)
     // 확인 후 입력이 바뀌었으면 이전 판정을 쓰지 않는다.
     val idResult = checkState.result?.takeIf { checkState.checkedHandle == handle }
     val handleChanged = handle != originalHandle
@@ -119,7 +122,7 @@ fun ProfileEditPage(
     LaunchedEffect(editState.saved) {
         if (editState.saved) {
             editViewModel.onIntent(ProfileEditIntent.ConsumeSaved)
-            Toast.makeText(context, "저장했어요", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, savedMessage, Toast.LENGTH_SHORT).show()
             // 고른 로컬 이미지를 비워야 한다. 안 그러면 업로드가 끝난 뒤에도 "바뀐 게 있다"로 남아
             // 저장 버튼이 계속 활성이다(아래 hasChanges 의 profileImageUri != null 조건).
             profileImageUri = null
@@ -141,7 +144,10 @@ fun ProfileEditPage(
     Column(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         // 상단 바 영역은 흰색(Figma FS-26). 가운데 콘텐츠만 Gray200.
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
-            BackTopBar(title = "프로필 편집", onBack = { navigationHelper.navigateToBack() })
+            BackTopBar(
+                title = stringResource(MainR.string.main_profile_edit_title),
+                onBack = { navigationHelper.navigateToBack() },
+            )
         }
 
         Column(
@@ -161,7 +167,7 @@ fun ProfileEditPage(
             )
 
             LabeledField(
-                label = "닉네임",
+                label = stringResource(MainR.string.main_profile_edit_label_nickname),
                 enabled = canEdit,
                 value = nickname,
                 // 카운터가 광고하는 한도를 입력 단계에서 지킨다(넘겨 입력하면 서버가 저장을 거부한다).
@@ -182,7 +188,7 @@ fun ProfileEditPage(
                 onCheck = { handleCheckViewModel.onIntent(HandleCheckIntent.Check(handle)) },
             )
             LabeledField(
-                label = "소개",
+                label = stringResource(MainR.string.main_profile_edit_label_bio),
                 enabled = canEdit,
                 value = bio,
                 onValueChange = { if (it.length <= BIO_MAX_LENGTH) bio = it },
@@ -190,7 +196,7 @@ fun ProfileEditPage(
                 singleLine = false,
             )
             InterestSummary(
-                title = "관심 테마",
+                title = stringResource(MainR.string.main_profile_edit_interest_themes),
                 enabled = canEdit,
                 loaded = profile != null,
                 // 저장된 값은 서버 코드라 라벨로 바꿔 보여준다(모르는 코드는 그대로 노출).
@@ -206,7 +212,7 @@ fun ProfileEditPage(
                 },
             )
             InterestSummary(
-                title = "관심 지역",
+                title = stringResource(MainR.string.main_profile_edit_interest_regions),
                 enabled = canEdit,
                 loaded = profile != null,
                 chips = profile?.interestRegions.orEmpty().map { it.shortName },
@@ -227,7 +233,7 @@ fun ProfileEditPage(
         InterestLoadFeedback(
             isLoading = myState.isLoading && myState.profile == null,
             loadError = myState.errorMessage != null,
-            loadingMessage = "프로필을 확인하고 있어요",
+            loadingMessage = stringResource(MainR.string.main_profile_edit_loading),
         ) {
             myViewModel.onIntent(MyProfileIntent.Retry)
         }
@@ -235,7 +241,7 @@ fun ProfileEditPage(
         // 하단 저장 버튼 영역도 흰색(Figma FS-26).
         Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
             DsButton(
-                text = "변경 사항 저장",
+                text = stringResource(MainR.string.main_profile_edit_save),
                 enabled = canEdit && hasChanges,
                 loading = editState.isSaving,
                 onClick = {
@@ -298,7 +304,7 @@ private fun AvatarEditor(
                     if (imageUri.isNotBlank()) {
                         AsyncImage(
                             model = imageUri,
-                            contentDescription = "프로필 이미지",
+                            contentDescription = stringResource(MainR.string.main_profile_edit_avatar_image_desc),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                         )
@@ -321,7 +327,7 @@ private fun AvatarEditor(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_camera_24),
-                    contentDescription = "사진 변경",
+                    contentDescription = stringResource(MainR.string.main_profile_edit_avatar_change_desc),
                     tint = color.contentOnAccent,
                     modifier = Modifier.size(16.dp),
                 )
@@ -347,7 +353,7 @@ private fun HandleField(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     LabeledField(
-        label = "아이디",
+        label = stringResource(MainR.string.main_profile_edit_label_handle),
         enabled = enabled,
         value = value,
         onValueChange = onValueChange,
@@ -379,7 +385,7 @@ private fun HandleField(
                     modifier = Modifier.padding(top = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    HANDLE_RULES.forEach { rule ->
+                    handleRules().forEach { rule ->
                         DsText(
                             text = rule,
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -489,7 +495,7 @@ private fun CheckButton(
         contentAlignment = Alignment.Center,
     ) {
         DsText(
-            text = "중복 확인",
+            text = stringResource(MainR.string.main_profile_edit_handle_check),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = if (enabled) color.contentOnAccent else color.contentDefaultLevel2,
         )
@@ -516,7 +522,7 @@ private fun InterestSummary(
                 modifier = Modifier.weight(1f),
             )
             DsText(
-                text = "편집",
+                text = stringResource(MainR.string.main_profile_edit_interest_edit),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = if (enabled) color.contentAccent else color.contentDefaultLevel3,
                 modifier = Modifier.clickable(enabled = enabled, onClick = onEdit),
@@ -526,7 +532,7 @@ private fun InterestSummary(
         if (chips.isEmpty() && loaded) {
             // 아직 고른 적이 없으면 빈 줄 대신 무엇을 하면 되는지 알려 준다.
             DsText(
-                text = "아직 고른 $title 가 없어요. 편집에서 골라 보세요.",
+                text = stringResource(MainR.string.main_profile_edit_interest_empty, title),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel3,
                 maxLines = Int.MAX_VALUE,

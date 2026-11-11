@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -41,6 +42,7 @@ import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsRatingInput
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
+import com.chillsam.courmy.common.presentation.translation.catalogLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
@@ -49,10 +51,17 @@ import com.chillsam.courmy.course.entity.CourseReviewTagCatalog
 import com.chillsam.courmy.course.entity.CourseReviewTagVO
 import com.chillsam.courmy.course.entity.PlaceReviewTagCatalog
 import com.chillsam.courmy.course.presentation.component.CoursePhotoRow
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /** 별점을 고르기 전 보여줄 안내. 고르고 나면 점수 문구로 바뀐다. */
 private val RATING_LABELS =
-    listOf("별로였어요", "아쉬웠어요", "보통이었어요", "좋았어요", "최고였어요")
+    listOf(
+        CourseR.string.course_remaining_rating_1,
+        CourseR.string.course_remaining_rating_2,
+        CourseR.string.course_remaining_rating_3,
+        CourseR.string.course_remaining_rating_4,
+        CourseR.string.course_remaining_rating_5,
+    )
 
 /**
  * 후기 작성 화면.
@@ -94,13 +103,23 @@ internal fun CourseReviewWriteScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             RatingField(
-                title = if (isPlace) "이 장소 어땠나요?" else "이 코스 어땠나요?",
+                title =
+                    if (isPlace) {
+                        stringResource(CourseR.string.course_review_write_rating_title_place)
+                    } else {
+                        stringResource(CourseR.string.course_review_write_rating_title_course)
+                    },
                 rating = state.rating,
                 enabled = !state.isSubmitting,
                 onRatingChange = { onIntent(CourseReviewWriteIntent.ChangeRating(it)) },
             )
             ContentField(
-                placeholder = if (isPlace) "장소를 방문한 경험을 적어 주세요. (선택)" else "코스를 따라간 경험을 적어 주세요. (선택)",
+                placeholder =
+                    if (isPlace) {
+                        stringResource(CourseR.string.course_review_write_content_placeholder_place)
+                    } else {
+                        stringResource(CourseR.string.course_review_write_content_placeholder_course)
+                    },
                 content = state.content,
                 enabled = !state.isSubmitting,
                 onContentChange = { onIntent(CourseReviewWriteIntent.ChangeContent(it)) },
@@ -135,7 +154,7 @@ internal fun CourseReviewWriteScreen(
                     .padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
         ) {
             DsButton(
-                text = "후기 등록",
+                text = stringResource(CourseR.string.course_review_write_submit),
                 onClick = onSubmit,
                 enabled = state.canSubmit,
                 loading = state.isSubmitting,
@@ -167,13 +186,13 @@ private fun ReviewWriteTopBar(onClose: () -> Unit) {
         IconButton(onClick = onClose, modifier = Modifier.size(48.dp)) {
             Icon(
                 painter = painterResource(R.drawable.close_small_24),
-                contentDescription = "후기 작성 닫기",
+                contentDescription = stringResource(CourseR.string.course_review_write_close),
                 tint = color.contentDefaultLevel0,
                 modifier = Modifier.size(24.dp),
             )
         }
         DsText(
-            text = "후기 쓰기",
+            text = stringResource(CourseR.string.course_review_write_title),
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
         )
@@ -197,7 +216,9 @@ private fun RatingField(
         ) {
             DsRatingInput(rating = rating, onRatingChange = onRatingChange, enabled = enabled)
             DsText(
-                text = RATING_LABELS.getOrNull(rating - 1) ?: "별점을 골라 주세요",
+                text =
+                    RATING_LABELS.getOrNull(rating - 1)?.let { stringResource(it) }
+                        ?: stringResource(CourseR.string.course_review_write_rating_hint),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
             )
@@ -214,7 +235,7 @@ private fun ContentField(
     onContentChange: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionTitle(title = "방문 경험을 들려주세요")
+        SectionTitle(title = stringResource(CourseR.string.course_review_write_content_section))
         DsTextField(
             value = content,
             onValueChange = onContentChange,
@@ -241,7 +262,7 @@ private fun PhotoField(
     onPhotosChange: (List<String>) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionTitle(title = "사진을 더해 주세요")
+        SectionTitle(title = stringResource(CourseR.string.course_review_write_photo_section))
         CoursePhotoRow(
             photos = photoUris,
             maxPhotos = CourseReviewLimits.MAX_PHOTOS,
@@ -267,15 +288,19 @@ private fun TagField(
                     PlaceReviewTagCatalog.entries.firstOrNull { it.code == tag.code }?.group
                 } else {
                     CourseReviewTagCatalog.entries.firstOrNull { it.code == tag.code }?.group
-                }.orEmpty().ifBlank { "기타" }
+                }.orEmpty()
             }
         }
     var activeGroup by rememberSaveable(isPlace) { mutableStateOf(groups.keys.firstOrNull().orEmpty()) }
     val currentGroup = activeGroup.takeIf { it in groups } ?: groups.keys.firstOrNull().orEmpty()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionTitle(title = "키워드로 표현해 주세요")
+        SectionTitle(title = stringResource(CourseR.string.course_review_write_tag_section))
         DsText(
-            text = "좋았던 점을 최대 ${CourseReviewLimits.MAX_TAGS}개 골라 주세요. (선택)",
+            text =
+                stringResource(
+                    CourseR.string.course_review_write_tag_guide,
+                    CourseReviewLimits.MAX_TAGS,
+                ),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
         )
@@ -284,7 +309,19 @@ private fun TagField(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             groups.keys.forEach { title ->
-                DsChip(text = title, selected = title == currentGroup, onClick = { activeGroup = title })
+                DsChip(
+                    text =
+                        if (title.isEmpty()) {
+                            stringResource(
+                                CourseR.string.course_remaining_other,
+                            )
+                        } else {
+                            catalogLabel(title)
+                        },
+                    selected =
+                        title == currentGroup,
+                    onClick = { activeGroup = title },
+                )
             }
         }
         FlowRow(
@@ -295,7 +332,7 @@ private fun TagField(
             groups[currentGroup].orEmpty().forEach { tag ->
                 val isSelected = tag.code in selected
                 DsChip(
-                    text = "${tag.icon} ${tag.label}",
+                    text = "${tag.icon} ${catalogLabel(tag.label)}",
                     selected = isSelected,
                     enabled = enabled && (isSelected || canSelectMore),
                     onClick = { onToggle(tag.code) },
@@ -318,13 +355,18 @@ private fun SelectedReviewKeywords(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         DsText(
-            text = "선택한 키워드 ${tags.size}/${CourseReviewLimits.MAX_TAGS}",
+            text =
+                stringResource(
+                    CourseR.string.course_review_write_selected_keywords_count,
+                    tags.size,
+                    CourseReviewLimits.MAX_TAGS,
+                ),
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentDefaultLevel0,
         )
         if (tags.isEmpty()) {
             DsText(
-                text = "선택한 키워드가 여기에 모여요",
+                text = stringResource(CourseR.string.course_review_write_selected_keywords_empty),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -334,9 +376,11 @@ private fun SelectedReviewKeywords(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 tags.forEach { tag ->
+                    val removeDescription =
+                        stringResource(CourseR.string.course_review_write_keyword_remove, catalogLabel(tag.label))
                     DsChip(
-                        text = "${tag.icon} ${tag.label} ×",
-                        modifier = Modifier.semantics { contentDescription = "${tag.label} 선택 해제" },
+                        text = "${tag.icon} ${catalogLabel(tag.label)} ×",
+                        modifier = Modifier.semantics { contentDescription = removeDescription },
                         selected = true,
                         enabled = enabled,
                         onClick = { onRemove(tag.code) },

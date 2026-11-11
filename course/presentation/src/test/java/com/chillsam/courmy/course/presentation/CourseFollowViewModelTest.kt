@@ -93,9 +93,9 @@ class CourseFollowViewModelTest {
                 title = "한 장소 코스",
                 authorName = "작성자",
                 authorHandle = "author",
-                placeCountText = "1곳",
-                walkText = "",
-                followerText = "",
+                placeCount = 1,
+                walkingMinutes = null,
+                tracingCount = 0,
                 description = "",
                 places =
                     listOf(
@@ -109,7 +109,7 @@ class CourseFollowViewModelTest {
                         ),
                     ),
                 rating = "",
-                reviewCountText = "",
+                reviewCount = 0,
                 reviews = emptyList(),
             )
         // 이 테스트는 상세 조회만 사용한다. 다른 저장소 호출은 즉시 실패시킨다.
@@ -147,6 +147,7 @@ class CourseFollowViewModelTest {
             checkInTracePlace = CheckInTracePlaceUseCase(traces),
             endCourseTrace = EndCourseTraceUseCase(traces),
             getTraceRoute = GetTraceRouteUseCase(routes),
+            resources = testResources(),
         )
     }
 

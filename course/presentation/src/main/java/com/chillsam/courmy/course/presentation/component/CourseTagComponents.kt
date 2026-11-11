@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.collections.immutable.ImmutableList
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /** ③ 코스 설정 — 태그 카드. 선택 태그칩 · 입력행 · 추천 태그를 한 카드에 담는다. */
 @Composable
@@ -54,10 +56,10 @@ fun CourseTagCard(
                 .padding(17.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        FieldLabel("태그")
+        FieldLabel(stringResource(CourseR.string.course_edit_section_tag))
         SelectedTags(tags = tags, onRemoveTag = onRemoveTag)
         TagInputRow(onAddTag = onAddTag)
-        FieldLabel("추천 태그")
+        FieldLabel(stringResource(CourseR.string.course_recommended_tags))
         SuggestedTags(suggestedTags = suggestedTags, onAddTag = onAddTag)
     }
 }
@@ -85,12 +87,13 @@ private fun RemovableTagChip(
     tag: String,
     onRemove: () -> Unit,
 ) {
+    val removeTagDescription = stringResource(CourseR.string.course_remove_tag, tag)
     Box(
         modifier =
             Modifier
                 .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                 .clickable(onClick = onRemove)
-                .semantics { contentDescription = "$tag 태그 삭제" },
+                .semantics { contentDescription = removeTagDescription },
         contentAlignment = Alignment.Center,
     ) {
         Row(
@@ -182,7 +185,7 @@ private fun TagInputField(
         decorationBox = { innerTextField ->
             if (text.isEmpty()) {
                 DsText(
-                    text = "태그 추가",
+                    text = stringResource(CourseR.string.course_add_tag_hint),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
                 )
@@ -203,7 +206,7 @@ private fun AddTagButton(onClick: () -> Unit) {
                 .padding(horizontal = 12.dp, vertical = 5.dp),
     ) {
         DsText(
-            text = "추가",
+            text = stringResource(CourseR.string.course_add_tag_action),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
         )

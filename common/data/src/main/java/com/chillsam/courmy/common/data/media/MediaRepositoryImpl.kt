@@ -5,6 +5,9 @@ import android.net.Uri
 import com.chillsam.courmy.common.data.BaseRemoteDataSource
 import com.chillsam.courmy.common.data.media.dto.PresignImageRequest
 import com.chillsam.courmy.common.data.media.dto.PresignRequest
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.domain.media.MediaRepository
 import com.chillsam.courmy.common.domain.media.UploadPurpose
 import kotlinx.coroutines.Dispatchers
@@ -40,8 +43,8 @@ class MediaRepositoryImpl(
             val contentType = context.contentResolver.getType(uri) ?: DEFAULT_CONTENT_TYPE
             // 서버 MediaService 가 확장자를 매핑하는 타입만 받는다. 그 외는 presign 이 415 로 떨어지므로
             // 올리기 전에 걸러 사유를 분명히 남긴다(최근 기기 사진은 HEIC 인 경우가 있다).
-            require(contentType in SUPPORTED_CONTENT_TYPES) {
-                "지원하지 않는 이미지 형식입니다($contentType). JPEG·PNG·WebP 만 올릴 수 있어요."
+            requireLocalized(contentType in SUPPORTED_CONTENT_TYPES) {
+                LocalizedValidationException(StringResource.VALIDATION_MEDIA_TYPE, contentType)
             }
             val bytes = readBytesUpTo(uri, MAX_UPLOAD_BYTES)
 
@@ -100,8 +103,11 @@ class MediaRepositoryImpl(
                 }
                 output.toByteArray()
             } ?: error("이미지를 읽지 못했습니다: $uri")
-        require(bytes.size <= limit) {
-            "이미지가 너무 큽니다. ${limit / 1024 / 1024}MB 이하로 올려 주세요."
+        requireLocalized(bytes.size <= limit) {
+            LocalizedValidationException(
+                StringResource.VALIDATION_MEDIA_SIZE,
+                limit / 1024 / 1024,
+            )
         }
         return bytes
     }

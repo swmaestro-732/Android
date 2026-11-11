@@ -45,6 +45,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -73,6 +74,7 @@ import com.chillsam.courmy.course.presentation.component.PlaceSearchOverlay
 import com.chillsam.courmy.course.presentation.component.PlanInfoCard
 import com.chillsam.courmy.course.presentation.component.dashedBorder
 import kotlinx.coroutines.isActive
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /**
  * 코스 만들기 화면.
@@ -97,6 +99,12 @@ fun CourseCreatePage(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
+    // Toast 문구는 LaunchedEffect(비-Composable 스코프) 안에서 쓰므로, 여기서 미리 읽어 둔다.
+    val draftSavedImagesMissingMessage = stringResource(CourseR.string.course_create_draft_saved_images_missing)
+    val draftSavedMessage = stringResource(CourseR.string.course_create_draft_saved)
+    val savedImagesMissingMessage = stringResource(CourseR.string.course_create_saved_images_missing)
+    val planSavedMessage = stringResource(CourseR.string.course_create_plan_saved)
+
     // 화면에 들어올 때마다 초안을 새로 읽는다(ViewModel 의 init 이 아니라 여기서 부른다).
     // 나갈 때 이 화면의 백스택 엔트리를 걷어내므로 보통은 ViewModel 자체가 새로 생기지만,
     // 어떤 경로로 엔트리가 살아남더라도 "새로 만들기"가 이전 입력을 되살리지 않도록 보장한다.
@@ -111,7 +119,7 @@ fun CourseCreatePage(
     LaunchedEffect(uiState.draftSaved) {
         if (uiState.draftSaved) {
             val message =
-                if (uiState.imagesMissing) "사진은 저장되지 않았어요. 이어서 작성할 때 다시 올려 주세요." else "임시저장했어요"
+                if (uiState.imagesMissing) draftSavedImagesMissingMessage else draftSavedMessage
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             onSaveDraft()
             viewModel.onIntent(CourseCreateIntent.ConsumeDraftSaved)
@@ -123,22 +131,23 @@ fun CourseCreatePage(
         uiState.savedCourseId?.let { courseId ->
             // 사진이 빠진 채 저장됐으면 알려 준다(코스 자체는 만들어졌다).
             if (uiState.imagesMissing) {
-                Toast.makeText(context, "사진은 저장되지 않았어요. 편집에서 다시 올려 주세요.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, savedImagesMissingMessage, Toast.LENGTH_LONG).show()
             }
-            if (uiState.isPlan) Toast.makeText(context, "계획을 저장했어요", Toast.LENGTH_SHORT).show()
+            if (uiState.isPlan) Toast.makeText(context, planSavedMessage, Toast.LENGTH_SHORT).show()
             onSaveCourse(courseId)
             // 이동을 끝냈으면 신호를 지운다. 남겨 두면 이 화면이 다시 보일 때 곧바로 또 이동한다.
             viewModel.onIntent(CourseCreateIntent.ConsumeSaved)
         }
     }
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let { message ->
+    val errorMessage = uiState.errorMessage?.asString()
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             viewModel.onIntent(CourseCreateIntent.ConsumeSaveError)
         }
     }
 
-    val loadError = uiState.loadErrorMessage
+    val loadError = uiState.loadErrorMessage?.asString()
     if (loadError != null) {
         Column(
             modifier =
@@ -151,11 +160,15 @@ fun CourseCreatePage(
         ) {
             DsText(text = loadError)
             Spacer(Modifier.height(16.dp))
-            DsButton(text = "다시 시도", onClick = {
+            DsButton(text = stringResource(CourseR.string.course_create_retry), onClick = {
                 viewModel.onIntent(CourseCreateIntent.Load(draftCourseId, forkFromCourseId, isPlan))
             })
             Spacer(Modifier.height(8.dp))
-            DsButton(text = "돌아가기", variant = DsButtonVariant.Secondary, onClick = onClose)
+            DsButton(
+                text = stringResource(CourseR.string.course_create_go_back),
+                variant = DsButtonVariant.Secondary,
+                onClick = onClose,
+            )
         }
         return
     }
@@ -224,7 +237,12 @@ private fun CourseCreateContent(
                 onSaveDraft = onSaveDraft,
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
                 savingDraft = uiState.isSavingAny,
-                title = if (uiState.isPlan) "계획하기" else "새 코스 만들기",
+                title =
+                    if (uiState.isPlan) {
+                        stringResource(CourseR.string.course_create_title_plan)
+                    } else {
+                        stringResource(CourseR.string.course_create_title_course)
+                    },
                 showDraft = !uiState.isPlan,
             )
             StepProgressBar(
@@ -331,8 +349,8 @@ private fun CreateExitConfirmation(
     if (!visible) return
     if (isPlan) {
         DsConfirmDialog(
-            title = "계획 작성을 그만둘까요?",
-            description = "저장하지 않은 내용은 사라져요.",
+            title = stringResource(CourseR.string.course_create_exit_plan_title),
+            description = stringResource(CourseR.string.course_create_exit_plan_desc),
             destructive = true,
             onConfirm = onDiscard,
             onDismiss = onCancel,
@@ -365,8 +383,8 @@ private fun CourseCreateUIState.toCompleteVO(): CourseCompleteVO? {
                 .filter { label -> PlaceCategoryVO.entries.any { it.label == label } }
                 .distinct()
                 .joinToString(" · "),
-        title = name.ifBlank { "새 코스" },
-        summaryText = "${places.size} 스팟",
+        title = name,
+        placeCount = places.size,
         // 작성 중 고른 대표 사진(로컬 content URI). 업로드된 공개 URL 은 아직 손에 없다.
         thumbnailUrl = thumbnailPhotos.firstOrNull().orEmpty(),
         stops =
@@ -385,11 +403,19 @@ private fun InfoSection(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
 ) {
-    CourseSectionHeader(number = CourseCreateUIState.STEP_COURSE_INFO, title = if (uiState.isPlan) "계획 정보" else "코스 정보")
+    CourseSectionHeader(
+        number = CourseCreateUIState.STEP_COURSE_INFO,
+        title =
+            if (uiState.isPlan) {
+                stringResource(CourseR.string.course_create_info_header_plan)
+            } else {
+                stringResource(CourseR.string.course_create_info_header_course)
+            },
+    )
     if (uiState.isPlan) {
         Spacer(Modifier.height(10.dp))
         DsText(
-            text = "나만 볼 수 있는 계획이에요. 제목과 메모, 날짜는 비워도 괜찮아요.",
+            text = stringResource(CourseR.string.course_create_plan_info_hint),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
             maxLines = Int.MAX_VALUE,
@@ -433,11 +459,21 @@ private fun PlaceRecordSection(
 ) {
     CourseSectionHeader(
         number = CourseCreateUIState.STEP_PLACE_RECORDS,
-        title = if (uiState.isPlan) "장소별 메모" else "장소별 기록",
+        title =
+            if (uiState.isPlan) {
+                stringResource(CourseR.string.course_create_records_header_plan)
+            } else {
+                stringResource(CourseR.string.course_create_records_header_course)
+            },
     )
     Spacer(Modifier.height(6.dp))
     DsText(
-        text = if (uiState.isPlan) "장소별 메모는 남기지 않아도 괜찮아요." else "장소마다 사진 1장은 꼭 필요해요. 한마디는 남기지 않아도 괜찮아요.",
+        text =
+            if (uiState.isPlan) {
+                stringResource(CourseR.string.course_create_records_hint_plan)
+            } else {
+                stringResource(CourseR.string.course_create_records_hint_course)
+            },
         style = DesignSystemThemeImpl.typeScale.textRegularXS,
         color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
     )
@@ -454,9 +490,9 @@ private fun PlaceRecordSection(
             noteMaxLength = if (uiState.isPlan) 500 else 40,
         )
         // 다음 장소로의 도보 시간. 마지막 장소이거나 계산이 안 된 구간은 빈 문자열이라 자리만 띄운다.
-        if (place.walkText.isNotEmpty()) {
+        if (place.walkingMinutes != null) {
             Spacer(Modifier.height(6.dp))
-            CourseRouteConnector(text = place.walkText)
+            CourseRouteConnector(text = walkingText(place.walkingMinutes))
             Spacer(Modifier.height(6.dp))
         } else {
             Spacer(Modifier.height(10.dp))
@@ -468,8 +504,9 @@ private fun PlaceRecordSection(
 @Composable
 private fun ForkSourceBanner(authorName: String) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val resolvedAuthor = authorName.ifBlank { stringResource(CourseR.string.course_create_fork_author_fallback) }
     DsText(
-        text = authorName.ifBlank { "다른 사람" } + "의 코스를 복제하는 중이에요",
+        text = stringResource(CourseR.string.course_create_fork_banner, resolvedAuthor),
         style = DesignSystemThemeImpl.typeScale.textStrongS,
         color = color.contentAccent,
         modifier =
@@ -502,9 +539,13 @@ private fun PlaceSection(
         Spacer(Modifier.height(16.dp))
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        CourseSectionHeader(number = CourseCreateUIState.STEP_PLACES, title = "장소 고르기", modifier = Modifier.weight(1f))
+        CourseSectionHeader(
+            number = CourseCreateUIState.STEP_PLACES,
+            title = stringResource(CourseR.string.course_create_places_header),
+            modifier = Modifier.weight(1f),
+        )
         DsText(
-            text = "${uiState.places.size}곳 · 드래그로 순서 변경",
+            text = stringResource(CourseR.string.course_create_places_count_reorder, uiState.places.size),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel3,
         )
@@ -697,7 +738,12 @@ private fun AddPlaceButton(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     // 최대(10곳) 도달 시 비활성화하고 안내 문구로 바꾼다.
-    val label = if (atMax) "장소는 최대 ${CourseCreateUIState.MAX_PLACES}곳까지 담을 수 있어요" else "＋ 장소 더 담기"
+    val label =
+        if (atMax) {
+            stringResource(CourseR.string.course_create_add_place_at_max, CourseCreateUIState.MAX_PLACES)
+        } else {
+            stringResource(CourseR.string.course_create_add_place)
+        }
     Row(
         modifier =
             Modifier
@@ -722,7 +768,10 @@ private fun VisibilitySection(
     uiState: CourseCreateUIState,
     onIntent: (CourseCreateIntent) -> Unit,
 ) {
-    CourseSectionHeader(number = CourseCreateUIState.STEP_SETTINGS, title = "코스 설정")
+    CourseSectionHeader(
+        number = CourseCreateUIState.STEP_SETTINGS,
+        title = stringResource(CourseR.string.course_create_settings_header),
+    )
     Spacer(Modifier.height(10.dp))
     CourseTagCard(
         tags = uiState.tags,
@@ -764,7 +813,7 @@ private fun StepBottomBar(
             if (uiState.step > CourseCreateUIState.FIRST_STEP) {
                 Box(modifier = Modifier.weight(1f)) {
                     DsButton(
-                        text = "이전",
+                        text = stringResource(CourseR.string.course_create_prev),
                         variant = DsButtonVariant.Secondary,
                         enabled = !uiState.isSavingAny,
                         onClick = onPrev,
@@ -775,15 +824,19 @@ private fun StepBottomBar(
                 DsButton(
                     // 못 넘어가는 상태면 버튼 자리에 그 이유를 띄운다(별도 안내 문구 없이).
                     text =
-                        uiState.stepBlockedReason
+                        uiState.stepBlockedReason?.asString()
                             ?: if (isLast && uiState.isPlan &&
                                 uiState.isCalculatingWalking
                             ) {
-                                "도보 시간 계산 중…"
+                                stringResource(CourseR.string.course_create_calculating_walking)
                             } else if (isLast) {
-                                if (uiState.isPlan) "계획 저장하기" else "코스 저장하기"
+                                if (uiState.isPlan) {
+                                    stringResource(CourseR.string.course_create_save_plan)
+                                } else {
+                                    stringResource(CourseR.string.course_create_save_course)
+                                }
                             } else {
-                                "다음"
+                                stringResource(CourseR.string.course_create_next)
                             },
                     // 저장 중에는 중복 탭을 막는다(업로드 + 생성이라 왕복이 길다).
                     enabled = uiState.canGoNext && (!isLast || uiState.canSave) && !uiState.isSavingAny,

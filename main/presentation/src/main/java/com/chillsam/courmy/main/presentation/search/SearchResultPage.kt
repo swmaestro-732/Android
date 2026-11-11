@@ -13,6 +13,7 @@ import com.chillsam.courmy.common.domain.telemetry.ProductEvent
 import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
+import com.chillsam.courmy.common.presentation.helper.rememberLoginGate
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.main.domain.search.SearchPage as SearchRoute
@@ -23,6 +24,7 @@ fun SearchResultPage(
     modifier: Modifier = Modifier,
     viewModel: SearchResultViewModel = hiltViewModel(),
 ) {
+    val requireLogin = rememberLoginGate()
     val telemetry = LocalTelemetry.current
     val select: (String, String) -> Unit = { filter, value ->
         telemetry.logEvent(
@@ -72,7 +74,7 @@ fun SearchResultPage(
                 },
                 onToggleSave = {
                     telemetry.buttonClick("/search/result", "bookmark", mapOf("course_id" to it.id))
-                    viewModel.onIntent(SearchResultIntent.ToggleSave(it.id))
+                    requireLogin { viewModel.onIntent(SearchResultIntent.ToggleSave(it.id)) }
                 },
                 onSelectArea = {
                     select("area", it ?: "all")

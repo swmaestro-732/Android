@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,9 +31,11 @@ import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * 스플래시 화면(FS-01). 초록 배경 위에 "my course → Courmy" 로고 모프 애니메이션을 재생하고,
@@ -112,7 +115,7 @@ fun SplashPage(
             )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 DsText(
-                    text = "my course",
+                    text = stringResource(MainR.string.main_remaining_brand_morph),
                     style = DesignSystemThemeImpl.typeScale.displayExtraXL,
                     color = color.contentOnAccent,
                     modifier =
@@ -126,7 +129,7 @@ fun SplashPage(
                         },
                 )
                 DsText(
-                    text = "Courmy",
+                    text = stringResource(MainR.string.main_remaining_brand_wordmark),
                     style = logoStyle,
                     color = color.contentOnAccent,
                     modifier =
@@ -139,7 +142,7 @@ fun SplashPage(
                             },
                 )
                 DsText(
-                    text = "나만의 코스, 나만의 동네",
+                    text = stringResource(R.string.main_splash_tagline),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentOnAccent.copy(alpha = 0.82f),
                     textAlign = TextAlign.Center,
@@ -162,11 +165,11 @@ fun SplashPage(
 @Composable
 private fun OfflineBlockingDialog(onRetry: () -> Unit) {
     DsDialogScaffold(
-        title = "인터넷 연결이 필요해요",
-        description = "Wi-Fi 나 데이터가 켜져 있는지 확인하고 다시 시도해 주세요.",
+        title = stringResource(R.string.main_splash_offline_title),
+        description = stringResource(R.string.main_splash_offline_description),
         onDismiss = {},
     ) {
-        DsButton(text = "다시 시도", onClick = onRetry)
+        DsButton(text = stringResource(R.string.main_splash_offline_retry), onClick = onRetry)
     }
 }
 

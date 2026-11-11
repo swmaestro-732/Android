@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="message_ai_greeting">안녕하세요, 커미 AI예요!\n먼저, 어느 지역으로 떠나볼까요?</string>
+    <string name="message_ai_region_placeholder">지역을 입력해도 돼요</string>
+    <string name="message_ai_session_expired">대화가 만료돼서 처음부터 다시 시작할게요.</string>
+    <string name="message_ai_error">지금은 추천을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+</resources>

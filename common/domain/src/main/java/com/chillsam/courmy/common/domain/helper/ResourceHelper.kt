@@ -5,5 +5,8 @@ package com.chillsam.courmy.common.domain.helper
  * 구현체([ResourceHelperImpl])는 presentation 레이어에서 Context.getString 으로 해석한다.
  */
 interface ResourceHelper {
-    fun getString(resource: StringResource): String
+    fun getString(
+        resource: StringResource,
+        vararg formatArgs: Any,
+    ): String
 }

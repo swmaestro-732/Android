@@ -244,7 +244,11 @@ class PlaceSearchViewModelTest {
         }
 
     private fun viewModel() =
-        PlaceSearchViewModel(SearchPlacesUseCase(repository), SearchExternalPlacesUseCase(repository))
+        PlaceSearchViewModel(
+            SearchPlacesUseCase(repository),
+            SearchExternalPlacesUseCase(repository),
+            resources = testResources(),
+        )
 
     private fun place(id: String) = CoursePlaceVO(id = id, name = "장소 $id")
 

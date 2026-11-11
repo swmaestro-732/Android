@@ -25,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsBilingualText
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
 import com.chillsam.courmy.common.presentation.component.alignTextFieldBorder
@@ -37,6 +39,7 @@ import com.chillsam.courmy.course.entity.CourseEditPlaceVO
 import com.chillsam.courmy.course.presentation.component.CourseVisibilitySegment
 import com.chillsam.courmy.course.presentation.component.SelectedTags
 import com.chillsam.courmy.course.presentation.component.TagInputRow
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /**
  * 코스 편집 화면.
@@ -74,27 +77,27 @@ fun CourseEditScreen(
                     .padding(horizontal = ScreenHorizontalPadding, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            EditSection(title = "코스 정보") {
-                EditFieldLabel("코스 이름")
+            EditSection(title = stringResource(CourseR.string.course_edit_section_info)) {
+                EditFieldLabel(stringResource(CourseR.string.course_edit_title_label))
                 DsTextField(
                     value = state.title,
                     onValueChange = { onIntent(CourseEditIntent.ChangeTitle(it)) },
                     // 입력창은 포커스 링 자리로 좌우 3dp 를 비워 둔다. 그대로 두면 위 라벨보다
                     // 안쪽으로 들어가 보이므로 테두리를 라벨 선에 맞춘다.
                     modifier = Modifier.fillMaxWidth().alignTextFieldBorder(),
-                    placeholder = "코스 이름을 입력해 주세요",
+                    placeholder = stringResource(CourseR.string.course_edit_title_placeholder),
                     isError = state.title.isBlank(),
                 )
-                EditFieldLabel("코스 소개")
+                EditFieldLabel(stringResource(CourseR.string.course_edit_description_label))
                 DsTextField(
                     value = state.description,
                     onValueChange = { onIntent(CourseEditIntent.ChangeDescription(it)) },
                     modifier = Modifier.fillMaxWidth().alignTextFieldBorder(),
-                    placeholder = "이 코스를 소개해 주세요",
+                    placeholder = stringResource(CourseR.string.course_edit_description_placeholder),
                     singleLine = false,
                 )
             }
-            EditSection(title = "태그") {
+            EditSection(title = stringResource(CourseR.string.course_edit_section_tag)) {
                 // 코스 생성의 태그 카드에서 선택 칩·입력행만 가져다 쓴다. 추천 태그는 생성 화면에서만
                 // 받아 오는 값이라 편집에서는 두지 않는다.
                 SelectedTags(
@@ -103,11 +106,11 @@ fun CourseEditScreen(
                 )
                 TagInputRow(onAddTag = { onIntent(CourseEditIntent.AddTag(it)) })
             }
-            EditSection(title = "공개 설정") {
+            EditSection(title = stringResource(CourseR.string.course_edit_section_visibility)) {
                 // 현재 값을 못 읽었을 때만 알린다. 읽어 왔으면 그 값이 이미 선택돼 있으므로 조용히 둔다.
                 if (!state.isVisibilityKnown) {
                     DsText(
-                        text = "현재 설정을 불러오지 못했어요. 저장하면 아래에서 고른 값으로 바뀝니다.",
+                        text = stringResource(CourseR.string.course_edit_visibility_unknown_notice),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                     )
@@ -117,9 +120,9 @@ fun CourseEditScreen(
                     onSelect = { onIntent(CourseEditIntent.ChangeVisibility(it)) },
                 )
             }
-            EditSection(title = "장소별 한마디") {
+            EditSection(title = stringResource(CourseR.string.course_edit_section_place_tip)) {
                 DsText(
-                    text = "장소와 사진은 편집할 수 없어요. 한마디만 고칠 수 있어요.",
+                    text = stringResource(CourseR.string.course_edit_place_tip_notice),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )
@@ -157,13 +160,13 @@ private fun EditTopBar(onClose: () -> Unit) {
         IconButton(onClick = onClose, modifier = Modifier.size(48.dp)) {
             Icon(
                 painter = painterResource(R.drawable.close_small_24),
-                contentDescription = "코스 편집 닫기",
+                contentDescription = stringResource(CourseR.string.course_edit_close),
                 tint = color.contentDefaultLevel0,
                 modifier = Modifier.size(24.dp),
             )
         }
         DsText(
-            text = "코스 편집",
+            text = stringResource(CourseR.string.course_edit_top_bar_title),
             modifier = Modifier.weight(1f),
             style = DesignSystemThemeImpl.typeScale.titleExtraL,
             color = color.contentDefaultLevel0,
@@ -229,7 +232,7 @@ private fun EditPlaceTipCard(
                     color = color.contentOnAccent,
                 )
             }
-            DsText(
+            DsBilingualText(
                 text = place.name,
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = color.contentDefaultLevel0,
@@ -239,7 +242,7 @@ private fun EditPlaceTipCard(
             value = place.tip,
             onValueChange = onTipChange,
             modifier = Modifier.fillMaxWidth().alignTextFieldBorder(),
-            placeholder = "이곳에 한마디를 남겨 보세요",
+            placeholder = stringResource(CourseR.string.course_edit_place_tip_placeholder),
             singleLine = false,
         )
     }
@@ -269,7 +272,12 @@ private fun EditSaveBar(
             horizontalArrangement = Arrangement.Center,
         ) {
             DsText(
-                text = if (isSaving) "저장 중…" else "저장하기",
+                text =
+                    if (isSaving) {
+                        stringResource(CourseR.string.course_edit_saving)
+                    } else {
+                        stringResource(CourseR.string.course_edit_save)
+                    },
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = if (enabled) color.contentOnAccent else color.contentDefaultLevel3,
             )

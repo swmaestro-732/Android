@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,6 +42,7 @@ import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.auth.SignupProfile
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 온보딩 완료 화면(FS-08). 가입을 마쳤음을 알리고 "Courmy 시작하기"로 로그인 완료 후 이전 화면으로 복귀. */
 @Composable
@@ -54,7 +56,10 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     // 사용자가 입력한 닉네임으로 인사(비어 있으면 기본 호칭).
-    val displayName = SignupSelectionStore.nickname.ifBlank { "회원" }
+    val displayName =
+        SignupSelectionStore.nickname.ifBlank {
+            stringResource(MainR.string.main_onboarding_complete_default_nickname)
+        }
 
     // 가입 성공 → 세션 로그인 + 이전 화면으로. 실패 → 안내.
     LaunchedEffect(uiState.done) {
@@ -104,7 +109,7 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
                     )
                 }
                 DsText(
-                    text = "가입 완료!\n${displayName}님, 환영합니다!",
+                    text = stringResource(MainR.string.main_onboarding_complete_greeting, displayName),
                     style = DesignSystemThemeImpl.typeScale.titleExtraL,
                     color = color.contentDefaultLevel0,
                     maxLines = 2,
@@ -112,31 +117,31 @@ fun OnboardingCompletePage(modifier: Modifier = Modifier) {
                 )
                 Spacer(Modifier.height(36.dp))
                 DsText(
-                    text = "이제 이런 걸 할 수 있어요",
+                    text = stringResource(MainR.string.main_onboarding_complete_guide_header),
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = color.contentDefaultLevel0,
                 )
                 Spacer(Modifier.height(12.dp))
                 StartGuideRow(
                     iconRes = R.drawable.ic_add_24,
-                    title = "나만의 코스 만들기",
-                    description = "가 본 장소를 순서대로 엮어 코스로 남겨요.",
+                    title = stringResource(MainR.string.main_onboarding_complete_guide_create_title),
+                    description = stringResource(MainR.string.main_onboarding_complete_guide_create_desc),
                 )
                 StartGuideRow(
                     iconRes = R.drawable.ic_bookmark_filled_24,
-                    title = "마음에 든 코스 저장",
-                    description = "저장한 코스는 저장 탭에서 다시 볼 수 있어요.",
+                    title = stringResource(MainR.string.main_onboarding_complete_guide_save_title),
+                    description = stringResource(MainR.string.main_onboarding_complete_guide_save_desc),
                 )
                 StartGuideRow(
                     iconRes = R.drawable.ic_heart_24,
-                    title = "취향 맞는 유저 팔로우",
-                    description = "관심 있는 사람의 새 코스를 놓치지 않아요.",
+                    title = stringResource(MainR.string.main_onboarding_complete_guide_follow_title),
+                    description = stringResource(MainR.string.main_onboarding_complete_guide_follow_desc),
                 )
                 Spacer(Modifier.weight(CONTENT_BOTTOM_WEIGHT))
             }
             Box(modifier = Modifier.fillMaxWidth().background(color.bgDefaultLevel1)) {
                 DsButton(
-                    text = "Courmy 시작하기",
+                    text = stringResource(MainR.string.main_onboarding_complete_start_button),
                     enabled = !uiState.isLoading,
                     onClick = {
                         if (!SignupSelectionStore.requiredTermsAgreed) {

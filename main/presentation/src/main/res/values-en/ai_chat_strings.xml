@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_title">Courmy AI</string>
+    <string name="ai_banner">Share your interests.\nFind your next course.</string>
+    <string name="ai_recommend">Find a course</string>
+    <string name="ai_login_prompt">Sign in to get\ncourse ideas from Courmy AI</string>
+    <string name="ai_login">Sign in</string>
+    <string name="ai_back">Back</string>
+    <string name="ai_beta">Beta</string>
+    <string name="ai_thinking">Preparing a response</string>
+    <string name="ai_send">Send</string>
+    <string name="ai_placeholder">Enter a message</string>
+</resources>

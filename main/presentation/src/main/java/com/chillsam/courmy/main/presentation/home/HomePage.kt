@@ -51,6 +51,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -64,6 +66,7 @@ import com.chillsam.courmy.common.domain.telemetry.buttonClick
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
+import com.chillsam.courmy.common.presentation.component.DsBilingualText
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
@@ -74,6 +77,8 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
+import com.chillsam.courmy.common.presentation.translation.courseTagLabel
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
@@ -107,6 +112,7 @@ import com.chillsam.courmy.main.presentation.notification.NotificationConsentShe
 import com.chillsam.courmy.main.presentation.notification.NotificationConsentViewModel
 import com.chillsam.courmy.main.presentation.profile.ProfileAvatar
 import com.google.android.gms.location.LocationServices
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 추천 코스 미리보기 카드 수. 전체 목록은 "전체보기"([RecommendedCoursesPage])가 맡는다. */
 private const val RECOMMENDED_PREVIEW_COUNT = 5
@@ -143,18 +149,6 @@ private fun NearbyLocationEffect(
         }
     }
 }
-
-/**
- * 타일 지도 코드 → 지역 코스 필터 코드. area_map 은 광주·전남을 코드 "12"로 두므로 상위 코드로 매핑한다.
- * 울릉("47U")은 경북("47")으로 보내면 경북 전체 구·군(포항시 남구 등)이 울릉 밑에 나오므로,
- * 울릉군 시군구 코드("47940")로 바로 좁힌다 — 칩·피드 필터 모두 prefix 비교라 울릉군만 남는다.
- */
-private fun areaMapProvinceCode(tileCode: String): String =
-    when (tileCode) {
-        "29" -> "12"
-        "47U" -> "47940"
-        else -> tileCode
-    }
 
 /** 테마별 둘러보기 타일. 탭하면 추천 코스의 해당 코스 태그 필터를 연다(코스 문맥이라 12종). */
 private val themeTiles = CourseTagVO.entries
@@ -309,11 +303,16 @@ fun HomePage(modifier: Modifier = Modifier) {
                     NearbyLocationPrompt(
                         message =
                             if (!hasLocationPermission) {
-                                "위치를 허용하면 근처에 저장한 장소가 여기에 보여요"
+                                stringResource(MainR.string.main_home_nearby_permission_message)
                             } else {
-                                "기기 위치(GPS)가 꺼져 있어 근처 장소를 찾을 수 없어요"
+                                stringResource(MainR.string.main_home_nearby_gps_message)
                             },
-                        actionLabel = if (!hasLocationPermission) "위치 허용" else "위치 켜기",
+                        actionLabel =
+                            if (!hasLocationPermission) {
+                                stringResource(MainR.string.main_home_nearby_allow_location)
+                            } else {
+                                stringResource(MainR.string.main_home_nearby_enable_location)
+                            },
                         onAction = {
                             if (!hasLocationPermission) {
                                 permissionLauncher.launch(
@@ -350,8 +349,8 @@ fun HomePage(modifier: Modifier = Modifier) {
             } else if (session.isLoggedIn && homeState.showNearbyEmptyState) {
                 item {
                     NearbyLocationPrompt(
-                        message = "근처에 저장한 장소가 없어요",
-                        actionLabel = "지도에서 장소 찾기",
+                        message = stringResource(MainR.string.main_home_nearby_empty_message),
+                        actionLabel = stringResource(MainR.string.main_home_nearby_find_on_map),
                         onAction = {
                             navigationHelper.navigateTo(
                                 MapPage,
@@ -381,7 +380,7 @@ fun HomePage(modifier: Modifier = Modifier) {
                         onRegionClick = { code, name ->
                             telemetry.buttonClick("/home", "region", mapOf("region" to code))
                             navigationHelper.navigateByRoute(
-                                RecommendedCoursesPage.regionRoute(sido = areaMapProvinceCode(code), regionName = name),
+                                RecommendedCoursesPage.regionRoute(sido = homeRegionCode(code), regionName = name),
                                 source = NavigationSource("/home", "region"),
                             )
                         },
@@ -478,7 +477,7 @@ private fun HomeSearchBar(
             modifier = Modifier.size(18.dp),
         )
         DsText(
-            text = "코스 검색",
+            text = stringResource(MainR.string.main_search_placeholder_course),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel3,
         )
@@ -565,10 +564,12 @@ private fun HomeHeader(
     val color = DesignSystemThemeImpl.designSystemColor
     val greeting =
         if (profile != null) {
-            "${profile.nickname}님, 오늘은\n어디로 떠나볼까요?"
+            stringResource(MainR.string.main_home_greeting_user, profile.nickname)
         } else {
-            "어디로 떠나볼까요?"
+            stringResource(MainR.string.main_home_greeting_guest)
         }
+    val profileClickLabel = stringResource(MainR.string.main_home_profile_click_label)
+    val profileDescription = stringResource(MainR.string.main_home_profile_description)
     // 인사말이 2줄(titleExtraL 24sp × 2 ≈ 62dp)이라, 아바타를 그 높이에 맞춰 크게 둔다.
     Row(modifier = modifier, verticalAlignment = Alignment.Top) {
         Column(modifier = Modifier.weight(1f)) {
@@ -589,8 +590,8 @@ private fun HomeHeader(
                     .clip(CircleShape)
                     .background(color.bgDefaultLevel1)
                     .border(1.dp, color.borderDefaultLevel0, CircleShape)
-                    .clickable(onClickLabel = "마이로 이동", role = Role.Button, onClick = onProfileClick)
-                    .semantics { contentDescription = "내 프로필" },
+                    .clickable(onClickLabel = profileClickLabel, role = Role.Button, onClick = onProfileClick)
+                    .semantics { contentDescription = profileDescription },
             contentAlignment = Alignment.Center,
         ) {
             ProfileAvatar(imageUrl = profile?.profileImageUrl.orEmpty(), size = 56.dp)
@@ -645,7 +646,7 @@ private fun RegionBrowseSection(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionHeader(title = "지역별 둘러보기")
+        SectionHeader(title = stringResource(MainR.string.main_home_region_browse_title))
         Box(
             modifier =
                 Modifier
@@ -678,8 +679,8 @@ private fun RecommendedCoursesSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionHeader(
-            title = "오늘의 추천 코스",
-            actionLabel = "전체보기",
+            title = stringResource(MainR.string.main_recommended_title),
+            actionLabel = stringResource(MainR.string.main_home_see_all),
             onAction = onSeeAll,
             modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
         )
@@ -708,7 +709,7 @@ private fun RecommendedCoursesSection(
 
             else -> {
                 FeedMessage(
-                    message = homeState.errorMessage ?: "아직 공개된 코스가 없어요.",
+                    message = homeState.errorMessage ?: stringResource(MainR.string.main_recommended_empty),
                     onRetry = homeState.errorMessage?.let { { onRetry() } },
                 )
             }
@@ -763,6 +764,7 @@ private fun RecommendedCourseCard(
                 // 제목이 한 줄이어도 두 줄 높이를 확보한다 — 가로 카드끼리 높이가 들쭉날쭉하지 않게.
                 minLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                autoTranslate = true,
             )
             Row(
                 modifier = Modifier.padding(top = 4.dp),
@@ -777,7 +779,7 @@ private fun RecommendedCourseCard(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_tab_bookmark_24),
-                            contentDescription = "저장",
+                            contentDescription = stringResource(MainR.string.main_home_save_label),
                             tint = color.contentDefaultLevel3,
                             modifier = Modifier.size(16.dp),
                         )
@@ -805,8 +807,8 @@ private fun NearbySavedSection(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionHeader(
-            title = "근처 저장 장소",
-            actionLabel = "지도에서 보기",
+            title = stringResource(MainR.string.main_home_nearby_title),
+            actionLabel = stringResource(MainR.string.main_home_nearby_see_on_map),
             onAction = onSeeMap,
         )
         places.forEach { place ->
@@ -856,7 +858,7 @@ private fun NearbyPlaceCard(
             // 1줄: 장소명. 주소가 있으면 카테고리를 이름 옆에 인라인으로 붙여 아래에 주소 줄을 둔다.
             // 주소가 없으면 카테고리를 1줄에 붙이지 않고 아랫줄로 내려 2줄(이름 / 카테고리)로 보여 준다.
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DsText(
+                DsBilingualText(
                     text = place.name,
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = color.contentDefaultLevel0,
@@ -866,7 +868,7 @@ private fun NearbyPlaceCard(
                 )
                 if (hasAddress && hasCategory) {
                     DsText(
-                        text = place.detailCategory.orCategoryLabel(place.categoryLabel),
+                        text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.categoryLabel)),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,
@@ -885,7 +887,7 @@ private fun NearbyPlaceCard(
                 ) {
                     if (showCategoryBelow) {
                         DsText(
-                            text = place.detailCategory.orCategoryLabel(place.categoryLabel),
+                            text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.categoryLabel)),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
                             color = color.contentDefaultLevel2,
                             maxLines = 1,
@@ -913,7 +915,7 @@ private fun NearbyPlaceCard(
             }
             // 3줄: 상세 주소(있으면). 서버가 주지 않으면 숨겨져 위의 2줄 구성으로 줄어든다.
             if (hasAddress) {
-                DsText(
+                DsBilingualText(
                     text = place.address,
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
@@ -931,7 +933,12 @@ private fun NearbyPlaceCard(
                     .padding(horizontal = 10.dp, vertical = 5.dp),
         ) {
             DsText(
-                text = if (place.visited) "방문" else "미방문",
+                text =
+                    if (place.visited) {
+                        stringResource(MainR.string.main_home_place_visited)
+                    } else {
+                        stringResource(MainR.string.main_home_place_not_visited)
+                    },
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -948,7 +955,7 @@ private fun ThemeBrowseSection(
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DsText(
-            text = "테마별 둘러보기",
+            text = stringResource(MainR.string.main_home_theme_browse_title),
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
         )
@@ -995,7 +1002,8 @@ private fun ThemeTile(
             modifier = Modifier.fillMaxSize(),
         )
         DsText(
-            text = category.label,
+            // 테마 태그 enum 라벨 → locale 라벨(한국어가 아니면 영어/일본어). taxonomy 리졸버 사용.
+            text = courseTagLabel(category),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             style = DesignSystemThemeImpl.typeScale.textStrongS,
@@ -1039,7 +1047,7 @@ private fun NearbyLocationPrompt(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionHeader(title = "근처 저장 장소")
+        SectionHeader(title = stringResource(MainR.string.main_home_nearby_title))
         Column(
             modifier =
                 Modifier
@@ -1098,8 +1106,8 @@ private fun InProgressCourseSection(
     var showDismissDialog by remember { mutableStateOf(false) }
     if (showDismissDialog) {
         DsConfirmDialog(
-            title = "진행 중인 코스를 종료할까요?",
-            description = "종료된 코스는 완주되어 저장함에서 볼 수 있어요.",
+            title = stringResource(MainR.string.main_home_in_progress_end_title),
+            description = stringResource(MainR.string.main_home_in_progress_end_description),
             onConfirm = {
                 showDismissDialog = false
                 onDismiss()
@@ -1139,14 +1147,19 @@ private fun InProgressCourseSection(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 DsText(
-                    text = if (course.isDeleted) "비공개된 코스" else "진행 중인 코스",
+                    text =
+                        if (course.isDeleted) {
+                            stringResource(MainR.string.main_home_in_progress_private_label)
+                        } else {
+                            stringResource(MainR.string.main_home_in_progress_label)
+                        },
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
                     modifier = Modifier.weight(1f),
                 )
                 Icon(
                     painter = painterResource(R.drawable.close_small_24),
-                    contentDescription = "진행 중인 코스 지우기",
+                    contentDescription = stringResource(MainR.string.main_home_in_progress_dismiss),
                     tint = color.contentDefaultLevel3,
                     modifier = Modifier.clip(CircleShape).clickable { showDismissDialog = true }.size(22.dp),
                 )
@@ -1157,6 +1170,7 @@ private fun InProgressCourseSection(
                 color = color.contentOnAccent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                autoTranslate = true,
             )
             // 진행 현황: 막대 + "N / M곳 방문"을 한 줄에(줄바꿈 없이). 진행도 정보가 없으면 지역·장소 수 요약으로 폴백.
             if (course.hasProgress) {
@@ -1172,9 +1186,23 @@ private fun InProgressCourseSection(
                         maxLines = 1,
                     )
                 }
-            } else if (course.summaryText.isNotBlank()) {
+            } else if (course.area.isNotBlank() || course.placeCount > 0) {
                 DsText(
-                    text = course.summaryText,
+                    text =
+                        listOfNotNull(
+                            course.area.takeIf { it.isNotBlank() },
+                            if (course.placeCount >
+                                0
+                            ) {
+                                pluralStringResource(
+                                    MainR.plurals.main_remaining_place_count,
+                                    course.placeCount,
+                                    course.placeCount,
+                                )
+                            } else {
+                                null
+                            },
+                        ).joinToString(" · "),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
                     maxLines = 1,

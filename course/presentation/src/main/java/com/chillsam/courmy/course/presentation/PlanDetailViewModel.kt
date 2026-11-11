@@ -3,6 +3,9 @@ package com.chillsam.courmy.course.presentation
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.error.HttpResponseException
+import com.chillsam.courmy.common.domain.error.localizedValidationMessage
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviIntent
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.common.presentation.mvi.ReducerEvent
@@ -88,6 +91,7 @@ class PlanDetailViewModel
         private val getPlanDetail: GetPlanDetailUseCase,
         private val editPlan: EditPlanUseCase,
         private val deletePlan: DeletePlanUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<PlanDetailIntent, PlanDetailUIState, PlanDetailReducerEvent>(PlanDetailUIState()) {
         private var planId = 0L
         private var loadJob: Job? = null
@@ -152,8 +156,8 @@ class PlanDetailViewModel
                             Log.w("PlanDetail", "계획 수정 실패", error)
                             dispatch(
                                 PlanDetailReducerEvent.MutationFailed(
-                                    (error as? IllegalArgumentException)?.message
-                                        ?: error.planErrorMessage("계획을 수정하지 못했어요."),
+                                    error.localizedValidationMessage(resources)
+                                        ?: error.planErrorMessage(resources.getString(StringResource.PLAN_EDIT_FAILED)),
                                 ),
                             )
                         }
@@ -171,7 +175,9 @@ class PlanDetailViewModel
                             if (error is CancellationException) throw error
                             Log.w("PlanDetail", "계획 삭제 실패", error)
                             dispatch(
-                                PlanDetailReducerEvent.MutationFailed(error.planErrorMessage("계획을 삭제하지 못했어요.")),
+                                PlanDetailReducerEvent.MutationFailed(
+                                    error.planErrorMessage(resources.getString(StringResource.PLAN_DELETE_FAILED)),
+                                ),
                             )
                         }
                 }
@@ -187,7 +193,11 @@ class PlanDetailViewModel
                         .onFailure { error ->
                             if (error is CancellationException) throw error
                             Log.w("PlanDetail", "계획 상세 조회 실패", error)
-                            dispatch(PlanDetailReducerEvent.Failed(error.planErrorMessage()))
+                            dispatch(
+                                PlanDetailReducerEvent.Failed(
+                                    error.planErrorMessage(resources.getString(StringResource.PLAN_LOAD_RETRY)),
+                                ),
+                            )
                         }
                 }
         }
@@ -208,7 +218,7 @@ class PlanDetailViewModel
             }
     }
 
-private fun Throwable.planErrorMessage(fallback: String = "계획을 불러오지 못했어요. 다시 시도해 주세요."): String {
+private fun Throwable.planErrorMessage(fallback: String): String {
     val serverMessage =
         if (this is HttpResponseException) {
             runCatching {

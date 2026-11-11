@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.course.entity.TraceRouteVO
 import javax.inject.Inject
 
@@ -17,8 +20,12 @@ class GetTraceRouteUseCase
             fromPlaceId: Long,
             toPlaceId: Long,
         ): TraceRouteVO {
-            require(fromPlaceId > 0 && toPlaceId > 0) { "장소를 확인해 주세요." }
-            require(fromPlaceId != toPlaceId) { "출발과 도착 장소가 같습니다." }
+            requireLocalized(fromPlaceId > 0 && toPlaceId > 0) {
+                LocalizedValidationException(StringResource.VALIDATION_PLACE_TARGET)
+            }
+            requireLocalized(
+                fromPlaceId != toPlaceId,
+            ) { LocalizedValidationException(StringResource.VALIDATION_ROUTE_SAME_PLACE) }
             return repository.walkingRoute(fromPlaceId, toPlaceId)
         }
     }

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="relative_just_now">たった今</string>
+    <plurals name="relative_minute">
+        <item quantity="one">%1$d分前</item>
+        <item quantity="other">%1$d分前</item>
+    </plurals>
+    <plurals name="relative_hour">
+        <item quantity="one">%1$d時間前</item>
+        <item quantity="other">%1$d時間前</item>
+    </plurals>
+    <plurals name="relative_day">
+        <item quantity="one">%1$d日前</item>
+        <item quantity="other">%1$d日前</item>
+    </plurals>
+    <plurals name="relative_week">
+        <item quantity="one">%1$d週間前</item>
+        <item quantity="other">%1$d週間前</item>
+    </plurals>
+    <plurals name="relative_month">
+        <item quantity="one">%1$dか月前</item>
+        <item quantity="other">%1$dか月前</item>
+    </plurals>
+    <plurals name="relative_year">
+        <item quantity="one">%1$d年前</item>
+        <item quantity="other">%1$d年前</item>
+    </plurals>
+</resources>

@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.error.HttpResponseException
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.aichat.SendAiChatMessageUseCase
 import com.chillsam.courmy.main.entity.aichat.AiChatAnswer
@@ -35,6 +37,7 @@ class AiCourseChatViewModel
     constructor(
         @ApplicationContext private val appContext: Context,
         private val sendMessage: SendAiChatMessageUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<AiCourseChatIntent, AiCourseChatUIState, AiCourseChatReducerEvent>(
             AiCourseChatUIState.empty,
         ) {
@@ -102,7 +105,7 @@ class AiCourseChatViewModel
                 is AiCourseChatReducerEvent.SetInput -> {
                     state.copy(
                         inputEnabled = event.enabled,
-                        inputPlaceholder = event.placeholder.ifBlank { AiCourseChatUIState.DEFAULT_PLACEHOLDER },
+                        inputPlaceholder = event.placeholder,
                     )
                 }
 
@@ -121,9 +124,14 @@ class AiCourseChatViewModel
 
         /** 앱 소유 첫 화면 — 인사말 + 지역 질문 + 지역 칩(현재 위치 기준). */
         private fun showGreeting() {
-            appendMessage(GREETING)
+            appendMessage(resources.getString(StringResource.AI_GREETING))
             dispatch(AiCourseChatReducerEvent.SetStep(AiChatStep.REGION))
-            dispatch(AiCourseChatReducerEvent.SetInput(enabled = true, placeholder = REGION_PLACEHOLDER))
+            dispatch(
+                AiCourseChatReducerEvent.SetInput(
+                    enabled = true,
+                    placeholder = resources.getString(StringResource.AI_REGION_PLACEHOLDER),
+                ),
+            )
             dispatch(AiCourseChatReducerEvent.SetQuickReplies(emptyList()))
             dispatch(AiCourseChatReducerEvent.SetRegionChips(regionNames, show = true))
         }
@@ -217,11 +225,11 @@ class AiCourseChatViewModel
             // 4400(세션 만료)은 HTTP 404 로 온다 — 첫 화면으로 되돌린다.
             if (e is HttpResponseException && e.rawCode == HTTP_NOT_FOUND) {
                 Log.i(TAG, "세션 만료(4400) — 처음부터")
-                restart(SESSION_EXPIRED_NOTICE)
+                restart(resources.getString(StringResource.AI_SESSION_EXPIRED))
                 return
             }
             Log.w(TAG, "커미 AI 전송 실패", e)
-            appendMessage(ERROR_NOTICE)
+            appendMessage(resources.getString(StringResource.AI_ERROR))
             dispatch(
                 AiCourseChatReducerEvent.SetInput(enabled = inputEnabled, placeholder = currentState.inputPlaceholder),
             )
@@ -251,10 +259,5 @@ class AiCourseChatViewModel
             const val MIN_THINKING_MILLIS = 900L
             const val TAG = "AiChat"
             const val HTTP_NOT_FOUND = 404
-
-            const val GREETING = "안녕하세요, 커미 AI예요!\n먼저, 어느 지역으로 떠나볼까요?"
-            const val REGION_PLACEHOLDER = "지역을 입력해도 돼요"
-            const val SESSION_EXPIRED_NOTICE = "대화가 만료돼서 처음부터 다시 시작할게요."
-            const val ERROR_NOTICE = "지금은 추천을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
         }
     }

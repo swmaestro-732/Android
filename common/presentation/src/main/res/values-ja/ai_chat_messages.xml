@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="message_ai_greeting">こんにちは、クルミ AIです！\nまず、どのエリアに出かけましょうか？</string>
+    <string name="message_ai_region_placeholder">エリアを入力できます</string>
+    <string name="message_ai_session_expired">会話の有効期限が切れました。最初からやり直します。</string>
+    <string name="message_ai_error">おすすめを読み込めませんでした。しばらくしてから再度お試しください。</string>
+</resources>

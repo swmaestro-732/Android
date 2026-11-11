@@ -19,11 +19,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val PillShape = RoundedCornerShape(percent = 50)
 
@@ -49,7 +51,7 @@ internal fun SearchResultTopBar(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_chevron_left_24),
-            contentDescription = "뒤로",
+            contentDescription = stringResource(MainR.string.main_search_result_chrome_back),
             tint = color.contentDefaultLevel0,
             modifier =
                 Modifier
@@ -87,7 +89,7 @@ internal fun SearchResultTopBar(
             )
             Icon(
                 painter = painterResource(R.drawable.close_small_24),
-                contentDescription = "검색어 지우기",
+                contentDescription = stringResource(MainR.string.main_search_result_chrome_clear_query),
                 tint = color.contentDefaultLevel2,
                 modifier =
                     Modifier
@@ -210,12 +212,12 @@ internal fun SearchMapPreviewCard(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             DsText(
-                text = "지도에서 한눈에 보기",
+                text = stringResource(MainR.string.main_search_result_chrome_map_preview_title),
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = color.contentOnAccent,
             )
             DsText(
-                text = "장소 ${placeCount}곳",
+                text = stringResource(MainR.string.main_search_result_chrome_map_preview_place_count, placeCount),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentOnAccent,
             )
@@ -230,7 +232,7 @@ internal fun SearchMapPreviewCard(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             DsText(
-                text = "지도 보기",
+                text = stringResource(MainR.string.main_search_result_chrome_map_open),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel0,
             )

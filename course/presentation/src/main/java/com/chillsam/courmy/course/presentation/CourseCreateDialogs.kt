@@ -27,8 +27,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.chillsam.courmy.common.presentation.component.DsBilingualText
 import com.chillsam.courmy.common.presentation.component.DsButton
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
@@ -69,25 +71,35 @@ internal fun RemovePlaceConfirmSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            DsText(
+            DsBilingualText(
                 text = placeName,
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = if (isPlan) "이 장소를 계획에서 뺄까요?" else "이 장소를 코스에서 뺄까요?",
+                text =
+                    if (isPlan) {
+                        stringResource(R.string.course_remove_place_question_plan)
+                    } else {
+                        stringResource(R.string.course_remove_place_question_course)
+                    },
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel2,
             )
             Spacer(Modifier.height(10.dp))
             SheetActionButton(
-                text = if (isPlan) "계획에서 빼기" else "코스에서 빼기",
+                text =
+                    if (isPlan) {
+                        stringResource(R.string.course_remove_place_confirm_plan)
+                    } else {
+                        stringResource(R.string.course_remove_place_confirm_course)
+                    },
                 textColor = color.contentDanger,
                 background = color.bgDefaultLevel1,
                 onClick = onConfirm,
             )
             SheetActionButton(
-                text = "취소",
+                text = stringResource(R.string.course_dialog_cancel),
                 textColor = color.contentDefaultLevel1,
                 background = Color.Transparent,
                 onClick = onDismiss,
@@ -110,19 +122,19 @@ internal fun ExitConfirmDialog(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     DsDialogScaffold(
-        title = "작성 중인 코스를 임시저장할까요?",
-        description = "지금 그냥 나가면 변경사항이 사라져요.",
+        title = stringResource(R.string.course_exit_confirm_title),
+        description = stringResource(R.string.course_exit_confirm_desc),
         onDismiss = onCancel,
     ) {
-        DsButton(text = "임시저장하고 나가기", onClick = onSaveAndExit)
+        DsButton(text = stringResource(R.string.course_exit_save_and_exit), onClick = onSaveAndExit)
         SheetActionButton(
-            text = "저장 안 함",
+            text = stringResource(R.string.course_exit_discard),
             textColor = color.contentDanger,
             background = Color.Transparent,
             onClick = onDiscard,
         )
         SheetActionButton(
-            text = "취소",
+            text = stringResource(R.string.course_dialog_cancel),
             textColor = color.contentDefaultLevel2,
             background = Color.Transparent,
             onClick = onCancel,
@@ -158,7 +170,7 @@ internal fun SavedDraftToast(
                     .padding(horizontal = 18.dp, vertical = 12.dp),
         ) {
             DsText(
-                text = "임시저장했어요",
+                text = stringResource(R.string.course_saved_draft_toast),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = DesignSystemThemeImpl.designSystemColor.contentOnAccent,
             )
@@ -210,8 +222,8 @@ internal fun CourseDeleteConfirmDialog(
     onDismiss: () -> Unit,
 ) {
     DsConfirmDialog(
-        title = "코스를 삭제할까요?",
-        description = "삭제한 코스는 되돌릴 수 없어요.",
+        title = stringResource(R.string.course_delete_confirm_title),
+        description = stringResource(R.string.course_delete_confirm_desc),
         destructive = true,
         onConfirm = onConfirm,
         onDismiss = onDismiss,
@@ -259,12 +271,12 @@ internal fun AddPlaceDialog(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             DsText(
-                text = "새로운 위치 추가",
+                text = stringResource(R.string.course_add_place_title),
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = "찾는 장소의 이름을 입력하면\n지도에서 찾아 후보로 보여드려요.",
+                text = stringResource(R.string.course_add_place_description),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
                 textAlign = TextAlign.Center,
@@ -274,7 +286,7 @@ internal fun AddPlaceDialog(
             DsTextField(
                 value = name,
                 onValueChange = { name = it },
-                placeholder = "예) 어니언 성수",
+                placeholder = stringResource(R.string.course_add_place_name_placeholder),
                 enabled = !isSearching,
                 modifier = Modifier.focusRequester(focusRequester),
             )
@@ -289,12 +301,17 @@ internal fun AddPlaceDialog(
             }
             Spacer(Modifier.height(4.dp))
             DsButton(
-                text = if (isSearching) "찾는 중…" else "찾기",
+                text =
+                    if (isSearching) {
+                        stringResource(R.string.course_add_place_searching)
+                    } else {
+                        stringResource(R.string.course_add_place_search)
+                    },
                 enabled = canSubmit,
                 onClick = { onConfirm(name.trim()) },
             )
             SheetActionButton(
-                text = "취소",
+                text = stringResource(R.string.course_dialog_cancel),
                 textColor = color.contentDefaultLevel2,
                 background = Color.Transparent,
                 onClick = onDismiss,

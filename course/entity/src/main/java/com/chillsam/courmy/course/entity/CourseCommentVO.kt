@@ -7,8 +7,8 @@ data class CourseCommentVO(
     val id: Long,
     val authorId: Long,
     val content: String,
-    /** 상대 시각 표기(예: "2일 전"). */
-    val dateText: String = "",
+    /** UTC epoch millis. 화면의 언어로 상대 시각을 표시한다. */
+    val createdAtMillis: Long? = null,
     /** 내 댓글 여부. 수정·삭제 메뉴 노출 기준. */
     val isMine: Boolean = false,
     val authorNickname: String = "",

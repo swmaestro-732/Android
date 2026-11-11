@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.course.entity.CourseFolderVO
 import javax.inject.Inject
 
@@ -16,9 +19,11 @@ class CreateCourseFolderUseCase
     ) {
         suspend operator fun invoke(name: String): Long {
             val trimmed = name.trim()
-            require(trimmed.isNotEmpty()) { "폴더 이름을 입력해 주세요." }
-            require(trimmed.length <= CourseFolderVO.NAME_MAX_LENGTH) {
-                "폴더 이름은 ${CourseFolderVO.NAME_MAX_LENGTH}자까지 쓸 수 있습니다."
+            requireLocalized(
+                trimmed.isNotEmpty(),
+            ) { LocalizedValidationException(StringResource.VALIDATION_FOLDER_REQUIRED) }
+            requireLocalized(trimmed.length <= CourseFolderVO.NAME_MAX_LENGTH) {
+                LocalizedValidationException(StringResource.VALIDATION_FOLDER_LENGTH, CourseFolderVO.NAME_MAX_LENGTH)
             }
             return repository.createFolder(trimmed)
         }

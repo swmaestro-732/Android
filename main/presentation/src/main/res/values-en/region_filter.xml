@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_region_filter_all">All areas</string>
+    <string name="main_region_filter_label">Choose city or district</string>
+    <string name="main_region_filter_expanded">Area list expanded</string>
+    <string name="main_region_filter_collapsed">Area list collapsed</string>
+    <string name="main_region_filter_loading">Loading areas…</string>
+    <string name="main_region_filter_error">Unable to load areas</string>
+    <string name="main_region_filter_empty">No smaller areas to select</string>
+</resources>

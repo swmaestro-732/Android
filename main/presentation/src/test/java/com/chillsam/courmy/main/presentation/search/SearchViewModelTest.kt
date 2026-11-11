@@ -7,6 +7,7 @@ import com.chillsam.courmy.main.entity.map.MapBounds
 import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapPlacesVO
+import com.chillsam.courmy.main.presentation.testResources
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,7 +43,7 @@ class SearchViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun viewModel(placeSearch: Boolean = true) =
-        SearchViewModel(SuggestMapPlacesUseCase(repository), recentSearchRepository).also {
+        SearchViewModel(SuggestMapPlacesUseCase(repository), recentSearchRepository, resources = testResources()).also {
             it.onIntent(SearchIntent.Load(placeSearch))
         }
 

@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.course.entity.PlanDetailVO
 import javax.inject.Inject
 
@@ -15,7 +18,7 @@ class GetPlanDetailUseCase
         private val repository: PlanRepository,
     ) {
         suspend operator fun invoke(planId: Long): PlanDetailVO {
-            require(planId > 0) { "계획을 확인해 주세요." }
+            requireLocalized(planId > 0) { LocalizedValidationException(StringResource.VALIDATION_PLAN_TARGET) }
             return repository.getPlanDetail(planId)
         }
     }

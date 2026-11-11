@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import javax.inject.Inject
 
 /** 코스 댓글 수정 UseCase. 작성과 같은 검증을 거친다. */
@@ -13,11 +16,18 @@ class EditCourseCommentUseCase
             commentId: Long,
             content: String,
         ) {
-            require(courseId > 0 && commentId > 0) { "댓글을 확인해 주세요." }
+            requireLocalized(courseId > 0 && commentId > 0) {
+                LocalizedValidationException(StringResource.VALIDATION_COMMENT_TARGET)
+            }
             val trimmed = content.trim()
-            require(trimmed.isNotEmpty()) { "댓글 내용을 입력해 주세요." }
-            require(trimmed.length <= WriteCourseCommentUseCase.MAX_LENGTH) {
-                "댓글은 ${WriteCourseCommentUseCase.MAX_LENGTH}자까지 쓸 수 있어요."
+            requireLocalized(
+                trimmed.isNotEmpty(),
+            ) { LocalizedValidationException(StringResource.VALIDATION_COMMENT_REQUIRED) }
+            requireLocalized(trimmed.length <= WriteCourseCommentUseCase.MAX_LENGTH) {
+                LocalizedValidationException(
+                    StringResource.VALIDATION_COMMENT_LENGTH,
+                    WriteCourseCommentUseCase.MAX_LENGTH,
+                )
             }
             repository.editComment(courseId, commentId, trimmed)
         }

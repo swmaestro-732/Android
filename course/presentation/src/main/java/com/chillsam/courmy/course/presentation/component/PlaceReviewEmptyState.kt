@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,14 +53,14 @@ internal fun PlaceReviewEmptyState(
             )
         }
         DsText(
-            text = "아직 등록된 후기가 없어요",
+            text = stringResource(com.chillsam.courmy.course.presentation.R.string.course_place_review_empty_title),
             style = DesignSystemThemeImpl.typeScale.textStrongM,
             color = color.contentDefaultLevel0,
             textAlign = TextAlign.Center,
             maxLines = Int.MAX_VALUE,
         )
         DsText(
-            text = "다녀오셨다면 첫 후기를 남겨주세요.",
+            text = stringResource(com.chillsam.courmy.course.presentation.R.string.course_place_review_empty_subtitle),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel3,
             textAlign = TextAlign.Center,
@@ -88,7 +89,14 @@ internal fun PlaceReviewWriteButton(
         Icon(painterResource(R.drawable.ic_review_write_24), contentDescription = null, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(8.dp))
         DsText(
-            text = if (firstReview) "첫 후기 남기기" else "후기 남기기",
+            text =
+                stringResource(
+                    if (firstReview) {
+                        com.chillsam.courmy.course.presentation.R.string.course_place_review_write_first
+                    } else {
+                        com.chillsam.courmy.course.presentation.R.string.course_place_review_write
+                    },
+                ),
             color = if (enabled) color.contentAccent else color.contentDefaultLevel3,
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             maxLines = Int.MAX_VALUE,

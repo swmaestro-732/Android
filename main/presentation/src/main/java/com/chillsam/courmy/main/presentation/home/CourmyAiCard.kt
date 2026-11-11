@@ -25,16 +25,18 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.presentation.aichat.AiChatPalette
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private val CardShape = RoundedCornerShape(22.dp)
 
 /**
- * 홈(FS-09)의 "커미 AI" 코스 추천 배너.
+ * 홈(FS-09)의 stringResource(MainR.string.ai_title) 코스 추천 배너.
  *
  * 눌러서 커미 AI 채팅([AiCourseChatPage])으로 진입한다. 채팅 화면과 결을 맞춰
  * 몽환적 민트·초록 파스텔 오로라 배경 + 글래스 요소로 꾸민다. 아바타·CTA 는 채팅과 같은 초록 그라데이션.
@@ -85,14 +87,14 @@ fun CourmyAiCard(
                     )
                 }
                 DsText(
-                    text = "커미 AI",
+                    text = stringResource(MainR.string.ai_title),
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = AiChatPalette.ink,
                 )
             }
 
             DsText(
-                text = "취향만 알려주면\n코스를 뚝딱 짜줘요",
+                text = stringResource(MainR.string.ai_banner),
                 style = DesignSystemThemeImpl.typeScale.textStrongM,
                 color = AiChatPalette.ink,
                 maxLines = 2,
@@ -105,7 +107,7 @@ fun CourmyAiCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             ) {
                 DsText(
-                    text = "코스 추천받기",
+                    text = stringResource(MainR.string.ai_recommend),
                     style = DesignSystemThemeImpl.typeScale.textStrongS,
                     color = DesignSystemThemeImpl.designSystemColor.contentAccent,
                 )

@@ -2,6 +2,8 @@ package com.chillsam.courmy.main.presentation.my
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.follow.GetFollowListUseCase
 import com.chillsam.courmy.main.domain.user.ToggleFollowUseCase
@@ -26,6 +28,7 @@ class FollowListViewModel
     constructor(
         private val getFollowListUseCase: GetFollowListUseCase,
         private val toggleFollowUseCase: ToggleFollowUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<FollowListIntent, FollowListUIState, FollowListReducerEvent>(
             FollowListUIState.empty,
         ) {
@@ -186,7 +189,9 @@ class FollowListViewModel
                         if (e is CancellationException) throw e
                         // 원문 예외 메시지는 로그로만 남기고, UI 에는 안정적인 문구를 노출한다.
                         Log.w(TAG, "팔로우 목록 로드 실패: tab=$tab", e)
-                        dispatch(FollowListReducerEvent.LoadFailed("목록을 불러오지 못했습니다."))
+                        dispatch(
+                            FollowListReducerEvent.LoadFailed(resources.getString(StringResource.LIST_LOAD_FAILED)),
+                        )
                     }
                 }
         }
@@ -219,7 +224,9 @@ class FollowListViewModel
                     }.onFailure { e ->
                         if (e is CancellationException) throw e
                         Log.w(TAG, "팔로우 목록 다음 페이지 로드 실패: tab=$tab", e)
-                        dispatch(FollowListReducerEvent.MoreFailed("더 불러오지 못했어요."))
+                        dispatch(
+                            FollowListReducerEvent.MoreFailed(resources.getString(StringResource.LOAD_MORE_FAILED)),
+                        )
                     }
                 }
         }
@@ -239,7 +246,11 @@ class FollowListViewModel
                             .onFailure { e ->
                                 if (e is CancellationException) throw e
                                 Log.w(TAG, "팔로잉 해제 실패: userId=$userId", e)
-                                dispatch(FollowListReducerEvent.ActionFailed("팔로잉을 해제하지 못했어요."))
+                                dispatch(
+                                    FollowListReducerEvent.ActionFailed(
+                                        resources.getString(StringResource.FOLLOWING_REMOVE_FAILED),
+                                    ),
+                                )
                             }
                     } finally {
                         unfollowJobs.remove(userId)

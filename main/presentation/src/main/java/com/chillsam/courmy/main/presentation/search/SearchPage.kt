@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chillsam.courmy.common.domain.navigation.NavigationSource
@@ -16,6 +17,7 @@ import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.domain.map.MapSearchResultPage
 import com.chillsam.courmy.main.entity.map.MapBounds
+import com.chillsam.courmy.main.presentation.R
 import com.chillsam.courmy.main.domain.search.SearchPage as SearchRoute
 import com.chillsam.courmy.main.domain.search.SearchResultPage as SearchResultRoute
 
@@ -115,7 +117,12 @@ fun SearchPage(
 
     SearchScreen(
         uiState = uiState,
-        placeholder = if (target == SearchRoute.TARGET_PLACE) "장소 검색" else "코스 검색",
+        placeholder =
+            if (target == SearchRoute.TARGET_PLACE) {
+                stringResource(R.string.main_search_placeholder_place)
+            } else {
+                stringResource(R.string.main_search_placeholder_course)
+            },
         actions = actions,
         modifier = modifier.fillMaxSize(),
     )

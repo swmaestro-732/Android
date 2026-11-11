@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +53,7 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.area.AreaLevel
 import com.chillsam.courmy.main.entity.area.AreaVO
+import com.chillsam.courmy.main.presentation.R
 import com.chillsam.courmy.main.presentation.component.BackTopBar
 import com.chillsam.courmy.main.presentation.login.SignupSelectionStore
 
@@ -129,12 +131,16 @@ internal fun InterestRegionScreen(
                 modifier = Modifier.statusBarsPadding().padding(horizontal = ScreenHorizontalPadding, vertical = 12.dp),
             )
         } else {
-            BackTopBar(title = "관심 지역", onBack = onBack)
+            BackTopBar(title = stringResource(R.string.main_interest_region_title), onBack = onBack)
         }
         Column(Modifier.padding(horizontal = ScreenHorizontalPadding, vertical = 8.dp)) {
-            DsText("자주 가는 지역을 골라주세요", style = type.textStrongM, color = color.contentDefaultLevel0)
             DsText(
-                "최소 1개 · 시·도 전체 또는 시·군·구 선택",
+                stringResource(R.string.main_interest_region_heading),
+                style = type.textStrongM,
+                color = color.contentDefaultLevel0,
+            )
+            DsText(
+                stringResource(R.string.main_interest_region_subheading),
                 style = type.textRegularXS,
                 modifier = Modifier.padding(top = 6.dp),
             )
@@ -145,7 +151,7 @@ internal fun InterestRegionScreen(
                 RegionMapInsets(state, onIntent)
                 if (state.provinceCode != null) {
                     DsChip(
-                        text = "‹ 전국 보기",
+                        text = stringResource(R.string.main_interest_region_view_all),
                         selected = false,
                         onClick = { onIntent(RegionMapIntent.Browse(null)) },
                         modifier = Modifier.align(Alignment.TopStart).padding(12.dp).minimumInteractiveComponentSize(),
@@ -168,6 +174,7 @@ private fun RegionSelectionFooter(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     val type = DesignSystemThemeImpl.typeScale
+    val deselectLabel = stringResource(R.string.main_interest_region_chip_deselect_a11y)
     Column(
         Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -178,25 +185,38 @@ private fun RegionSelectionFooter(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                item { DsText("선택 ${state.selected.size} ·", style = type.textRegularXS) }
-                items(state.selected, key = { it.code }) { area ->
-                    val label = if (area.level == AreaLevel.SIDO) "${area.shortName} 전체" else area.fullName
+                item {
                     DsText(
-                        text = "$label ×",
+                        stringResource(R.string.main_interest_region_selected_count, state.selected.size),
+                        style = type.textRegularXS,
+                    )
+                }
+                items(state.selected, key = { it.code }) { area ->
+                    val label =
+                        if (area.level == AreaLevel.SIDO) {
+                            stringResource(R.string.main_interest_region_sido_all, area.shortName)
+                        } else {
+                            area.fullName
+                        }
+                    DsText(
+                        text = stringResource(R.string.main_interest_region_chip_remove, label),
                         style = type.textRegularXS,
                         color = color.contentDefaultLevel1,
                         modifier =
                             Modifier
                                 .minimumInteractiveComponentSize()
                                 .clickable(enabled = !state.isSaving) { onIntent(RegionMapIntent.Remove(area.code)) }
-                                .semantics { contentDescription = "$label 선택 해제" },
+                                .semantics {
+                                    contentDescription =
+                                        deselectLabel.format(label)
+                                },
                     )
                 }
             }
         }
         if (state.saveError) {
             DsText(
-                "저장하지 못했어요. 선택한 지역을 유지했으니 다시 시도해 주세요.",
+                stringResource(R.string.main_interest_region_save_error),
                 style = type.textRegularXS,
                 maxLines = 2,
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
@@ -205,9 +225,9 @@ private fun RegionSelectionFooter(
         DsButton(
             text =
                 when {
-                    state.selected.isEmpty() -> "지역을 1개 이상 선택해 주세요"
-                    progressStep != null -> "다음"
-                    else -> "저장"
+                    state.selected.isEmpty() -> stringResource(R.string.main_interest_region_cta_empty)
+                    progressStep != null -> stringResource(R.string.main_interest_region_cta_next)
+                    else -> stringResource(R.string.main_interest_region_cta_save)
                 },
             enabled = state.canContinue,
             loading = state.isSaving,
@@ -251,8 +271,12 @@ private fun RegionChoices(
         ) {
             if (province != null) {
                 RegionTableCell(
-                    label = "${province.area.shortName} 전체",
-                    description = "${province.area.fullName} 전체 선택, 하위 지역 모두 포함",
+                    label = stringResource(R.string.main_interest_region_sido_all, province.area.shortName),
+                    description =
+                        stringResource(
+                            R.string.main_interest_region_sido_all_desc,
+                            province.area.fullName,
+                        ),
                     selected = state.selected.any { it.code == province.area.code },
                     enabled = !state.isSaving && !state.isLoading && !state.loadError,
                     onClick = { onIntent(RegionMapIntent.Toggle(province.area.code)) },
@@ -267,7 +291,12 @@ private fun RegionChoices(
                     items(state.visibleRegions, key = { it.area.code }) { region ->
                         RegionTableCell(
                             label = region.area.shortName,
-                            description = if (province == null) "${region.area.fullName} 확대" else region.area.fullName,
+                            description =
+                                if (province == null) {
+                                    stringResource(R.string.main_interest_region_zoom_desc, region.area.fullName)
+                                } else {
+                                    region.area.fullName
+                                },
                             selected = state.selected.any { region.area.code.startsWith(it.code) },
                             enabled = !state.isSaving && (province == null || (!state.isLoading && !state.loadError)),
                             onClick = {

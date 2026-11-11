@@ -9,6 +9,7 @@ import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapPlacesVO
+import com.chillsam.courmy.main.presentation.testResources
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -60,6 +61,7 @@ class MapSearchResultViewModelTest {
             SearchMapPlacesUseCase(repository),
             mockk(),
             SuggestMapPlacesUseCase(repository),
+            resources = testResources(),
         )
     }
 
@@ -137,6 +139,7 @@ class MapSearchResultViewModelTest {
                     SearchMapPlacesUseCase(repository),
                     mockk(),
                     SuggestMapPlacesUseCase(repository),
+                    resources = testResources(),
                 )
             vm.onIntent(MapSearchResultIntent.Load("카페"))
             vm.onIntent(MapSearchResultIntent.BoundsChanged(bounds))

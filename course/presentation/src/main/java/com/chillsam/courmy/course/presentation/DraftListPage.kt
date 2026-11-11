@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,6 +46,7 @@ import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.common.presentation.util.formatCreatedAt
 import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.entity.DraftSummaryVO
+import com.chillsam.courmy.course.presentation.R as CourseR
 
 /**
  * 임시저장한 코스 목록 화면(FS-20). 서버에 남아 있는 초안을
@@ -99,7 +101,12 @@ fun DraftListPage(
                         ) {
                             items(uiState.drafts, key = { it.id }) { draft ->
                                 DraftCourseCard(
-                                    title = draft.title,
+                                    title =
+                                        draft.title.ifBlank {
+                                            stringResource(
+                                                CourseR.string.course_remaining_untitled_course,
+                                            )
+                                        },
                                     // 시각을 못 읽은 초안(0)은 틀린 날짜를 보여 주느니 비워 둔다.
                                     subtitle =
                                         draft.savedAtMillis
@@ -122,7 +129,9 @@ fun DraftListPage(
 
                     uiState.loadFailed -> {
                         DraftListRetry(
-                            message = uiState.errorMessage ?: "임시저장한 코스를 불러오지 못했어요.",
+                            message =
+                                uiState.errorMessage
+                                    ?: stringResource(CourseR.string.course_draft_list_load_error),
                             onRetry = { viewModel.onIntent(DraftListIntent.Load) },
                             modifier = Modifier.align(Alignment.Center),
                         )
@@ -130,7 +139,7 @@ fun DraftListPage(
 
                     else -> {
                         DsText(
-                            text = "임시저장한 코스가 없어요",
+                            text = stringResource(CourseR.string.course_draft_list_empty),
                             modifier = Modifier.align(Alignment.Center),
                             style = DesignSystemThemeImpl.typeScale.textRegularS,
                             color = color.contentDefaultLevel2,
@@ -142,8 +151,14 @@ fun DraftListPage(
 
         pendingDelete?.let { draft ->
             DsConfirmDialog(
-                title = "임시저장을 삭제할까요?",
-                description = "\"${draft.title}\" 은(는) 삭제하면 되돌릴 수 없어요.",
+                title = stringResource(CourseR.string.course_draft_list_delete_title),
+                description =
+                    stringResource(
+                        CourseR.string.course_draft_list_delete_description,
+                        draft.title.ifBlank {
+                            stringResource(CourseR.string.course_remaining_untitled_course)
+                        },
+                    ),
                 destructive = true,
                 onConfirm = {
                     viewModel.onIntent(DraftListIntent.Delete(draft.id))
@@ -171,25 +186,25 @@ private fun DraftListHeader(
             IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
                 Icon(
                     painter = painterResource(R.drawable.ic_chevron_left_24),
-                    contentDescription = "뒤로",
+                    contentDescription = stringResource(CourseR.string.course_draft_list_back),
                     tint = color.contentDefaultLevel0,
                     modifier = Modifier.size(24.dp),
                 )
             }
             DsText(
-                text = "임시저장",
+                text = stringResource(CourseR.string.course_draft_list_title),
                 modifier = Modifier.weight(1f),
                 style = DesignSystemThemeImpl.typeScale.titleExtraL,
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = "${count}개",
+                text = stringResource(CourseR.string.course_draft_list_count, count),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
         }
         DsText(
-            text = "저장해 둔 코스를 이어서 만들 수 있어요.",
+            text = stringResource(CourseR.string.course_draft_list_header_desc),
             modifier = Modifier.padding(top = 8.dp),
             style = DesignSystemThemeImpl.typeScale.textRegularXS,
             color = color.contentDefaultLevel2,
@@ -214,7 +229,11 @@ private fun DraftListRetry(
             color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
         )
         Spacer(Modifier.height(12.dp))
-        DsButton(text = "다시 시도", variant = DsButtonVariant.Secondary, onClick = onRetry)
+        DsButton(
+            text = stringResource(CourseR.string.course_draft_list_retry),
+            variant = DsButtonVariant.Secondary,
+            onClick = onRetry,
+        )
     }
 }
 
@@ -271,7 +290,7 @@ private fun DraftCourseCard(
         ) {
             Icon(
                 painter = painterResource(R.drawable.close_small_24),
-                contentDescription = "삭제",
+                contentDescription = stringResource(CourseR.string.course_draft_list_delete),
                 tint = color.contentDefaultLevel3,
                 modifier = Modifier.size(18.dp),
             )

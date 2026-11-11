@@ -1,6 +1,8 @@
 package com.chillsam.courmy.course.presentation
 
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.UiState
+import com.chillsam.courmy.common.presentation.translation.UiMessage
 import com.chillsam.courmy.course.entity.CourseCompanionVO
 import com.chillsam.courmy.course.entity.CourseForkRule
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -45,8 +47,8 @@ data class CourseCreateUIState(
     val isSavingDraft: Boolean = false,
     /** 임시저장이 끝나면 true. 화면을 빠져나가는 신호. */
     val draftSaved: Boolean = false,
-    val errorMessage: String? = null,
-    val loadErrorMessage: String? = null,
+    val errorMessage: UiMessage? = null,
+    val loadErrorMessage: UiMessage? = null,
     /**
      * 포크 중이면 원본 코스 id. null 이면 평범한 코스 만들기다.
      * 저장 요청에 `forkedFromId` 로 실려 서버가 출처를 남긴다.
@@ -91,8 +93,12 @@ data class CourseCreateUIState(
      * 같은 문장이 카드 수만큼 반복되기 때문이다. 못 빼는 장소는 삭제 버튼 자체를 감춰서 알린다.
      * 여유가 있든 없든 규칙은 같으므로 문구도 바뀌지 않는다(상태에 따라 깜빡이지 않는다).
      */
-    val forkKeepRuleText: String?
-        get() = "원본 장소는 ${requiredKeptOriginPlaceCount}곳 이상 유지해야 해요".takeIf { isForking }
+    val forkKeepRuleText: UiMessage?
+        get() =
+            UiMessage(
+                StringResource.FORK_KEEP_MIN_PLACES,
+                listOf(requiredKeptOriginPlaceCount),
+            ).takeIf { isForking }
 
     /**
      * 저장 가능 여부. 단계별 차단 사유([placesReason]·[recordsReason]·[infoReason])가 모두 통과
@@ -125,7 +131,7 @@ data class CourseCreateUIState(
      * 마지막 단계에서는 앞선 단계의 조건을 모두 다시 본다. 앞 단계를 통과해야 넘어올 수 있으니
      * 보통은 걸리지 않지만, 뒤로 가서 값을 지운 경우까지 저장 직전에 걸러 낸다.
      */
-    val stepBlockedReason: String?
+    val stepBlockedReason: UiMessage?
         get() =
             when (step) {
                 STEP_PLACES -> placesReason
@@ -138,34 +144,50 @@ data class CourseCreateUIState(
     val canGoNext: Boolean
         get() = stepBlockedReason == null
 
-    private val placesReason: String?
+    private val placesReason: UiMessage?
         get() =
             if (places.size !in
                 (if (isPlan) 1 else MIN_PLACES)..MAX_PLACES
             ) {
-                "장소를 ${if (isPlan) 1 else MIN_PLACES}~${MAX_PLACES}곳 담아 주세요."
+                UiMessage(StringResource.COURSE_PLACE_COUNT_RANGE, listOf(if (isPlan) 1 else MIN_PLACES, MAX_PLACES))
             } else if (isForking && keptOriginPlaceCount < CourseForkRule.MIN_SHARED_PLACES) {
-                "원본 장소를 2곳 이상 담아 주세요."
+                UiMessage(StringResource.FORK_TWO_ORIGINAL_PLACES)
             } else {
                 null
             }
 
-    private val recordsReason: String?
-        get() = if (!isPlan && places.any { it.photoUrls.isEmpty() }) "사진을 추가해주세요" else null
+    private val recordsReason: UiMessage?
+        get() =
+            if (!isPlan &&
+                places.any { it.photoUrls.isEmpty() }
+            ) {
+                UiMessage(StringResource.COURSE_PHOTOS_REQUIRED)
+            } else {
+                null
+            }
 
-    private val infoReason: String?
+    private val infoReason: UiMessage?
         get() =
             when {
-                !isPlan && name.isBlank() -> "코스 이름을 입력해 주세요."
+                !isPlan && name.isBlank() -> UiMessage(StringResource.COURSE_NAME_REQUIRED)
 
                 // 커버(썸네일)는 서버 발행 필수값 — 없으면 400 "코스를 발행하려면 커버 이미지가 필요합니다".
-                !isPlan && thumbnailPhotos.isEmpty() -> "썸네일 이미지를 추가해 주세요."
+                !isPlan && thumbnailPhotos.isEmpty() -> UiMessage(StringResource.COURSE_THUMBNAIL_REQUIRED)
 
-                isPlan && name.length > 200 -> "계획 제목은 200자까지 입력해 주세요."
+                isPlan && name.length > 200 -> UiMessage(StringResource.PLAN_TITLE_MAX_LENGTH)
 
-                isPlan && (description.length > 500 || places.any { it.note.length > 500 }) -> "메모는 500자까지 입력해 주세요."
+                isPlan && (
+                    description.length > 500 ||
+                        places.any {
+                            it.note.length > 500
+                        }
+                ) -> UiMessage(StringResource.PLAN_MEMO_MAX_LENGTH)
 
-                isPlan && plannedDate.isNotBlank() && !isValidPlanDate(plannedDate) -> "날짜를 yyyy-MM-dd 형식으로 입력해 주세요."
+                isPlan && plannedDate.isNotBlank() &&
+                    !isValidPlanDate(
+                        plannedDate,
+                    )
+                -> UiMessage(StringResource.PLAN_DATE_FORMAT)
 
                 else -> null
             }

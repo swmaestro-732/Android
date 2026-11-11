@@ -1,6 +1,8 @@
 package com.chillsam.courmy.common.presentation.component
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.chillsam.courmy.common.presentation.R as CommonR
 
 /**
  * 로그인이 필요한 동작(팔로우 등)을 비로그인 상태에서 눌렀을 때 띄우는 안내.
@@ -14,8 +16,10 @@ fun LoginRequiredDialog(
     onDismiss: () -> Unit,
 ) {
     DsConfirmDialog(
-        title = "로그인하고 계속할까요?",
-        description = "로그인하면 마음에 드는 사람을 팔로우하고 코스를 저장할 수 있어요.",
+        title = stringResource(CommonR.string.common_login_required_title),
+        description = stringResource(CommonR.string.common_login_required_description),
+        confirmText = stringResource(CommonR.string.common_login_action),
+        dismissText = stringResource(CommonR.string.common_cancel),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
     )

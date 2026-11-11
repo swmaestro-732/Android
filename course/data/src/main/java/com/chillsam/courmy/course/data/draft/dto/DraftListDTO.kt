@@ -41,12 +41,9 @@ fun DraftListEnvelope.toVOList(): List<DraftSummaryVO> =
         val id = dto.id ?: return@mapNotNull null
         DraftSummaryVO(
             id = id,
-            // 임시저장은 제목 없이도 만들 수 있어 서버가 빈 문자열을 준다. 목록이 빈 줄로 보이지 않게 채운다.
-            title = dto.title?.takeIf { it.isNotBlank() } ?: DEFAULT_TITLE,
+            // 제목이 없으면 화면에서 현재 언어의 기본 제목을 표시한다.
+            title = dto.title.orEmpty(),
             // 못 읽으면 0 이라 화면이 시각 표시만 포기한다(초안 자체는 보여 줘야 한다).
             savedAtMillis = parseIsoUtcMillis(dto.createdAt) ?: 0L,
         )
     }
-
-/** 제목 없이 저장한 초안의 목록 표시용 기본 제목. */
-private const val DEFAULT_TITLE = "제목 없는 코스"

@@ -25,10 +25,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapCategory
 import com.chillsam.courmy.main.presentation.component.hasLocationPermission
@@ -47,8 +49,10 @@ import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.rememberFusedLocationSource
 import kotlinx.collections.immutable.toImmutableList
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /** 화면 가장자리와 지도 위 컨트롤 사이 여백. */
+
 private val ScreenHorizontalPadding = 16.dp
 
 /** 지도 위 컨트롤이 시트에 가리지 않도록 띄우는 높이. */
@@ -88,7 +92,7 @@ fun MapScreen(
     // 첫 진입은 지도 전체 화면이다(사용자 결정, 2026-10-19). 시트는 핀을 고르거나
     // 카테고리로 거르기 시작했을 때만 띄운다.
     val sheetVisible = uiState.selectedPlaceId != null || uiState.category != MapCategory.ALL
-    val categoryLabels = remember { MapCategory.entries.map { it.label() }.toImmutableList() }
+    val categoryLabels = MapCategory.entries.map { it.label() }.toImmutableList()
 
     Box(modifier = modifier.fillMaxSize().background(color.bgDefaultLevel0)) {
         MapCanvas(
@@ -116,7 +120,7 @@ fun MapScreen(
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()) {
             MapSearchEntryBar(
-                placeholder = "장소 검색",
+                placeholder = stringResource(MainR.string.main_search_placeholder_place),
                 onClick = actions.onSearchClick,
                 // 검색 바와 칩 사이 간격은 이 아래 패딩(8dp)만으로 둔다 — Column spacedBy 를 더하면 너무 벌어진다.
                 modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenHorizontalPadding, vertical = 8.dp),
@@ -136,7 +140,7 @@ fun MapScreen(
             // 목록보기 버튼은 사용자 요청으로 제거(2026-10-19) — 시트 캐러셀이 목록 역할을 한다.
             MapCircleIconButton(
                 iconRes = R.drawable.ic_my_location_24,
-                contentDescription = "내 위치",
+                contentDescription = stringResource(MainR.string.main_map_search_result_my_location),
                 // 기기 실제 위치로 카메라를 보낸다. 첫 탭이면 권한 요청부터 시작된다.
                 onClick = { trackingModeName = LocationTrackingMode.Follow.name },
                 modifier =
@@ -180,7 +184,7 @@ private fun NearbySheet(
         ) {
             DsText(
                 // 검색·필터 전에도 뜨는 시트라 "조건" 대신 지금 화면에 보이는 장소임을 말한다(사용자 결정).
-                text = "보이는 장소 ${uiState.totalCount}곳",
+                text = stringResource(MainR.string.main_map_visible_place_count, uiState.totalCount),
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = color.contentDefaultLevel0,
             )
@@ -233,7 +237,10 @@ private fun EmptyPlaces(
         contentAlignment = Alignment.Center,
     ) {
         DsText(
-            text = if (loading) "주변 장소를 찾는 중이에요" else "조건에 맞는 장소가 없어요",
+            text =
+                stringResource(
+                    if (loading) MainR.string.main_map_empty_loading else MainR.string.main_map_empty_no_result,
+                ),
             style = DesignSystemThemeImpl.typeScale.textRegularS,
             color = color.contentDefaultLevel3,
         )
@@ -241,4 +248,12 @@ private fun EmptyPlaces(
 }
 
 /** 카테고리 칩에 쓰는 이름. 서버 값이 아니라 화면 문구라 presentation 에 둔다. */
-internal fun MapCategory.label(): String = if (this == MapCategory.ALL) "전체" else name.toPlaceCategoryLabel()
+@Composable
+internal fun MapCategory.label(): String =
+    if (this ==
+        MapCategory.ALL
+    ) {
+        stringResource(MainR.string.main_search_result_category_all)
+    } else {
+        rememberTaxonomyLabel(name.toPlaceCategoryLabel())
+    }

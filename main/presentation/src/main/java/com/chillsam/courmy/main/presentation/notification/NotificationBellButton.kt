@@ -11,11 +11,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R as MainR
 
 @Composable
 fun NotificationBellButton(
@@ -31,9 +33,9 @@ fun NotificationBellButton(
                     if (unreadCount != null &&
                         unreadCount > 0
                     ) {
-                        "알림, 안 읽은 알림 ${unreadCount}개"
+                        stringResource(MainR.string.main_notification_unread_description, unreadCount)
                     } else {
-                        "알림"
+                        stringResource(MainR.string.main_notification_settings_title)
                     },
                 tint = color.contentOnAccent,
                 modifier = Modifier.size(19.dp),

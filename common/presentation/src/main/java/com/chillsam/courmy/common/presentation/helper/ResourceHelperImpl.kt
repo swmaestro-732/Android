@@ -1,30 +1,189 @@
 package com.chillsam.courmy.common.presentation.helper
 
 import android.content.Context
+import android.content.res.Configuration
 import com.chillsam.courmy.common.domain.helper.ResourceHelper
 import com.chillsam.courmy.common.domain.helper.StringResource
+import com.chillsam.courmy.common.domain.translation.LanguageRepository
 import com.chillsam.courmy.common.presentation.R
+import java.util.Locale
 
 class ResourceHelperImpl(
     private val context: Context,
+    private val languages: LanguageRepository,
 ) : ResourceHelper {
-    override fun getString(resource: StringResource): String = context.getString(resource.toResId())
-
-    private fun StringResource.toResId(): Int =
-        when (this) {
-            StringResource.APP_NAME -> R.string.app_name
-            StringResource.MEDIA_EMPTY -> R.string.media_empty
-            StringResource.FAVORITE_EMPTY -> R.string.favorite_empty
-            StringResource.MEDIA_DEFAULT_TITLE -> R.string.media_default_title
-            StringResource.NAV_TAB_SEARCH -> R.string.nav_tab_search
-            StringResource.NAV_TAB_FAVORITE -> R.string.nav_tab_favorite
-            StringResource.NAV_BACK_BUTTON -> R.string.nav_back_button
-            StringResource.FAVORITE_REGISTER_FAILED -> R.string.favorite_register_failed
-            StringResource.FAVORITE_REMOVE_FAILED -> R.string.favorite_remove_failed
-            StringResource.SEARCH_HINT -> R.string.search_hint
-            StringResource.SEARCH_CLEAR -> R.string.search_clear
-            StringResource.SEARCH_FAILED -> R.string.search_failed
-            StringResource.SEARCH_PROMPT -> R.string.search_prompt
-            StringResource.LIST_END_MARKER -> R.string.list_end_marker
-        }
+    override fun getString(
+        resource: StringResource,
+        vararg formatArgs: Any,
+    ): String {
+        val language = languages.currentLanguage
+        val config =
+            Configuration(
+                context.resources.configuration,
+            ).apply { setLocale(Locale.forLanguageTag(language.code)) }
+        return context.createConfigurationContext(config).getString(resource.toResId(), *formatArgs)
+    }
 }
+
+internal fun StringResource.toResId(): Int = STRING_RESOURCE_IDS.getValue(this)
+
+private val STRING_RESOURCE_IDS =
+    mapOf(
+        StringResource.AI_GREETING to R.string.message_ai_greeting,
+        StringResource.AI_REGION_PLACEHOLDER to R.string.message_ai_region_placeholder,
+        StringResource.AI_SESSION_EXPIRED to R.string.message_ai_session_expired,
+        StringResource.AI_ERROR to R.string.message_ai_error,
+        StringResource.NOTIFICATION_CHANNEL_ACTIVITY to R.string.notification_channel_activity,
+        StringResource.APP_NAME to R.string.app_name,
+        StringResource.MEDIA_EMPTY to R.string.media_empty,
+        StringResource.FAVORITE_EMPTY to R.string.favorite_empty,
+        StringResource.MEDIA_DEFAULT_TITLE to R.string.media_default_title,
+        StringResource.NAV_TAB_SEARCH to R.string.nav_tab_search,
+        StringResource.NAV_TAB_FAVORITE to R.string.nav_tab_favorite,
+        StringResource.NAV_BACK_BUTTON to R.string.nav_back_button,
+        StringResource.FAVORITE_REGISTER_FAILED to R.string.favorite_register_failed,
+        StringResource.FAVORITE_REMOVE_FAILED to R.string.favorite_remove_failed,
+        StringResource.SEARCH_HINT to R.string.search_hint,
+        StringResource.SEARCH_CLEAR to R.string.search_clear,
+        StringResource.SEARCH_FAILED to R.string.search_failed,
+        StringResource.SEARCH_PROMPT to R.string.search_prompt,
+        StringResource.LIST_END_MARKER to R.string.list_end_marker,
+        StringResource.SAVED_PLACES_LOAD_FAILED to R.string.message_saved_places_load_failed,
+        StringResource.LOAD_MORE_FAILED to R.string.message_load_more_failed,
+        StringResource.UNSAVE_FAILED to R.string.message_unsave_failed,
+        StringResource.SAVED_COURSES_LOAD_FAILED to R.string.message_saved_courses_load_failed,
+        StringResource.FOLDER_CREATE_FAILED to R.string.message_folder_create_failed,
+        StringResource.VERSION_BUILD_NUMBER to R.string.message_version_build_number,
+        StringResource.ACCOUNT_DELETE_FAILED to R.string.message_account_delete_failed,
+        StringResource.COURSES_LOAD_FAILED to R.string.message_courses_load_failed,
+        StringResource.SAVE_FAILED to R.string.message_save_failed,
+        StringResource.CHAT_ACTIVE_MEMBER_COUNT to R.string.message_chat_active_member_count,
+        StringResource.CHAT_TITLE to R.string.message_chat_title,
+        StringResource.TIME_JUST_NOW to R.string.message_time_just_now,
+        StringResource.NOTIFICATIONS_LOAD_FAILED to R.string.message_notifications_load_failed,
+        StringResource.NOTIFICATIONS_LIST_CHANGED to R.string.message_notifications_list_changed,
+        StringResource.NOTIFICATIONS_LOAD_MORE_FAILED to R.string.message_notifications_load_more_failed,
+        StringResource.NOTIFICATIONS_READ_STATE_FAILED to R.string.message_notifications_read_state_failed,
+        StringResource.USER_NOT_FOUND to R.string.message_user_not_found,
+        StringResource.PROFILE_LOAD_FAILED to R.string.message_profile_load_failed,
+        StringResource.RETRY_LATER to R.string.message_retry_later,
+        StringResource.PLACE_SUGGESTIONS_LOAD_FAILED to R.string.message_place_suggestions_load_failed,
+        StringResource.COURSE_SEARCH_FAILED to R.string.message_course_search_failed,
+        StringResource.SAVE_CHANGE_FAILED to R.string.message_save_change_failed,
+        StringResource.NEARBY_PLACES_LOAD_FAILED to R.string.message_nearby_places_load_failed,
+        StringResource.PLACE_SEARCH_FAILED to R.string.message_place_search_failed,
+        StringResource.PLACE_SAVE_AUTH_FAILED to R.string.message_place_save_auth_failed,
+        StringResource.PLAN_UNTITLED to R.string.message_plan_untitled,
+        StringResource.PLAN_LOAD_RETRY to R.string.message_plan_load_retry,
+        StringResource.LIST_LOAD_FAILED to R.string.message_list_load_failed,
+        StringResource.FOLLOWING_REMOVE_FAILED to R.string.message_following_remove_failed,
+        StringResource.PROFILE_SAVE_RETRY_LATER to R.string.message_profile_save_retry_later,
+        StringResource.LOGIN_TIMEOUT to R.string.message_login_timeout,
+        StringResource.PROVIDER_LOGIN_UNAVAILABLE to R.string.message_provider_login_unavailable,
+        StringResource.PROVIDER_LOGIN_FAILED to R.string.message_provider_login_failed,
+        StringResource.KAKAO_LOGIN_FAILED to R.string.message_kakao_login_failed,
+        StringResource.LOGIN_FAILED to R.string.message_login_failed,
+        StringResource.PROVIDER_KAKAO to R.string.message_provider_kakao,
+        StringResource.PROVIDER_NAVER to R.string.message_provider_naver,
+        StringResource.PROVIDER_GOOGLE to R.string.message_provider_google,
+        StringResource.PROVIDER_APPLE to R.string.message_provider_apple,
+        StringResource.HANDLE_ALLOWED_CHARACTERS_HINT to R.string.message_handle_allowed_characters_hint,
+        StringResource.HANDLE_LENGTH_HINT to R.string.message_handle_length_hint,
+        StringResource.HANDLE_AVAILABLE to R.string.message_handle_available,
+        StringResource.HANDLE_INVALID_LENGTH to R.string.message_handle_invalid_length,
+        StringResource.HANDLE_INVALID_FORMAT to R.string.message_handle_invalid_format,
+        StringResource.HANDLE_TAKEN to R.string.message_handle_taken,
+        StringResource.HANDLE_CHECK_FAILED to R.string.message_handle_check_failed,
+        StringResource.SIGNUP_TERMS_REQUIRED to R.string.message_signup_terms_required,
+        StringResource.SIGNUP_FAILED to R.string.message_signup_failed,
+        StringResource.LIKE_FAILED to R.string.message_like_failed,
+        StringResource.UNLIKE_FAILED to R.string.message_unlike_failed,
+        StringResource.FOLLOW_FAILED to R.string.message_follow_failed,
+        StringResource.UNFOLLOW_FAILED to R.string.message_unfollow_failed,
+        StringResource.DELETE_RETRY_LATER to R.string.message_delete_retry_later,
+        StringResource.COURSE_NOT_FOUND to R.string.message_course_not_found,
+        StringResource.COURSE_LOAD_FAILED to R.string.message_course_load_failed,
+        StringResource.SAVE_RETRY_LATER to R.string.message_save_retry_later,
+        StringResource.PLAN_SAVE_CHECK_ROUTE to R.string.message_plan_save_check_route,
+        StringResource.COURSE_SAVE_RETRY_LATER to R.string.message_course_save_retry_later,
+        StringResource.COURSE_COPY_LOAD_FAILED to R.string.message_course_copy_load_failed,
+        StringResource.DRAFT_CONTENT_LOAD_FAILED to R.string.message_draft_content_load_failed,
+        StringResource.DRAFT_MIN_PLACES to R.string.message_draft_min_places,
+        StringResource.DRAFT_SAVE_FAILED to R.string.message_draft_save_failed,
+        StringResource.WALKING_UNREACHABLE to R.string.message_walking_unreachable,
+        StringResource.WALKING_MINUTES to R.string.message_walking_minutes,
+        StringResource.REVIEWS_LOAD_FAILED to R.string.message_reviews_load_failed,
+        StringResource.REVIEWS_LOAD_MORE_FAILED to R.string.message_reviews_load_more_failed,
+        StringResource.REVIEW_ALREADY_DELETED to R.string.message_review_already_deleted,
+        StringResource.REVIEW_DELETE_FAILED to R.string.message_review_delete_failed,
+        StringResource.REVIEW_DELETED to R.string.message_review_deleted,
+        StringResource.PLAN_EDIT_FAILED to R.string.message_plan_edit_failed,
+        StringResource.PLAN_DELETE_FAILED to R.string.message_plan_delete_failed,
+        StringResource.COMMENTS_LOAD_FAILED to R.string.message_comments_load_failed,
+        StringResource.REQUEST_RETRY_LATER to R.string.message_request_retry_later,
+        StringResource.COMMENTS_SAVED_REFRESH_FAILED to R.string.message_comments_saved_refresh_failed,
+        StringResource.ADDRESS_LOAD_FAILED to R.string.message_address_load_failed,
+        StringResource.REVIEW_ALREADY_WRITTEN to R.string.message_review_already_written,
+        StringResource.LOGIN_REQUIRED to R.string.message_login_required,
+        StringResource.REVIEW_SUBMIT_FAILED to R.string.message_review_submit_failed,
+        StringResource.DRAFT_COURSES_LOAD_FAILED to R.string.message_draft_courses_load_failed,
+        StringResource.MAP_PLACES_RETRY_LATER to R.string.message_map_places_retry_later,
+        StringResource.PLACES_LOAD_FAILED to R.string.message_places_load_failed,
+        StringResource.REPORT_SUBMIT_FAILED to R.string.message_report_submit_failed,
+        StringResource.FORK_KEEP_MIN_PLACES to R.string.message_fork_keep_min_places,
+        StringResource.COURSE_PLACE_COUNT_RANGE to R.string.message_course_place_count_range,
+        StringResource.FORK_TWO_ORIGINAL_PLACES to R.string.message_fork_two_original_places,
+        StringResource.COURSE_PHOTOS_REQUIRED to R.string.message_course_photos_required,
+        StringResource.COURSE_NAME_REQUIRED to R.string.message_course_name_required,
+        StringResource.COURSE_THUMBNAIL_REQUIRED to R.string.message_course_thumbnail_required,
+        StringResource.PLAN_TITLE_MAX_LENGTH to R.string.message_plan_title_max_length,
+        StringResource.PLAN_MEMO_MAX_LENGTH to R.string.message_plan_memo_max_length,
+        StringResource.PLAN_DATE_FORMAT to R.string.message_plan_date_format,
+        StringResource.VALIDATION_COMMENT_TARGET to R.string.message_validation_comment_target,
+        StringResource.VALIDATION_COURSE_TARGET to R.string.message_validation_course_target,
+        StringResource.VALIDATION_COMMENT_REQUIRED to R.string.message_validation_comment_required,
+        StringResource.VALIDATION_COMMENT_LENGTH to R.string.message_validation_comment_length,
+        StringResource.VALIDATION_RATING_RANGE to R.string.message_validation_rating_range,
+        StringResource.VALIDATION_REVIEW_LENGTH to R.string.message_validation_review_length,
+        StringResource.VALIDATION_REVIEW_PHOTOS to R.string.message_validation_review_photos,
+        StringResource.VALIDATION_REVIEW_TAGS to R.string.message_validation_review_tags,
+        StringResource.VALIDATION_REVIEW_PLACE to R.string.message_validation_review_place,
+        StringResource.VALIDATION_REVIEW_DELETE_PLACE to R.string.message_validation_review_delete_place,
+        StringResource.VALIDATION_REVIEW_DELETE to R.string.message_validation_review_delete,
+        StringResource.VALIDATION_FOLDER_REQUIRED to R.string.message_validation_folder_required,
+        StringResource.VALIDATION_FOLDER_LENGTH to R.string.message_validation_folder_length,
+        StringResource.VALIDATION_PLAN_TARGET to R.string.message_validation_plan_target,
+        StringResource.VALIDATION_PLAN_REQUIRED to R.string.message_validation_plan_required,
+        StringResource.VALIDATION_PLAN_TITLE_LENGTH to R.string.message_validation_plan_title_length,
+        StringResource.VALIDATION_PLAN_MEMO_LENGTH to R.string.message_validation_plan_memo_length,
+        StringResource.VALIDATION_PLAN_PLACES to R.string.message_validation_plan_places,
+        StringResource.VALIDATION_ORIGINAL_COURSE to R.string.message_validation_original_course,
+        StringResource.VALIDATION_PLAN_DATE to R.string.message_validation_plan_date,
+        StringResource.VALIDATION_PLACE_INFORMATION to R.string.message_validation_place_information,
+        StringResource.VALIDATION_PLACE_MEMO_LENGTH to R.string.message_validation_place_memo_length,
+        StringResource.VALIDATION_WALKING_DURATION to R.string.message_validation_walking_duration,
+        StringResource.VALIDATION_WALKING_CALCULATE to R.string.message_validation_walking_calculate,
+        StringResource.VALIDATION_TRACE_TARGET to R.string.message_validation_trace_target,
+        StringResource.VALIDATION_PLACE_TARGET to R.string.message_validation_place_target,
+        StringResource.VALIDATION_ROUTE_SAME_PLACE to R.string.message_validation_route_same_place,
+        StringResource.VALIDATION_PLACE_SAVE to R.string.message_validation_place_save,
+        StringResource.VALIDATION_PLACE_VISIT to R.string.message_validation_place_visit,
+        StringResource.VALIDATION_REPORT_TARGET to R.string.message_validation_report_target,
+        StringResource.VALIDATION_REPORT_DESCRIPTION to R.string.message_validation_report_description,
+        StringResource.VALIDATION_MEDIA_TYPE to R.string.message_validation_media_type,
+        StringResource.VALIDATION_MEDIA_SIZE to R.string.message_validation_media_size,
+        StringResource.REPORT_RECEIVED to R.string.message_report_received,
+        StringResource.REPORT_RECEIPT_FAILED to R.string.message_report_receipt_failed,
+        StringResource.VALIDATION_PLACE_LOCATION to R.string.message_validation_place_location,
+        StringResource.VALIDATION_WALKING_SEGMENTS to R.string.message_validation_walking_segments,
+        StringResource.DIALOG_OK to R.string.message_dialog_ok,
+        StringResource.DIALOG_CANCEL to R.string.message_dialog_cancel,
+        StringResource.BASE_SESSION_EXPIRED to R.string.message_base_session_expired,
+        StringResource.BASE_MOVE_LOGIN to R.string.message_base_move_login,
+        StringResource.BASE_FEATURE_UNAVAILABLE to R.string.message_base_feature_unavailable,
+        StringResource.BASE_GO_BACK to R.string.message_base_go_back,
+        StringResource.BASE_TEMPORARY_ERROR to R.string.message_base_temporary_error,
+        StringResource.BASE_ERROR_STATUS to R.string.message_base_error_status,
+        StringResource.CHAT_MEMBER_COUNT to R.string.message_chat_member_count,
+        StringResource.CHAT_OPEN_TO_EVERYONE to R.string.message_chat_open_to_everyone,
+    )

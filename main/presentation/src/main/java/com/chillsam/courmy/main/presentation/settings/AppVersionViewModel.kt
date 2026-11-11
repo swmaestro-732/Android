@@ -1,6 +1,8 @@
 package com.chillsam.courmy.main.presentation.settings
 
 import androidx.lifecycle.viewModelScope
+import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.helper.StringResource
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.update.CheckAppVersionUseCase
 import com.chillsam.courmy.main.entity.update.AppVersionCheckVO
@@ -16,6 +18,7 @@ class AppVersionViewModel
     @Inject
     constructor(
         private val checkAppVersion: CheckAppVersionUseCase,
+        private val resources: ResourceHelper,
     ) : MviViewModel<AppVersionIntent, AppVersionUIState, AppVersionReducerEvent>(AppVersionUIState()) {
         private var checkJob: Job? = null
 
@@ -55,7 +58,12 @@ class AppVersionViewModel
                         }
                     val latestVersion =
                         (result as? AppVersionCheckVO.Checked)?.let {
-                            it.latestVersionName.ifBlank { "빌드 ${it.latestVersionCode}" }
+                            it.latestVersionName.ifBlank {
+                                resources.getString(
+                                    StringResource.VERSION_BUILD_NUMBER,
+                                    it.latestVersionCode,
+                                )
+                            }
                         }
                     dispatch(AppVersionReducerEvent.Checked(status, latestVersion))
                 }

@@ -1,5 +1,8 @@
 package com.chillsam.courmy.course.domain
 
+import com.chillsam.courmy.common.domain.error.LocalizedValidationException
+import com.chillsam.courmy.common.domain.error.requireLocalized
+import com.chillsam.courmy.common.domain.helper.StringResource
 import javax.inject.Inject
 
 /**
@@ -13,7 +16,7 @@ class SetPlaceVisitedUseCase
         private val repository: PlaceSaveRepository,
     ) {
         suspend operator fun invoke(placeId: Long) {
-            require(placeId > 0) { "방문 처리할 장소 id 가 없습니다." }
+            requireLocalized(placeId > 0) { LocalizedValidationException(StringResource.VALIDATION_PLACE_VISIT) }
             repository.markVisited(placeId)
         }
     }

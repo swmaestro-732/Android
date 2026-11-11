@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  course:presentation 화면 전용 UI 문구. 하드코딩 대신 stringResource 로 참조한다.
+  공통 재사용 문구는 common:presentation 의 strings.xml 에 둔다. en/ja 는 values-en/values-ja 로 추가.
+-->
+<resources>
+    <!-- 코스 상세 리뷰 섹션(FS-11) -->
+    <string name="course_review_header_title">후기</string>
+    <string name="course_review_see_all">전체보기</string>
+    <string name="course_review_empty">아직 후기가 없어요. 코스를 다녀온 경험을 나눠 주세요.</string>
+    <string name="course_review_delete">내 후기 삭제</string>
+
+    <!-- 장소 상세 바텀시트(FS-11 Sheet) -->
+    <string name="course_place_sheet_close_map">지도 닫기</string>
+    <string name="course_place_sheet_close_detail">장소 상세 닫기</string>
+    <string name="course_place_sheet_place_count">%1$d곳</string>
+    <string name="course_place_sheet_review_count">리뷰 %1$s</string>
+    <string name="course_place_sheet_review_title">후기</string>
+    <string name="course_place_sheet_review_load_failed">후기 정보를 불러오지 못했어요</string>
+    <string name="course_place_sheet_review_delete_title">후기를 삭제할까요?</string>
+    <string name="course_place_sheet_review_delete_desc">삭제한 후기는 되돌릴 수 없어요.</string>
+    <string name="course_place_sheet_save">저장</string>
+    <string name="course_place_sheet_saved">저장됨</string>
+    <string name="course_place_sheet_directions">길찾기</string>
+    <string name="course_place_sheet_opening_hours">운영시간</string>
+    <string name="course_place_sheet_opening_hours_expand">요일별 운영시간 펼치기</string>
+    <string name="course_place_sheet_opening_hours_collapse">운영시간 접기</string>
+    <string name="course_place_sheet_overview_open">코스 전체 보기</string>
+    <string name="course_place_sheet_overview_back">현재 장소로 돌아가기</string>
+    <string name="course_place_sheet_tip_author">Tip.%1$s</string>
+    <string name="course_place_sheet_step_previous">이전</string>
+    <string name="course_place_sheet_step_next">다음</string>
+    <string name="course_place_sheet_no_location">위치 정보가 없어요</string>
+
+    <!-- course 화면 고정 문구(SCRUM-813 i18n) -->
+    <!-- 코스 상세 화면(FS-11) 고정 문구 -->
+    <string name="course_detail_back">뒤로</string>
+    <string name="course_detail_hero_back">뒤로가기</string>
+    <string name="course_detail_unsave">저장 취소</string>
+    <string name="course_detail_save">코스 저장</string>
+    <string name="course_detail_share">공유</string>
+    <string name="course_detail_forked_badge">복제한 코스</string>
+    <string name="course_detail_settings">코스 설정</string>
+    <string name="course_detail_menu_edit">코스 편집</string>
+    <string name="course_detail_menu_deleting">삭제 중…</string>
+    <string name="course_detail_menu_delete">코스 삭제</string>
+    <string name="course_detail_unlike">좋아요 취소</string>
+    <string name="course_detail_like">좋아요</string>
+    <string name="course_detail_following">팔로잉</string>
+    <string name="course_detail_follow_author">팔로우</string>
+    <string name="course_detail_map_section">코스 한눈에 보기</string>
+    <string name="course_detail_places_section">코스 속 장소</string>
+    <string name="course_detail_place_count">%1$d곳</string>
+    <string name="course_detail_collapse">접기</string>
+    <string name="course_detail_expand">펼치기</string>
+    <string name="course_detail_place_detail">장소 상세</string>
+    <string name="course_detail_more_places">나머지 %1$d곳 더보기</string>
+    <string name="course_detail_tip_prefix">Tip.%1$s</string>
+    <string name="course_detail_close">닫기</string>
+    <string name="course_detail_comments">댓글</string>
+    <string name="course_detail_fork">코스 복제</string>
+    <string name="course_detail_follow">따라가기</string>
+
+    <!-- 코스 장소 카드 -->
+    <string name="course_place_card_note_placeholder">이곳에 한마디 남기기…</string>
+
+    <!-- 코스 정보 입력(이름·설명·썸네일) -->
+    <string name="course_info_name_label">코스 이름</string>
+    <string name="course_info_name_placeholder">코스 이름을 입력하세요</string>
+    <string name="course_info_description_label">코스 설명</string>
+    <string name="course_info_description_placeholder">코스 설명을 입력하세요</string>
+    <string name="course_info_thumbnail_label">썸네일 이미지</string>
+
+    <!-- 코스 계획(제목·메모·날짜) -->
+    <string name="course_plan_title_label">계획 제목 (선택 · %1$d/200)</string>
+    <string name="course_plan_title_placeholder">계획 제목을 입력하세요</string>
+    <string name="course_plan_memo_label">전체 메모 (선택 · %1$d/500)</string>
+    <string name="course_plan_memo_placeholder">기억할 내용을 남겨 보세요</string>
+    <string name="course_plan_date_label">가려는 날 (선택)</string>
+    <string name="course_plan_date_unset">미정 · 날짜 선택</string>
+    <string name="course_plan_date_clear">날짜 미정으로 변경</string>
+    <string name="course_route_map_my_location">내 위치</string>
+
+    <!-- 코스 계획 상세(FS) 오류 재시도 -->
+    <string name="course_plan_detail_retry">다시 시도</string>
+
+    <!-- 코스 계획 상세 화면 고정 문구(SCRUM-813 i18n) -->
+    <string name="course_plan_detail_title">계획 상세</string>
+    <string name="course_plan_detail_back">뒤로</string>
+    <string name="course_plan_detail_settings">계획 설정</string>
+    <string name="course_plan_detail_menu_edit">계획 수정</string>
+    <string name="course_plan_detail_menu_processing">처리 중…</string>
+    <string name="course_plan_detail_menu_delete">계획 삭제</string>
+    <string name="course_plan_detail_source_label">코스에서 복제한 계획</string>
+    <string name="course_plan_detail_source_view_origin">원본 코스 보기</string>
+    <string name="course_plan_detail_memo_title">계획 메모</string>
+    <string name="course_plan_detail_places_title">계획 속 장소</string>
+    <string name="course_plan_detail_map_title">계획 한눈에 보기</string>
+    <string name="course_plan_detail_place_count">%1$d곳</string>
+    <string name="course_plan_detail_delete_title">계획을 삭제할까요?</string>
+    <string name="course_plan_detail_delete_description">삭제한 계획은 되돌릴 수 없어요.</string>
+    <string name="course_plan_detail_delete_confirm">삭제</string>
+    <string name="course_plan_detail_delete_cancel">취소</string>
+    <string name="course_plan_detail_edit_title">계획 수정</string>
+    <string name="course_plan_detail_edit_description">장소 구성은 그대로 두고 제목·메모·방문 날짜를 바꿔요.</string>
+    <string name="course_plan_detail_edit_title_placeholder">계획 이름</string>
+    <string name="course_plan_detail_edit_memo_placeholder">메모 (선택)</string>
+    <string name="course_plan_detail_edit_date_label">방문 날짜 (선택)</string>
+    <string name="course_plan_detail_edit_save">저장</string>
+    <string name="course_plan_detail_edit_cancel">취소</string>
+
+    <!-- 코스 후기 전체보기 화면(FS-37) -->
+    <string name="course_review_list_title">코스 후기</string>
+    <string name="course_review_list_back">뒤로</string>
+    <string name="course_review_list_write">후기 쓰기</string>
+    <string name="course_review_list_photo_header">후기 사진</string>
+    <string name="course_review_list_photo_see_all">모두 보기</string>
+    <string name="course_review_list_empty_title">첫 후기를 기다리고 있어요</string>
+    <string name="course_review_list_empty_desc">코스를 다녀온 경험을 나눠 주세요.\n별점만 남겨도 다음 여행에 도움이 돼요.</string>
+    <string name="course_review_list_delete_title">후기를 삭제할까요?</string>
+    <string name="course_review_list_delete_desc">삭제한 후기는 되돌릴 수 없어요.</string>
+    <string name="course_review_list_delete_confirm">삭제</string>
+    <string name="course_review_list_delete_dismiss">취소</string>
+
+    <!-- 코스 공통 컴포넌트(상단바·사진 담기) -->
+    <string name="course_common_topbar_title">새 코스 만들기</string>
+    <string name="course_common_topbar_close">코스 만들기 닫기</string>
+    <string name="course_common_topbar_saving">저장 중…</string>
+    <string name="course_common_topbar_save_draft">임시저장</string>
+    <string name="course_common_photo_remove">사진 삭제</string>
+
+    <!-- 장소 검색·담기 오버레이(FS-34) -->
+    <string name="course_place_search_limit_alert">장소는 최대 %1$d개만 담을 수 있습니다.</string>
+    <string name="course_place_search_searching">장소를 찾고 있어요</string>
+    <string name="course_place_search_map_result_count">지도 검색 결과 %1$d</string>
+    <string name="course_place_search_result_count">검색 결과 %1$d</string>
+    <string name="course_place_search_add_new_place">새로운 위치 추가</string>
+    <string name="course_place_search_input_hint">장소 · 주소 검색</string>
+    <string name="course_place_search_clear_query">검색어 지우기</string>
+    <string name="course_place_search_cancel">취소</string>
+    <string name="course_place_search_selected_count">%1$d곳 선택됨</string>
+    <string name="course_place_search_confirm">담기 완료</string>
+    <string name="course_place_search_empty_result">검색 결과가 없어요</string>
+    <string name="course_place_search_empty_prompt">장소나 주소를 검색해 보세요</string>
+    <!-- 코스 만들기 확인 다이얼로그·토스트(FS-34) -->
+    <string name="course_remove_place_question_plan">이 장소를 계획에서 뺄까요?</string>
+    <string name="course_remove_place_question_course">이 장소를 코스에서 뺄까요?</string>
+    <string name="course_remove_place_confirm_plan">계획에서 빼기</string>
+    <string name="course_remove_place_confirm_course">코스에서 빼기</string>
+    <string name="course_dialog_cancel">취소</string>
+    <string name="course_exit_confirm_title">작성 중인 코스를 임시저장할까요?</string>
+    <string name="course_exit_confirm_desc">지금 그냥 나가면 변경사항이 사라져요.</string>
+    <string name="course_exit_save_and_exit">임시저장하고 나가기</string>
+    <string name="course_exit_discard">저장 안 함</string>
+    <string name="course_saved_draft_toast">임시저장했어요</string>
+    <string name="course_delete_confirm_title">코스를 삭제할까요?</string>
+    <string name="course_delete_confirm_desc">삭제한 코스는 되돌릴 수 없어요.</string>
+    <string name="course_add_place_title">새로운 위치 추가</string>
+    <string name="course_add_place_description">찾는 장소의 이름을 입력하면\n지도에서 찾아 후보로 보여드려요.</string>
+    <string name="course_add_place_name_placeholder">예) 어니언 성수</string>
+    <string name="course_add_place_searching">찾는 중…</string>
+    <string name="course_add_place_search">찾기</string>
+
+    <!-- 로딩 스켈레톤 접근성 안내 -->
+    <string name="course_loading_detail">코스를 불러오는 중</string>
+    <string name="course_loading_content">콘텐츠를 불러오는 중</string>
+    <string name="course_loading_reviews">후기를 불러오는 중</string>
+    <string name="course_loading_drafts">임시저장한 코스를 불러오는 중</string>
+    <string name="course_loading_list">목록을 불러오는 중</string>
+    <string name="course_loading_create">코스 작성 화면을 불러오는 중</string>
+    <string name="course_loading_follow">따라갈 코스를 불러오는 중</string>
+
+    <!-- 후기 작성 화면(SCRUM-813 i18n) -->
+    <string name="course_review_write_title">후기 쓰기</string>
+    <string name="course_review_write_close">후기 작성 닫기</string>
+    <string name="course_review_write_submit">후기 등록</string>
+    <string name="course_review_write_rating_title_place">이 장소 어땠나요?</string>
+    <string name="course_review_write_rating_title_course">이 코스 어땠나요?</string>
+    <string name="course_review_write_rating_hint">별점을 골라 주세요</string>
+    <string name="course_review_write_content_section">방문 경험을 들려주세요</string>
+    <string name="course_review_write_content_placeholder_place">장소를 방문한 경험을 적어 주세요. (선택)</string>
+    <string name="course_review_write_content_placeholder_course">코스를 따라간 경험을 적어 주세요. (선택)</string>
+    <string name="course_review_write_photo_section">사진을 더해 주세요</string>
+    <string name="course_review_write_tag_section">키워드로 표현해 주세요</string>
+    <string name="course_review_write_tag_guide">좋았던 점을 최대 %1$d개 골라 주세요. (선택)</string>
+    <string name="course_review_write_selected_keywords_count">선택한 키워드 %1$d/%2$d</string>
+    <string name="course_review_write_selected_keywords_empty">선택한 키워드가 여기에 모여요</string>
+    <string name="course_review_write_keyword_remove">%1$s 선택 해제</string>
+
+    <!-- 코스 편집 화면 고정 문구 -->
+    <string name="course_edit_top_bar_title">코스 편집</string>
+    <string name="course_edit_close">코스 편집 닫기</string>
+    <string name="course_edit_section_info">코스 정보</string>
+    <string name="course_edit_title_label">코스 이름</string>
+    <string name="course_edit_title_placeholder">코스 이름을 입력해 주세요</string>
+    <string name="course_edit_description_label">코스 소개</string>
+    <string name="course_edit_description_placeholder">이 코스를 소개해 주세요</string>
+    <string name="course_edit_section_tag">태그</string>
+    <string name="course_edit_section_visibility">공개 설정</string>
+    <string name="course_edit_visibility_unknown_notice">현재 설정을 불러오지 못했어요. 저장하면 아래에서 고른 값으로 바뀝니다.</string>
+    <string name="course_edit_section_place_tip">장소별 한마디</string>
+    <string name="course_edit_place_tip_notice">장소와 사진은 편집할 수 없어요. 한마디만 고칠 수 있어요.</string>
+    <string name="course_edit_place_tip_placeholder">이곳에 한마디를 남겨 보세요</string>
+    <string name="course_edit_saving">저장 중…</string>
+    <string name="course_edit_save">저장하기</string>
+
+    <!-- 임시저장 코스 목록 화면(FS-20) -->
+    <string name="course_draft_list_title">임시저장</string>
+    <string name="course_draft_list_count">%1$d개</string>
+    <string name="course_draft_list_header_desc">저장해 둔 코스를 이어서 만들 수 있어요.</string>
+    <string name="course_draft_list_back">뒤로</string>
+    <string name="course_draft_list_empty">임시저장한 코스가 없어요</string>
+    <string name="course_draft_list_load_error">임시저장한 코스를 불러오지 못했어요.</string>
+    <string name="course_draft_list_retry">다시 시도</string>
+    <string name="course_draft_list_delete">삭제</string>
+    <string name="course_draft_list_delete_title">임시저장을 삭제할까요?</string>
+    <string name="course_draft_list_delete_description">\"%1$s\" 은(는) 삭제하면 되돌릴 수 없어요.</string>
+
+    <!-- 따라가기(FS-21): 미리보기·진행·완주 -->
+    <string name="course_follow_route_count">코스 동선 %1$d</string>
+    <string name="course_follow_visited">방문함</string>
+    <string name="course_follow_resume">이어가기</string>
+    <string name="course_follow_start">이 코스 따라가기</string>
+    <string name="course_follow_tracking_title">%1$s · %2$d/%3$d 진행 중</string>
+    <string name="course_follow_next_spot">다음 스팟</string>
+    <string name="course_follow_start_here">여기서 출발</string>
+    <string name="course_follow_recording">방문 기록 저장 중…</string>
+    <string name="course_follow_arrive">도착</string>
+    <string name="course_follow_end">종료</string>
+    <string name="course_follow_end_confirm_title">따라가기를 종료할까요?</string>
+    <string name="course_follow_end_confirm_desc">지금 종료하면 진행 화면을 나가요. 나중에 코스에서 다시 이어갈 수 있어요.</string>
+    <string name="course_follow_done_title">코스 완주!\n수고했어요</string>
+    <string name="course_follow_stat_visited">방문 스팟</string>
+    <string name="course_follow_stat_elapsed">소요 시간</string>
+    <string name="course_follow_stat_distance">이동 거리</string>
+    <string name="course_follow_visited_course">다녀온 코스</string>
+    <string name="course_follow_visit_done">방문 완료</string>
+    <string name="course_follow_leave_review">리뷰 남기기</string>
+    <string name="course_follow_skip">건너뛰기</string>
+    <string name="course_follow_back">뒤로</string>
+    <string name="course_follow_route_start">여기서 코스를 시작해요</string>
+    <string name="course_follow_route_loading">도보 경로 불러오는 중…</string>
+    <string name="course_follow_route_to_dest">%1$s 까지</string>
+    <string name="course_follow_route_walk_minutes">도보 %1$d분</string>
+    <string name="course_follow_route_detail">상세 도보 경로</string>
+    <string name="course_follow_guide_expand">가는 길 설명</string>
+    <string name="course_follow_guide_collapse">가는 길 설명 접기</string>
+
+    <!-- 코스 댓글 시트 -->
+    <string name="course_comment_title">댓글</string>
+    <string name="course_comment_title_count">댓글 %1$d%2$s</string>
+    <string name="course_comment_login_prompt">로그인하면 댓글을 쓸 수 있어요.</string>
+    <string name="course_comment_empty">첫 댓글을 남겨 보세요.</string>
+    <string name="course_comment_retry">다시 시도</string>
+    <string name="course_comment_input_placeholder">댓글을 남겨 주세요</string>
+    <string name="course_comment_submit_description">댓글 등록</string>
+    <string name="course_comment_author_fallback">작성자</string>
+    <string name="course_comment_author_unknown">알 수 없는 사용자</string>
+    <string name="course_comment_author_profile_description">%1$s 프로필 보기</string>
+    <string name="course_comment_menu_description">내 댓글 메뉴</string>
+    <string name="course_comment_menu_edit">수정</string>
+    <string name="course_comment_menu_delete">삭제</string>
+    <string name="course_comment_edit_title">댓글 수정</string>
+    <string name="course_comment_edit_description">댓글은 1000자까지 쓸 수 있어요.</string>
+    <string name="course_comment_edit_placeholder">댓글 내용</string>
+    <string name="course_comment_edit_save">저장</string>
+    <string name="course_comment_delete_title">댓글을 삭제할까요?</string>
+    <string name="course_comment_delete_description">삭제한 댓글은 되돌릴 수 없어요.</string>
+    <string name="course_comment_delete_confirm">삭제</string>
+    <string name="course_comment_delete_dismiss">취소</string>
+
+    <!-- 코스 만들기/계획하기 화면(FS-34) 고정 문구 (SCRUM-807 i18n) -->
+    <string name="course_create_draft_saved_images_missing">사진은 저장되지 않았어요. 이어서 작성할 때 다시 올려 주세요.</string>
+    <string name="course_create_draft_saved">임시저장했어요</string>
+    <string name="course_create_saved_images_missing">사진은 저장되지 않았어요. 편집에서 다시 올려 주세요.</string>
+    <string name="course_create_plan_saved">계획을 저장했어요</string>
+    <string name="course_create_retry">다시 시도</string>
+    <string name="course_create_go_back">돌아가기</string>
+    <string name="course_create_title_plan">계획하기</string>
+    <string name="course_create_title_course">새 코스 만들기</string>
+    <string name="course_create_exit_plan_title">계획 작성을 그만둘까요?</string>
+    <string name="course_create_exit_plan_desc">저장하지 않은 내용은 사라져요.</string>
+    <string name="course_create_info_header_plan">계획 정보</string>
+    <string name="course_create_info_header_course">코스 정보</string>
+    <string name="course_create_plan_info_hint">나만 볼 수 있는 계획이에요. 제목과 메모, 날짜는 비워도 괜찮아요.</string>
+    <string name="course_create_records_header_plan">장소별 메모</string>
+    <string name="course_create_records_header_course">장소별 기록</string>
+    <string name="course_create_records_hint_plan">장소별 메모는 남기지 않아도 괜찮아요.</string>
+    <string name="course_create_records_hint_course">장소마다 사진 1장은 꼭 필요해요. 한마디는 남기지 않아도 괜찮아요.</string>
+    <string name="course_create_fork_author_fallback">다른 사람</string>
+    <string name="course_create_fork_banner">%1$s의 코스를 복제하는 중이에요</string>
+    <string name="course_create_places_header">장소 고르기</string>
+    <string name="course_create_places_count_reorder">%1$d곳 · 드래그로 순서 변경</string>
+    <string name="course_create_add_place_at_max">장소는 최대 %1$d곳까지 담을 수 있어요</string>
+    <string name="course_create_add_place">＋ 장소 더 담기</string>
+    <string name="course_create_settings_header">코스 설정</string>
+    <string name="course_create_prev">이전</string>
+    <string name="course_create_calculating_walking">도보 시간 계산 중…</string>
+    <string name="course_create_save_plan">계획 저장하기</string>
+    <string name="course_create_save_course">코스 저장하기</string>
+    <string name="course_create_next">다음</string>
+    <!-- course 화면 고정 문구(SCRUM-813 i18n): 추가 분 -->
+    <string name="course_companion_card_label">누구와 함께했나요? (선택)</string>
+    <string name="course_visibility_card_label">공개 설정</string>
+    <string name="course_visibility_public_label">공개</string>
+    <string name="course_visibility_public_helper">누구나 둘러보고 따라갈 수 있어요.</string>
+    <string name="course_visibility_follower_label">팔로워</string>
+    <string name="course_visibility_follower_helper">팔로워에게만 공개돼요.</string>
+    <string name="course_visibility_private_label">비공개</string>
+    <string name="course_visibility_private_helper">나만 볼 수 있어요.</string>
+    <string name="course_external_reviews_prompt">다른 방문자의 후기도 궁금하다면</string>
+    <string name="course_external_reviews_open_naver">네이버 지도에서 찾아보기</string>
+    <string name="course_external_reviews_map_open_failed">네이버 지도를 열 수 없어요</string>
+    <string name="course_place_review_empty_title">아직 등록된 후기가 없어요</string>
+    <string name="course_place_review_empty_subtitle">다녀오셨다면 첫 후기를 남겨주세요.</string>
+    <string name="course_place_review_write_first">첫 후기 남기기</string>
+    <string name="course_place_review_write">후기 남기기</string>
+    <string name="course_complete_timeline_title">코스 동선</string>
+    <string name="course_complete_view_my_courses">내 코스에서 보기</string>
+    <string name="course_complete_header_title">코스가 완성됐어요!</string>
+    <string name="course_complete_header_desc">내 코스에 저장되었어요.</string>
+    <string name="course_detail_error_load_failed">코스를 불러오지 못했습니다.</string>
+    <string name="course_detail_error_retry">다시 시도</string>
+    <string name="course_follow_load_failed">코스를 불러오지 못했어요.</string>
+    <string name="course_follow_retry">다시 시도</string>
+    <string name="course_review_list_load_error">후기를 불러오지 못했습니다.</string>
+    <string name="course_review_list_retry">다시 시도</string>
+    <string name="course_recommended_tags">추천 태그</string>
+    <string name="course_remove_tag">%1$s 태그 삭제</string>
+    <string name="course_add_tag_hint">태그 추가</string>
+    <string name="course_add_tag_action">추가</string>
+    <string name="course_place_selected_order">선택됨, %1$d번째</string>
+    <string name="course_image_size_limit">5MB 이하 이미지만 추가할 수 있어요.</string>
+</resources>
