@@ -75,6 +75,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
+import com.chillsam.courmy.common.presentation.translation.courseTagLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
@@ -993,7 +994,8 @@ private fun ThemeTile(
             modifier = Modifier.fillMaxSize(),
         )
         DsText(
-            text = category.label,
+            // 테마 태그 enum 라벨 → locale 라벨(한국어가 아니면 영어/일본어). taxonomy 리졸버 사용.
+            text = courseTagLabel(category),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             style = DesignSystemThemeImpl.typeScale.textStrongS,
