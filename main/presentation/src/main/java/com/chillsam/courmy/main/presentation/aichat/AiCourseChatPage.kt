@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -112,8 +113,23 @@ fun AiCourseChatPage(
     LaunchedEffect(Unit) { viewModel.onIntent(AiCourseChatIntent.Start) }
     LocationEffect { lat, lng -> viewModel.onIntent(AiCourseChatIntent.ProvideLocation(lat, lng)) }
 
+    var displayedState by remember { mutableStateOf(state) }
+    val rippleStrength = remember { Animatable(1f) }
+    LaunchedEffect(state) {
+        val isReply =
+            state.messages.size > displayedState.messages.size &&
+                state.messages.take(displayedState.messages.size) == displayedState.messages
+        if (displayedState.isAiTyping && !state.isAiTyping && isReply) {
+            // Keep the same loading avatar until its outline has completely settled.
+            rippleStrength.animateTo(0f, tween(280, easing = FastOutSlowInEasing))
+        }
+        displayedState = state
+        if (state.isAiTyping) rippleStrength.snapTo(1f)
+    }
+
     AiCourseChatScreen(
-        state = state,
+        state = displayedState,
+        rippleStrength = { rippleStrength.value },
         onBack = onBack,
         onSend = { viewModel.onIntent(AiCourseChatIntent.SendText(it)) },
         onRegionChip = { viewModel.onIntent(AiCourseChatIntent.RegionChipTap(it)) },
@@ -155,6 +171,7 @@ private fun fetchLastLocation(
 @Composable
 private fun AiCourseChatScreen(
     state: AiCourseChatUIState,
+    rippleStrength: () -> Float,
     onBack: () -> Unit,
     onSend: (String) -> Unit,
     onRegionChip: (String) -> Unit,
@@ -197,7 +214,7 @@ private fun AiCourseChatScreen(
                     }
                 }
                 if (state.isAiTyping) {
-                    item(key = "typing") { TypingRow() }
+                    item(key = "typing") { TypingRow(rippleStrength) }
                 }
             }
 
@@ -349,9 +366,9 @@ private fun UserMessageRow(message: AiChatMessage) {
 }
 
 @Composable
-private fun AiAvatar(isResponding: Boolean = false) {
+private fun AiAvatar(rippleStrength: (() -> Float)? = null) {
     val surface =
-        if (isResponding) {
+        if (rippleStrength != null) {
             val transition = rememberInfiniteTransition(label = "avatarSurface")
             val phase by transition.animateFloat(
                 initialValue = 0f,
@@ -360,11 +377,12 @@ private fun AiAvatar(isResponding: Boolean = false) {
                 label = "waterSurface",
             )
             Modifier.drawBehind {
-                val radius = size.minDimension * 0.45f
+                val strength = rippleStrength()
+                val radius = size.minDimension * (0.5f - 0.05f * strength)
                 val path = Path()
                 repeat(65) { index ->
                     val angle = (2 * PI * index / 64).toFloat()
-                    val ripple = 1f + 0.08f * sin(2 * angle + phase) + 0.04f * sin(3 * angle - phase)
+                    val ripple = 1f + strength * (0.08f * sin(2 * angle + phase) + 0.04f * sin(3 * angle - phase))
                     val x = center.x + radius * ripple * cos(angle)
                     val y = center.y + radius * ripple * sin(angle)
                     if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
@@ -515,9 +533,9 @@ private fun ChatCourseCard(
 // ---------------- typing + input ----------------
 
 @Composable
-private fun TypingRow() {
+private fun TypingRow(rippleStrength: () -> Float) {
     Row(verticalAlignment = Alignment.Top) {
-        AiAvatar(isResponding = true)
+        AiAvatar(rippleStrength = rippleStrength)
         Spacer(Modifier.width(11.dp))
         Box(
             modifier =
