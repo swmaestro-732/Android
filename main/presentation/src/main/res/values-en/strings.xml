@@ -224,4 +224,214 @@
     <string name="main_skeleton_profile_loading">Loading profile</string>
     <string name="main_skeleton_follow_loading">Loading follow list</string>
     <string name="main_back_top_bar_back">Back</string>
+
+    <!-- 알림 권한 사전 안내(프라이밍) 다이얼로그 -->
+    <string name="main_notification_priming_title">Turn on notifications?</string>
+    <string name="main_notification_priming_description">Get notified about likes and comments on your courses.</string>
+    <string name="main_notification_priming_allow">Allow</string>
+    <string name="main_notification_priming_later">Not now</string>
+
+    <!-- 알림 벨 버튼 접근성 설명 -->
+    <string name="main_notification_bell_description">Notifications</string>
+    <string name="main_notification_bell_unread_description">Notifications, %1$d unread</string>
+
+    <!-- 알림 항목 읽음 상태 접근성 설명 -->
+    <string name="main_notification_state_read">Read</string>
+    <string name="main_notification_state_unread">Unread</string>
+
+    <!-- 지도 탭 메인 탐색(FS-10) -->
+    <string name="main_map_my_location_description">My location</string>
+    <string name="main_map_visible_place_count">%1$d places shown</string>
+    <string name="main_map_empty_loading">Finding places nearby</string>
+    <string name="main_map_empty_no_result">No places match</string>
+
+    <!-- 계정 관리 화면 -->
+    <string name="main_account_manage_title">Account</string>
+    <string name="main_account_manage_logout">Log out</string>
+    <string name="main_account_manage_withdraw">Delete account</string>
+    <string name="main_account_manage_withdraw_dialog_title">Delete your account?</string>
+    <string name="main_account_manage_withdraw_dialog_description">Deleting your account permanently removes your account and course data. This can\'t be undone.</string>
+    <string name="main_notification_settings_title">Notifications</string>
+    <string name="main_notification_settings_activity_title">Activity notifications</string>
+    <string name="main_notification_settings_activity_description">Get likes and comments on your courses</string>
+    <string name="main_notification_settings_marketing_title">Promotional notifications</string>
+    <string name="main_notification_settings_marketing_description">Get recommended courses and event news</string>
+    <string name="main_notification_settings_night_title">Allow at night</string>
+    <string name="main_notification_settings_night_description">Also receive from 9 PM to 8 AM</string>
+    <string name="main_notification_settings_dialog_error_title">Couldn\'t finish notification setup</string>
+    <string name="main_notification_settings_dialog_error_description">Check your connection and try again. To block notifications now, turn them off in device settings.</string>
+    <string name="main_notification_settings_dialog_permission_title">Allow device notifications</string>
+    <string name="main_notification_settings_dialog_permission_description">To get activity notifications, allow Courmy notifications in device settings.</string>
+    <string name="main_notification_settings_dialog_confirm">Device settings</string>
+    <string name="main_notification_settings_dialog_dismiss">Close</string>
+
+    <!-- 채팅홈 화면 -->
+    <string name="main_chat_home_title">Chats</string>
+    <string name="main_chat_home_tab_participating">Joined</string>
+    <string name="main_chat_home_tab_neighborhood">%1$s chats</string>
+    <string name="main_chat_home_enter">Join</string>
+
+    <!-- Login / Get started screen (FS-03) -->
+    <string name="main_login_title">Let\'s get started\nwith Courmy</string>
+    <string name="main_login_subtitle">Connect in 3 seconds with your account.\nNew here? You\'re signed up instantly.</string>
+    <string name="main_login_google_account_guide">Please choose a Google account.\nIf the picker doesn\'t open, cancel and try again.</string>
+    <string name="main_login_google_cancel">Cancel Google sign-in</string>
+    <string name="main_login_start_kakao">Continue with Kakao</string>
+    <string name="main_login_start_naver">Continue with Naver</string>
+    <string name="main_login_start_google">Continue with Google</string>
+    <string name="main_login_back_to_guest">Back to guest</string>
+    <string name="main_login_profile_hint">New here? Profile setup comes next.</string>
+
+    <!-- 온보딩 완료 화면(FS-08) -->
+    <string name="main_onboarding_complete_default_name">there</string>
+    <string name="main_onboarding_complete_greeting">You\'re all set!\nWelcome, %1$s!</string>
+    <string name="main_onboarding_complete_guide_heading">Here\'s what you can do now</string>
+    <string name="main_onboarding_complete_guide_create_title">Create your own course</string>
+    <string name="main_onboarding_complete_guide_create_desc">String together the places you\'ve been into a course.</string>
+    <string name="main_onboarding_complete_guide_save_title">Save courses you like</string>
+    <string name="main_onboarding_complete_guide_save_desc">Find saved courses again on the Saved tab.</string>
+    <string name="main_onboarding_complete_guide_follow_title">Follow users you vibe with</string>
+    <string name="main_onboarding_complete_guide_follow_desc">Never miss a new course from people you follow.</string>
+    <string name="main_onboarding_complete_start_button">Start Courmy</string>
+
+    <!-- Terms agreement screen (FS-04) -->
+    <string name="main_terms_headline">Please agree\nto the terms</string>
+    <string name="main_terms_subtitle">Agreeing to the terms below is required to use the service.</string>
+    <string name="main_terms_agree_all">Agree to all</string>
+    <string name="main_terms_age14">[Required] I am 14 or older</string>
+    <string name="main_terms_service_terms">[Required] Terms of Service</string>
+    <string name="main_terms_privacy_policy">[Required] Privacy Policy</string>
+    <string name="main_terms_agree_continue">Agree and continue</string>
+    <string name="main_terms_social_verified_badge">Social account verified</string>
+    <string name="main_terms_view_document">View ›</string>
+    <string name="main_terms_open_document_error">Couldn\'t open the document. Please try again later.</string>
+
+    <!-- 스플래시 화면(FS-01) 로고 서브타이틀·오프라인 차단 다이얼로그 -->
+    <string name="main_splash_subtitle">My course, my neighborhood</string>
+    <string name="main_splash_offline_dialog_title">You\'re offline</string>
+    <string name="main_splash_offline_dialog_description">Check that Wi-Fi or mobile data is on, then try again.</string>
+    <string name="main_splash_offline_dialog_retry">Retry</string>
+
+    <string name="main_onboarding_heading_1">Still leaving\nyour saved places untouched?</string>
+    <string name="main_onboarding_heading_2">Your saved places become\na course worth walking</string>
+    <string name="main_onboarding_heading_3">Local curation,\nshared together</string>
+    <string name="main_onboarding_login">Log in</string>
+    <string name="main_onboarding_browse">Look around without logging in</string>
+    <string name="main_onboarding_skip">Skip</string>
+    <string name="main_onboarding_next">Next</string>
+
+    <!-- Notification inbox screen -->
+    <string name="main_notification_inbox_title">Notifications</string>
+    <string name="main_notification_inbox_error_title">Couldn\'t load notifications</string>
+    <string name="main_notification_inbox_empty_title">No notifications yet</string>
+    <string name="main_notification_inbox_empty_description">Reactions on your courses and\nnew follower updates show up here.</string>
+    <string name="main_notification_inbox_unread_count">%1$d unread</string>
+    <string name="main_notification_inbox_all_read">You\'re all caught up</string>
+    <string name="main_notification_inbox_recent">Recent</string>
+    <string name="main_notification_inbox_marking_all">Marking…</string>
+    <string name="main_notification_inbox_mark_all_read">Mark all read</string>
+    <string name="main_notification_inbox_retry">Try again</string>
+    <string name="main_notification_inbox_refresh">Refresh</string>
+    <string name="main_notification_inbox_load_more">Load older</string>
+
+    <!-- 채팅방 화면 -->
+    <string name="main_chat_room_back">Back</string>
+    <string name="main_chat_room_input_placeholder">Type a message</string>
+    <string name="main_chat_room_send">Send</string>
+    <string name="main_map_sort_saved">Saved</string>
+    <string name="main_map_sort_distance">Distance</string>
+    <string name="main_map_sort_rating">Rating</string>
+
+    <!-- Map place card/list (FS-10) save toggle & open status -->
+    <string name="main_map_place_save_toggle_add">Save</string>
+    <string name="main_map_place_save_toggle_remove">Remove from saved</string>
+    <string name="main_map_place_open_now">Open</string>
+    <string name="main_map_place_closed">Closed</string>
+    <string name="main_map_place_open_until">Open · Closes %1$s</string>
+
+    <!-- 지도 검색바(FS-10) -->
+    <string name="main_map_search_bar_back">Back</string>
+    <string name="main_map_search_bar_clear_query">Clear search</string>
+
+    <!-- i18n merge wave: 알림 동의/앱버전/프로필 설정/팔로우/지도 추가 문구 -->
+    <string name="main_notification_consent_guide_title">Allow device notifications</string>
+    <string name="main_notification_consent_guide_description">To get activity notifications, allow Courmy notifications in your device settings.</string>
+    <string name="main_notification_consent_guide_confirm">Device settings</string>
+    <string name="main_notification_consent_guide_dismiss">Close</string>
+    <string name="main_notification_consent_title">Get course recommendation alerts?</string>
+    <string name="main_notification_consent_subtitle">You can change this later in settings.</string>
+    <string name="main_notification_consent_service_title">Activity alerts</string>
+    <string name="main_notification_consent_service_description">Get likes and comments on your courses</string>
+    <string name="main_notification_consent_marketing_title">Promotional alerts</string>
+    <string name="main_notification_consent_marketing_description">Get recommended courses and event news</string>
+    <string name="main_notification_consent_night_title">Receive at night too</string>
+    <string name="main_notification_consent_night_description">Also from 9 PM to 8 AM</string>
+    <string name="main_notification_consent_tag_required">(Required)</string>
+    <string name="main_notification_consent_tag_optional">(Optional)</string>
+    <string name="main_notification_consent_confirm">Agree and continue</string>
+    <string name="main_app_version_title">App version</string>
+    <string name="main_app_version_unknown">Version info unavailable</string>
+    <string name="main_app_version_current_label">Current version</string>
+    <string name="main_app_version_latest_label">Latest version</string>
+    <string name="main_app_version_status_loading">Checking for updates…</string>
+    <string name="main_app_version_status_latest">You\'re on the latest version.</string>
+    <string name="main_app_version_status_update_available">A new version is available.</string>
+    <string name="main_app_version_status_unavailable">Couldn\'t check the version.</string>
+    <string name="main_app_version_recheck">Check version again</string>
+    <string name="main_app_version_go_update">Update now</string>
+    <string name="main_profile_setup_title">Create your\nprofile</string>
+    <string name="main_profile_setup_nickname_label">Nickname</string>
+    <string name="main_profile_setup_nickname_placeholder">Enter your nickname</string>
+    <string name="main_profile_setup_handle_label">ID</string>
+    <string name="main_profile_setup_handle_placeholder">ID</string>
+    <string name="main_profile_setup_next">Next</string>
+    <string name="main_profile_setup_avatar_description">Profile image</string>
+    <string name="main_profile_setup_add_photo">Add photo</string>
+    <string name="main_profile_setup_check_duplicate">Check</string>
+    <string name="main_map_search_result_zoom_in">Zoom in to see places</string>
+    <string name="main_map_search_result_empty">No results found</string>
+    <string name="main_map_search_result_my_location">My location</string>
+    <string name="main_map_search_result_count_label">Results</string>
+    <string name="main_map_search_result_loading">Loading results</string>
+    <string name="main_map_sheet_collapse_list">Collapse list</string>
+    <string name="main_map_sheet_expand_list">Expand list</string>
+    <string name="main_optional_app_update_title">A new version is available</string>
+    <string name="main_optional_app_update_description">Discover an improved Courmy.\nYou can also check under My &gt; Settings &gt; App version.</string>
+    <string name="main_optional_app_update_confirm">Update</string>
+    <string name="main_optional_app_update_dismiss">Later</string>
+    <string name="main_app_update_required_title">Please update to the latest version</string>
+    <string name="main_app_update_required_message">Update to the latest version from the store.</string>
+    <string name="main_app_update_required_cta">Go to update</string>
+    <string name="main_app_update_store_open_failed">Couldn\'t open the store. Please try again later.</string>
+    <string name="main_follow_button_follow">Follow</string>
+    <string name="main_follow_button_follow_back">Follow back</string>
+    <string name="main_follow_button_following">Following</string>
+    <string name="main_follow_button_mutual_following">Mutual</string>
+    <string name="main_user_profile_share">Share</string>
+    <string name="main_region_map_inset_west_islands">Baengnyeong·Daecheong·Yeonpyeong</string>
+    <string name="main_region_map_inset_east_islands">Ulleungdo·Dokdo</string>
+    <!-- i18n merge: 알림 동의 확인 버튼·약관·프로필 설정·스플래시 추가 문구 (자동 병합) -->
+    <string name="main_notification_consent_confirm_button">Agree and continue</string>
+    <string name="main_notification_settings_consent_caption">Agreed on %1$s</string>
+    <string name="main_notification_settings_dialog_grant_title">Allow device notifications</string>
+    <string name="main_notification_settings_dialog_grant_description">To receive activity notifications, allow Courmy notifications in your device settings.</string>
+    <string name="main_terms_title">Please agree\nto the terms</string>
+    <string name="main_terms_age_14">[Required] I am 14 or older</string>
+    <string name="main_terms_social_verified">Social account verified</string>
+    <string name="main_onboarding_complete_default_nickname">member</string>
+    <string name="main_onboarding_complete_guide_header">Here\'s what you can do now</string>
+    <string name="main_profile_setup_label_nickname">Nickname</string>
+    <string name="main_profile_setup_label_handle">Handle</string>
+    <string name="main_profile_setup_handle_check">Check</string>
+    <string name="main_profile_setup_avatar_image_desc">Profile image</string>
+    <string name="main_profile_setup_avatar_add_desc">Add photo</string>
+    <string name="main_login_kakao_start">Continue with Kakao</string>
+    <string name="main_login_naver_start">Continue with Naver</string>
+    <string name="main_login_google_start">Continue with Google</string>
+    <string name="main_login_profile_setup_hint">New here? Profile setup comes next.</string>
+    <string name="main_onboarding_browse_without_login">Browse without logging in</string>
+    <string name="main_splash_tagline">My courses, my neighborhood</string>
+    <string name="main_splash_offline_title">You need an internet connection</string>
+    <string name="main_splash_offline_description">Check that Wi-Fi or mobile data is on, then try again.</string>
+    <string name="main_splash_offline_retry">Retry</string>
 </resources>

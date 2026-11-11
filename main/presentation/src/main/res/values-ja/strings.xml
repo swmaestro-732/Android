@@ -224,4 +224,214 @@
     <string name="main_skeleton_profile_loading">プロフィールを読み込み中</string>
     <string name="main_skeleton_follow_loading">フォローリストを読み込み中</string>
     <string name="main_back_top_bar_back">戻る</string>
+
+    <!-- 알림 권한 사전 안내(프라이밍) 다이얼로그 -->
+    <string name="main_notification_priming_title">通知を受け取りますか？</string>
+    <string name="main_notification_priming_description">自分のコースへのいいねやコメントなどの通知をお届けします。</string>
+    <string name="main_notification_priming_allow">許可</string>
+    <string name="main_notification_priming_later">あとで</string>
+
+    <!-- 알림 벨 버튼 접근성 설명 -->
+    <string name="main_notification_bell_description">通知</string>
+    <string name="main_notification_bell_unread_description">通知、未読%1$d件</string>
+
+    <!-- 알림 항목 읽음 상태 접근성 설명 -->
+    <string name="main_notification_state_read">既読</string>
+    <string name="main_notification_state_unread">未読</string>
+    <string name="main_notification_settings_title">通知</string>
+    <string name="main_notification_settings_activity_title">アクティビティ通知</string>
+    <string name="main_notification_settings_activity_description">自分のコースへのいいねやコメントを受け取ります</string>
+    <string name="main_notification_settings_marketing_title">広告通知</string>
+    <string name="main_notification_settings_marketing_description">おすすめコースやイベント情報を受け取ります</string>
+    <string name="main_notification_settings_night_title">夜間も受け取る</string>
+    <string name="main_notification_settings_night_description">午後9時から午前8時までも受け取ります</string>
+    <string name="main_notification_settings_dialog_error_title">通知設定を完了できませんでした</string>
+    <string name="main_notification_settings_dialog_error_description">接続を確認してもう一度お試しください。すぐに通知を止めるには端末の設定でオフにしてください。</string>
+    <string name="main_notification_settings_dialog_permission_title">端末の通知を許可してください</string>
+    <string name="main_notification_settings_dialog_permission_description">アクティビティ通知を受け取るには、端末の設定でCourmyの通知を許可してください。</string>
+    <string name="main_notification_settings_dialog_confirm">端末の設定</string>
+    <string name="main_notification_settings_dialog_dismiss">閉じる</string>
+
+    <!-- 지도 탭 메인 탐색(FS-10) -->
+    <string name="main_map_my_location_description">現在地</string>
+    <string name="main_map_visible_place_count">表示中のスポット%1$d件</string>
+    <string name="main_map_empty_loading">近くのスポットを探しています</string>
+    <string name="main_map_empty_no_result">条件に合うスポットがありません</string>
+
+    <!-- 계정 관리 화면 -->
+    <string name="main_account_manage_title">アカウント管理</string>
+    <string name="main_account_manage_logout">ログアウト</string>
+    <string name="main_account_manage_withdraw">退会</string>
+    <string name="main_account_manage_withdraw_dialog_title">本当に退会しますか？</string>
+    <string name="main_account_manage_withdraw_dialog_description">退会するとアカウントとコース情報が削除され、元に戻せません。</string>
+
+    <!-- ログイン・はじめる画面（FS-03） -->
+    <string name="main_login_title">Courmyと\n一緒に始めましょう</string>
+    <string name="main_login_subtitle">アカウントで3秒ですぐに連携。\n初めてならそのまま登録されます。</string>
+    <string name="main_login_google_account_guide">Googleアカウントを選択してください。\n選択画面が開かない場合は、キャンセルしてもう一度お試しください。</string>
+    <string name="main_login_google_cancel">Googleログインをキャンセル</string>
+    <string name="main_login_start_kakao">Kakaoで始める</string>
+    <string name="main_login_start_naver">Naverで始める</string>
+    <string name="main_login_start_google">Googleで始める</string>
+    <string name="main_login_back_to_guest">ゲストに戻る</string>
+    <string name="main_login_profile_hint">初めての場合はプロフィール設定に進みます。</string>
+
+    <!-- 온보딩 완료 화면(FS-08) -->
+    <string name="main_onboarding_complete_default_name">ゲスト</string>
+    <string name="main_onboarding_complete_greeting">登録完了！\n%1$sさん、ようこそ！</string>
+    <string name="main_onboarding_complete_guide_heading">これからこんなことができます</string>
+    <string name="main_onboarding_complete_guide_create_title">自分だけのコースを作る</string>
+    <string name="main_onboarding_complete_guide_create_desc">訪れた場所を順番につないでコースに残せます。</string>
+    <string name="main_onboarding_complete_guide_save_title">気に入ったコースを保存</string>
+    <string name="main_onboarding_complete_guide_save_desc">保存したコースは保存タブでまた見られます。</string>
+    <string name="main_onboarding_complete_guide_follow_title">好みの合うユーザーをフォロー</string>
+    <string name="main_onboarding_complete_guide_follow_desc">気になる人の新しいコースを見逃しません。</string>
+    <string name="main_onboarding_complete_start_button">Courmyを始める</string>
+
+    <!-- 利用規約同意画面 (FS-04) -->
+    <string name="main_terms_headline">利用規約に\n同意してください</string>
+    <string name="main_terms_subtitle">サービスのご利用には、以下の規約への同意が必要です。</string>
+    <string name="main_terms_agree_all">すべて同意</string>
+    <string name="main_terms_age14">[必須] 満14歳以上です</string>
+    <string name="main_terms_service_terms">[必須] 利用規約に同意</string>
+    <string name="main_terms_privacy_policy">[必須] プライバシーポリシーに同意</string>
+    <string name="main_terms_agree_continue">同意して続ける</string>
+    <string name="main_terms_social_verified_badge">ソーシャルアカウント確認済み</string>
+    <string name="main_terms_view_document">表示 ›</string>
+    <string name="main_terms_open_document_error">ドキュメントを開けませんでした。しばらくしてからもう一度お試しください。</string>
+
+    <!-- 스플래시 화면(FS-01) 로고 서브타이틀·오프라인 차단 다이얼로그 -->
+    <string name="main_splash_subtitle">わたしのコース、わたしの街</string>
+    <string name="main_splash_offline_dialog_title">インターネット接続が必要です</string>
+    <string name="main_splash_offline_dialog_description">Wi-Fiまたはモバイルデータがオンか確認して、もう一度お試しください。</string>
+    <string name="main_splash_offline_dialog_retry">再試行</string>
+
+    <string name="main_onboarding_heading_1">保存したままの場所、\nそのままにしていませんか?</string>
+    <string name="main_onboarding_heading_2">保存した場所が\n歩きたくなるコースに</string>
+    <string name="main_onboarding_heading_3">みんなで分け合う\nローカルキュレーション</string>
+    <string name="main_onboarding_login">ログイン</string>
+    <string name="main_onboarding_browse">ログインせずに見てみる</string>
+    <string name="main_onboarding_skip">スキップ</string>
+    <string name="main_onboarding_next">次へ</string>
+
+    <!-- 通知ボックス画面 -->
+    <string name="main_notification_inbox_title">お知らせ</string>
+    <string name="main_notification_inbox_error_title">お知らせを読み込めませんでした</string>
+    <string name="main_notification_inbox_empty_title">お知らせはまだありません</string>
+    <string name="main_notification_inbox_empty_description">自分のコースへの反応や\n新しいフォローのお知らせをここで確認できます。</string>
+    <string name="main_notification_inbox_unread_count">未読%1$d件</string>
+    <string name="main_notification_inbox_all_read">すべて既読にしました</string>
+    <string name="main_notification_inbox_recent">最近のお知らせ</string>
+    <string name="main_notification_inbox_marking_all">処理中…</string>
+    <string name="main_notification_inbox_mark_all_read">すべて既読</string>
+    <string name="main_notification_inbox_retry">再試行</string>
+    <string name="main_notification_inbox_refresh">更新</string>
+    <string name="main_notification_inbox_load_more">以前のお知らせを見る</string>
+
+    <!-- 채팅홈 화면 -->
+    <string name="main_chat_home_title">チャット</string>
+    <string name="main_chat_home_tab_participating">参加中</string>
+    <string name="main_chat_home_tab_neighborhood">%1$sのチャット</string>
+    <string name="main_chat_home_enter">参加</string>
+    <string name="main_map_sort_saved">保存順</string>
+    <string name="main_map_sort_distance">距離順</string>
+    <string name="main_map_sort_rating">評価順</string>
+
+    <!-- 채팅방 화면 -->
+    <string name="main_chat_room_back">戻る</string>
+    <string name="main_chat_room_input_placeholder">メッセージを入力</string>
+    <string name="main_chat_room_send">送信</string>
+
+    <!-- 地図の場所カード・リスト(FS-10) 保存トグル・営業状態 -->
+    <string name="main_map_place_save_toggle_add">保存</string>
+    <string name="main_map_place_save_toggle_remove">保存を解除</string>
+    <string name="main_map_place_open_now">営業中</string>
+    <string name="main_map_place_closed">営業終了</string>
+    <string name="main_map_place_open_until">営業中 · %1$s 閉店</string>
+
+    <!-- 지도 검색바(FS-10) -->
+    <string name="main_map_search_bar_back">戻る</string>
+    <string name="main_map_search_bar_clear_query">検索ワードを消す</string>
+
+    <!-- i18n merge wave: 알림 동의/앱버전/프로필 설정/팔로우/지도 추가 문구 -->
+    <string name="main_notification_consent_guide_title">端末の通知を許可してください</string>
+    <string name="main_notification_consent_guide_description">アクティビティ通知を受け取るには、端末の設定でCourmyの通知を許可してください。</string>
+    <string name="main_notification_consent_guide_confirm">端末設定</string>
+    <string name="main_notification_consent_guide_dismiss">閉じる</string>
+    <string name="main_notification_consent_title">おすすめコースの通知を受け取りますか？</string>
+    <string name="main_notification_consent_subtitle">後で設定から変更できます。</string>
+    <string name="main_notification_consent_service_title">アクティビティ通知</string>
+    <string name="main_notification_consent_service_description">自分のコースへのいいねやコメントを受け取ります</string>
+    <string name="main_notification_consent_marketing_title">広告通知</string>
+    <string name="main_notification_consent_marketing_description">おすすめコースやイベント情報を受け取ります</string>
+    <string name="main_notification_consent_night_title">夜間も受け取る</string>
+    <string name="main_notification_consent_night_description">夜9時から朝8時まで受け取ります</string>
+    <string name="main_notification_consent_tag_required">（必須）</string>
+    <string name="main_notification_consent_tag_optional">（任意）</string>
+    <string name="main_notification_consent_confirm">同意して続ける</string>
+    <string name="main_app_version_title">アプリバージョン</string>
+    <string name="main_app_version_unknown">バージョン情報を確認できません</string>
+    <string name="main_app_version_current_label">現在のバージョン</string>
+    <string name="main_app_version_latest_label">最新バージョン</string>
+    <string name="main_app_version_status_loading">アップデートを確認中…</string>
+    <string name="main_app_version_status_latest">最新バージョンです。</string>
+    <string name="main_app_version_status_update_available">新しいバージョンがあります。</string>
+    <string name="main_app_version_status_unavailable">バージョンを確認できませんでした。</string>
+    <string name="main_app_version_recheck">バージョンを再確認</string>
+    <string name="main_app_version_go_update">アップデートする</string>
+    <string name="main_profile_setup_title">プロフィールを\n作成しましょう</string>
+    <string name="main_profile_setup_nickname_label">ニックネーム</string>
+    <string name="main_profile_setup_nickname_placeholder">ニックネームを入力してください</string>
+    <string name="main_profile_setup_handle_label">ID</string>
+    <string name="main_profile_setup_handle_placeholder">ID</string>
+    <string name="main_profile_setup_next">次へ</string>
+    <string name="main_profile_setup_avatar_description">プロフィール画像</string>
+    <string name="main_profile_setup_add_photo">写真を追加</string>
+    <string name="main_profile_setup_check_duplicate">重複確認</string>
+    <string name="main_map_search_result_zoom_in">地図を拡大して場所を確認してください</string>
+    <string name="main_map_search_result_empty">検索結果がありません</string>
+    <string name="main_map_search_result_my_location">現在地</string>
+    <string name="main_map_search_result_count_label">検索結果</string>
+    <string name="main_map_search_result_loading">検索結果を読み込んでいます</string>
+    <string name="main_map_sheet_collapse_list">リストを閉じる</string>
+    <string name="main_map_sheet_expand_list">リストを開く</string>
+    <string name="main_optional_app_update_title">新しいバージョンがあります</string>
+    <string name="main_optional_app_update_description">もっと便利になったCourmyをお試しください。\nマイ &gt; 設定 &gt; アプリバージョンからも確認できます。</string>
+    <string name="main_optional_app_update_confirm">アップデート</string>
+    <string name="main_optional_app_update_dismiss">後で</string>
+    <string name="main_app_update_required_title">最新バージョンに更新してください</string>
+    <string name="main_app_update_required_message">ストアから最新バージョンに更新してください。</string>
+    <string name="main_app_update_required_cta">更新する</string>
+    <string name="main_app_update_store_open_failed">ストアを開けませんでした。しばらくしてからもう一度お試しください。</string>
+    <string name="main_follow_button_follow">フォロー</string>
+    <string name="main_follow_button_follow_back">フォローバック</string>
+    <string name="main_follow_button_following">フォロー中</string>
+    <string name="main_follow_button_mutual_following">相互フォロー</string>
+    <string name="main_user_profile_share">共有</string>
+    <string name="main_region_map_inset_west_islands">白翎·大青·延坪</string>
+    <string name="main_region_map_inset_east_islands">鬱陵島·独島</string>
+    <!-- i18n merge: 알림 동의 확인 버튼·약관·프로필 설정·스플래시 추가 문구 (자동 병합) -->
+    <string name="main_notification_consent_confirm_button">同意して続ける</string>
+    <string name="main_notification_settings_consent_caption">%1$s 同意</string>
+    <string name="main_notification_settings_dialog_grant_title">端末の通知を許可してください</string>
+    <string name="main_notification_settings_dialog_grant_description">アクティビティ通知を受け取るには、端末の設定でCourmyの通知を許可してください。</string>
+    <string name="main_terms_title">規約に\n同意してください</string>
+    <string name="main_terms_age_14">[必須] 満14歳以上です</string>
+    <string name="main_terms_social_verified">ソーシャルアカウント確認済み</string>
+    <string name="main_onboarding_complete_default_nickname">会員</string>
+    <string name="main_onboarding_complete_guide_header">これからこんなことができます</string>
+    <string name="main_profile_setup_label_nickname">ニックネーム</string>
+    <string name="main_profile_setup_label_handle">ID</string>
+    <string name="main_profile_setup_handle_check">重複確認</string>
+    <string name="main_profile_setup_avatar_image_desc">プロフィール画像</string>
+    <string name="main_profile_setup_avatar_add_desc">写真を追加</string>
+    <string name="main_login_kakao_start">Kakaoで始める</string>
+    <string name="main_login_naver_start">Naverで始める</string>
+    <string name="main_login_google_start">Googleで始める</string>
+    <string name="main_login_profile_setup_hint">初めてならプロフィール設定に進みます。</string>
+    <string name="main_onboarding_browse_without_login">ログインせずに見てみる</string>
+    <string name="main_splash_tagline">自分だけのコース、自分だけの街</string>
+    <string name="main_splash_offline_title">インターネット接続が必要です</string>
+    <string name="main_splash_offline_description">Wi-Fiまたはモバイルデータがオンになっているか確認して、もう一度お試しください。</string>
+    <string name="main_splash_offline_retry">再試行</string>
 </resources>

@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -31,6 +32,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.chillsam.courmy.main.presentation.R as MainR
 
 @Composable
 internal fun NotificationRow(
@@ -38,12 +40,14 @@ internal fun NotificationRow(
     onClick: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
+    val stateRead = stringResource(MainR.string.main_notification_state_read)
+    val stateUnread = stringResource(MainR.string.main_notification_state_unread)
     Column(
         Modifier
             .fillMaxWidth()
             .background(if (item.isRead) color.bgDefaultLevel0 else color.bgAccentSubtle)
             .clickable(role = Role.Button, onClick = onClick)
-            .semantics { stateDescription = if (item.isRead) "읽음" else "안 읽음" },
+            .semantics { stateDescription = if (item.isRead) stateRead else stateUnread },
     ) {
         Row(
             Modifier.padding(horizontal = 24.dp, vertical = 20.dp),

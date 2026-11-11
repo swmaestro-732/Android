@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
@@ -45,18 +46,12 @@ import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.sin
+import com.chillsam.courmy.main.presentation.R as MainR
 
 private const val PAGE_COUNT = 3
 
 // 하단 영역을 페이지와 무관하게 고정 높이로(버튼 1행/2행 차이로 일러스트가 위아래로 튀지 않게).
 private val OnboardingBottomHeight = 160.dp
-
-private val ONBOARDING_HEADINGS =
-    listOf(
-        "저장만 해둔 장소,\n그대로 두고 계신가요?",
-        "저장한 장소들이\n걷고 싶은 코스가 돼요",
-        "함께 나누는\n로컬 큐레이션",
-    )
 
 /**
  * 온보딩 화면(FS-02). 3컷 인트로를 페이저로 넘기고, 마지막 컷에서 로그인/둘러보기로 시작한다.
@@ -75,6 +70,12 @@ fun OnboardingPage(
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val scope = rememberCoroutineScope()
     val isLastPage = pagerState.currentPage == PAGE_COUNT - 1
+    val headings =
+        listOf(
+            stringResource(MainR.string.main_onboarding_heading_1),
+            stringResource(MainR.string.main_onboarding_heading_2),
+            stringResource(MainR.string.main_onboarding_heading_3),
+        )
 
     Column(
         modifier =
@@ -94,7 +95,7 @@ fun OnboardingPage(
         ) { page ->
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp)) {
                 DsText(
-                    text = ONBOARDING_HEADINGS[page],
+                    text = headings[page],
                     style = DesignSystemThemeImpl.typeScale.textStrongM,
                     color = color.contentDefaultLevel0,
                     textAlign = TextAlign.Center,
@@ -120,8 +121,12 @@ fun OnboardingPage(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    DsButton(text = "로그인 하기", onClick = onLogin)
-                    DsButton(text = "로그인 없이 둘러보기", variant = DsButtonVariant.Secondary, onClick = onBrowse)
+                    DsButton(text = stringResource(MainR.string.main_onboarding_login), onClick = onLogin)
+                    DsButton(
+                        text = stringResource(MainR.string.main_onboarding_browse_without_login),
+                        variant = DsButtonVariant.Secondary,
+                        onClick = onBrowse,
+                    )
                 }
             } else {
                 Row(
@@ -130,7 +135,7 @@ fun OnboardingPage(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     DsText(
-                        text = "건너뛰기",
+                        text = stringResource(MainR.string.main_onboarding_skip),
                         style = DesignSystemThemeImpl.typeScale.textRegularS,
                         color = color.contentDefaultLevel2,
                         modifier = Modifier.clickable(onClick = onSkip).padding(vertical = 14.dp, horizontal = 8.dp),
@@ -182,7 +187,7 @@ private fun NextButton(onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         DsText(
-            text = "다음",
+            text = stringResource(MainR.string.main_onboarding_next),
             style = DesignSystemThemeImpl.typeScale.textStrongS,
             color = color.contentOnAccent,
         )

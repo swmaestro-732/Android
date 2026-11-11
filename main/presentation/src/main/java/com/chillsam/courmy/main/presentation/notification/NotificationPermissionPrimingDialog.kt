@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsButton
@@ -17,6 +18,7 @@ import com.chillsam.courmy.common.presentation.component.DsButtonVariant
 import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
+import com.chillsam.courmy.main.presentation.R as MainR
 
 /**
  * OS 알림 권한(POST_NOTIFICATIONS) 요청 직전에 띄우는 Courmy 사전 안내(프라이밍) 다이얼로그.
@@ -33,8 +35,8 @@ internal fun NotificationPermissionPrimingDialog(
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
     DsDialogScaffold(
-        title = "알림을 받아볼까요?",
-        description = "내 코스의 좋아요·댓글 같은 활동 소식을 알림으로 알려드려요.",
+        title = stringResource(MainR.string.main_notification_priming_title),
+        description = stringResource(MainR.string.main_notification_priming_description),
         onDismiss = onDismiss,
         icon = {
             Box(
@@ -50,8 +52,16 @@ internal fun NotificationPermissionPrimingDialog(
             }
         },
     ) {
-        DsButton(text = "허용", variant = DsButtonVariant.Primary, onClick = onAllow)
-        DsButton(text = "나중에", variant = DsButtonVariant.Secondary, onClick = onDismiss)
+        DsButton(
+            text = stringResource(MainR.string.main_notification_priming_allow),
+            variant = DsButtonVariant.Primary,
+            onClick = onAllow,
+        )
+        DsButton(
+            text = stringResource(MainR.string.main_notification_priming_later),
+            variant = DsButtonVariant.Secondary,
+            onClick = onDismiss,
+        )
     }
 }
 
