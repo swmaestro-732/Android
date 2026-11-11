@@ -3,6 +3,7 @@ package com.chillsam.courmy.main.presentation.home
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.chillsam.courmy.main.presentation.R
@@ -22,9 +23,10 @@ internal fun districtLabel(
 @Composable
 internal fun districtNameLabel(original: String): String {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val labels =
-        remember(context) {
-            val config = Configuration(context.resources.configuration).apply { setLocale(Locale.KOREAN) }
+        remember(context, configuration) {
+            val config = Configuration(configuration).apply { setLocale(Locale.KOREAN) }
             val korean = context.createConfigurationContext(config).resources
             DISTRICT_LABELS.values.associateBy { korean.getString(it) }
         }
