@@ -152,9 +152,9 @@ android {
         // CD 는 Play 최신 버전을 조회해 +1 한 값을 -PappVersionCode 로 주입한다(fastlane deploy).
         // 로컬·일반 빌드는 기본값을 쓴다 — 로컬 APK 는 Play 에 올리지 않으므로 충돌하지 않는다.
         versionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 8
-        // Release 1.4.0. CD keeps patch 0 for this release; versionCode still increases per upload.
+        // Release 1.4.1. CD keeps patch 1 for this release; versionCode still increases per upload.
         val versionBase = "1.4"
-        val versionPatch = (project.findProperty("appVersionPatch") as String?)?.toIntOrNull() ?: 0
+        val versionPatch = (project.findProperty("appVersionPatch") as String?)?.toIntOrNull() ?: 1
         versionName = "$versionBase.$versionPatch"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
