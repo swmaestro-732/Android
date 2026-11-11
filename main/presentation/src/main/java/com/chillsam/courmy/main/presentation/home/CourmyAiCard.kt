@@ -1,7 +1,6 @@
 package com.chillsam.courmy.main.presentation.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,13 +51,12 @@ fun CourmyAiCard(
             modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 12.dp,
+                    elevation = 16.dp,
                     shape = CardShape,
-                    spotColor = DesignSystemThemeImpl.designSystemColor.borderAccent.copy(alpha = 0.35f),
-                    ambientColor = DesignSystemThemeImpl.designSystemColor.borderAccent.copy(alpha = 0.20f),
+                    spotColor = AiChatPalette.ink.copy(alpha = 0.20f),
+                    ambientColor = AiChatPalette.ink.copy(alpha = 0.08f),
                 ).clip(CardShape)
                 .drawBehind { drawCardAurora() }
-                .border(1.dp, AiChatPalette.cardBorder, CardShape)
                 .clickable(onClick = onClick)
                 .padding(20.dp),
     ) {
