@@ -45,6 +45,7 @@ fun AppNavHost(
                 is NavSignal.Replace -> handleReplace(signal.route, backStack)
                 NavSignal.Back -> backStack.handleBack(exitApp)
                 NavSignal.AuthenticationCompleted -> finishAuthentication(backStack)
+                NavSignal.GuestBrowsingContinued -> continueAsGuest(backStack)
             }
             telemetry.recordNavigation(
                 from,

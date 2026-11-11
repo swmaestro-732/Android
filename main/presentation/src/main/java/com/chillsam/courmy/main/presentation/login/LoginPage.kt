@@ -167,7 +167,8 @@ fun LoginPage(modifier: Modifier = Modifier) {
                     enabled = !uiState.isLoading,
                     onClick = {
                         viewModel.onIntent(LoginIntent.CancelGoogleLogin)
-                        navigationHelper.navigateToBack()
+                        // 온보딩에서 올라온 경우 뒤로가기는 온보딩→로그인 무한 루프가 되므로 홈(게스트)으로 보낸다.
+                        navigationHelper.continueAsGuest()
                     },
                 )
             }

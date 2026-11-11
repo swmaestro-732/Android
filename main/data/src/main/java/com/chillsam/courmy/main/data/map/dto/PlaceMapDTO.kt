@@ -5,6 +5,7 @@ import com.chillsam.courmy.common.entity.category.toPlaceCategoryLabel
 import com.chillsam.courmy.main.entity.map.MapClusterVO
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.entity.map.MapPlacesVO
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -36,6 +37,7 @@ data class PlaceMapMarkerDTO(
     val latitude: Double? = null,
     val longitude: Double? = null,
     /** 선택 필드 선연동: 서버 지원 전에는 누락될 수 있다. */
+    @SerialName("categoryDetail")
     val detailCategory: String? = null,
 )
 
@@ -60,7 +62,7 @@ internal fun PlaceMapDTO.toVO(): MapPlacesVO =
                     MapPlaceVO(
                         id = requireNotNull(marker.id),
                         name = marker.name.orEmpty(),
-                        detailCategory = PlaceDetailCategoryVO.fromCode(marker.detailCategory),
+                        detailCategory = PlaceDetailCategoryVO.fromServerValue(marker.detailCategory),
                         category = marker.category.toPlaceCategoryLabel(),
                         latitude = marker.latitude,
                         longitude = marker.longitude,

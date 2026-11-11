@@ -152,11 +152,11 @@ android {
         // CD 는 Play 최신 버전을 조회해 +1 한 값을 -PappVersionCode 로 주입한다(fastlane deploy).
         // 로컬·일반 빌드는 기본값을 쓴다 — 로컬 APK 는 Play 에 올리지 않으므로 충돌하지 않는다.
         versionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 8
-        // 사용자에게 보이는 표시용 문자열. 메이저·마이너(1.2)는 여기서 수동으로 올리고,
+        // 사용자에게 보이는 표시용 문자열. 메이저·마이너(1.3)는 여기서 수동으로 올리고,
         // 패치는 CD 가 배포마다 자동 산정해 -PappVersionPatch 로 주입한다(fastlane deploy).
-        // 로컬·일반 빌드는 patch 0(=1.2.0)을 쓴다. 메이저·마이너를 올릴 땐 Fastfile 의
+        // 로컬·일반 빌드는 patch 0(=1.3.0)을 쓴다. 메이저·마이너를 올릴 땐 Fastfile 의
         // PATCH_BASE_CODE 를 그 시점 versionCode 로 맞춰 패치를 0 부터 다시 시작시킨다.
-        val versionBase = "1.2"
+        val versionBase = "1.3"
         val versionPatch = (project.findProperty("appVersionPatch") as String?)?.toIntOrNull() ?: 0
         versionName = "$versionBase.$versionPatch"
 
