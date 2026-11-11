@@ -81,6 +81,7 @@ import com.chillsam.courmy.common.presentation.helper.FeatureFlags
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.report.ReportAction
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.modifier.cardElevation
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
@@ -378,7 +379,7 @@ private fun DetailPinnedBar(
                             .joinToString(" · ")
                     if (meta.isNotBlank()) {
                         DsText(
-                            text = meta,
+                            text = rememberTaxonomyLabel(meta),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
                             color = color.contentDefaultLevel3,
                             maxLines = 1,
@@ -506,7 +507,7 @@ private fun DetailHero(
                             .padding(horizontal = 10.dp, vertical = 5.dp),
                 ) {
                     DsText(
-                        text = category,
+                        text = rememberTaxonomyLabel(category),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel1,
                     )
@@ -1185,7 +1186,7 @@ internal fun CompactPlaceRow(
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = place.detailCategory.orCategoryLabel(place.category),
+                text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.category)),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )
@@ -1302,7 +1303,7 @@ private fun DetailPlaceItem(
                     color = color.contentDefaultLevel0,
                 )
                 DsText(
-                    text = place.detailCategory.orCategoryLabel(place.category),
+                    text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.category)),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )

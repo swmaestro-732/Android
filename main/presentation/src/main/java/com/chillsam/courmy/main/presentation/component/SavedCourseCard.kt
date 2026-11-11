@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.saved.SavedCourseVO
@@ -75,7 +76,7 @@ fun SavedCourseCard(
                             .padding(horizontal = 10.dp, vertical = 5.dp),
                 ) {
                     DsText(
-                        text = course.tagLabel,
+                        text = rememberTaxonomyLabel(course.tagLabel),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,

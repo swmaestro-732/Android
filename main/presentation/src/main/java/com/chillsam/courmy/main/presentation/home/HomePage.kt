@@ -76,6 +76,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
 import com.chillsam.courmy.common.presentation.translation.courseTagLabel
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseCreatePage
@@ -860,7 +861,7 @@ private fun NearbyPlaceCard(
                 )
                 if (hasAddress && hasCategory) {
                     DsText(
-                        text = place.detailCategory.orCategoryLabel(place.categoryLabel),
+                        text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.categoryLabel)),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,
@@ -879,7 +880,7 @@ private fun NearbyPlaceCard(
                 ) {
                     if (showCategoryBelow) {
                         DsText(
-                            text = place.detailCategory.orCategoryLabel(place.categoryLabel),
+                            text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.categoryLabel)),
                             style = DesignSystemThemeImpl.typeScale.textRegularXS,
                             color = color.contentDefaultLevel2,
                             maxLines = 1,

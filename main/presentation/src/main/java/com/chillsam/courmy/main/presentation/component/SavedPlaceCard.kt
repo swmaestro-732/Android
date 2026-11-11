@@ -25,6 +25,7 @@ import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.saved.SavedPlaceVO
 import com.chillsam.courmy.main.presentation.R as MainR
@@ -83,7 +84,7 @@ fun SavedPlaceCard(
                 )
                 if (place.categoryLabel.isNotBlank()) {
                     DsText(
-                        text = place.detailCategory.orCategoryLabel(place.categoryLabel),
+                        text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.categoryLabel)),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,

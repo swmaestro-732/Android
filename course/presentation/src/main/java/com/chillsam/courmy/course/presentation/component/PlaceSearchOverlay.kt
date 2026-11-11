@@ -56,6 +56,7 @@ import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -394,7 +395,7 @@ private fun SearchResultRow(
                 )
                 if (candidate.category.isNotBlank()) {
                     DsText(
-                        text = candidate.detailCategory.orCategoryLabel(candidate.category),
+                        text = rememberTaxonomyLabel(candidate.detailCategory.orCategoryLabel(candidate.category)),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,

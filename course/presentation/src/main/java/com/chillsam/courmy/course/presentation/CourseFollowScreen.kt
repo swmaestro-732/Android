@@ -44,6 +44,7 @@ import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
@@ -685,7 +686,7 @@ private fun RoutePlaceRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            val categoryText = place.detailCategory.orCategoryLabel(place.category)
+            val categoryText = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.category))
             DsText(
                 text = listOf(categoryText, stateText).filter { it.isNotBlank() }.joinToString(" · "),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
@@ -794,7 +795,7 @@ private fun CompletedSpotRow(
             )
             if (place.category.isNotBlank()) {
                 DsText(
-                    text = place.category,
+                    text = rememberTaxonomyLabel(place.category),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel3,
                     maxLines = 1,

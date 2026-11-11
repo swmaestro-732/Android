@@ -32,6 +32,8 @@ import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.courseTagLabel
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.presentation.FeatureFlags
@@ -196,7 +198,7 @@ private fun ThemeFindSection(onThemeClick: (String) -> Unit) {
     ) {
         CourseTagVO.entries.forEach { tag ->
             // 라우트 인자는 taxonomy 컨벤션대로 소문자 코드("date")를 싣는다. 라벨은 표시 전용.
-            DsChip(text = tag.label, selected = false, onClick = { onThemeClick(tag.code) })
+            DsChip(text = courseTagLabel(tag), selected = false, onClick = { onThemeClick(tag.code) })
         }
     }
 }
@@ -271,7 +273,7 @@ private fun PlaceSuggestions(
                 color = color.contentDefaultLevel0,
             )
             DsText(
-                text = place.detailCategory.orCategoryLabel(place.category),
+                text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.category)),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
             )

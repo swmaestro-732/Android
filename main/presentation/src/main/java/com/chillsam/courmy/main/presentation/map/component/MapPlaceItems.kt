@@ -30,6 +30,7 @@ import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
@@ -98,7 +99,7 @@ internal fun MapPlaceCarouselCard(
                 overflow = TextOverflow.Ellipsis,
             )
             DsText(
-                text = place.categoryMeta(),
+                text = rememberTaxonomyLabel(place.categoryMeta()),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = color.contentDefaultLevel2,
                 maxLines = 1,
@@ -215,7 +216,7 @@ private fun PlaceNameAndCategoryLine(
     modifier: Modifier = Modifier,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
-    val category = place.categoryLabel()
+    val category = rememberTaxonomyLabel(place.categoryLabel())
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),

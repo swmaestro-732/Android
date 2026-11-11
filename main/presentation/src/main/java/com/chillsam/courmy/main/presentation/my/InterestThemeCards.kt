@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.CourseTagVO
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.courseTagLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.presentation.component.themeImageRes
@@ -82,7 +83,7 @@ private fun InterestThemeCard(
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             DsText(
-                text = theme.label,
+                text = courseTagLabel(theme),
                 style = DesignSystemThemeImpl.typeScale.textStrongS,
                 color = if (selected) color.contentAccent else color.contentDefaultLevel0,
                 maxLines = Int.MAX_VALUE,

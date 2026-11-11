@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.modifier.cardShadow
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CoursePlaceVO
@@ -137,7 +138,7 @@ private fun PlaceHeader(
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel0,
             )
             DsText(
-                text = place.detailCategory.orCategoryLabel(place.category),
+                text = rememberTaxonomyLabel(place.detailCategory.orCategoryLabel(place.category)),
                 style = DesignSystemThemeImpl.typeScale.textRegularXS,
                 color = DesignSystemThemeImpl.designSystemColor.contentDefaultLevel2,
             )

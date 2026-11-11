@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.presentation.R
 
@@ -87,8 +88,9 @@ internal fun SavedPlaceFilters(
         val allLabel = stringResource(R.string.main_search_result_category_all)
         categories.forEach { category ->
             val count = state.places.count { category == null || it.categoryLabel == category }
+            val categoryLabel = category?.let { rememberTaxonomyLabel(it) } ?: allLabel
             SavedFilterChip(
-                label = stringResource(R.string.main_saved_filter_chip_label, category ?: allLabel, count),
+                label = stringResource(R.string.main_saved_filter_chip_label, categoryLabel, count),
                 selected = state.selectedCategory == category,
                 onClick = { onIntent(SavedPlacesIntent.SelectCategory(category)) },
             )

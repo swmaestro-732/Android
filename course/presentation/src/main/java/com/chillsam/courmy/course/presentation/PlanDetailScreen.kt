@@ -44,6 +44,7 @@ import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsDialogScaffold
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.DsTextField
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemTheme
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
@@ -114,11 +115,13 @@ internal fun PlanDetailScreen(
                 PlaceSheetCourse(
                     title = detail.title,
                     category =
-                        places
-                            .flatMap { it.category.split(" · ") }
-                            .filter { it.isNotBlank() }
-                            .distinct()
-                            .joinToString(" · "),
+                        rememberTaxonomyLabel(
+                            places
+                                .flatMap { it.category.split(" · ") }
+                                .filter { it.isNotBlank() }
+                                .distinct()
+                                .joinToString(" · "),
+                        ),
                     summary =
                         listOf(
                             detail.plannedDate,

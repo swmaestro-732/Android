@@ -79,6 +79,7 @@ import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsConfirmDialog
 import com.chillsam.courmy.common.presentation.component.DsRatingStar
 import com.chillsam.courmy.common.presentation.component.DsText
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.entity.CourseDetailPlaceVO
@@ -1043,7 +1044,7 @@ private fun CourseInfoCard(
         )
         if (category.isNotBlank()) {
             DsText(
-                text = category,
+                text = rememberTaxonomyLabel(category),
                 style = DesignSystemThemeImpl.typeScale.textRegularS,
                 color = color.contentDefaultLevel2,
             )
@@ -1100,7 +1101,7 @@ private fun PlaceInfoCard(
             )
             if (coursePlace.category.isNotBlank()) {
                 DsText(
-                    text = coursePlace.detailCategory.orCategoryLabel(coursePlace.category),
+                    text = rememberTaxonomyLabel(coursePlace.detailCategory.orCategoryLabel(coursePlace.category)),
                     style = DesignSystemThemeImpl.typeScale.textRegularS,
                     color = color.contentDefaultLevel2,
                 )
@@ -1396,7 +1397,7 @@ private fun PlaceInfoHeader(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (coursePlace.category.isNotBlank()) {
                 DsText(
-                    text = coursePlace.detailCategory.orCategoryLabel(coursePlace.category),
+                    text = rememberTaxonomyLabel(coursePlace.detailCategory.orCategoryLabel(coursePlace.category)),
                     style = DesignSystemThemeImpl.typeScale.textRegularXS,
                     color = color.contentDefaultLevel2,
                 )

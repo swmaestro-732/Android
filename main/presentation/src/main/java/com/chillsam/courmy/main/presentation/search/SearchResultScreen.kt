@@ -39,6 +39,7 @@ import com.chillsam.courmy.common.presentation.component.DsChip
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.LoadMoreOnScrollEnd
 import com.chillsam.courmy.common.presentation.component.LoadingMoreFooter
+import com.chillsam.courmy.common.presentation.translation.courseTagLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.main.entity.home.HomeCourseVO
@@ -155,7 +156,7 @@ private fun CategoryChipRow(
         }
         items(CourseTagVO.entries) { category ->
             DsChip(
-                text = category.label,
+                text = courseTagLabel(category),
                 selected = selected == category,
                 onClick = { onSelect(category) },
             )

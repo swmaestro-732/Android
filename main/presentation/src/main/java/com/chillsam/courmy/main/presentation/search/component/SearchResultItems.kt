@@ -26,6 +26,7 @@ import com.chillsam.courmy.common.entity.category.orCategoryLabel
 import com.chillsam.courmy.common.presentation.R
 import com.chillsam.courmy.common.presentation.component.DsText
 import com.chillsam.courmy.common.presentation.component.PlaceThumbnail
+import com.chillsam.courmy.common.presentation.translation.rememberTaxonomyLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.main.entity.map.MapPlaceVO
 import com.chillsam.courmy.main.presentation.R as MainR
@@ -86,7 +87,7 @@ internal fun SearchPlaceRow(
                 )
                 if (categoryLine.isNotEmpty()) {
                     DsText(
-                        text = categoryLine,
+                        text = rememberTaxonomyLabel(categoryLine),
                         style = DesignSystemThemeImpl.typeScale.textRegularXS,
                         color = color.contentDefaultLevel2,
                         maxLines = 1,
