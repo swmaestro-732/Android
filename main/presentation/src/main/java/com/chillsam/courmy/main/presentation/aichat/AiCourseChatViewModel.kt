@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.chillsam.courmy.common.domain.error.HttpResponseException
 import com.chillsam.courmy.common.domain.helper.ResourceHelper
 import com.chillsam.courmy.common.domain.helper.StringResource
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
+import com.chillsam.courmy.common.domain.telemetry.aiChatMessageSent
+import com.chillsam.courmy.common.domain.telemetry.aiChatOpen
 import com.chillsam.courmy.common.presentation.mvi.MviViewModel
 import com.chillsam.courmy.main.domain.aichat.SendAiChatMessageUseCase
 import com.chillsam.courmy.main.entity.aichat.AiChatAnswer
@@ -38,6 +41,7 @@ class AiCourseChatViewModel
         @ApplicationContext private val appContext: Context,
         private val sendMessage: SendAiChatMessageUseCase,
         private val resources: ResourceHelper,
+        private val telemetry: Telemetry,
     ) : MviViewModel<AiCourseChatIntent, AiCourseChatUIState, AiCourseChatReducerEvent>(
             AiCourseChatUIState.empty,
         ) {
@@ -124,6 +128,8 @@ class AiCourseChatViewModel
 
         /** 앱 소유 첫 화면 — 인사말 + 지역 질문 + 지역 칩(현재 위치 기준). */
         private fun showGreeting() {
+            // AI 채팅 사용 시작 집계. 대화가 비어 있는 최초 진입에서만 호출된다(onIntent 의 Start 가드).
+            telemetry.aiChatOpen(source = "chat_start")
             appendMessage(resources.getString(StringResource.AI_GREETING))
             dispatch(AiCourseChatReducerEvent.SetStep(AiChatStep.REGION))
             dispatch(
@@ -171,6 +177,8 @@ class AiCourseChatViewModel
 
         /** 답변을 보내고 다음 턴을 반영한다. */
         private fun send(answer: AiChatAnswer) {
+            // AI 채팅 사용 수 집계: 전송 1건당 1회. 종류(chip/text)와 현재 대화 단계를 함께 남긴다.
+            telemetry.aiChatMessageSent(answerType = answer.type.name.lowercase(), step = currentState.step.name)
             replyJob?.cancel()
             val inputEnabled = currentState.inputEnabled
             dispatch(AiCourseChatReducerEvent.SetInput(enabled = false, placeholder = currentState.inputPlaceholder))

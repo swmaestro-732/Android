@@ -3,6 +3,8 @@ package com.chillsam.courmy.course.presentation
 import com.chillsam.courmy.common.domain.auth.IsLoggedInUseCase
 import com.chillsam.courmy.common.domain.auth.SessionRepository
 import com.chillsam.courmy.common.domain.telemetry.NoOpTelemetry
+import com.chillsam.courmy.common.domain.telemetry.ProductEvent
+import com.chillsam.courmy.common.domain.telemetry.Telemetry
 import com.chillsam.courmy.course.domain.CourseLikeRepository
 import com.chillsam.courmy.course.domain.CourseManageRepository
 import com.chillsam.courmy.course.domain.CourseRepository
@@ -99,6 +101,32 @@ class CourseDetailViewModelTest {
             )
         }
 
+    private val events = mutableListOf<Pair<ProductEvent, Map<String, String>>>()
+    private val telemetry =
+        object : Telemetry by NoOpTelemetry {
+            override fun logEvent(
+                event: ProductEvent,
+                properties: Map<String, String>,
+            ) {
+                events += event to properties
+            }
+        }
+
+    @Test
+    fun `successful detail load tracks the course id`() =
+        runTest {
+            val vm = viewModel(loggedIn = true)
+            vm.onIntent(CourseDetailIntent.Load(169L))
+            advanceUntilIdle()
+            assertEquals(
+                listOf(
+                    ProductEvent.ContentView to
+                        mapOf("screen" to "/course/detail", "content_type" to "course", "course_id" to "169"),
+                ),
+                events,
+            )
+        }
+
     private fun viewModel(loggedIn: Boolean) =
         CourseDetailViewModel(
             GetCourseDetailUseCase(repository, NoOpTelemetry),
@@ -112,6 +140,7 @@ class CourseDetailViewModelTest {
                 },
             ),
             resources = testResources(),
+            telemetry = telemetry,
         )
 
     private class FakeCourseRepository :

@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.chillsam.courmy.common.domain.helper.ResourceHelper
+import com.chillsam.courmy.common.domain.telemetry.NoOpTelemetry
 import com.chillsam.courmy.common.domain.translation.LanguageRepository
 import com.chillsam.courmy.common.domain.translation.Translator
 import com.chillsam.courmy.common.presentation.helper.LocalSessionUiState
@@ -59,6 +60,7 @@ class AiChatPreviewActivity : ComponentActivity() {
                             applicationContext,
                             SendAiChatMessageUseCase(PreviewRepository()),
                             resourcesHelper,
+                            NoOpTelemetry,
                         ) as T
                 },
             )[AiCourseChatViewModel::class.java]
