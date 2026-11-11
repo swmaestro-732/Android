@@ -7,14 +7,14 @@ import com.chillsam.courmy.common.entity.category.PlaceCategoryVO
 import com.chillsam.courmy.common.entity.category.PlaceDetailCategoryVO
 import com.chillsam.courmy.common.presentation.R
 
-/**
- * taxonomy(코스 태그·장소 카테고리·장소 상세 카테고리) 한글 라벨을 현재 locale 라벨로 바꾸는 **표시 전용** 리졸버.
+/*
+ * taxonomy(코스 태그·장소 카테고리·장소 상세 카테고리) 한글 라벨을 현재 locale 라벨로 바꾸는 표시 전용 리졸버.
  *
  * - data 레이어에서는 사용하지 않는다. 서버 요청/응답·DTO↔VO 변환은 enum 코드/이름을 그대로 쓰고,
  *   여기서는 오직 화면에 그릴 때만 한글 라벨 → locale 라벨로 치환한다.
- * - 역매핑 테이블([LABEL_TO_RES_ID])은 세 enum 의 한글 `label` 을 키로, 대응 `R.string` resId 를 값으로 갖는다.
+ * - 역매핑 테이블(LABEL_TO_RES_ID)은 세 enum 의 한글 label 을 키로, 대응 R.string resId 를 값으로 갖는다.
  *   같은 한글 label 이 여러 enum 에 겹치면 먼저 등록된 하나(코스 태그 > 장소 카테고리 > 상세 카테고리)를 쓴다.
- * - 런타임 `getIdentifier` 는 쓰지 않는다(R8 리소스 수축·오타 안전). resId 는 컴파일 타임 상수로 직접 매핑한다.
+ * - 런타임 getIdentifier 는 쓰지 않는다(R8 리소스 수축·오타 안전). resId 는 컴파일 타임 상수로 직접 매핑한다.
  */
 
 /** 코스 태그 한글 label → `R.string.taxonomy_tag_*` resId. */

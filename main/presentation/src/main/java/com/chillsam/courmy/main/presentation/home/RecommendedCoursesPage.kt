@@ -55,6 +55,7 @@ import com.chillsam.courmy.common.presentation.helper.LocalNavigationHelper
 import com.chillsam.courmy.common.presentation.helper.RefreshOnResume
 import com.chillsam.courmy.common.presentation.helper.StatusBarColor
 import com.chillsam.courmy.common.presentation.telemetry.LocalTelemetry
+import com.chillsam.courmy.common.presentation.translation.courseTagLabel
 import com.chillsam.courmy.common.presentation.ui.theme.DesignSystemThemeImpl
 import com.chillsam.courmy.common.presentation.ui.token.ScreenHorizontalPadding
 import com.chillsam.courmy.course.domain.CourseDetailPage
@@ -315,10 +316,12 @@ private fun RecommendedTopBar(
                     )
                 }
             } else {
-                // 일반 "오늘의 추천 코스": 코스 태그(테마) 칩.
-                items(recommendedCategories) { (category, label) ->
+                // 일반 "오늘의 추천 코스": 코스 태그(테마) 칩. 라벨은 locale 로 로컬라이즈한다.
+                items(recommendedCategories) { (category, _) ->
                     DsChip(
-                        text = label,
+                        text =
+                            category?.let { courseTagLabel(it) }
+                                ?: stringResource(MainR.string.main_recommended_sort_default),
                         selected = selectedCategory == category,
                         modifier = Modifier.semantics { selected = selectedCategory == category },
                         onClick = { onSelectCategory(category) },
