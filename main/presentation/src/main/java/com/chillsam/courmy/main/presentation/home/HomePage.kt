@@ -80,6 +80,7 @@ import com.chillsam.courmy.course.domain.CourseCreatePage
 import com.chillsam.courmy.course.domain.CourseDetailPage
 import com.chillsam.courmy.course.domain.CourseFollowPage
 import com.chillsam.courmy.course.domain.DraftListPage
+import com.chillsam.courmy.main.domain.aichat.AiCourseChatPage
 import com.chillsam.courmy.main.domain.chat.ChatPage
 import com.chillsam.courmy.main.domain.home.RecommendedCoursesPage
 import com.chillsam.courmy.main.domain.map.MapPage
@@ -161,13 +162,15 @@ private val themeTiles = CourseTagVO.entries
 /**
  * 앱의 기본 시작 화면(FS-09). 새 시안 기준으로 섹션형 홈으로 개편했다.
  *
- * 헤더(위치·날씨 mock + 인사) → 검색바 → 오늘의 추천 코스(가로 미리보기)
+ * 헤더(위치·날씨 mock + 인사) → 검색바 → 커미 AI 배너 → 오늘의 추천 코스(가로 미리보기)
  * → 근처 저장 장소 → 테마별 둘러보기 순서다.
  *
  * 추천 코스·근처 저장 장소는 `GET /service/v2/home`(공개 엔드포인트) 한 번으로 받는다.
  * 세로 피드 전체는 [RecommendedCoursesPage] 로 옮겼다(`GET /service/v1/home` 페이지네이션 유지)
  * — 홈은 앞쪽 몇 건만 미리 보여준다.
- * "커미 AI" 배너·"진행 중인 코스" 띠는 이번 범위에서 제외했다. [wiki-needed]
+ * "커미 AI" 배너는 [CourmyAiCard] 로 추가했다(탭 → [AiCourseChatPage], SCRUM-745).
+ * [FeatureFlags.AI_COURSE_CHAT_ENABLED]로 배너와 서버 연동 채팅 라우트의 노출을 함께 제어한다.
+ * "진행 중인 코스" 띠는 아직 범위에서 제외했다. [wiki-needed]
  */
 @Composable
 fun HomePage(modifier: Modifier = Modifier) {
@@ -276,6 +279,9 @@ fun HomePage(modifier: Modifier = Modifier) {
                 onDismiss = { homeViewModel.onIntent(HomeIntent.DismissInProgressCourse) },
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
             )
+
+            aiCourseChatBanner { navigationHelper.navigateTo(AiCourseChatPage) }
+
             item {
                 RecommendedCoursesSection(
                     homeState = homeState,
@@ -422,6 +428,17 @@ fun HomePage(modifier: Modifier = Modifier) {
  * 홈 최초 진입 시 알림 수신 동의 시트(SCRUM-725). 기기 단위 1회 노출이라 게스트에게도 띄운다.
  * 동의 상태·노출 여부는 [NotificationConsentViewModel] 이 가지므로 홈 본문과 분리해 둔다.
  */
+private fun LazyListScope.aiCourseChatBanner(onClick: () -> Unit) {
+    if (FeatureFlags.AI_COURSE_CHAT_ENABLED) {
+        item {
+            CourmyAiCard(
+                onClick = onClick,
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+            )
+        }
+    }
+}
+
 @Composable
 private fun HomeNotificationConsent() {
     val consentViewModel: NotificationConsentViewModel = hiltViewModel()
