@@ -160,6 +160,7 @@ M	course/presentation/src/test/java/com/chillsam/courmy/course/presentation/Plac
 M	course/presentation/src/test/java/com/chillsam/courmy/course/presentation/PlaceSearchViewModelTest.kt
 A	course/presentation/src/test/java/com/chillsam/courmy/course/presentation/TestResources.kt
 A	docs/releases/1.4.0/README.md
+A	docs/releases/1.4.0/changed-files.txt
 A	docs/releases/1.4.0/resource-catalog.md
 A	docs/ui/2026-11-11-i18n/README.md
 A	docs/ui/2026-11-11-i18n/course-detail-en.png
@@ -264,7 +265,6 @@ M	main/presentation/src/main/java/com/chillsam/courmy/main/presentation/my/Inter
 M	main/presentation/src/main/java/com/chillsam/courmy/main/presentation/my/InterestThemePage.kt
 M	main/presentation/src/main/java/com/chillsam/courmy/main/presentation/my/IslandInset.kt
 M	main/presentation/src/main/java/com/chillsam/courmy/main/presentation/my/MyPage.kt
-M	main/presentation/src/main/java/com/chillsam/courmy/main/presentation/my/MyProfileUIState.kt
 M	main/presentation/src/main/java/com/chillsam/courmy/main/presentation/my/MyViewModel.kt
 M	main/presentation/src/main/java/com/chillsam/courmy/main/presentation/my/ProfileEditPage.kt
 M	main/presentation/src/main/java/com/chillsam/courmy/main/presentation/my/ProfileEditViewModel.kt

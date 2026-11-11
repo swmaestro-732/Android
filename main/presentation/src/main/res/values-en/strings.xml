@@ -475,4 +475,5 @@
         <item quantity="one">%d day ago</item>
         <item quantity="other">%d days ago</item>
     </plurals>
+    <string name="main_profile_edit_loading">Loading your profile</string>
 </resources>

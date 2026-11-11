@@ -484,4 +484,5 @@
     <plurals name="main_remaining_chat_days">
         <item quantity="other">%d일 전</item>
     </plurals>
+    <string name="main_profile_edit_loading">프로필을 확인하고 있어요</string>
 </resources>

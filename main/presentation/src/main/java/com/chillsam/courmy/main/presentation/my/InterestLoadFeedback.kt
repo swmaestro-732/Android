@@ -30,6 +30,7 @@ import com.chillsam.courmy.main.presentation.R
 internal fun InterestLoadFeedback(
     isLoading: Boolean,
     loadError: Boolean,
+    loadingMessage: String = stringResource(R.string.main_interest_load_feedback_loading),
     onRetry: () -> Unit,
 ) {
     val color = DesignSystemThemeImpl.designSystemColor
@@ -41,11 +42,7 @@ internal fun InterestLoadFeedback(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CircularProgressIndicator(modifier = Modifier.size(16.dp), color = color.contentAccent, strokeWidth = 2.dp)
-            DsText(
-                stringResource(R.string.main_interest_load_feedback_loading),
-                style = type.textRegularXS,
-                color = color.contentDefaultLevel2,
-            )
+            DsText(loadingMessage, style = type.textRegularXS, color = color.contentDefaultLevel2)
         }
     } else if (loadError) {
         Surface(

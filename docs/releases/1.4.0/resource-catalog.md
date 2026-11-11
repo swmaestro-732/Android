@@ -15514,3 +15514,16 @@
 <!-- ja -->
 <string name="settings_toast_not_ready">準備中です</string>
 ```
+
+## #180 통합 추가: main/presentation/src/main/res/values/strings.xml
+
+### main_profile_edit_loading
+
+```xml
+<!-- ko -->
+<string name="main_profile_edit_loading">프로필을 확인하고 있어요</string>
+<!-- en -->
+<string name="main_profile_edit_loading">Loading your profile</string>
+<!-- ja -->
+<string name="main_profile_edit_loading">プロフィールを確認しています</string>
+```

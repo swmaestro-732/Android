@@ -65,6 +65,8 @@ class MyViewModel
                     state.copy(
                         isLoading = false,
                         profile = event.profile,
+                        // 편집 화면이 재조회 실패에도 보존해 쓸 마지막 성공 원본.
+                        lastLoadedProfile = event.profile,
                         errorMessage = null,
                         courses =
                             event.profile.myCourses.items

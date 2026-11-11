@@ -15,6 +15,12 @@ import kotlinx.collections.immutable.persistentListOf
 data class MyProfileUIState(
     val isLoading: Boolean = true,
     val profile: MyProfileVO? = null,
+    /**
+     * 마지막으로 성공 로드한 프로필. [profile] 과 달리 조회 실패([errorMessage])에도 비우지 않는다.
+     * 마이 화면은 [profile] 로 에러 화면을 분기하고, 프로필 편집 화면은 재조회가 실패해도
+     * 편집 기준값이 빈 값으로 무너지지 않도록 이 값을 쓴다.
+     */
+    val lastLoadedProfile: MyProfileVO? = null,
     val errorMessage: String? = null,
     val courses: ImmutableList<ProfileCourseVO> = persistentListOf(),
     val nextCursor: String? = null,
